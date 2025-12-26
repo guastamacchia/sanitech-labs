@@ -40,7 +40,9 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
   svc-directory:
-    build: .
+    build:
+      context: ..
+      dockerfile: svc-directory/Dockerfile
     container_name: sanitech-svc-directory
     depends_on:
       postgres:
