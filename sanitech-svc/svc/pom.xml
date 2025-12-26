@@ -26,7 +26,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <spring-boot.version>3.3.4</spring-boot.version>
         <spring-cloud.version>2023.0.4</spring-cloud.version>
-        <springdoc.version>2.8.0</springdoc.version>
+        <springdoc.version>2.6.0</springdoc.version>
         <logstash.version>7.4</logstash.version>
         <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
         <lombok.version>1.18.42</lombok.version>
@@ -61,6 +61,11 @@
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
                         <release>${java.version}</release>
+                        <compilerArgs>
+                            <!-- Lombok usa ancora sun.misc.Unsafe: disabilitiamo il warning terminally deprecated -->
+                            <arg>-Xlint:-sunapi</arg>
+                            <arg>-Xlint:-removal</arg>
+                        </compilerArgs>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>
