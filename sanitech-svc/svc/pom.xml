@@ -19,20 +19,20 @@
         <module>svc-admissions</module -->
     </modules>
     <properties>
-        <java.version>25</java.version>
+        <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-        <spring-boot.version>3.5.7</spring-boot.version>
-        <spring-cloud.version>2025.0.0</spring-cloud.version>
-        <springdoc.version>2.8.0</springdoc.version>
+        <spring-boot.version>3.3.4</spring-boot.version>
+        <spring-cloud.version>2023.0.4</spring-cloud.version>
+        <springdoc.version>2.6.0</springdoc.version>
         <logstash.version>7.4</logstash.version>
         <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
         <lombok.version>1.18.42</lombok.version>
         <mapstruct.version>1.6.3</mapstruct.version>
-        <resilience4j-spring-boot3.version>2.3.0</resilience4j-spring-boot3.version>
-        <resilience4j-micrometer.version>2.3.0</resilience4j-micrometer.version>
+        <resilience4j-spring-boot3.version>2.2.0</resilience4j-spring-boot3.version>
+        <resilience4j-micrometer.version>2.2.0</resilience4j-micrometer.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -61,6 +61,11 @@
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
                         <release>${java.version}</release>
+                        <compilerArgs>
+                            <!-- Lombok usa ancora sun.misc.Unsafe: disabilitiamo il warning terminally deprecated -->
+                            <arg>-Xlint:-sunapi</arg>
+                            <arg>-Xlint:-removal</arg>
+                        </compilerArgs>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>
