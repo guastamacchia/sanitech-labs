@@ -1,0 +1,6 @@
+# Profilo "local": valori utili quando si avvia in docker-compose o in locale.
+spring:
+  jpa:
+    properties:
+      hibernate:
+        show_sql: false

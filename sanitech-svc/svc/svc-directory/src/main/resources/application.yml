@@ -1,0 +1,121 @@
+server:
+  # Porta HTTP del microservizio Directory.
+  port: 8082
+
+spring:
+  application:
+    # Nome logico del microservizio (usato anche nei log/metrics).
+    name: svc-directory
+
+  datasource:
+    # Configurazione DB via env (docker-compose friendly).
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sanitech_directory}
+    username: ${DB_USER:sanitech}
+    password: ${DB_PASSWORD:sanitech}
+
+  jpa:
+    # Evita LazyInitializationException "a sorpresa": il mapping a DTO avviene nel Service (transazionale).
+    open-in-view: false
+    hibernate:
+      # In produzione usiamo Flyway come fonte di verità dello schema.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        # Batch fetch per collezioni LAZY: riduce N+1 su relazioni many-to-many.
+        default_batch_fetch_size: 50
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Issuer del realm Keycloak (da env in ambienti deploy).
+          # Nota: jwk-set-uri evita una dipendenza hard dal discovery OIDC a startup.
+          jwk-set-uri: ${OAUTH2_JWK_SET_URI:http://localhost:8081/realms/sanitech/protocol/openid-connect/certs}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      # Produciamo payload JSON come String.
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      retries: 10
+      properties:
+        acks: all
+        linger.ms: 5
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+resilience4j:
+
+  ratelimiter:
+    instances:
+      directoryApi:
+        # Limite di richieste per l'endpoint GET /api/doctors
+        limitForPeriod: 10
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+  bulkhead:
+    instances:
+      directoryRead:
+        # Limita il numero di chiamate concorrenti verso il DB per endpoint di lettura.
+        maxConcurrentCalls: 25
+        maxWaitDuration: 0
+  retry:
+    instances:
+      outboxPublish:
+        # Retry/backoff per invio Kafka (OutboxKafkaSender).
+        maxAttempts: 5
+        waitDuration: 200ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+
+sanitech:
+  cors:
+    # Path su cui applicare CORS
+    path-patterns:
+      - "/api/**"
+    # Origini ammesse (aggiungere dominio FE in ambienti reali)
+    allowed-origins:
+      - "http://localhost:3000"
+    allowed-methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "PATCH"
+      - "DELETE"
+      - "OPTIONS"
+    allowed-headers:
+      - "*"
+    exposed-headers:
+      - "Location"
+    allow-credentials: false
+    max-age: 3600
+
+  outbox:
+    publisher:
+      # Frequenza del job outbox (ms).
+      delay-ms: 1000
+
+logging:
+  level:
+    root: INFO
+    # In sviluppo manteniamo più dettaglio sul package applicativo.
+    it.sanitech.directory: DEBUG
