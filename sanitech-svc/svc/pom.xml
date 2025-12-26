@@ -63,7 +63,6 @@
                         <release>${java.version}</release>
                         <compilerArgs>
                             <!-- Lombok usa ancora sun.misc.Unsafe: disabilitiamo il warning terminally deprecated -->
-                            <arg>-Xlint:-sunapi</arg>
                             <arg>-Xlint:-removal</arg>
                         </compilerArgs>
                         <annotationProcessorPaths>
