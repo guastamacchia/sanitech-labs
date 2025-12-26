@@ -5,7 +5,7 @@ Microservizio **Directory** della piattaforma **Sanitech**: gestione anagrafiche
 ## Stack tecnico
 
 - Java 21 (LTS)
-- Spring Boot 3.5.x
+- Spring Boot 3.3.x
 - Spring Security Resource Server (JWT) per Keycloak OIDC (senza adapter legacy)
 - PostgreSQL 16+, Flyway
 - Kafka + Outbox Pattern
