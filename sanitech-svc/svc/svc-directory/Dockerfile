@@ -1,7 +1,7 @@
 # =======================
 # Build stage
 # =======================
-FROM eclipse-temurin:25-jdk AS build
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
 # 1) Copia solo i file necessari al build per massimizzare la cache Docker
@@ -18,7 +18,7 @@ RUN ./mvnw -q -B -DskipTests package
 # =======================
 # Runtime stage
 # =======================
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:21-jre
 
 # 3) Esecuzione con utente non privilegiato (hardening base container)
 RUN useradd -r -u 1001 -g root sanitech &&     mkdir -p /app &&     chown -R sanitech:root /app
@@ -30,6 +30,6 @@ COPY --from=build /app/target/*.jar app.jar
 
 USER sanitech
 
-EXPOSE 8084
+EXPOSE 8082
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
