@@ -1,8 +1,8 @@
 package it.sanitech.directory.exception;
 
 import it.sanitech.directory.utilities.AppConstants;
-//import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
-//import io.github.resilience4j.ratelimiter.RequestNotPermitted;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -114,7 +114,7 @@ public class GlobalExceptionHandler {
     /**
      * Rate limiter → troppe richieste (429).
      */
-    /*@ExceptionHandler(RequestNotPermitted.class)
+    @ExceptionHandler(RequestNotPermitted.class)
     public ResponseEntity<ProblemDetails> tooManyRequests(RequestNotPermitted ex, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ProblemDetails.builder()
                 .type(AppConstants.Problem.TYPE_TOO_MANY_REQUESTS)
@@ -123,7 +123,7 @@ public class GlobalExceptionHandler {
                 .detail(AppConstants.ErrorMessage.MSG_TOO_MANY_REQUESTS)
                 .instance(request.getRequestURI())
                 .build());
-    }*/
+    }
 
     /**
      * Circuit breaker aperto (503).
@@ -133,7 +133,7 @@ public class GlobalExceptionHandler {
      * manteniamo l'handler per coerenza e future estensioni.
      * </p>
      */
-    /*@ExceptionHandler(CallNotPermittedException.class)
+    @ExceptionHandler(CallNotPermittedException.class)
     public ResponseEntity<ProblemDetails> serviceUnavailable(CallNotPermittedException ex, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ProblemDetails.builder()
                 .type(AppConstants.Problem.TYPE_SERVICE_UNAVAILABLE)
@@ -142,7 +142,7 @@ public class GlobalExceptionHandler {
                 .detail(AppConstants.ErrorMessage.MSG_SERVICE_UNAVAILABLE)
                 .instance(request.getRequestURI())
                 .build());
-    }*/
+    }
 
     /**
      * Fallback per eccezioni non previste (500).

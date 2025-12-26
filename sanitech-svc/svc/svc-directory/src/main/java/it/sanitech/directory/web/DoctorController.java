@@ -1,6 +1,6 @@
 package it.sanitech.directory.web;
 
-//import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import it.sanitech.directory.services.DoctorService;
 import it.sanitech.directory.services.dto.DoctorDto;
 import it.sanitech.directory.utilities.AppConstants;
@@ -27,7 +27,7 @@ public class DoctorController {
      * </p>
      */
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    //@RateLimiter(name = "directoryApi")
+    @RateLimiter(name = "directoryApi")
     public Page<DoctorDto> search(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String department,

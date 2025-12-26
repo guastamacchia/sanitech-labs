@@ -1,6 +1,6 @@
 package it.sanitech.directory.services;
 
-//import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import it.sanitech.directory.exception.DepartmentAccessDeniedException;
 import it.sanitech.directory.exception.NotFoundException;
 import it.sanitech.directory.outbox.DomainEventPublisher;
@@ -172,7 +172,7 @@ public class PatientService {
     }
 
     @Transactional(readOnly = true)
-    //@Bulkhead(name = "directoryRead", type = Bulkhead.Type.SEMAPHORE)
+    @Bulkhead(name = "directoryRead", type = Bulkhead.Type.SEMAPHORE)
     public Page<PatientDto> searchAdmin(String q, String departmentCode, int page, int size, String[] sort) {
         Sort safeSort = SortUtils.safeSort(sort, AppConstants.SortField.PATIENT_ALLOWED, "id");
         Pageable pageable = PageableUtils.pageRequest(page, size, MAX_PAGE_SIZE, safeSort);
@@ -189,7 +189,7 @@ public class PatientService {
      * Ricerca pazienti in contesto DOCTOR: applica filtro ABAC sui reparti dell'utente.
      */
     @Transactional(readOnly = true)
-    //@Bulkhead(name = "directoryRead", type = Bulkhead.Type.SEMAPHORE)
+    @Bulkhead(name = "directoryRead", type = Bulkhead.Type.SEMAPHORE)
     public Page<PatientDto> searchForDoctor(String q, int page, int size, String[] sort, Authentication auth) {
         Sort safeSort = SortUtils.safeSort(sort, AppConstants.SortField.PATIENT_ALLOWED, "id");
         Pageable pageable = PageableUtils.pageRequest(page, size, MAX_PAGE_SIZE, safeSort);

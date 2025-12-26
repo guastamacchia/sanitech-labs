@@ -1,7 +1,7 @@
 package it.sanitech.directory.outbox;
 
 import it.sanitech.directory.utilities.AppConstants;
-//import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -26,7 +26,7 @@ public class OutboxKafkaSender {
     /**
      * Invia l'evento su Kafka con retry/backoff configurati in Resilience4j.
      */
-    //@Retry(name = "outboxPublish")
+    @Retry(name = "outboxPublish")
     public RecordMetadata send(OutboxEvent evt) throws Exception {
         String key = evt.getAggregateType() + ":" + evt.getAggregateId();
 

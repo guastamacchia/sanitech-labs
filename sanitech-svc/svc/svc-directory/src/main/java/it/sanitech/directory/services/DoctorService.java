@@ -1,6 +1,6 @@
 package it.sanitech.directory.services;
 
-//import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import it.sanitech.directory.exception.NotFoundException;
 import it.sanitech.directory.outbox.DomainEventPublisher;
 import it.sanitech.directory.repositories.DoctorRepository;
@@ -175,7 +175,7 @@ public class DoctorService {
      * </p>
      */
     @Transactional(readOnly = true)
-    //@Bulkhead(name = "directoryRead", type = Bulkhead.Type.SEMAPHORE)
+    @Bulkhead(name = "directoryRead", type = Bulkhead.Type.SEMAPHORE)
     public Page<DoctorDto> search(String q, String departmentCode, String specializationCode,
                                   int page, int size, String[] sort) {
 
