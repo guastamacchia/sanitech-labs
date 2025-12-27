@@ -54,7 +54,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.svc
       args:
-        JAR_FILE: svc-directory/target/*.jar
+        JAR_FILE: target/*.jar
     container_name: sanitech-svc-directory
     depends_on:
       postgres:
