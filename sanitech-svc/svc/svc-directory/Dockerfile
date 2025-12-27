@@ -11,7 +11,7 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75"
 WORKDIR /app
 
 # Copia del JAR già compilato (build esterna)
-ARG JAR_FILE=svc-directory/target/*.jar
+ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} app.jar
 
 USER sanitech

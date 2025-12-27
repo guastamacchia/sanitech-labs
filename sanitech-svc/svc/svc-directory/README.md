@@ -17,7 +17,10 @@ Microservizio **Directory** della piattaforma **Sanitech**: gestione anagrafiche
 
 ### 1) Avvio infrastruttura (Postgres + Kafka + Keycloak)
 ```bash
-docker compose -f docker-compose.yml up -d postgres kafka keycloak
+make compose-up
+# (il target esegue anche mvn package per generare il JAR prima della build dell'immagine)
+# oppure, se si preferisce solo l'infrastruttura:
+# docker compose -f docker-compose.yml up -d postgres kafka keycloak
 ```
 
 ### 2) Build + test
