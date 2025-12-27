@@ -22,7 +22,7 @@ make compose-up
 # oppure, se si preferisce solo l'infrastruttura:
 # docker compose -f docker/docker-compose.yml up -d postgres kafka keycloak
 ```
-- Il servizio Keycloak viene buildato localmente (Dockerfile in `docker/Dockerfile.keycloak`) includendo il realm `sanitech` nel layer immagine, così l'import avviene anche con Docker Engine remoto (senza bind mount locale).
+- Il servizio Keycloak viene buildato localmente (Dockerfile in `docker/Dockerfile.keycloak`) includendo il realm `sanitech` nel layer immagine e con health abilitato (`KEYCLOAK_HEALTH_ENABLED=true`), così l'import avviene anche con Docker Engine remoto (senza bind mount locale).
   Assicurati che il JAR sia presente in `target/` prima della build (il `make compose-up` lo genera automaticamente).
 
 ### 2) Build + test

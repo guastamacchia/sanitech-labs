@@ -19,9 +19,18 @@ prompt CLIENT_SECRET "Client secret" "${CLIENT_SECRET:-svc-directory-secret}"
 prompt USERNAME "Username" "${USERNAME:-admin}"
 prompt PASSWORD "Password" "${PASSWORD:-admin}"
 
-echo ">> Checking Keycloak health at ${KEYCLOAK_URL}/health/ready"
-curl -fsSL "${KEYCLOAK_URL}/health/ready" >/dev/null
-echo "OK"
+# Normalizza URL rimuovendo eventuali slash finali
+KEYCLOAK_URL="${KEYCLOAK_URL%/}"
+SERVICE_URL="${SERVICE_URL%/}"
+
+echo ">> Checking Keycloak health"
+KEYCLOAK_HEALTH="${KEYCLOAK_URL}/health/ready"
+if ! curl -fsSL "${KEYCLOAK_HEALTH}" >/dev/null; then
+  # Fallback for deployments with legacy /auth context
+  KEYCLOAK_HEALTH="${KEYCLOAK_URL}/auth/health/ready"
+  curl -fsSL "${KEYCLOAK_HEALTH}" >/dev/null
+fi
+echo "OK (${KEYCLOAK_HEALTH})"
 
 echo ">> Requesting token for user '${USERNAME}'"
 TOKEN_JSON=$(curl -fsSL -X POST \

@@ -46,6 +46,7 @@ services:
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_HEALTH_ENABLED: "true"
     ports:
       - "8081:8080"
 
