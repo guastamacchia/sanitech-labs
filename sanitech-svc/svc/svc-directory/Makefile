@@ -13,14 +13,14 @@ test:
 run:
 	$(MVN) -q spring-boot:run
 
-docker-build:
-	docker build -t sanitech/$(SVC_NAME):local .
+docker-build: build
+	docker build -f docker/Dockerfile -t sanitech/$(SVC_NAME):local .
 
 docker-run:
 	docker run --rm -p $(PORT):$(PORT) sanitech/$(SVC_NAME):local
 
-compose-up:
-	docker-compose -f docker-compose.yml up -d
+compose-up: build
+	docker-compose -f docker/docker-compose.yml up -d --build
 
 compose-down:
-	docker-compose -f docker-compose.yml down -v
+	docker-compose -f docker/docker-compose.yml down -v
