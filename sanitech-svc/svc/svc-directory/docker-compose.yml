@@ -71,5 +71,11 @@ services:
       # Per sviluppo locale: aggiornare con l'issuer del proprio Keycloak/realm
       OAUTH2_JWK_SET_URI: http://keycloak:8080/realms/sanitech/protocol/openid-connect/certs
       SPRING_PROFILES_ACTIVE: local
+      # RateLimiter Resilience4j più aggressivo per smoke test (seconda chiamata → 429)
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITFORPERIOD: 1
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITREFRESHPERIOD: 10s
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_TIMEOUTDURATION: 0
+      RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXCONCURRENTCALLS: 1
+      RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXWAITDURATION: 0
     ports:
       - "8082:8082"

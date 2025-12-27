@@ -33,8 +33,36 @@ echo ">> Checking svc-directory health at ${SERVICE_URL}/actuator/health"
 curl -fsSL "${SERVICE_URL}/actuator/health" >/dev/null
 echo "OK"
 
-echo ">> Calling secured endpoint /api/doctors"
+echo ">> Calling secured endpoint /api/doctors (first call should pass)"
 curl -fsSL -H "Authorization: Bearer ${ACCESS_TOKEN}" "${SERVICE_URL}/api/doctors" >/dev/null
 echo "OK"
+
+echo ">> Calling /api/doctors again to validate RateLimiter (expect 429)"
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${ACCESS_TOKEN}" "${SERVICE_URL}/api/doctors")
+if [ "${STATUS}" != "429" ]; then
+  echo "RateLimiter check failed: expected 429, got ${STATUS}"
+  exit 1
+fi
+echo "OK (429 received)"
+
+echo ">> Checking Resilience4j metrics (bulkhead & ratelimiter)"
+curl -fsSL "${SERVICE_URL}/actuator/metrics/resilience4j.bulkhead.available.concurrent.calls?tag=name:directoryRead" >/tmp/bulkhead-metrics.json
+curl -fsSL "${SERVICE_URL}/actuator/metrics/resilience4j.bulkhead.max.allowed.concurrent.calls?tag=name:directoryRead" >/tmp/bulkhead-max.json
+curl -fsSL "${SERVICE_URL}/actuator/metrics/resilience4j.ratelimiter.available.permissions?tag=name:directoryApi" >/tmp/ratelimiter-metrics.json
+
+python - <<'PY'
+import json, sys
+with open("/tmp/bulkhead-max.json") as f:
+    max_data = json.load(f)
+max_allowed = max_data["measurements"][0]["value"]
+if max_allowed != 1:
+    sys.exit(f"Unexpected bulkhead max allowed concurrent calls: {max_allowed}")
+with open("/tmp/bulkhead-metrics.json") as f:
+    avail = json.load(f)["measurements"][0]["value"]
+with open("/tmp/ratelimiter-metrics.json") as f:
+    rate = json.load(f)["measurements"][0]["value"]
+print(f"Bulkhead available calls: {avail}, RateLimiter available perms: {rate}")
+PY
+echo "OK (Resilience4j metrics)"
 
 echo "All smoke checks passed."

@@ -72,6 +72,7 @@ Con Keycloak e il servizio avviati:
 ```bash
 ./scripts/local-smoke.sh
 ```
+- Verifica health Keycloak, health del servizio, token OIDC, RateLimiter (seconda chiamata → 429) e metriche Resilience4j (bulkhead configurato a 1 chiamata concorrente).
 
 ## Note su visibilità pazienti per reparto
 
