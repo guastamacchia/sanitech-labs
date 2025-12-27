@@ -39,13 +39,29 @@ services:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    container_name: sanitech-directory-keycloak
+    command: start-dev --http-port=8080 --import-realm --hostname-strict=false
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/realm-export:/opt/keycloak/data/import
+    ports:
+      - "8081:8080"
+
   svc-directory:
-    build: .
+    build:
+      context: ..
+      dockerfile: svc-directory/Dockerfile
     container_name: sanitech-svc-directory
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
+        condition: service_started
+      keycloak:
         condition: service_started
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/sanitech_directory
@@ -53,7 +69,13 @@ services:
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       # Per sviluppo locale: aggiornare con l'issuer del proprio Keycloak/realm
-      OAUTH2_JWK_SET_URI: http://localhost:8081/realms/sanitech
+      OAUTH2_JWK_SET_URI: http://keycloak:8080/realms/sanitech/protocol/openid-connect/certs
       SPRING_PROFILES_ACTIVE: local
+      # RateLimiter Resilience4j più aggressivo per smoke test (seconda chiamata → 429)
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITFORPERIOD: 1
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITREFRESHPERIOD: 10s
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_TIMEOUTDURATION: 0
+      RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXCONCURRENTCALLS: 1
+      RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXWAITDURATION: 0
     ports:
       - "8082:8082"
