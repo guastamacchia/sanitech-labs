@@ -25,29 +25,6 @@ SERVICE_URL="$(echo "${SERVICE_URL}" | xargs)"
 KEYCLOAK_URL="${KEYCLOAK_URL%/}"
 SERVICE_URL="${SERVICE_URL%/}"
 
-echo ">> Checking Keycloak health"
-HEALTH_ENDPOINTS=(
-  "${KEYCLOAK_URL}/health/ready"
-  "${KEYCLOAK_URL}/auth/health/ready"
-)
-HEALTH_OK=""
-for endpoint in "${HEALTH_ENDPOINTS[@]}"; do
-  for _ in {1..30}; do
-    if curl -fsSL "${endpoint}" >/dev/null 2>&1; then
-      HEALTH_OK="${endpoint}"
-      break
-    fi
-    sleep 1
-  done
-  [ -n "${HEALTH_OK}" ] && break
-done
-if [ -z "${HEALTH_OK}" ]; then
-  echo "Keycloak health check failed on tested endpoints:"
-  printf '  - %s\n' "${HEALTH_ENDPOINTS[@]}"
-  exit 1
-fi
-echo "OK (${HEALTH_OK})"
-
 echo ">> Requesting token for user '${USERNAME}'"
 TOKEN_JSON=$(curl -fsSL -X POST \
   "${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token" \
