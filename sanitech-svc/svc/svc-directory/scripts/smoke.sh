@@ -34,12 +34,26 @@ TOKEN_JSON=$(curl -fsSL -X POST \
   -d "username=${USERNAME}" \
   -d "password=${PASSWORD}")
 
-ACCESS_TOKEN=$(python - <<'PY'
-import json, sys
-data = json.loads("""${TOKEN_JSON}""")
+extract_token() {
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$TOKEN_JSON" <<'PY'
+import json,sys
+data=json.loads(sys.argv[1])
 print(data["access_token"])
 PY
-)
+  elif command -v python >/dev/null 2>&1; then
+    python - "$TOKEN_JSON" <<'PY'
+import json,sys
+data=json.loads(sys.argv[1])
+print(data["access_token"])
+PY
+  else
+    echo "Python is required to parse access token (python3 or python not found)" >&2
+    exit 1
+  fi
+}
+
+ACCESS_TOKEN=$(extract_token)
 
 echo ">> Checking svc-directory health at ${SERVICE_URL}/actuator/health"
 curl -fsSL "${SERVICE_URL}/actuator/health" >/dev/null
