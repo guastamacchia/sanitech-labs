@@ -34,26 +34,13 @@ TOKEN_JSON=$(curl -fsSL -X POST \
   -d "username=${USERNAME}" \
   -d "password=${PASSWORD}")
 
-extract_token() {
-  if command -v python3 >/dev/null 2>&1; then
-    python3 - "$TOKEN_JSON" <<'PY'
-import json,sys
-data=json.loads(sys.argv[1])
-print(data["access_token"])
-PY
-  elif command -v python >/dev/null 2>&1; then
-    python - "$TOKEN_JSON" <<'PY'
-import json,sys
-data=json.loads(sys.argv[1])
-print(data["access_token"])
-PY
-  else
-    echo "Python is required to parse access token (python3 or python not found)" >&2
-    exit 1
-  fi
-}
-
-ACCESS_TOKEN=$(extract_token)
+# Estrazione semplice dell'access token (senza dipendenze Python)
+ACCESS_TOKEN=$(echo "${TOKEN_JSON}" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
+if [ -z "${ACCESS_TOKEN}" ]; then
+  echo "Unable to parse access token from response:"
+  echo "${TOKEN_JSON}"
+  exit 1
+fi
 
 echo ">> Checking svc-directory health at ${SERVICE_URL}/actuator/health"
 curl -fsSL "${SERVICE_URL}/actuator/health" >/dev/null
