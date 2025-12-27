@@ -45,6 +45,10 @@
       "username": "admin",
       "enabled": true,
       "emailVerified": true,
+      "email": "admin@sanitech.local",
+      "firstName": "Admin",
+      "lastName": "User",
+      "createdTimestamp": 1704067200000,
       "requiredActions": [],
       "realmRoles": [
         "ADMIN"
@@ -61,6 +65,10 @@
       "username": "doctor",
       "enabled": true,
       "emailVerified": true,
+      "email": "doctor@sanitech.local",
+      "firstName": "Doctor",
+      "lastName": "User",
+      "createdTimestamp": 1704067200000,
       "requiredActions": [],
       "realmRoles": [
         "DOCTOR"
