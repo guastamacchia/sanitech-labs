@@ -20,8 +20,9 @@ Microservizio **Directory** della piattaforma **Sanitech**: gestione anagrafiche
 make compose-up
 # (il target esegue anche mvn package per generare il JAR prima della build dell'immagine)
 # oppure, se si preferisce solo l'infrastruttura:
-# docker compose -f docker-compose.yml up -d postgres kafka keycloak
+# docker compose -f docker/docker-compose.yml up -d postgres kafka keycloak
 ```
+- Il servizio Keycloak viene buildato localmente (Dockerfile in `keycloak/`) includendo il realm `sanitech` nel layer immagine, così l'import avviene anche con Docker Engine remoto (senza bind mount locale).
 
 ### 2) Build + test
 ```bash
@@ -73,7 +74,7 @@ Il converter custom mappa:
 ### Smoke test locale
 Con Keycloak e il servizio avviati:
 ```bash
-./scripts/local-smoke.sh
+./scripts/smoke.sh
 ```
 - Verifica health Keycloak, health del servizio, token OIDC, RateLimiter (seconda chiamata → 429) e metriche Resilience4j (bulkhead configurato a 1 chiamata concorrente).
 
