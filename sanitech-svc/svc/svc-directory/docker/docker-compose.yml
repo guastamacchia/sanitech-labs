@@ -41,7 +41,8 @@ services:
 
   keycloak:
     build:
-      context: ../keycloak
+      context: .
+      dockerfile: Dockerfile.keycloak
     image: sanitech/keycloak-directory:local
     container_name: sanitech-directory-keycloak
     environment:
@@ -53,7 +54,7 @@ services:
   svc-directory:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.svc
       args:
         JAR_FILE: svc-directory/target/*.jar
     container_name: sanitech-svc-directory
