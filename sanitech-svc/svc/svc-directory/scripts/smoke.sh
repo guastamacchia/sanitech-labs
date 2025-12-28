@@ -67,9 +67,12 @@ fi
 echo "OK (429 received)"
 
 echo ">> Checking Resilience4j metrics (bulkhead & ratelimiter)"
-curl -fsSL "${SERVICE_URL}/actuator/metrics/resilience4j.bulkhead.available.concurrent.calls?tag=name:directoryRead" >/tmp/bulkhead-metrics.json
-curl -fsSL "${SERVICE_URL}/actuator/metrics/resilience4j.bulkhead.max.allowed.concurrent.calls?tag=name:directoryRead" >/tmp/bulkhead-max.json
-curl -fsSL "${SERVICE_URL}/actuator/metrics/resilience4j.ratelimiter.available.permissions?tag=name:directoryApi" >/tmp/ratelimiter-metrics.json
+curl -fsSL -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  "${SERVICE_URL}/actuator/metrics/resilience4j.bulkhead.available.concurrent.calls?tag=name:directoryRead" >/tmp/bulkhead-metrics.json
+curl -fsSL -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  "${SERVICE_URL}/actuator/metrics/resilience4j.bulkhead.max.allowed.concurrent.calls?tag=name:directoryRead" >/tmp/bulkhead-max.json
+curl -fsSL -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  "${SERVICE_URL}/actuator/metrics/resilience4j.ratelimiter.available.permissions?tag=name:directoryApi" >/tmp/ratelimiter-metrics.json
 
 python - <<'PY'
 import json, sys
