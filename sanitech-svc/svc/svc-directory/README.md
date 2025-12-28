@@ -15,15 +15,17 @@ Microservizio **Directory** della piattaforma **Sanitech**: gestione anagrafiche
 
 ## Come eseguire (3 comandi)
 
-### 1) Avvio infrastruttura (Postgres + Kafka + Keycloak)
+### 1) Avvio infrastruttura (Postgres + Kafka + Keycloak + Prometheus + Grafana)
 ```bash
 make compose-up
 # (il target esegue anche mvn package per generare il JAR prima della build dell'immagine)
 # oppure, se si preferisce solo l'infrastruttura:
-# docker compose -f docker/docker-compose.yml up -d postgres kafka keycloak
+# docker compose -f docker/docker-compose.yml up -d postgres kafka keycloak prometheus grafana
 ```
 - Il servizio Keycloak viene buildato localmente (Dockerfile in `docker/Dockerfile.keycloak`) includendo il realm `sanitech` nel layer immagine e con health abilitato (`KEYCLOAK_HEALTH_ENABLED=true`), così l'import avviene anche con Docker Engine remoto (senza bind mount locale).
   Assicurati che il JAR sia presente in `target/` prima della build (il `make compose-up` lo genera automaticamente).
+- Prometheus viene buildato localmente (`docker/Dockerfile.prometheus`) con la configurazione già inclusa, per evitare problemi di bind mount.
+- Grafana (porta `3000`, credenziali predefinite `admin`/`admin`) parte con la datasource Prometheus già configurata (cartella `docker/grafana/provisioning`).
 
 ### 2) Build + test
 ```bash
@@ -78,6 +80,18 @@ Con Keycloak e il servizio avviati:
 ./scripts/smoke.sh
 ```
 - Verifica health Keycloak, health del servizio, token OIDC, RateLimiter (seconda chiamata → 429) e metriche Resilience4j (bulkhead configurato a 1 chiamata concorrente).
+
+### Loop di test continuo
+Per eseguire chiamate ripetute su tutti gli endpoint principali (health, pubblici, admin):
+```bash
+./scripts/loop.sh
+```
+- Richiede le stesse credenziali/env di `smoke.sh`, ottiene un token una sola volta e ripete le chiamate all'infinito (intervallo configurabile).
+
+### Postman
+- Collezione: `postman/sanitech-directory.postman_collection.json`
+- Environment di esempio: `postman/sanitech-directory.postman_environment.json`
+- Esegui prima la richiesta "Obtain Token (Keycloak)" per popolare `access_token`, poi usa gli endpoint protetti.
 
 ## Note su visibilità pazienti per reparto
 
