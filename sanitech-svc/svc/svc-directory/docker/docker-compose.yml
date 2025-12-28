@@ -85,7 +85,7 @@ services:
     image: prom/prometheus:v2.55.1
     container_name: sanitech-prometheus
     volumes:
-      - ./prometheus:/etc/prometheus:ro
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
