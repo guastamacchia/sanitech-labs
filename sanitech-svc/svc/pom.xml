@@ -64,6 +64,7 @@
                         <compilerArgs>
                             <!-- Lombok usa ancora sun.misc.Unsafe: disabilitiamo il warning terminally deprecated -->
                             <arg>-Xlint:-removal</arg>
+                            <arg>-parameters</arg>
                         </compilerArgs>
                         <annotationProcessorPaths>
                             <path>
