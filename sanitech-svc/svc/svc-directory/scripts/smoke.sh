@@ -70,7 +70,9 @@ echo ">> Checking Resilience4j metrics (bulkhead & ratelimiter)"
 fetch_metric() {
   local url="$1"
   local resp status body
-  resp=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" -w "\n%{http_code}" "${url}")
+  resp=$(curl -s --max-time 5 --connect-timeout 3 \
+    -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+    -w "\n%{http_code}" "${url}")
   status=$(echo "${resp}" | tail -n1)
   body=$(echo "${resp}" | sed '$d')
   if [ "${status}" != "200" ]; then
