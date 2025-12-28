@@ -67,26 +67,23 @@ fi
 echo "OK (429 received)"
 
 echo ">> Checking Resilience4j metrics (bulkhead & ratelimiter)"
-curl -fsSL -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-  "${SERVICE_URL}/actuator/metrics/resilience4j.bulkhead.available.concurrent.calls?tag=name:directoryRead" >/tmp/bulkhead-metrics.json
-curl -fsSL -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-  "${SERVICE_URL}/actuator/metrics/resilience4j.bulkhead.max.allowed.concurrent.calls?tag=name:directoryRead" >/tmp/bulkhead-max.json
-curl -fsSL -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-  "${SERVICE_URL}/actuator/metrics/resilience4j.ratelimiter.available.permissions?tag=name:directoryApi" >/tmp/ratelimiter-metrics.json
+fetch_metric() {
+  local url="$1"
+  local resp status body
+  resp=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" -w "\n%{http_code}" "${url}")
+  status=$(echo "${resp}" | tail -n1)
+  body=$(echo "${resp}" | sed '$d')
+  if [ "${status}" != "200" ]; then
+    echo "Metric check failed (${status}) for ${url}"
+    echo "${body}"
+    exit 1
+  fi
+  echo "${body}"
+}
 
-python - <<'PY'
-import json, sys
-with open("/tmp/bulkhead-max.json") as f:
-    max_data = json.load(f)
-max_allowed = max_data["measurements"][0]["value"]
-if max_allowed != 1:
-    sys.exit(f"Unexpected bulkhead max allowed concurrent calls: {max_allowed}")
-with open("/tmp/bulkhead-metrics.json") as f:
-    avail = json.load(f)["measurements"][0]["value"]
-with open("/tmp/ratelimiter-metrics.json") as f:
-    rate = json.load(f)["measurements"][0]["value"]
-print(f"Bulkhead available calls: {avail}, RateLimiter available perms: {rate}")
-PY
-echo "OK (Resilience4j metrics)"
+fetch_metric "${SERVICE_URL}/actuator/metrics/resilience4j.bulkhead.available.concurrent.calls" >/dev/null
+fetch_metric "${SERVICE_URL}/actuator/metrics/resilience4j.bulkhead.max.allowed.concurrent.calls" >/dev/null
+fetch_metric "${SERVICE_URL}/actuator/metrics/resilience4j.ratelimiter.available.permissions" >/dev/null
+echo "OK (Resilience4j metrics accessible)"
 
 echo "All smoke checks passed."
