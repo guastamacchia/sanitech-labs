@@ -5,7 +5,7 @@ Microservizio **Directory** della piattaforma **Sanitech**: gestione anagrafiche
 ## Stack tecnico
 
 - Java 21 (LTS)
-- Spring Boot 3.5.x
+- Spring Boot 3.3.x
 - Spring Security Resource Server (JWT) per Keycloak OIDC (senza adapter legacy)
 - PostgreSQL 16+, Flyway
 - Kafka + Outbox Pattern
@@ -15,10 +15,15 @@ Microservizio **Directory** della piattaforma **Sanitech**: gestione anagrafiche
 
 ## Come eseguire (3 comandi)
 
-### 1) Avvio infrastruttura (Postgres + Kafka)
+### 1) Avvio infrastruttura (Postgres + Kafka + Keycloak)
 ```bash
-docker compose -f docker-compose.yml up -d postgres kafka
+make compose-up
+# (il target esegue anche mvn package per generare il JAR prima della build dell'immagine)
+# oppure, se si preferisce solo l'infrastruttura:
+# docker compose -f docker/docker-compose.yml up -d postgres kafka keycloak
 ```
+- Il servizio Keycloak viene buildato localmente (Dockerfile in `docker/Dockerfile.keycloak`) includendo il realm `sanitech` nel layer immagine e con health abilitato (`KEYCLOAK_HEALTH_ENABLED=true`), così l'import avviene anche con Docker Engine remoto (senza bind mount locale).
+  Assicurati che il JAR sia presente in `target/` prima della build (il `make compose-up` lo genera automaticamente).
 
 ### 2) Build + test
 ```bash
@@ -59,6 +64,20 @@ Il converter custom mappa:
 - `realm_access.roles` → `ROLE_*`
 - `scope` → `SCOPE_*`
 - claim custom `dept` → `DEPT_*` (ABAC per reparto)
+
+### Keycloak locale pronto all'uso
+- `docker compose up keycloak svc-directory` importa automaticamente il realm `sanitech` da `keycloak/realm-export/sanitech-realm.json`.
+- Client configurato: `svc-directory` (secret: `svc-directory-secret`).
+- Utenti di test:
+  - `admin` / `admin` con ruolo `ADMIN`
+  - `doctor` / `doctor` con ruolo `DOCTOR` e claim `dept=CARDIO`
+
+### Smoke test locale
+Con Keycloak e il servizio avviati:
+```bash
+./scripts/smoke.sh
+```
+- Verifica health Keycloak, health del servizio, token OIDC, RateLimiter (seconda chiamata → 429) e metriche Resilience4j (bulkhead configurato a 1 chiamata concorrente).
 
 ## Note su visibilità pazienti per reparto
 
