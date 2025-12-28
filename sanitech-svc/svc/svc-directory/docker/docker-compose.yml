@@ -84,8 +84,9 @@ services:
   prometheus:
     image: prom/prometheus:v2.55.1
     container_name: sanitech-prometheus
-    configs:
-      - source: prometheus_config
+    volumes:
+      - type: bind
+        source: ${PWD}/docker/prometheus/prometheus.yml
         target: /etc/prometheus/prometheus.yml
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
@@ -110,7 +111,3 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     ports:
       - "5601:5601"
-
-configs:
-  prometheus_config:
-    file: ./prometheus/prometheus.yml
