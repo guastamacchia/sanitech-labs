@@ -82,12 +82,11 @@ services:
       - "8082:8082"
 
   prometheus:
-    image: prom/prometheus:v2.55.1
+    build:
+      context: .
+      dockerfile: Dockerfile.prometheus
+    image: sanitech-prometheus:local
     container_name: sanitech-prometheus
-    volumes:
-      - type: bind
-        source: ${PWD}/docker/prometheus/prometheus.yml
-        target: /etc/prometheus/prometheus.yml
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
