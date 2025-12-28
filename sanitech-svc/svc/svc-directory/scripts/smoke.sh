@@ -71,7 +71,6 @@ fetch_metric() {
   local url="$1"
   local resp status body
   resp=$(curl -s --max-time 5 --connect-timeout 3 \
-    -H "Authorization: Bearer ${ACCESS_TOKEN}" \
     -w "\n%{http_code}" "${url}")
   status=$(echo "${resp}" | tail -n1)
   body=$(echo "${resp}" | sed '$d')
