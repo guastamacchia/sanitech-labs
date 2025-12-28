@@ -47,7 +47,15 @@ curl -fsSL "${SERVICE_URL}/actuator/health" >/dev/null
 echo "OK"
 
 echo ">> Calling secured endpoint /api/doctors (first call should pass)"
-curl -fsSL -H "Authorization: Bearer ${ACCESS_TOKEN}" "${SERVICE_URL}/api/doctors" >/dev/null
+DOCTORS_BODY=$(curl -s -H "Authorization: Bearer ${ACCESS_TOKEN}" -w "\n%{http_code}" "${SERVICE_URL}/api/doctors")
+DOCTORS_STATUS=$(echo "${DOCTORS_BODY}" | tail -n1)
+DOCTORS_CONTENT=$(echo "${DOCTORS_BODY}" | sed '$d')
+if [ "${DOCTORS_STATUS}" != "200" ]; then
+  echo "Unexpected status ${DOCTORS_STATUS} from /api/doctors"
+  echo "Response body:"
+  echo "${DOCTORS_CONTENT}"
+  exit 1
+fi
 echo "OK"
 
 echo ">> Calling /api/doctors again to validate RateLimiter (expect 429)"
