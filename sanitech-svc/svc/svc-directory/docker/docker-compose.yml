@@ -1,0 +1,106 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: sanitech-directory-postgres
+    environment:
+      POSTGRES_DB: sanitech_directory
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sanitech -d sanitech_directory"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.1
+    container_name: sanitech-directory-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.7.1
+    container_name: sanitech-directory-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  keycloak:
+    build:
+      context: .
+      dockerfile: Dockerfile.keycloak
+    image: sanitech/keycloak-directory:local
+    container_name: sanitech-directory-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KEYCLOAK_HEALTH_ENABLED: "true"
+    ports:
+      - "8081:8080"
+
+  svc-directory:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.svc
+      args:
+        JAR_FILE: target/*.jar
+    container_name: sanitech-svc-directory
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      keycloak:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sanitech_directory
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # Per sviluppo locale: aggiornare con l'issuer del proprio Keycloak/realm
+      OAUTH2_JWK_SET_URI: http://keycloak:8080/realms/sanitech/protocol/openid-connect/certs
+      SPRING_PROFILES_ACTIVE: local
+      # RateLimiter Resilience4j più aggressivo per smoke test (seconda chiamata → 429)
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITFORPERIOD: 1
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITREFRESHPERIOD: 10s
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_TIMEOUTDURATION: 0
+      RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXCONCURRENTCALLS: 1
+      RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXWAITDURATION: 0
+    ports:
+      - "8082:8082"
+
+  prometheus:
+    build:
+      context: .
+      dockerfile: Dockerfile.prometheus
+    image: sanitech-prometheus:local
+    container_name: sanitech-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: sanitech-grafana
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro

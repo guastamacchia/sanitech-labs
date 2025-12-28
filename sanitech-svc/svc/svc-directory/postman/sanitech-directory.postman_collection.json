@@ -1,0 +1,178 @@
+{
+  "info": {
+    "name": "Sanitech Directory",
+    "_postman_id": "c5e7d0f6-7d4c-4c1f-8e9c-0a8d5d2b1abc",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Obtain Token (Keycloak)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "url": {
+          "raw": "{{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+          "host": [
+            "{{keycloakUrl}}"
+          ],
+          "path": [
+            "realms",
+            "{{realm}}",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        },
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text"
+            },
+            {
+              "key": "client_id",
+              "value": "{{clientId}}",
+              "type": "text"
+            },
+            {
+              "key": "client_secret",
+              "value": "{{clientSecret}}",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "{{username}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "if (body.access_token) {",
+              "  pm.environment.set(\"access_token\", body.access_token);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/actuator/health"
+      },
+      "response": []
+    },
+    {
+      "name": "Metrics",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/actuator/metrics"
+      },
+      "response": []
+    },
+    {
+      "name": "Doctors (public)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/doctors"
+      },
+      "response": []
+    },
+    {
+      "name": "Patients",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/patients"
+      },
+      "response": []
+    },
+    {
+      "name": "Admin - Departments",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/departments"
+      },
+      "response": []
+    },
+    {
+      "name": "Admin - Specializations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/specializations"
+      },
+      "response": []
+    },
+    {
+      "name": "Admin - Doctors",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/doctors"
+      },
+      "response": []
+    },
+    {
+      "name": "Admin - Patients",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": "{{baseUrl}}/api/admin/patients"
+      },
+      "response": []
+    }
+  ]
+}

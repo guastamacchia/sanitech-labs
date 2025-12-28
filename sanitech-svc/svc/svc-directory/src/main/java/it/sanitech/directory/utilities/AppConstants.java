@@ -114,7 +114,9 @@ public class AppConstants {
                 "/swagger-ui/**",
                 "/swagger-ui.html",
                 "/actuator/health/**",
-                "/actuator/info"
+                "/actuator/info",
+                "/actuator/metrics/**",
+                "/actuator/prometheus"
         };
 
         /** Prefisso authority per i ruoli applicativi derivati da {@code realm_access.roles}. */
