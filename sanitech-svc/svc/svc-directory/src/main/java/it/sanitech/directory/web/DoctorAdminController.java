@@ -37,6 +37,18 @@ public class DoctorAdminController {
         return doctorService.patch(id, dto, auth);
     }
 
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public org.springframework.data.domain.Page<DoctorDto> search(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String specialization,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String[] sort
+    ) {
+        return doctorService.search(q, department, specialization, page, size, sort);
+    }
+
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         doctorService.delete(id);

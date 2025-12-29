@@ -33,6 +33,18 @@ public class SpecializationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<SpecializationDto> search(String q) {
+        if (q == null || q.isBlank()) {
+            return list();
+        }
+        String like = q.trim();
+        return repository.findByCodeContainingIgnoreCaseOrNameContainingIgnoreCaseOrderByCodeAsc(like, like)
+                .stream()
+                .map(mapper::toDto)
+                .toList();
+    }
+
     public SpecializationDto create(SpecializationCreateDto dto) {
         String code = normalizeCode(dto.code());
 
