@@ -55,7 +55,7 @@ services:
   svc-directory:
     build:
       context: ..
-      dockerfile: docker/Dockerfile.svc
+      dockerfile: docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
     container_name: sanitech-svc-directory
