@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-ENV_FILE="${1:-.env.loop}"
+ENV_FILE="${1:-../.env.local}"
 
 if [ -f "${ENV_FILE}" ]; then
   set -a
@@ -14,4 +14,7 @@ else
 fi
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec /usr/bin/env bash "${DIR}/loop.sh"
+#exec /usr/bin/env bash "${DIR}/smoke.sh"
+#exec /usr/bin/env bash "${DIR}/loop.sh"
+#exec /usr/bin/env bash "${DIR}/bulkhead.sh"
+exec /usr/bin/env bash "${DIR}/rate-limit.sh"
