@@ -37,6 +37,19 @@ public class PatientAdminController {
         return patientService.patch(id, dto, auth);
     }
 
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public org.springframework.data.domain.Page<PatientDto> search(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String department,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String[] sort,
+            Authentication auth
+    ) {
+        // Admin controller: force admin search to bypass department filters.
+        return patientService.searchAdmin(q, department, page, size, sort);
+    }
+
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         patientService.delete(id);

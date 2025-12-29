@@ -6,6 +6,9 @@ curl_status() {
   shift || true
   local status
   status=$(curl --silent --output /dev/null --write-out "%{http_code}" "$@" "${url}") || status="ERR"
+  if [ -z "${status}" ]; then
+    status="ERR"
+  fi
   echo "${status}"
 }
 
