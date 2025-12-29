@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
+curl_status() {
+  local url="$1"
+  shift || true
+  local status
+  status=$(curl --silent --output /dev/null --write-out "%{http_code}" "$@" "${url}") || status="ERR"
+  echo "${status}"
+}
+
 prompt() {
   local var="$1" prompt="$2" default="$3"
   read -rp "${prompt} [${default}]: " input
@@ -46,35 +54,35 @@ while true; do
   echo "=== $(date -Is) ==="
 
   # Health (public)
-  status=$(curl -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/actuator/health" || echo "ERR")
+  status=$(curl_status "${SERVICE_URL}/actuator/health")
   echo "Health            : ${status}"
 
   # Public doctors search (rate-limited)
-  status=$(curl -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/api/doctors" || echo "ERR")
+  status=$(curl_status "${SERVICE_URL}/api/doctors" -H "Authorization: Bearer ${ACCESS_TOKEN}")
   echo "GET /api/doctors  : ${status}"
 
   # Patients (requires ROLE_ADMIN / ROLE_DOCTOR)
-  status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${ACCESS_TOKEN}" "${SERVICE_URL}/api/patients" || echo "ERR")
+  status=$(curl_status "${SERVICE_URL}/api/patients" -H "Authorization: Bearer ${ACCESS_TOKEN}")
   echo "GET /api/patients : ${status}"
 
   # Departments (admin)
-  status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${ACCESS_TOKEN}" "${SERVICE_URL}/api/admin/departments" || echo "ERR")
+  status=$(curl_status "${SERVICE_URL}/api/admin/departments" -H "Authorization: Bearer ${ACCESS_TOKEN}")
   echo "Admin departments : ${status}"
 
   # Specializations (admin)
-  status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${ACCESS_TOKEN}" "${SERVICE_URL}/api/admin/specializations" || echo "ERR")
+  status=$(curl_status "${SERVICE_URL}/api/admin/specializations" -H "Authorization: Bearer ${ACCESS_TOKEN}")
   echo "Admin specs       : ${status}"
 
   # Doctors admin search
-  status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${ACCESS_TOKEN}" "${SERVICE_URL}/api/admin/doctors" || echo "ERR")
+  status=$(curl_status "${SERVICE_URL}/api/admin/doctors" -H "Authorization: Bearer ${ACCESS_TOKEN}")
   echo "Admin doctors     : ${status}"
 
   # Patients admin search
-  status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${ACCESS_TOKEN}" "${SERVICE_URL}/api/admin/patients" || echo "ERR")
+  status=$(curl_status "${SERVICE_URL}/api/admin/patients" -H "Authorization: Bearer ${ACCESS_TOKEN}")
   echo "Admin patients    : ${status}"
 
   # Metrics (public)
-  status=$(curl -s -o /dev/null -w "%{http_code}" "${SERVICE_URL}/actuator/metrics" || echo "ERR")
+  status=$(curl_status "${SERVICE_URL}/actuator/metrics")
   echo "Metrics list      : ${status}"
 
   sleep "${SLEEP_SECONDS}"
