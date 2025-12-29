@@ -87,15 +87,10 @@ services:
       dockerfile: Dockerfile.prometheus
     image: sanitech-prometheus:local
     container_name: sanitech-prometheus
-    environment:
-      - TZ=${TZ:-Etc/UTC}
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
       - "9090:9090"
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
 
   grafana:
     build:
@@ -108,9 +103,5 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - TZ=${TZ:-Etc/UTC}
     ports:
       - "3000:3000"
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
