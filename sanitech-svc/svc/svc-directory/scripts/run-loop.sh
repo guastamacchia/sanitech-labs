@@ -14,4 +14,4 @@ else
 fi
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "${DIR}/loop.sh"
+exec /usr/bin/env bash "${DIR}/loop.sh"
