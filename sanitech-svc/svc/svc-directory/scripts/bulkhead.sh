@@ -33,7 +33,7 @@ TOKEN_JSON=$(curl -fsSL -X POST \
   -d "username=${USERNAME}" \
   -d "password=${PASSWORD}")
 
-ACCESS_TOKEN=$(echo "${TOKEN_JSON}" | sed -n 's/.*\"access_token\":\"\\([^\"]*\\)\".*/\\1/p')
+ACCESS_TOKEN=$(echo "${TOKEN_JSON}" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p')
 if [ -z "${ACCESS_TOKEN}" ]; then
   echo "Unable to parse access token from response:"
   echo "${TOKEN_JSON}"
