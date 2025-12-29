@@ -1,0 +1,7 @@
+FROM prom/prometheus:v2.55.1
+
+# Copy static configuration into the image so no bind mount is needed at runtime.
+COPY prometheus.yml /etc/prometheus/prometheus.yml
+
+# Use the default entrypoint; explicitly point to the copied configuration.
+CMD [ "--config.file=/etc/prometheus/prometheus.yml" ]
