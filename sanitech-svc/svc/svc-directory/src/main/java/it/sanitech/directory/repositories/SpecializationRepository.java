@@ -17,4 +17,6 @@ public interface SpecializationRepository extends JpaRepository<Specialization, 
     Optional<Specialization> findByCodeIgnoreCase(String code);
 
     List<Specialization> findByCodeIn(Collection<String> codes);
+
+    List<Specialization> findByCodeContainingIgnoreCaseOrNameContainingIgnoreCaseOrderByCodeAsc(String code, String name);
 }
