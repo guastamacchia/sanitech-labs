@@ -99,6 +99,10 @@ Con configurazione rate limiter aggressiva locale (limitForPeriod=1, limitRefres
 - Il compose imposta `TZ` (default `Etc/UTC`): puoi sovrascriverlo esportando `TZ=Europe/Rome` (o altro) prima di `make compose-up`.
 - I container montano `/etc/localtime` e `/etc/timezone` dall'host per allineare il clock ed evitare warning di drift temporale in Prometheus/Grafana. Se continui a vedere drift, verifica che l'host sia sincronizzato (NTP/chrony).
 
+### Kafka: IP annunciato ai client
+- Kafka annuncia il listener `PLAINTEXT://${KAFKA_ADVERTISED_HOST:-localhost}:9092`.
+- Se ti connetti da una VM/host esterno, esporta `KAFKA_ADVERTISED_HOST=<ip_raggiungibile>` prima di `make compose-up` (es. `KAFKA_ADVERTISED_HOST=10.211.55.23 make compose-up`), così i client ricevono l'indirizzo corretto.
+
 ### Loop di test continuo
 Per eseguire chiamate ripetute su tutti gli endpoint principali (health, pubblici, admin):
 ```bash
