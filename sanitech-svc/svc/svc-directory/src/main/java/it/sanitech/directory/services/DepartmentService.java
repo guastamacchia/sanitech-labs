@@ -33,6 +33,18 @@ public class DepartmentService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<DepartmentDto> search(String q) {
+        if (q == null || q.isBlank()) {
+            return list();
+        }
+        String like = q.trim();
+        return repository.findByCodeContainingIgnoreCaseOrNameContainingIgnoreCaseOrderByCodeAsc(like, like)
+                .stream()
+                .map(mapper::toDto)
+                .toList();
+    }
+
     public DepartmentDto create(DepartmentCreateDto dto) {
         String code = normalizeCode(dto.code());
 

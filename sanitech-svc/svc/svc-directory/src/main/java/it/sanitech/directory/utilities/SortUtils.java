@@ -31,6 +31,7 @@ public class SortUtils {
      */
     public static Sort safeSort(String[] sortParams, Set<String> allowedFields, String defaultField) {
         List<Sort.Order> orders = Stream.of(Optional.ofNullable(sortParams).orElse(new String[0]))
+                .filter(Objects::nonNull)
                 .map(String::trim)
                 .filter(s -> !s.isBlank())
                 .map(raw -> toOrder(raw, allowedFields, defaultField))
