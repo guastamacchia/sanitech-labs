@@ -94,7 +94,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
 
   grafana:
     build:
@@ -110,3 +111,6 @@ services:
       - TZ=${TZ:-Etc/UTC}
     ports:
       - "3000:3000"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
