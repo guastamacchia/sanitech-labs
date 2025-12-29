@@ -54,7 +54,7 @@ fi
 
 echo ">> Starting infinite loop over key APIs (Ctrl+C to stop)"
 while true; do
-  echo "=== $(date -Is) ==="
+  echo "=== $(date '+%Y-%m-%dT%H:%M:%S%z') ==="
 
   # Health (public)
   status=$(curl_status "${SERVICE_URL}/actuator/health")
