@@ -32,6 +32,11 @@ public class SpecializationAdminController {
         return service.update(id, dto);
     }
 
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public java.util.List<SpecializationDto> search(@RequestParam(required = false) String q) {
+        return service.search(q);
+    }
+
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.delete(id);
