@@ -84,9 +84,16 @@ Con Keycloak e il servizio avviati:
 ### Test Bulkhead (concurrency)
 Con configurazione bulkhead locale (maxConcurrentCalls=1) e Keycloak/servizio avviati:
 ```bash
-./scripts/bulkhead-test.sh
+./scripts/bulkhead.sh
 ```
 - Esegue due richieste concorrenti su `/api/admin/patients`: una deve andare a buon fine, la seconda deve essere rifiutata dal bulkhead.
+
+### Test RateLimiter
+Con configurazione rate limiter aggressiva locale (limitForPeriod=1, limitRefreshPeriod=10s):
+```bash
+./scripts/rate-limit.sh
+```
+- Esegue due chiamate consecutive a `/api/doctors`: la prima deve restituire 200, la seconda 429.
 
 ### Loop di test continuo
 Per eseguire chiamate ripetute su tutti gli endpoint principali (health, pubblici, admin):
