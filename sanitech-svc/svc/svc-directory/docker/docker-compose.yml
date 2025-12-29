@@ -42,8 +42,7 @@ services:
 
   keycloak:
     build:
-      context: .
-      dockerfile: Dockerfile.keycloak
+      context: ./keycloak
     image: sanitech/keycloak-directory:local
     container_name: sanitech-directory-keycloak
     environment:
@@ -86,19 +85,22 @@ services:
 
   prometheus:
     build:
-      context: .
-      dockerfile: Dockerfile.prometheus
+      context: ./prometheus
     image: sanitech-prometheus:local
     container_name: sanitech-prometheus
+    environment:
+      - TZ=${TZ:-Etc/UTC}
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
       - "9090:9090"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
 
   grafana:
     build:
-      context: .
-      dockerfile: Dockerfile.grafana
+      context: ./grafana
     image: sanitech-grafana:local
     container_name: sanitech-grafana
     depends_on:
@@ -106,5 +108,9 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - TZ=${TZ:-Etc/UTC}
     ports:
       - "3000:3000"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
