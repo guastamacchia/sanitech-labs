@@ -14,4 +14,7 @@ else
 fi
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec /usr/bin/env bash "${DIR}/loop.sh"
+#exec /usr/bin/env bash "${DIR}/smoke.sh"
+#exec /usr/bin/env bash "${DIR}/loop.sh"
+#exec /usr/bin/env bash "${DIR}/bulkhead.sh"
+exec /usr/bin/env bash "${DIR}/rate-limit.sh"
