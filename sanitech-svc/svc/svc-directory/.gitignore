@@ -11,4 +11,4 @@
 
 # OS
 .DS_Store
-/scripts/.env.loop
+/.env.local

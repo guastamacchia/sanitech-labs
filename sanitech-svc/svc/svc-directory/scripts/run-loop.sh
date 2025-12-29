@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-ENV_FILE="${1:-.env.loop}"
+ENV_FILE="${1:-../.env.local}"
 
 if [ -f "${ENV_FILE}" ]; then
   set -a
