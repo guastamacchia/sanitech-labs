@@ -95,6 +95,10 @@ Con configurazione rate limiter aggressiva locale (limitForPeriod=1, limitRefres
 ```
 - Esegue due chiamate consecutive a `/api/doctors`: la prima deve restituire 200, la seconda 429.
 
+### Note su fusi orari (Prometheus/Grafana)
+- Il compose imposta `TZ` (default `Etc/UTC`): puoi sovrascriverlo esportando `TZ=Europe/Rome` (o altro) prima di `make compose-up`.
+- I container montano `/usr/share/zoneinfo` per allineare il timezone ed evitare warning di drift temporale in Prometheus/Grafana. Se continui a vedere drift, verifica l'orologio del sistema host/NTP.
+
 ### Loop di test continuo
 Per eseguire chiamate ripetute su tutti gli endpoint principali (health, pubblici, admin):
 ```bash
