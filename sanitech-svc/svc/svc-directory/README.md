@@ -68,7 +68,7 @@ Il converter custom mappa:
 - claim custom `dept` → `DEPT_*` (ABAC per reparto)
 
 ### Keycloak locale pronto all'uso
-- `docker compose up keycloak svc-directory` importa automaticamente il realm `sanitech` da `keycloak/realm-export/sanitech-realm.json`.
+- `docker compose up keycloak svc-directory` importa automaticamente il realm `sanitech` da `keycloak/sanitech-realm.json`.
 - Client configurato: `svc-directory` (secret: `svc-directory-secret`).
 - Utenti di test:
   - `admin` / `admin` con ruolo `ADMIN`
@@ -80,6 +80,13 @@ Con Keycloak e il servizio avviati:
 ./scripts/smoke.sh
 ```
 - Verifica health Keycloak, health del servizio, token OIDC, RateLimiter (seconda chiamata → 429) e metriche Resilience4j (bulkhead configurato a 1 chiamata concorrente).
+
+### Test Bulkhead (concurrency)
+Con configurazione bulkhead locale (maxConcurrentCalls=1) e Keycloak/servizio avviati:
+```bash
+./scripts/bulkhead-test.sh
+```
+- Esegue due richieste concorrenti su `/api/admin/patients`: una deve andare a buon fine, la seconda deve essere rifiutata dal bulkhead.
 
 ### Loop di test continuo
 Per eseguire chiamate ripetute su tutti gli endpoint principali (health, pubblici, admin):
