@@ -17,4 +17,6 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
     Optional<Department> findByCodeIgnoreCase(String code);
 
     List<Department> findByCodeIn(Collection<String> codes);
+
+    List<Department> findByCodeContainingIgnoreCaseOrNameContainingIgnoreCaseOrderByCodeAsc(String code, String name);
 }
