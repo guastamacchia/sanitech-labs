@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "svc-admissions.fullname" . }}
+  labels:
+    app: {{ include "svc-admissions.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "svc-admissions.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "svc-admissions.name" . }}
+    spec:
+      containers:
+        - name: {{ include "svc-admissions.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8084
+          envFrom:
+            - configMapRef:
+                name: {{ include "svc-admissions.fullname" . }}-config
+            - secretRef:
+                name: {{ include "svc-admissions.fullname" . }}-secret
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+{{ toYaml .Values.resources | indent 12 }}

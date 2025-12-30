@@ -1,0 +1,15 @@
+replicaCount: 3
+
+image:
+  tag: "prod"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+
+autoscaling:
+  maxReplicas: 10

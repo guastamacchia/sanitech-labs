@@ -1,0 +1,18 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "svc-audit.fullname" . }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ include "svc-audit.fullname" . }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {} # personalizzare in base a gateway/namespace
+  egress:
+    - {}
+{{- end }}

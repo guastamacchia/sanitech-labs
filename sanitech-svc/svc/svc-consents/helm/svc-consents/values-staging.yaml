@@ -1,0 +1,7 @@
+image:
+  tag: "staging"
+
+env:
+  DB_URL: "jdbc:postgresql://postgres:5432/sanitech_consents"
+  OAUTH2_ISSUER_URI: "http://keycloak:8081/realms/sanitech"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"

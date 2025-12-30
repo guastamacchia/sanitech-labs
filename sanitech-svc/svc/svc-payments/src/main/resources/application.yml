@@ -1,0 +1,149 @@
+server:
+  # Porta del microservizio svc-payments.
+  port: 8091
+
+spring:
+  application:
+    # Nome applicativo usato in log/actuator.
+    name: svc-payments
+
+  datasource:
+    # PostgreSQL (local dev default). In prod: usare env var senza default.
+    url: ${DB_URL:jdbc:postgresql://localhost:5441/sanitech_payments}
+    username: ${DB_USER:sanitech}
+    password: ${DB_PASSWORD:sanitech}
+
+  jpa:
+    hibernate:
+      # Schema gestito da Flyway: Hibernate deve solo validare.
+      ddl-auto: validate
+    properties:
+      hibernate.format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Issuer OIDC di Keycloak (realm sanitech).
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8081/realms/sanitech}
+
+  kafka:
+    # Bootstrap servers Kafka (dev default).
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    producer:
+      # Spediamo payload JSON come stringa.
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        # ack “all” = maggiore affidabilità
+        acks: all
+        # retry a livello Kafka producer (in aggiunta al retry applicativo Resilience4j)
+        retries: 5
+        retry.backoff.ms: 200
+        delivery.timeout.ms: 120000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# Logging DEV: più verboso per facilitare troubleshooting
+logging:
+  level:
+    root: DEBUG
+
+# Resilience4j
+resilience4j:
+  ratelimiter:
+    instances:
+      paymentsApi:
+        # Limite richieste per istanza (configurabile).
+        limitForPeriod: 60
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+
+  bulkhead:
+    instances:
+      paymentsRead:
+        # Protegge le operazioni di listing/read ad alto traffico.
+        maxConcurrentCalls: 50
+        maxWaitDuration: 0
+
+  retry:
+    instances:
+      outboxPublish:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2.0
+        retryExceptions:
+          - org.apache.kafka.common.errors.TimeoutException
+          - org.apache.kafka.common.errors.NetworkException
+          - org.springframework.kafka.KafkaException
+
+sanitech:
+  payments:
+    webhook:
+      # Secret condiviso per endpoint webhook: deve essere inviato in header X-Webhook-Secret.
+      secret: ${SANITECH_PAYMENTS_WEBHOOK_SECRET:change-me}
+
+  outbox:
+    publisher:
+      # Delay dello scheduler per flush outbox (ms).
+      delay-ms: 1000
+      # Batch size: massimo eventi per iterazione.
+      batch-size: 100
+
+  cors:
+    # Path su cui applicare CORS (tipicamente API).
+    path-patterns:
+      - /api/**
+    # Origini autorizzate (no wildcard in ambienti reali).
+    allowed-origins:
+      - http://localhost:4200
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - Accept
+      - Origin
+      - X-Requested-With
+      - X-Request-Id
+      - X-Webhook-Secret
+      - X-Idempotency-Key
+    exposed-headers:
+      - Location
+      - X-Request-Id
+      - X-Total-Count
+    # Se true il browser può inviare cookie/Authorization cross-site.
+    # Nota: incompatibile con origini wildcard.
+    allow-credentials: false
+    # Cache preflight (secondi).
+    max-age: 3600
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+    operationsSorter: method
+    tagsSorter: alpha
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json

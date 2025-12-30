@@ -1,0 +1,97 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: svc-audit
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sanitech_audit}
+    username: ${DB_USER:sanitech}
+    password: ${DB_PASSWORD:sanitech}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8081/realms/sanitech}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:svc-audit}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        acks: all
+        retries: 5
+        retry.backoff.ms: 200
+        delivery.timeout.ms: 120000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+resilience4j:
+  retry:
+    instances:
+      outboxPublish:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2.0
+
+  ratelimiter:
+    instances:
+      auditApi:
+        limitForPeriod: 30
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+
+  bulkhead:
+    instances:
+      auditRead:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 0
+
+sanitech:
+  audit:
+    ingestion:
+      # Se true, il servizio consuma eventi (es. directory.events) per persisterli come audit.
+      enabled: true
+      topics: ${AUDIT_INGESTION_TOPICS:directory.events,consents.events}
+  outbox:
+    publisher:
+      delay-ms: 1000
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+    operationsSorter: method
+    tagsSorter: alpha
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json

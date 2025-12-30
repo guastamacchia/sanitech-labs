@@ -1,0 +1,5 @@
+services:
+  shell:        { build: ../frontend/shell,        ports: ["4200:80"] }
+  mfe-patient:  { build: ../frontend/mfe-patient,  ports: ["4301:80"] }
+  mfe-doctor:   { build: ../frontend/mfe-doctor,   ports: ["4302:80"] }
+  mfe-admin:    { build: ../frontend/mfe-admin,    ports: ["4303:80"] }

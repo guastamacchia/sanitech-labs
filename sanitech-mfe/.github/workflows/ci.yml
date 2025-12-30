@@ -1,0 +1,24 @@
+name: CI-Frontend
+on: [push, pull_request]
+jobs:
+  build-angular:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install & Build Angular workspace
+        run: |
+          cd frontend-angular
+          npm ci
+          npm run build:shell
+  validate-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: List static apps
+        run: |
+          ls -la frontend/shell/src
+          ls -la frontend/mfe-patient/src
+          ls -la frontend/mfe-doctor/src
+          ls -la frontend/mfe-admin/src

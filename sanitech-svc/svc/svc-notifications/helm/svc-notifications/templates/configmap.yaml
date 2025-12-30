@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "svc-notifications.fullname" . }}-config
+  labels:
+    {{- include "svc-notifications.labels" . | nindent 4 }}
+data:
+  SPRING_PROFILES_ACTIVE: "{{ .Values.env.springProfilesActive }}"
+  DB_URL: "{{ .Values.env.dbUrl }}"
+  DB_USER: "{{ .Values.env.dbUser }}"
+  OAUTH2_ISSUER_URI: "{{ .Values.env.oauth2IssuerUri }}"
+  KAFKA_BOOTSTRAP_SERVERS: "{{ .Values.env.kafkaBootstrapServers }}"
+  MAIL_HOST: "{{ .Values.env.mailHost }}"
+  MAIL_PORT: "{{ .Values.env.mailPort }}"
+  MAIL_FROM: "{{ .Values.env.mailFrom }}"

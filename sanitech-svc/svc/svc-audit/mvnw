@@ -1,0 +1,62 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Apache Maven Wrapper startup script
+# ----------------------------------------------------------------------------
+# Required ENV vars:
+#   JAVA_HOME - location of a JDK home dir
+# Optional ENV vars:
+#   MAVEN_OPTS - parameters passed to the Java VM when running Maven
+# ----------------------------------------------------------------------------
+
+set -e
+
+MVNW_REPOURL="https://repo.maven.apache.org/maven2"
+WRAPPER_LAUNCHER="org.apache.maven.wrapper.MavenWrapperMain"
+BASE_DIR="$(cd "$(dirname "$0")"; pwd -P)"
+WRAPPER_DIR="$BASE_DIR/.mvn/wrapper"
+PROPS_FILE="$WRAPPER_DIR/maven-wrapper.properties"
+JAR_FILE="$WRAPPER_DIR/maven-wrapper.jar"
+
+if [ ! -f "$PROPS_FILE" ]; then
+  echo "Missing $PROPS_FILE" 1>&2
+  exit 1
+fi
+
+# Read wrapperUrl from properties
+WRAPPER_URL="$(grep -E '^wrapperUrl=' "$PROPS_FILE" | cut -d'=' -f2-)"
+if [ -z "$WRAPPER_URL" ]; then
+  WRAPPER_URL="$MVNW_REPOURL/org/apache/maven/wrapper/maven-wrapper/3.3.2/maven-wrapper-3.3.2.jar"
+fi
+
+download() {
+  url="$1"
+  dest="$2"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url" -o "$dest"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q "$url" -O "$dest"
+  else
+    echo "Neither curl nor wget is available to download Maven Wrapper." 1>&2
+    exit 1
+  fi
+}
+
+if [ ! -f "$JAR_FILE" ]; then
+  mkdir -p "$WRAPPER_DIR"
+  echo "Downloading Maven Wrapper from $WRAPPER_URL"
+  download "$WRAPPER_URL" "$JAR_FILE"
+fi
+
+# Find java
+if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+  JAVA_EXE="$JAVA_HOME/bin/java"
+else
+  JAVA_EXE="$(command -v java || true)"
+fi
+
+if [ -z "$JAVA_EXE" ]; then
+  echo "Java not found. Please set JAVA_HOME or ensure java is on PATH." 1>&2
+  exit 1
+fi
+
+exec "$JAVA_EXE" ${MAVEN_OPTS:-} -classpath "$JAR_FILE" "$WRAPPER_LAUNCHER" "$@"

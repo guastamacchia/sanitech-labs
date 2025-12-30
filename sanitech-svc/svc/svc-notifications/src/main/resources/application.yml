@@ -1,0 +1,148 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: svc-notifications
+
+  datasource:
+    # In dev utilizziamo Postgres locale (vedi docker-compose.dev.yml)
+    url: ${DB_URL:jdbc:postgresql://localhost:5436/sanitech_notifications}
+    username: ${DB_USER:sanitech}
+    password: ${DB_PASSWORD:sanitech}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # URI dell’issuer OIDC di Keycloak.
+          # Deve combaciare con il realm configurato.
+          issuer-uri: http://localhost:8081/realms/sanitech
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        acks: all
+        retries: 5
+        retry.backoff.ms: 200
+        delivery.timeout.ms: 120000
+
+  mail:
+    # Config SMTP (in dev: MailHog su localhost:1025)
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# Resilience4j
+resilience4j:
+  retry:
+    instances:
+      outboxPublish:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2.0
+        retryExceptions:
+          - org.apache.kafka.common.errors.TimeoutException
+          - org.apache.kafka.common.errors.NetworkException
+          - org.springframework.kafka.KafkaException
+
+      notificationEmail:
+        # 1 tentativo + 2 retry = 3 invii max per notifica
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2.0
+        retryExceptions:
+          - org.springframework.mail.MailException
+
+  ratelimiter:
+    instances:
+      notificationsApi:
+        limitForPeriod: 60
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+
+  bulkhead:
+    instances:
+      notificationsRead:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 0
+
+sanitech:
+  cors:
+    path-patterns:
+      - /api/**
+    allowed-origins:
+      - http://localhost:4200
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - Accept
+      - Origin
+      - X-Requested-With
+      - X-Request-Id
+    exposed-headers:
+      - Location
+      - X-Request-Id
+    allow-credentials: false
+    max-age: 3600
+
+  outbox:
+    publisher:
+      # Flush periodico eventi outbox verso Kafka.
+      delay-ms: 1000
+
+  notifications:
+    mail:
+      # Mittente (header From) per le email.
+      from: ${MAIL_FROM:no-reply@sanitech.example}
+    dispatcher:
+      # Ciclo di invio notifiche EMAIL pending.
+      delay-ms: 2000
+      batch-size: 50
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+    operationsSorter: method
+    tagsSorter: alpha
+    use-root-path: false
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
