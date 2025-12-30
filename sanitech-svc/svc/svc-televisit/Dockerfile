@@ -28,6 +28,6 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
 USER sanitech
-EXPOSE 8087
+EXPOSE 8089
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

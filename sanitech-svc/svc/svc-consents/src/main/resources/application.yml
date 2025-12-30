@@ -1,6 +1,6 @@
 server:
   # Porta HTTP del microservizio
-  port: 8084
+  port: 8085
 
 spring:
   application:

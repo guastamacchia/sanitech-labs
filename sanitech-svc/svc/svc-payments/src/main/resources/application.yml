@@ -1,6 +1,6 @@
 server:
   # Porta del microservizio svc-payments.
-  port: 8091
+  port: 8090
 
 spring:
   application:
