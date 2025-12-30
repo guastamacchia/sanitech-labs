@@ -20,7 +20,7 @@ docker-run:
 	docker run --rm -p $(PORT):$(PORT) sanitech/$(SVC_NAME):local
 
 compose-up: build
-	docker-compose -f docker/docker-compose.yml up -d --build
+	docker-compose -f docker/docker-compose.yml --env-file .env.local up -d --build
 
 compose-down:
 	docker-compose -f docker/docker-compose.yml down -v
