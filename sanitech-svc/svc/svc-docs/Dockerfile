@@ -22,7 +22,7 @@ FROM eclipse-temurin:21-jre
 # Crea un utente non privilegiato per eseguire l'applicazione
 RUN useradd -r -u 1001 -g root sanitech && mkdir -p /app && chown -R sanitech:root /app
 
-# Opzioni JVM di default (override via env in docker-compose/helm)
+# Opzioni JVM di default (override via env in docker-compose)
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75"
 
 WORKDIR /app
