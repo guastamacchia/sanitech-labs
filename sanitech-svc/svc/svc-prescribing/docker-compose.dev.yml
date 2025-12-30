@@ -33,3 +33,21 @@ services:
       interval: 10s
       timeout: 10s
       retries: 30
+
+  svc-prescribing:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sanitech_prescribing
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://host.docker.internal:8081/realms/sanitech
+      CONSENTS_BASE_URL: http://host.docker.internal:8085
+      PORT: 8091
+    ports:
+      - "8091:8091"

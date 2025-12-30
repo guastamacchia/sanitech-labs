@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: sanitech
       POSTGRES_PASSWORD: sanitech
     ports:
-      # Espone Postgres localmente (IDE/tests manuali)
+      # Espone Postgres localmente per test manuali
       - "5435:5432"
 
   redpanda:
@@ -21,3 +21,19 @@ services:
     ports:
       # Kafka API
       - "9092:9092"
+
+  svc-admissions:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sanitech_admissions
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      OAUTH2_ISSUER_URI: http://host.docker.internal:8081/realms/sanitech
+    ports:
+      - "8084:8084"

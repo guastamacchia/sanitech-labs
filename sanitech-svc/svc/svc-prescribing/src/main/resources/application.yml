@@ -1,5 +1,5 @@
 server:
-  port: ${PORT:8092}
+  port: ${PORT:8091}
 
 spring:
   application:
@@ -60,7 +60,7 @@ sanitech:
   integrations:
     consents:
       # Base URL di svc-consents (in locale può essere esposto da un altro compose/root).
-      base-url: ${CONSENTS_BASE_URL:http://localhost:8084}
+      base-url: ${CONSENTS_BASE_URL:http://localhost:8085}
 
   outbox:
     publisher:

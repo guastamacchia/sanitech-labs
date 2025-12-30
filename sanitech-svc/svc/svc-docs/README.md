@@ -62,11 +62,3 @@ Servizi esposti:
   - può leggere solo i propri documenti (claim JWT `pid`)
 
 ---
-
-## Helm (Kubernetes)
-
-Chart in `helm/svc-docs`.
-
-```bash
-helm upgrade --install svc-docs helm/svc-docs -n sanitech
-```

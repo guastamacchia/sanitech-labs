@@ -1,29 +1,28 @@
 SVC_NAME ?= svc-audit
-PORT ?= 8085
+PORT ?= 8088
 MVN ?= ./mvnw
+COMPOSE_FILE ?= docker-compose.dev.yml
+RUN_OPTS ?=
 
-.PHONY: build test run docker-build docker-run compose-up compose-down helm-lint
+.PHONY: build test run docker-build docker-run compose-up compose-down
 
 build:
-	$(MVN) -q -DskipTests package
+	$(MVN) -q clean -DskipTests package
 
 test:
 	$(MVN) -q test
 
 run:
-	$(MVN) -q spring-boot:run
+	$(MVN) -q spring-boot:run $(RUN_OPTS)
 
-docker-build:
+docker-build: build
 	docker build -t sanitech/$(SVC_NAME):local .
 
 docker-run:
 	docker run --rm -p $(PORT):$(PORT) sanitech/$(SVC_NAME):local
 
-compose-up:
-	docker compose -f docker-compose.dev.yml up -d
+compose-up: build
+	docker compose -f $(COMPOSE_FILE) up -d --build
 
 compose-down:
-	docker compose -f docker-compose.dev.yml down -v
-
-helm-lint:
-	helm lint helm/$(SVC_NAME)
+	docker compose -f $(COMPOSE_FILE) down -v

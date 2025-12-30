@@ -12,6 +12,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "sanitech.consents")
 public class ConsentsProperties {
 
-    /** Base URL del servizio consensi (es. {@code http://svc-consents:8084}). */
-    private String baseUrl = "http://localhost:8084";
+    /** Base URL del servizio consensi (es. {@code http://svc-consents:8085}). */
+    private String baseUrl = "http://localhost:8085";
 }

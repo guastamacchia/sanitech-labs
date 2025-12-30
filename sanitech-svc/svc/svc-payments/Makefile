@@ -1,16 +1,28 @@
-\.PHONY: build test run docker-up docker-down
+.PHONY: build test run docker-build docker-run compose-up compose-down
+
+SVC_NAME ?= svc-payments
+PORT ?= 8090
+MVN ?= ./mvnw
+COMPOSE_FILE ?= docker-compose.yml
+RUN_OPTS ?=
 
 build:
-	./mvnw -q -DskipTests package || mvn -q -DskipTests package
+	$(MVN) -q clean -DskipTests package
 
 test:
-	./mvnw -q test || mvn -q test
+	$(MVN) -q test
 
 run:
-	./mvnw -q spring-boot:run || mvn -q spring-boot:run
+	$(MVN) -q spring-boot:run $(RUN_OPTS)
 
-docker-up:
-	docker compose up -d --build
+docker-build: build
+	docker build -t sanitech/$(SVC_NAME):local .
 
-docker-down:
-	docker compose down -v
+docker-run:
+	docker run --rm -p $(PORT):$(PORT) sanitech/$(SVC_NAME):local
+
+compose-up: build
+	docker compose -f $(COMPOSE_FILE) up -d --build
+
+compose-down:
+	docker compose -f $(COMPOSE_FILE) down -v
