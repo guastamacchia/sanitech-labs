@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: sanitech
       POSTGRES_PASSWORD: sanitech
     ports:
-      # Espone Postgres localmente (IDE/tests manuali)
+      # Espone Postgres localmente per test manuali
       - "5435:5432"
 
   redpanda:

@@ -1,6 +1,6 @@
 SVC_NAME ?= svc-notifications
 
-.PHONY: build test run docker docker-run helm-lint
+.PHONY: build test run docker docker-run
 
 build:
 	./mvnw -q -DskipTests package
@@ -16,6 +16,3 @@ docker:
 
 docker-run:
 	docker run --rm -p 8087:8087 --name $(SVC_NAME) $(SVC_NAME):local
-
-helm-lint:
-	helm lint helm/$(SVC_NAME)

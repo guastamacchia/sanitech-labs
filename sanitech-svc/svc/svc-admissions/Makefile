@@ -1,4 +1,4 @@
-.PHONY: build test run docker helm-lint
+.PHONY: build test run docker
 
 build:
 	./mvnw -q -DskipTests package
@@ -11,6 +11,3 @@ run:
 
 docker:
 	docker build -t sanitech/svc-admissions:local .
-
-helm-lint:
-	helm lint helm/svc-admissions

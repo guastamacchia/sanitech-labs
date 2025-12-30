@@ -2,7 +2,7 @@ SVC_NAME ?= svc-audit
 PORT ?= 8085
 MVN ?= ./mvnw
 
-.PHONY: build test run docker-build docker-run compose-up compose-down helm-lint
+.PHONY: build test run docker-build docker-run compose-up compose-down
 
 build:
 	$(MVN) -q -DskipTests package
@@ -24,6 +24,3 @@ compose-up:
 
 compose-down:
 	docker compose -f docker-compose.dev.yml down -v
-
-helm-lint:
-	helm lint helm/$(SVC_NAME)

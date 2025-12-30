@@ -11,7 +11,7 @@ import org.springframework.validation.annotation.Validated;
  *
  * <p>
  * L'obiettivo è mantenere disaccoppiata la URL del servizio consensi, rendendola
- * sovrascrivibile via environment (es. Kubernetes/Helm).
+ * sovrascrivibile via environment.
  * </p>
  */
 @Data
