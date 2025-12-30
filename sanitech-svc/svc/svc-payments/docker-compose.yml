@@ -63,4 +63,4 @@ services:
       OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
       SANITECH_PAYMENTS_WEBHOOK_SECRET: change-me
     ports:
-      - "8091:8091"
+      - "8090:8090"

@@ -27,3 +27,24 @@ services:
       - "1025:1025"
       # Web UI
       - "8025:8025"
+
+  svc-notifications:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_started
+      redpanda:
+        condition: service_started
+      mailhog:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sanitech_notifications
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      OAUTH2_ISSUER_URI: http://host.docker.internal:8081/realms/sanitech
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_FROM: no-reply@sanitech.local
+    ports:
+      - "8087:8087"

@@ -22,6 +22,6 @@
 ## Smoke test rapido
 
 - Health:
-  - `curl -s http://localhost:8087/actuator/health | jq`
+  - `curl -s http://localhost:8089/actuator/health | jq`
 - OpenAPI:
-  - `curl -s http://localhost:8087/v3/api-docs/televisit | jq '.info'`
+  - `curl -s http://localhost:8089/v3/api-docs/televisit | jq '.info'`

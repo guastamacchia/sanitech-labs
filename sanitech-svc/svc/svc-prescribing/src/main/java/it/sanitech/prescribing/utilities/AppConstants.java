@@ -151,7 +151,7 @@ public final class AppConstants {
         @NoArgsConstructor(access = AccessLevel.PRIVATE)
         public static final class App {
             public static final String DEFAULT_APP_NAME = "svc-prescribing";
-            public static final String DEFAULT_PORT = "8092";
+            public static final String DEFAULT_PORT = "8091";
         }
     }
 }

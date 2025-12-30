@@ -46,19 +46,19 @@ Avvio applicazione (profilo `local`):
 
 Swagger UI:
 
-- `http://localhost:8092/swagger-ui.html`
+- `http://localhost:8091/swagger-ui.html`
 
 Health:
 
-- `http://localhost:8092/actuator/health`
+- `http://localhost:8091/actuator/health`
 
 ## Variabili d'ambiente
 
-- `PORT` (default 8092)
+- `PORT` (default 8091)
 - `DB_URL`, `DB_USER`, `DB_PASSWORD`
 - `KAFKA_BOOTSTRAP_SERVERS` (default `localhost:9092`)
 - `OAUTH2_ISSUER_URI` (default `http://localhost:8081/realms/sanitech`)
-- `CONSENTS_BASE_URL` (default `http://localhost:8084`)
+- `CONSENTS_BASE_URL` (default `http://localhost:8085`)
 - `OUTBOX_PUBLISH_DELAY_MS` (default 1000)
 
 ## Note architetturali (decisioni)

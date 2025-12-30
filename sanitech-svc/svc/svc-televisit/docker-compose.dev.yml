@@ -45,3 +45,24 @@ services:
       - "7882:7882/udp"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
+
+  svc-televisit:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      livekit:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sanitech_televisit
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://host.docker.internal:8081/realms/sanitech
+      LIVEKIT_URL: http://livekit:7880
+      LIVEKIT_API_KEY: devkey
+      LIVEKIT_API_SECRET: devsecret
+    ports:
+      - "8089:8089"

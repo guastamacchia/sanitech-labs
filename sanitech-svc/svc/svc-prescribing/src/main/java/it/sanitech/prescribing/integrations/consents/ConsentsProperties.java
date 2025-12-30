@@ -20,8 +20,8 @@ import org.springframework.validation.annotation.Validated;
 public class ConsentsProperties {
 
     /**
-     * Base URL di {@code svc-consents} (es. {@code http://svc-consents:8084}).
+     * Base URL di {@code svc-consents} (es. {@code http://svc-consents:8085}).
      */
     @NotBlank
-    private String baseUrl = "http://localhost:8084";
+    private String baseUrl = "http://localhost:8085";
 }
