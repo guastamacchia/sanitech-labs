@@ -35,7 +35,7 @@ Base path: `/api`
 Avvia Postgres + Kafka (porta Postgres: **5443**):
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker/docker-compose.yml up -d
 ```
 
 Avvio applicazione (profilo `local`):
