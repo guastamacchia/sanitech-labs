@@ -26,7 +26,7 @@ Responsabilità principali:
 1) Avvia servizio e dipendenze (Postgres + Kafka + LiveKit):
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d --build
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
 > Per eseguire dal sorgente (senza container), ferma `svc-televisit`

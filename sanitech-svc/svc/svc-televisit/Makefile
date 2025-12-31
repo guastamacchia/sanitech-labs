@@ -1,7 +1,7 @@
 SVC_NAME ?= svc-televisit
 PORT ?= 8089
 MVN ?= ./mvnw
-COMPOSE_FILE ?= docker-compose.dev.yml
+COMPOSE_FILE ?= docker/docker-compose.yml
 RUN_OPTS ?=
 
 .PHONY: build test run docker-build docker-run compose-up compose-down

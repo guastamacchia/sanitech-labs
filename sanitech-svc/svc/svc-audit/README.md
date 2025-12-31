@@ -15,7 +15,7 @@ Può ricevere eventi in due modalità:
 1) Avvia servizio e dipendenze:
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d --build
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
 > Per sviluppare con `./mvnw spring-boot:run`, ferma il container `svc-audit`
