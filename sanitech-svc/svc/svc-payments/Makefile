@@ -3,7 +3,7 @@
 SVC_NAME ?= svc-payments
 PORT ?= 8090
 MVN ?= ./mvnw
-COMPOSE_FILE ?= docker-compose.yml
+COMPOSE_FILE ?= docker/docker-compose.yml
 RUN_OPTS ?=
 
 build:

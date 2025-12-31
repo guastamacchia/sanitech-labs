@@ -23,7 +23,7 @@ di decidere se un medico può accedere ai dati del paziente.
 1) Avvia servizio e dipendenze:
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d --build
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
 > Per sviluppare in locale con `./mvnw spring-boot:run`, ferma il container
