@@ -19,7 +19,7 @@ Gestisce:
 ## Avvio locale (dev)
 1) Avvia servizio e dipendenze (Postgres, Kafka, MailHog):
 ```bash
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose -f infra/docker-compose.yml up -d --build
 ```
 
 > Per sviluppo con `./mvnw spring-boot:run`, ferma il container `svc-notifications`

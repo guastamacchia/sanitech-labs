@@ -1,7 +1,7 @@
 SVC_NAME ?= svc-prescribing
 PORT ?= 8091
 MVN ?= ./mvnw
-COMPOSE_FILE ?= docker/docker-compose.yml
+COMPOSE_FILE ?= infra/docker-compose.yml
 RUN_OPTS ?=
 
 .PHONY: build test run docker-build docker-run compose-up compose-down
