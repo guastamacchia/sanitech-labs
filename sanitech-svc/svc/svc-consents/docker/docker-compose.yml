@@ -35,9 +35,7 @@ services:
       retries: 30
 
   svc-consents:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    build: .
     depends_on:
       postgres:
         condition: service_healthy

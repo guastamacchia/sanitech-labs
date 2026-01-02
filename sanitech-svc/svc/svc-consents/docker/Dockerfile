@@ -30,6 +30,6 @@ COPY --from=build /app/target/*.jar app.jar
 
 USER sanitech
 
-EXPOSE 8088
+EXPOSE 8091
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
