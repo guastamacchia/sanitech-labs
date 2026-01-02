@@ -3,3 +3,4 @@
 *.iml
 .DS_Store
 .env
+/.mvn/wrapper/maven-wrapper.jar
