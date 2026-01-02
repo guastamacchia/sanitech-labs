@@ -163,7 +163,7 @@ sanitech:
 
   # Integrazione verso svc-consents (verifica consenso medico→paziente)
   consents:
-    base-url: ${CONSENTS_BASE_URL:http://localhost:8084}
+    base-url: ${CONSENTS_BASE_URL:http://localhost:8085}
 
   # Storage S3/MinIO per i binari dei documenti
   docs:
