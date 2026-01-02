@@ -1,11 +1,11 @@
 server:
-  port: ${PORT:8092}
+  port: ${PORT:8091}
 
 spring:
   application:
     name: svc-prescribing
 
-  # Datasource Postgres (runtime). In locale, usa docker-compose.dev.yml (porta 5443).
+  # Datasource Postgres (runtime). In locale, usa docker/docker-compose.yml (porta 5443).
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5443/sanitech_prescribing}
     username: ${DB_USER:sanitech}
@@ -60,7 +60,7 @@ sanitech:
   integrations:
     consents:
       # Base URL di svc-consents (in locale può essere esposto da un altro compose/root).
-      base-url: ${CONSENTS_BASE_URL:http://localhost:8084}
+      base-url: ${CONSENTS_BASE_URL:http://localhost:8085}
 
   outbox:
     publisher:

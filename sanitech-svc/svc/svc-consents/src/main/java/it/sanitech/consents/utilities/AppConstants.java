@@ -26,8 +26,8 @@ public final class AppConstants {
 
         /** Property key: {@code server.port}. */
         public static final String SERVER_PORT_KEY = "server.port";
-        /** Default: {@code 8084}. */
-        public static final String SERVER_PORT_DEFAULT = "8084";
+        /** Default: {@code 8085}. */
+        public static final String SERVER_PORT_DEFAULT = "8085";
     }
 
     /**

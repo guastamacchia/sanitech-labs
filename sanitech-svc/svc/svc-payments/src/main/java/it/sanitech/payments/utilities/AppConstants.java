@@ -50,7 +50,7 @@ public class AppConstants {
 
         @UtilityClass
         public static class Server {
-            public static final String PORT = "8091";
+            public static final String PORT = "8090";
         }
     }
 

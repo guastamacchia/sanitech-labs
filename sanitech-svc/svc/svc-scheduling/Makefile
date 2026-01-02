@@ -1,21 +1,28 @@
-APP=svc-scheduling
+SVC_NAME ?= svc-scheduling
+PORT ?= 8083
+MVN ?= ./mvnw
+COMPOSE_FILE ?= docker/docker-compose.yml
+RUN_OPTS ?= -Dspring-boot.run.profiles=local
+
+.PHONY: build test run docker-build docker-run compose-up compose-down
 
 build:
-	./mvnw -q -DskipTests package || mvn -q -DskipTests package
+	$(MVN) -q clean -DskipTests package
 
 test:
-	./mvnw -q test || mvn -q test
+	$(MVN) -q test
 
 run:
-	./mvnw -q spring-boot:run -Dspring-boot.run.profiles=local || mvn -q spring-boot:run -Dspring-boot.run.profiles=local
+	$(MVN) -q spring-boot:run $(RUN_OPTS)
 
-docker:
-	docker build -t sanitech/$(APP):local .
+docker-build: build
+	docker build -f docker/Dockerfile -t sanitech/$(SVC_NAME):local .
 
-compose-up:
-	docker compose -f docker-compose.dev.yml up -d --build
+docker-run:
+	docker run --rm -p $(PORT):$(PORT) sanitech/$(SVC_NAME):local
+
+compose-up: build
+	docker compose -f $(COMPOSE_FILE) up -d --build
 
 compose-down:
-	docker compose -f docker-compose.dev.yml down -v
-
-.PHONY: build test run docker compose-up compose-down
+	docker compose -f $(COMPOSE_FILE) down -v

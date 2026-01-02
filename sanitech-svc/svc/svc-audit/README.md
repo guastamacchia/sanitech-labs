@@ -12,20 +12,17 @@ Può ricevere eventi in due modalità:
 
 ## Avvio rapido (locale)
 
-1) Avvia le dipendenze:
+1) Avvia servizio e dipendenze:
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-2) Avvia il servizio:
-
-```bash
-./mvnw spring-boot:run
-```
+> Per sviluppare con `./mvnw spring-boot:run`, ferma il container `svc-audit`
+> o avvia solo i servizi `postgres`/`kafka` dal compose.
 
 Swagger UI:
-- `http://localhost:8085/swagger-ui/index.html`
+- `http://localhost:8088/swagger-ui/index.html`
 
 ## Configurazione ingestion Kafka
 
