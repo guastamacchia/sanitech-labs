@@ -32,7 +32,7 @@ services:
   svc-scheduling:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: infra/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy

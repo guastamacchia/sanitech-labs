@@ -1,0 +1,26 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Default job for backend services that expose metrics on /actuator/prometheus.
+  - job_name: backend-services
+    metrics_path: /actuator/prometheus
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - "api-gateway:8080"
+          - "svc-directory:8082"
+          - "svc-scheduling:8083"
+          - "svc-admissions:8084"
+          - "svc-consents:8085"
+          - "svc-docs:8086"
+          - "svc-notifications:8087"
+          - "svc-audit:8088"
+          - "svc-televisit:8089"
+          - "svc-payments:8090"
+          - "svc-prescribing:8091"
