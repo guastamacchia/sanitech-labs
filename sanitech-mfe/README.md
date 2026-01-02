@@ -23,4 +23,4 @@ Altri comandi utili:
 - Stato: `bash scripts/status.sh`
 
 ## Dockerfile
-Tutti i Dockerfile dei micro-frontend sono centralizzati in `infra/dockerfiles/` e referenziati dal `docker-compose.yml`.
+Tutti i Dockerfile dei micro-frontend sono centralizzati in `infra/dockerfiles/`, ognuno nella propria sottocartella (es. `infra/dockerfiles/shell/Dockerfile`), e referenziati dal `docker-compose.yml`.

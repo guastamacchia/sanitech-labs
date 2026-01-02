@@ -19,7 +19,7 @@ URL:
 - Admin: http://localhost:4303
 
 ## Dockerfile
-- Centralizzati in `infra/dockerfiles/` e referenziati da `infra/docker-compose.yml`.
+- Centralizzati in `infra/dockerfiles/`, uno per sottocartella (es. `infra/dockerfiles/mfe-patient/Dockerfile`), e referenziati da `infra/docker-compose.yml`.
 
 ## Layout
 - `frontend/shell`, `frontend/mfe-patient`, `frontend/mfe-doctor`, `frontend/mfe-admin`: HTML/Bootstrap statici.
