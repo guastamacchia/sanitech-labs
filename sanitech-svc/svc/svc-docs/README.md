@@ -12,10 +12,10 @@ Microservizio per la **gestione documentale**:
 
 ## Avvio in locale (docker-compose)
 
-> Il file `docker-compose.dev.yml` avvia Postgres + Kafka + MinIO + svc-docs.
+> Il file `docker/docker-compose.yml` avvia Postgres + Kafka + MinIO + svc-docs.
 
 ```bash
-docker compose -f docker-compose.dev.yml up --build
+docker compose -f docker/docker-compose.yml up --build
 ```
 
 Servizi esposti:
@@ -62,11 +62,3 @@ Servizi esposti:
   - può leggere solo i propri documenti (claim JWT `pid`)
 
 ---
-
-## Helm (Kubernetes)
-
-Chart in `helm/svc-docs`.
-
-```bash
-helm upgrade --install svc-docs helm/svc-docs -n sanitech
-```

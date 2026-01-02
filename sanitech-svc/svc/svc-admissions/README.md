@@ -26,17 +26,20 @@ Il consenso viene verificato nei servizi clinici (es. cartella clinica/referti) 
 
 ## Come eseguire (locale)
 
-1) Esporta le variabili minime (o usa i default in `application.yml`):
+1) Avvia stack locale (servizio + dipendenze):
+```bash
+docker compose -f docker/docker-compose.yml up -d --build
+```
+
+2) Per eseguire dal sorgente (senza container), esporta le variabili minime
+(o usa i default in `application.yml`), ferma il container `svc-admissions`
+e avvia Spring Boot:
 ```bash
 export DB_URL=jdbc:postgresql://localhost:5432/sanitech_admissions
 export DB_USER=sanitech
 export DB_PASSWORD=sanitech
 export OAUTH2_ISSUER_URI=http://localhost:8081/realms/sanitech
 export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-```
-
-2) Migrazioni + avvio:
-```bash
 ./mvnw -q spring-boot:run
 ```
 

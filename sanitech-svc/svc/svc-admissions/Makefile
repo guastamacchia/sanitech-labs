@@ -1,16 +1,28 @@
-.PHONY: build test run docker helm-lint
+SVC_NAME ?= svc-admissions
+PORT ?= 8084
+MVN ?= ./mvnw
+COMPOSE_FILE ?= docker/docker-compose.yml
+RUN_OPTS ?=
+
+.PHONY: build test run docker-build docker-run compose-up compose-down
 
 build:
-	./mvnw -q -DskipTests package
+	$(MVN) -q clean -DskipTests package
 
 test:
-	./mvnw -q test
+	$(MVN) -q test
 
 run:
-	./mvnw -q spring-boot:run
+	$(MVN) -q spring-boot:run $(RUN_OPTS)
 
-docker:
-	docker build -t sanitech/svc-admissions:local .
+docker-build: build
+	docker build -t sanitech/$(SVC_NAME):local .
 
-helm-lint:
-	helm lint helm/svc-admissions
+docker-run:
+	docker run --rm -p $(PORT):$(PORT) sanitech/$(SVC_NAME):local
+
+compose-up: build
+	docker compose -f $(COMPOSE_FILE) up -d --build
+
+compose-down:
+	docker compose -f $(COMPOSE_FILE) down -v

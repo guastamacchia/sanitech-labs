@@ -20,21 +20,18 @@ di decidere se un medico può accedere ai dati del paziente.
 
 ## Avvio rapido (locale)
 
-1) Avvia le dipendenze:
+1) Avvia servizio e dipendenze:
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-2) Avvia il servizio:
-
-```bash
-./mvnw spring-boot:run
-```
+> Per sviluppare in locale con `./mvnw spring-boot:run`, ferma il container
+> `svc-consents` o avvia solo i servizi `postgres`/`kafka` dal compose.
 
 3) Swagger UI:
 
-- `http://localhost:8084/swagger-ui/index.html`
+- `http://localhost:8085/swagger-ui/index.html`
 
 ## API principali
 
@@ -59,5 +56,5 @@ docker compose -f docker-compose.dev.yml up -d
 
 ```bash
 docker build -t sanitech/svc-consents:local .
-docker run --rm -p 8084:8084 sanitech/svc-consents:local
+docker run --rm -p 8085:8085 sanitech/svc-consents:local
 ```

@@ -14,7 +14,7 @@ Fonti tipiche:
 - Readiness: `GET /actuator/health/readiness`
 - Prometheus: `GET /actuator/prometheus`
 
-Porta default: `8085`.
+Porta default: `8088`.
 
 ## Metriche chiave
 

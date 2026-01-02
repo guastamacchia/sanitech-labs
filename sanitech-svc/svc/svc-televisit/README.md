@@ -23,13 +23,14 @@ Responsabilità principali:
 
 ## Come eseguire (dev)
 
-1) Avvia dipendenze (Postgres + Kafka):
+1) Avvia servizio e dipendenze (Postgres + Kafka + LiveKit):
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-2) Esegui migrazioni + avvio:
+> Per eseguire dal sorgente (senza container), ferma `svc-televisit`
+> o avvia solo i servizi di supporto dal compose e poi:
 
 ```bash
 ./mvnw -q test
@@ -38,9 +39,9 @@ docker compose -f docker-compose.dev.yml up -d
 
 3) Verifica:
 
-- Swagger UI: `http://localhost:8087/swagger-ui/index.html`
-- Health: `http://localhost:8087/actuator/health`
-- Prometheus: `http://localhost:8087/actuator/prometheus`
+- Swagger UI: `http://localhost:8089/swagger-ui/index.html`
+- Health: `http://localhost:8089/actuator/health`
+- Prometheus: `http://localhost:8089/actuator/prometheus`
 
 ---
 

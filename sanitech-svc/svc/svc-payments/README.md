@@ -19,20 +19,20 @@ Progettato per essere **build/test/deploy-ready** con:
 ---
 
 ## Avvio rapido (3 comandi)
-1) Avvio stack locale:
-- `make docker-up`
+1) Avvio stack locale (servizio + dipendenze):
+- `make compose-up`
 
-2) Build:
+2) Build (se vuoi produrre l'artefatto prima del docker build):
 - `make build`
 
 3) Test:
 - `make test`
 
 Swagger:
-- `http://localhost:8091/swagger-ui/index.html`
+- `http://localhost:8090/swagger-ui/index.html`
 
 Health:
-- `http://localhost:8091/actuator/health`
+- `http://localhost:8090/actuator/health`
 
 ---
 
