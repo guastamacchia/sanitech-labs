@@ -28,7 +28,7 @@ Il consenso viene verificato nei servizi clinici (es. cartella clinica/referti) 
 
 1) Avvia stack locale (servizio + dipendenze):
 ```bash
-docker compose -f docker/docker-compose.yml up -d --build
+docker compose -f infra/docker-compose.yml up -d --build
 ```
 
 2) Per eseguire dal sorgente (senza container), esporta le variabili minime
