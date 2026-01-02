@@ -1,4 +1,4 @@
 FROM nginx:alpine
 WORKDIR /usr/share/nginx/html
-COPY src/ .
+COPY frontend/shell/src/ .
 EXPOSE 80

@@ -10,9 +10,17 @@ Questa repo contiene i micro‑frontend statici (Bootstrap) per shell, paziente,
 ## Avvio rapido (presuppone backend su `http://localhost:8080`)
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d --build
+bash scripts/up.sh   # oppure: docker compose -f infra/docker-compose.yml up -d --build
 # Shell:    http://localhost:4200
 # Paziente: http://localhost:4301
 # Medico:   http://localhost:4302
 # Admin:    http://localhost:4303
 ```
+
+Altri comandi utili:
+- Stop: `bash scripts/down.sh` (usa `REMOVE_VOLUMES=true` per eliminare i volumi)
+- Log: `bash scripts/logs.sh`
+- Stato: `bash scripts/status.sh`
+
+## Dockerfile
+Tutti i Dockerfile dei micro-frontend sono centralizzati in `infra/dockerfiles/` e referenziati dal `docker-compose.yml`.

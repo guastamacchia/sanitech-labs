@@ -15,7 +15,7 @@ Questo runbook riassume le azioni operative principali per l’ambiente di svilu
 - Build/test aggregato: da `sanitech-svc/svc` eseguire `make build` o `make test` (usa `MODULES=...` per filtri)
 
 ## Frontend (cartella `sanitech-mfe`)
-- Avvio micro-frontend statici: `docker compose -f infra/docker-compose.yml up -d --build`
+- Avvio micro-frontend statici: `bash scripts/up.sh` (oppure `docker compose -f infra/docker-compose.yml up -d --build`)
 - URL: shell `:4200`, paziente `:4301`, medico `:4302`, admin `:4303`
 
 ## Postman
