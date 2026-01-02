@@ -1,0 +1,28 @@
+services:
+  shell:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/shell/Dockerfile
+    ports:
+      - "4200:80"
+
+  mfe-patient:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/mfe-patient/Dockerfile
+    ports:
+      - "4301:80"
+
+  mfe-doctor:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/mfe-doctor/Dockerfile
+    ports:
+      - "4302:80"
+
+  mfe-admin:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/mfe-admin/Dockerfile
+    ports:
+      - "4303:80"

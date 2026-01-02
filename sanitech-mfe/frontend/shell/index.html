@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sanitech | Salute Digitale</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background: #f5f7fb; }
+    .glass { background: rgba(255,255,255,0.9); box-shadow: 0 10px 40px rgba(0,0,0,0.07); border: 1px solid rgba(0,0,0,0.04); backdrop-filter: blur(8px);}
+    .hero { background: radial-gradient(circle at 20% 20%, #eef4ff, #f5f7fb); }
+    .badge-soft { background: #e8f3ff; color: #0d6efd; }
+    .section-title { letter-spacing: .06em; text-transform: uppercase; font-size: .8rem; color: #6c757d;}
+    .gradient { background: linear-gradient(90deg, #0d6efd, #38bdf8); color: #fff; }
+    .hover-card:hover { transform: translateY(-4px); transition: all .2s ease; box-shadow: 0 12px 30px rgba(0,0,0,0.08);}
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+    <div class="container py-2">
+      <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-primary" href="#">
+        <div class="rounded-3 border d-inline-flex align-items-center justify-content-center" style="width:48px;height:48px;background:#f8f9fa" id="logo-slot">
+          <!-- Inserisci qui il logo prodotto dal tuo designer -->
+          <i class="bi bi-hospital fs-4 text-primary"></i>
+        </div>
+        <span>Sanitech</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks"><span class="navbar-toggler-icon"></span></button>
+      <div class="collapse navbar-collapse" id="navLinks">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
+          <li class="nav-item"><a class="nav-link" href="#servizi">Servizi</a></li>
+          <li class="nav-item"><a class="nav-link" href="#ingressi">Aree</a></li>
+          <li class="nav-item"><a class="nav-link" href="#team">Struttura</a></li>
+          <li class="nav-item"><a class="nav-link" href="#contatti">Contatti</a></li>
+          <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
+          <li class="nav-item"><a class="nav-link" href="#privacy">Privacy</a></li>
+          <li class="nav-item ms-lg-3">
+            <button class="btn btn-outline-primary w-100" data-bs-toggle="offcanvas" data-bs-target="#loginPanel">
+              <i class="bi bi-shield-lock"></i> Area privata
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="hero py-5">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+          <span class="badge badge-soft rounded-pill mb-3 px-3 py-2"><i class="bi bi-heart-pulse"></i> Sanità digitale, ovunque</span>
+          <h1 class="display-5 fw-bold mb-3">Clinica Sanitech: cura integrata, accesso semplice.</h1>
+          <p class="lead text-muted">Prenotazioni smart, telemedicina, cartella clinica e notifiche in un’unica piattaforma sicura. Esperienze dedicate per Pazienti, Medici e Amministratori.</p>
+          <div class="d-flex flex-wrap gap-3 mt-4">
+            <a href="#ingressi" class="btn btn-primary btn-lg shadow-sm"><i class="bi bi-box-arrow-in-right"></i> Entra nell’area privata</a>
+            <a href="#servizi" class="btn btn-outline-secondary btn-lg">Scopri i servizi</a>
+          </div>
+          <div class="d-flex gap-4 mt-4 text-muted">
+            <div><span class="fw-bold text-dark">24/7</span><br>Televisita</div>
+            <div><span class="fw-bold text-dark">ISO 27001</span><br>Sicurezza by design</div>
+            <div><span class="fw-bold text-dark">5min</span><br>Tempo medio di prenotazione</div>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="glass rounded-4 p-4">
+            <div class="d-flex align-items-center mb-3">
+              <div class="flex-shrink-0 bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3" style="width:48px;height:48px"><i class="bi bi-qr-code-scan"></i></div>
+              <div>
+                <p class="mb-0 fw-semibold">Accesso semplificato</p>
+                <small class="text-muted">Token JWT per le app Paziente, Medico e Admin.</small>
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6"><label class="form-label small text-muted">Username</label><input id="u" class="form-control form-control-lg" value="anna" placeholder="es. anna"></div>
+              <div class="col-md-6"><label class="form-label small text-muted">Password</label><input id="p" class="form-control form-control-lg" value="password" type="password"></div>
+              <div class="col-12 d-grid mt-2"><button class="btn btn-primary btn-lg" onclick="login(u.value,p.value)"><i class="bi bi-unlock"></i> Ottieni token</button></div>
+              <div class="col-12"><div class="alert alert-info py-2 mb-0" data-auth>🔒 Non autenticato</div></div>
+            </div>
+            <div class="mt-3 small text-muted">
+              Realm: <code>guastamacchia</code> · Client: <code>guastamacchia-frontend</code><br>
+              <a href="http://localhost:8080/swagger.html" class="link-secondary">Swagger API Gateway</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="servizi" class="py-5">
+    <div class="container">
+      <p class="section-title">Sanitech in breve</p>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card glass h-100 hover-card">
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 me-3"><i class="bi bi-calendar2-check fs-4"></i></div>
+                <h5 class="card-title mb-0">Prenotazioni & Televisita</h5>
+              </div>
+              <p class="text-muted">Agenda smart, reminder automatici, videoconsulti LiveKit e conferma via email/SMS.</p>
+              <ul class="text-muted small mb-0">
+                <li>Slot personalizzati per medico</li>
+                <li>Promemoria e notifiche resilienti</li>
+                <li>Check-in digitale</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card glass h-100 hover-card">
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-3">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle p-3 me-3"><i class="bi bi-file-earmark-medical fs-4"></i></div>
+                <h5 class="card-title mb-0">Cartella clinica & Documenti</h5>
+              </div>
+              <p class="text-muted">Referti, prescrizioni e consenso paziente governati da accessi granulari e audit.</p>
+              <ul class="text-muted small mb-0">
+                <li>Storage cifrato su MinIO/S3</li>
+                <li>Consenso paziente centralizzato</li>
+                <li>Audit trail completo</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card glass h-100 hover-card">
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-3">
+                <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3 me-3"><i class="bi bi-shield-check fs-4"></i></div>
+                <h5 class="card-title mb-0">Sicurezza & identità</h5>
+              </div>
+              <p class="text-muted">Keycloak per SSO, JWT per i microservizi, rate limiting e resilienza by default.</p>
+              <ul class="text-muted small mb-0">
+                <li>Profilo Paziente, Medico, Admin</li>
+                <li>Rate limiter, circuit breaker</li>
+                <li>Dashboard osservabilità Prometheus/Grafana</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="ingressi" class="py-5 gradient">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+          <p class="text-uppercase fw-semibold mb-2" style="letter-spacing:.08em;">Accesso rapido</p>
+          <h2 class="fw-bold mb-3">Aree dedicate per ogni profilo</h2>
+          <p class="mb-4">Scegli l’esperienza più adatta al tuo ruolo. Le credenziali demo sono disponibili nel pannello di login. L’accesso genera un token JWT riutilizzabile sulle app federate.</p>
+          <div class="d-flex flex-wrap gap-3">
+            <a class="btn btn-light btn-lg" href="http://localhost:4301"><i class="bi bi-person-hearts"></i> Area Paziente</a>
+            <a class="btn btn-outline-light btn-lg" href="http://localhost:4302"><i class="bi bi-stethoscope"></i> Area Medico</a>
+            <a class="btn btn-outline-light btn-lg" href="http://localhost:4303"><i class="bi bi-speedometer"></i> Area Admin</a>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="glass text-dark rounded-4 p-4">
+            <h5 class="mb-3"><i class="bi bi-globe2 text-primary"></i> Area pubblica</h5>
+            <ul class="text-muted mb-0 small">
+              <li>Chi siamo, equipe clinica e specialità</li>
+              <li>Come raggiungerci e orari</li>
+              <li>Trasparenza dati e sicurezza</li>
+              <li>Prenotazione visita in pochi click</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="team" class="py-5">
+    <div class="container">
+      <p class="section-title">La nostra struttura</p>
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="card glass h-100">
+            <div class="card-body">
+              <h5 class="fw-bold">Specialità & reparti</h5>
+              <p class="text-muted">Cardiologia, Ortopedia, Ginecologia, Pediatria, Diagnostica per immagini, Medicina interna.</p>
+              <div class="d-flex flex-wrap gap-2">
+                <span class="badge text-bg-light">Pronto intervento</span>
+                <span class="badge text-bg-light">Day Hospital</span>
+                <span class="badge text-bg-light">Ambulatori dedicati</span>
+                <span class="badge text-bg-light">Televisita</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card glass h-100">
+            <div class="card-body">
+              <h5 class="fw-bold">Tecnologia & integrazioni</h5>
+              <p class="text-muted">Gateway API, microservizi Spring Boot, Kafka per eventi affidabili, osservabilità completa.</p>
+              <ul class="text-muted small mb-0">
+                <li><i class="bi bi-check-circle text-success"></i> Monitoring Prometheus/Grafana</li>
+                <li><i class="bi bi-check-circle text-success"></i> Storage documentale S3 compatibile</li>
+                <li><i class="bi bi-check-circle text-success"></i> Notifiche via Mailhog (dev)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contatti" class="py-5 bg-white border-top">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h4 class="fw-bold mb-2">Vuoi provare la piattaforma?</h4>
+          <p class="text-muted mb-3">Accedi con l’area privata per i profili demo oppure contattaci per un tour guidato.</p>
+          <div class="d-flex flex-wrap gap-3 text-muted">
+            <span><i class="bi bi-geo-alt text-primary"></i> Via Roma 10, Bari</span>
+            <span><i class="bi bi-telephone text-primary"></i> +39 080 000000</span>
+            <span><i class="bi bi-envelope text-primary"></i> info@sanitech.local</span>
+          </div>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+          <button class="btn btn-primary btn-lg" data-bs-toggle="offcanvas" data-bs-target="#loginPanel"><i class="bi bi-person-lock"></i> Apri login</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="py-5">
+    <div class="container">
+      <p class="section-title">FAQ</p>
+      <div class="accordion" id="faqAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="q1"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a1">Come accedo all’area privata?</button></h2>
+          <div id="a1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">Clicca su “Area privata”, inserisci le credenziali fornite (o demo) e ottieni il token JWT.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="q2"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a2">Posso prenotare una visita online?</button></h2>
+          <div id="a2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">Sì, nell’area Paziente puoi cercare slot disponibili e confermare la prenotazione.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="q3"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a3">Come gestite la privacy?</button></h2>
+          <div id="a3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">Usiamo Keycloak per identità, audit trail completo e storage cifrato per i documenti clinici.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy" class="py-5 bg-light">
+    <div class="container">
+      <p class="section-title">Privacy & compliance</p>
+      <p class="text-muted mb-0">Sanitech adotta policy di sicurezza by design: SSO con Keycloak, comunicazioni cifrate, audit delle operazioni e segregazione dei dati tra reparti. Per richieste GDPR o chiarimenti scrivi a <a href="mailto:privacy@sanitech.local">privacy@sanitech.local</a>.</p>
+    </div>
+  </section>
+
+  <footer class="py-4 bg-dark text-white">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center">
+      <span>© 2024 Sanitech Labs — Microservizi & Frontend federati</span>
+      <div class="d-flex gap-3 small">
+        <a class="link-light text-decoration-none" href="http://localhost:8080/swagger.html">API Gateway</a>
+        <a class="link-light text-decoration-none" href="#servizi">Servizi</a>
+        <a class="link-light text-decoration-none" href="#contatti">Contatti</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Offcanvas login quick access -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="loginPanel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Area privata</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <p class="text-muted">Usa le credenziali demo o le tue credenziali reali per ottenere un token JWT.</p>
+      <div class="mb-3">
+        <label class="form-label">Username demo</label>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-outline-secondary btn-sm" onclick="fillDemo('anna')">anna (paziente)</button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="fillDemo('marco')">marco (medico)</button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="fillDemo('admin')">admin</button>
+        </div>
+      </div>
+      <div class="row g-2">
+        <div class="col-12">
+          <label class="form-label">Username</label>
+          <input id="u-off" class="form-control" placeholder="es. anna">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Password</label>
+          <input id="p-off" class="form-control" type="password" placeholder="password">
+        </div>
+        <div class="col-12 d-grid">
+          <button class="btn btn-primary" onclick="login(document.getElementById('u-off').value, document.getElementById('p-off').value)">Entra</button>
+        </div>
+        <div class="col-12 mt-2"><div class="alert alert-light border" data-auth>🔒 Non autenticato</div></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const KC = { base: 'http://localhost:8081/realms/guastamacchia/protocol/openid-connect', client_id: 'guastamacchia-frontend' };
+
+    function fillDemo(user){
+      document.getElementById('u-off').value = user;
+      document.getElementById('p-off').value = 'password';
+    }
+
+    async function login(u,p){
+      try{
+        const body = new URLSearchParams({grant_type:'password', client_id:KC.client_id, username:u, password:p});
+        const res = await fetch(KC.base + '/token', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+        if(!res.ok){ alert('Login fallito'); return; }
+        const data = await res.json();
+        localStorage.setItem('token', data.access_token);
+        document.querySelectorAll('[data-auth]').forEach(e=>e.innerHTML='✅ Autenticato · token pronto');
+      }catch(err){
+        console.error(err); alert('Errore di rete');
+      }
+    }
+    function bearer(){ return localStorage.getItem('token') || ''; }
+  </script>
+</body>
+</html>
