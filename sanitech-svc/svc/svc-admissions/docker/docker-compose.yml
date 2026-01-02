@@ -23,9 +23,7 @@ services:
       - "9092:9092"
 
   svc-admissions:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    build: .
     depends_on:
       postgres:
         condition: service_healthy

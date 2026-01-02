@@ -47,9 +47,7 @@ services:
       - ./livekit.yaml:/etc/livekit.yaml:ro
 
   svc-televisit:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
+    build: .
     depends_on:
       postgres:
         condition: service_healthy

@@ -16,7 +16,7 @@ run:
 	$(MVN) -q spring-boot:run $(RUN_OPTS)
 
 docker-build: build
-	docker build -f docker/Dockerfile -t sanitech/$(SVC_NAME):local .
+	docker build -t sanitech/$(SVC_NAME):local .
 
 docker-run:
 	docker run --rm -p $(PORT):$(PORT) sanitech/$(SVC_NAME):local
