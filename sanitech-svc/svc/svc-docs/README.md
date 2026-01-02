@@ -12,10 +12,10 @@ Microservizio per la **gestione documentale**:
 
 ## Avvio in locale (docker-compose)
 
-> Il file `docker/docker-compose.yml` avvia Postgres + Kafka + MinIO + svc-docs.
+> Il file `infra/docker-compose.yml` avvia Postgres + Kafka + MinIO + svc-docs.
 
 ```bash
-docker compose -f docker/docker-compose.yml up --build
+docker compose -f infra/docker-compose.yml up --build
 ```
 
 Servizi esposti:
