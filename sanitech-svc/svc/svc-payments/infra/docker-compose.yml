@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_payments
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+    ports:
+      - "5441:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sanitech -d sanitech_payments"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  kafka:
+    image: redpandadata/redpanda:v24.2.7
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://kafka:9092
+    ports:
+      - "9094:9092"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.6
+    command: ["start-dev", "--http-port=8081", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "8081:8081"
+
+  svc-payments:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      keycloak:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sanitech_payments
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      SANITECH_PAYMENTS_WEBHOOK_SECRET: change-me
+    ports:
+      - "8090:8090"
