@@ -59,7 +59,9 @@ services:
       echo 'Bucket sanitech-docs pronto.';"
 
   svc-docs:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     depends_on:
       - postgres-docs
       - kafka

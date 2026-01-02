@@ -47,7 +47,9 @@ services:
       - "8081:8081"
 
   svc-payments:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy

@@ -30,7 +30,9 @@ services:
       - "9092:9092"
 
   svc-scheduling:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     depends_on:
       postgres:
         condition: service_healthy

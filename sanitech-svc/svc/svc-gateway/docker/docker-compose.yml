@@ -1,6 +1,8 @@
 services:
   svc-gateway:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: sanitech-svc-gateway
     ports:
       - "8080:8080"
