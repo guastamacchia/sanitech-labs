@@ -11,7 +11,7 @@ I servizi clinici interrogano questo microservizio (endpoint `check`) prima di c
 - Readiness: `GET /actuator/health/readiness`
 - Prometheus: `GET /actuator/prometheus`
 
-Porta default: `8084`.
+Porta default: `8085`.
 
 ## Metriche chiave
 

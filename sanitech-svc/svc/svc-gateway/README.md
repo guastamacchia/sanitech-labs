@@ -30,7 +30,7 @@ curl -i http://localhost:8080/actuator/health
 ### Esecuzione con Docker Compose (dev)
 
 ```bash
-docker compose -f docker-compose.dev.yml up --build
+docker compose -f docker/docker-compose.yml up --build
 ```
 
 ## Endpoint utili

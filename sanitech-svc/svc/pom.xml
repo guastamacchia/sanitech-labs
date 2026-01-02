@@ -7,7 +7,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>svc-directory</module>
-        <!--module>svc-gateway</module>
+        <module>svc-gateway</module>
         <module>svc-scheduling</module>
         <module>svc-consents</module>
         <module>svc-docs</module>
@@ -16,7 +16,7 @@
         <module>svc-audit</module>
         <module>svc-televisit</module>
         <module>svc-payments</module>
-        <module>svc-admissions</module -->
+        <module>svc-admissions</module>
     </modules>
     <properties>
         <java.version>21</java.version>
