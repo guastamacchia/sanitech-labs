@@ -1,0 +1,45 @@
+{
+  "id": null,
+  "title": "Sanitech Backend Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Gateway Response Time (p95)",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"backend-services\", instance=\"api-gateway:8080\"}[5m])) by (le))",
+          "legendFormat": "api-gateway"
+        }
+      ],
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 }
+    },
+    {
+      "type": "graph",
+      "title": "HTTP Requests Rate",
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"backend-services\"}[5m])) by (instance)",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Prometheus Uptime",
+      "targets": [
+        {
+          "expr": "time() - process_start_time_seconds{job=\"prometheus\"}",
+          "legendFormat": "uptime"
+        }
+      ],
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 6 }
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "time": { "from": "now-30m", "to": "now" }
+}
