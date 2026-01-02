@@ -19,14 +19,29 @@
 <body>
   <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
     <div class="container py-2">
-      <a class="navbar-brand fw-bold text-primary" href="#">Sanitech</a>
-      <div class="d-none d-lg-flex align-items-center gap-3 ms-auto">
-        <a class="nav-link" href="#servizi">Servizi</a>
-        <a class="nav-link" href="#team">Struttura</a>
-        <a class="nav-link" href="#contatti">Contatti</a>
-        <button class="btn btn-outline-primary" data-bs-toggle="offcanvas" data-bs-target="#loginPanel"><i class="bi bi-shield-lock"></i> Area privata</button>
-      </div>
+      <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-primary" href="#">
+        <div class="rounded-3 border d-inline-flex align-items-center justify-content-center" style="width:48px;height:48px;background:#f8f9fa" id="logo-slot">
+          <!-- Inserisci qui il logo prodotto dal tuo designer -->
+          <i class="bi bi-hospital fs-4 text-primary"></i>
+        </div>
+        <span>Sanitech</span>
+      </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks"><span class="navbar-toggler-icon"></span></button>
+      <div class="collapse navbar-collapse" id="navLinks">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
+          <li class="nav-item"><a class="nav-link" href="#servizi">Servizi</a></li>
+          <li class="nav-item"><a class="nav-link" href="#ingressi">Aree</a></li>
+          <li class="nav-item"><a class="nav-link" href="#team">Struttura</a></li>
+          <li class="nav-item"><a class="nav-link" href="#contatti">Contatti</a></li>
+          <li class="nav-item"><a class="nav-link" href="#faq">FAQ</a></li>
+          <li class="nav-item"><a class="nav-link" href="#privacy">Privacy</a></li>
+          <li class="nav-item ms-lg-3">
+            <button class="btn btn-outline-primary w-100" data-bs-toggle="offcanvas" data-bs-target="#loginPanel">
+              <i class="bi bi-shield-lock"></i> Area privata
+            </button>
+          </li>
+        </ul>
+      </div>
     </div>
   </nav>
 
@@ -207,6 +222,39 @@
           <button class="btn btn-primary btn-lg" data-bs-toggle="offcanvas" data-bs-target="#loginPanel"><i class="bi bi-person-lock"></i> Apri login</button>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section id="faq" class="py-5">
+    <div class="container">
+      <p class="section-title">FAQ</p>
+      <div class="accordion" id="faqAccordion">
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="q1"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a1">Come accedo all’area privata?</button></h2>
+          <div id="a1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">Clicca su “Area privata”, inserisci le credenziali fornite (o demo) e ottieni il token JWT.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="q2"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a2">Posso prenotare una visita online?</button></h2>
+          <div id="a2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">Sì, nell’area Paziente puoi cercare slot disponibili e confermare la prenotazione.</div>
+          </div>
+        </div>
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="q3"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a3">Come gestite la privacy?</button></h2>
+          <div id="a3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body">Usiamo Keycloak per identità, audit trail completo e storage cifrato per i documenti clinici.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy" class="py-5 bg-light">
+    <div class="container">
+      <p class="section-title">Privacy & compliance</p>
+      <p class="text-muted mb-0">Sanitech adotta policy di sicurezza by design: SSO con Keycloak, comunicazioni cifrate, audit delle operazioni e segregazione dei dati tra reparti. Per richieste GDPR o chiarimenti scrivi a <a href="mailto:privacy@sanitech.local">privacy@sanitech.local</a>.</p>
     </div>
   </section>
 
