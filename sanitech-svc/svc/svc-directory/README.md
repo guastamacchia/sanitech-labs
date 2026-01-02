@@ -20,12 +20,12 @@ Microservizio **Directory** della piattaforma **Sanitech**: gestione anagrafiche
 make compose-up
 # (il target esegue anche mvn package per generare il JAR prima della build dell'immagine)
 # oppure, se si preferisce solo l'infrastruttura:
-# docker compose -f docker/docker-compose.yml up -d postgres kafka keycloak prometheus grafana
+# docker compose -f infra/docker-compose.yml up -d postgres kafka keycloak prometheus grafana
 ```
-- Il servizio Keycloak viene buildato localmente (Dockerfile in `docker/Dockerfile.keycloak`) includendo il realm `sanitech` nel layer immagine e con health abilitato (`KEYCLOAK_HEALTH_ENABLED=true`), così l'import avviene anche con Docker Engine remoto (senza bind mount locale).
+- Il servizio Keycloak viene buildato localmente (Dockerfile in `infra/Dockerfile.keycloak`) includendo il realm `sanitech` nel layer immagine e con health abilitato (`KEYCLOAK_HEALTH_ENABLED=true`), così l'import avviene anche con Docker Engine remoto (senza bind mount locale).
   Assicurati che il JAR sia presente in `target/` prima della build (il `make compose-up` lo genera automaticamente).
-- Prometheus viene buildato localmente (`docker/Dockerfile.prometheus`) con la configurazione già inclusa, per evitare problemi di bind mount.
-- Grafana (porta `3000`, credenziali predefinite `admin`/`admin`) parte con la datasource Prometheus già configurata (cartella `docker/grafana/provisioning`).
+- Prometheus viene buildato localmente (`infra/Dockerfile.prometheus`) con la configurazione già inclusa, per evitare problemi di bind mount.
+- Grafana (porta `3000`, credenziali predefinite `admin`/`admin`) parte con la datasource Prometheus già configurata (cartella `infra/grafana/provisioning`).
 
 ### 2) Build + test
 ```bash
