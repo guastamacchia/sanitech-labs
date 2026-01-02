@@ -1,8 +1,0 @@
-image:
-  tag: "staging"
-
-env:
-  DB_URL: "jdbc:postgresql://postgres:5432/sanitech_prescribing"
-  OAUTH2_ISSUER_URI: "http://keycloak:8081/realms/sanitech"
-  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
-  CONSENTS_BASE_URL: "http://svc-consents:8084"

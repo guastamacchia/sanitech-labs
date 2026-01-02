@@ -6,7 +6,7 @@ spring:
     name: svc-notifications
 
   datasource:
-    # In dev utilizziamo Postgres locale (vedi docker-compose.dev.yml)
+    # In dev utilizziamo Postgres locale (vedi docker/docker-compose.yml)
     url: ${DB_URL:jdbc:postgresql://localhost:5436/sanitech_notifications}
     username: ${DB_USER:sanitech}
     password: ${DB_PASSWORD:sanitech}

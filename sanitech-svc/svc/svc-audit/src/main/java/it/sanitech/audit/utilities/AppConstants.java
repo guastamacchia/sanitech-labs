@@ -14,7 +14,7 @@ public final class AppConstants {
         public static final String APP_NAME_DEFAULT = "svc-audit";
 
         public static final String SERVER_PORT_KEY = "server.port";
-        public static final String SERVER_PORT_DEFAULT = "8085";
+        public static final String SERVER_PORT_DEFAULT = "8088";
     }
 
     public static final class ApiPath {

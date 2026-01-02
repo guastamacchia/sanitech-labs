@@ -17,17 +17,15 @@ Gestisce:
 - Actuator + Prometheus
 
 ## Avvio locale (dev)
-1) Avvia dipendenze (Postgres, Kafka, MailHog):
+1) Avvia servizio e dipendenze (Postgres, Kafka, MailHog):
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
-2) Avvia l'applicazione:
-```bash
-./mvnw spring-boot:run
-```
+> Per sviluppo con `./mvnw spring-boot:run`, ferma il container `svc-notifications`
+> o avvia solo i servizi `postgres`/`redpanda`/`mailhog` dal compose.
 
-3) URL utili:
+2) URL utili:
 - Swagger UI: `http://localhost:8087/swagger-ui/index.html`
 - OpenAPI JSON: `http://localhost:8087/v3/api-docs/notifications`
 - Health: `http://localhost:8087/actuator/health`
