@@ -1,12 +1,12 @@
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:25.0
+    build: ./keycloak
     command: ["start-dev", "--http-port=8081", "--import-realm"]
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     volumes:
-      - ./infra/keycloak/realm-export:/opt/keycloak/data/import:ro
+      - ./keycloak/realm-export:/opt/keycloak/data/import:ro
     ports:
       - "8081:8081"
     healthcheck:
@@ -49,6 +49,30 @@ services:
     image: mailhog/mailhog:v1.0.1
     ports:
       - "8025:8025"
+
+  prometheus:
+    build: ./prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+
+  grafana:
+    build: ./grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-data:/var/lib/grafana
 
   # =========================
   # Postgres (one per service)
@@ -132,7 +156,7 @@ services:
   # Microservices
   # =========================
   api-gateway:
-    build: ./api-gateway
+    build: ../svc/svc-gateway
     ports:
       - "8080:8080"
     environment:
@@ -142,7 +166,7 @@ services:
       - keycloak
 
   svc-directory:
-    build: ./svc-directory
+    build: ../svc/svc-directory
     ports:
       - "8082:8082"
     environment:
@@ -157,7 +181,7 @@ services:
       - keycloak
 
   svc-scheduling:
-    build: ./svc-scheduling
+    build: ../svc/svc-scheduling
     ports:
       - "8083:8083"
     environment:
@@ -172,7 +196,7 @@ services:
       - keycloak
 
   svc-admissions:
-    build: ./svc-admissions
+    build: ../svc/svc-admissions
     ports:
       - "8084:8084"
     environment:
@@ -187,7 +211,7 @@ services:
       - keycloak
 
   svc-consents:
-    build: ./svc-consents
+    build: ../svc/svc-consents
     ports:
       - "8085:8085"
     environment:
@@ -202,7 +226,7 @@ services:
       - keycloak
 
   svc-docs:
-    build: ./svc-docs
+    build: ../svc/svc-docs
     ports:
       - "8086:8086"
     environment:
@@ -222,7 +246,7 @@ services:
       - keycloak
 
   svc-notifications:
-    build: ./svc-notifications
+    build: ../svc/svc-notifications
     ports:
       - "8087:8087"
     environment:
@@ -240,7 +264,7 @@ services:
       - keycloak
 
   svc-audit:
-    build: ./svc-audit
+    build: ../svc/svc-audit
     ports:
       - "8088:8088"
     environment:
@@ -255,7 +279,7 @@ services:
       - keycloak
 
   svc-televisit:
-    build: ./svc-televisit
+    build: ../svc/svc-televisit
     ports:
       - "8089:8089"
     environment:
@@ -273,7 +297,7 @@ services:
       - keycloak
 
   svc-payments:
-    build: ./svc-payments
+    build: ../svc/svc-payments
     ports:
       - "8090:8090"
     environment:
@@ -289,7 +313,7 @@ services:
       - keycloak
 
   svc-prescribing:
-    build: ./svc-prescribing
+    build: ../svc/svc-prescribing
     ports:
       - "8091:8091"
     environment:
@@ -304,3 +328,7 @@ services:
       - kafka
       - keycloak
       - svc-consents
+
+volumes:
+  grafana-data:
+  prometheus-data:
