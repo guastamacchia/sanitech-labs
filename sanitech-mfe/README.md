@@ -10,7 +10,7 @@ Questa repo contiene i micro‑frontend statici (Bootstrap) per shell, paziente,
 ## Avvio rapido (presuppone backend su `http://localhost:8080`)
 
 ```bash
-docker compose -f infra/docker-compose.frontend.yml up -d --build
+docker compose -f infra/docker-compose.yml up -d --build
 # Shell:    http://localhost:4200
 # Paziente: http://localhost:4301
 # Medico:   http://localhost:4302
