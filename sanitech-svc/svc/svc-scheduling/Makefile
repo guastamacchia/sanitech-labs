@@ -1,7 +1,7 @@
 SVC_NAME ?= svc-scheduling
 PORT ?= 8083
 MVN ?= ./mvnw
-COMPOSE_FILE ?= docker/docker-compose.yml
+COMPOSE_FILE ?= infra/docker-compose.yml
 RUN_OPTS ?= -Dspring-boot.run.profiles=local
 
 .PHONY: build test run docker-build docker-run compose-up compose-down
