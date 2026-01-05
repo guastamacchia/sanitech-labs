@@ -3,6 +3,7 @@ PORT ?= 8082
 MVN ?= ./mvnw
 
 COMPOSE_FILE ?= infra/docker-compose.yml
+COMPOSE_INFRA_PORTS_FILE ?= infra/docker-compose.infra-ports.yml
 DOCKERFILE ?= infra/Dockerfile
 IMAGE ?= sanitech/$(SVC_NAME):local
 ENV_FILE ?= .env.local
@@ -41,7 +42,7 @@ compose-up: build
 
 # Avvio infrastruttura senza il microservizio svc-directory
 compose-up-infra:
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file $(ENV_FILE) up -d postgres zookeeper kafka keycloak prometheus grafana
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) -f $(COMPOSE_INFRA_PORTS_FILE) --env-file $(ENV_FILE) up -d postgres zookeeper kafka keycloak prometheus grafana
 
 # Stop + cleanup completo (include volumi)
 compose-down:
