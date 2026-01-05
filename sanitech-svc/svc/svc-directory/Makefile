@@ -16,7 +16,7 @@ endif
 # in alternativa viene utilizzato il comando legacy `docker-compose`.
 DOCKER_COMPOSE := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo "docker compose")
 
-.PHONY: build test run docker-build docker-run compose-up compose-down
+.PHONY: build test run docker-build docker-run compose-up compose-up-infra compose-down
 
 build:
 	$(MVN) clean -DskipTests package
@@ -37,7 +37,11 @@ docker-run:
 
 # Avvio stack completo (database, Kafka, Keycloak, svc, osservabilità)
 compose-up: build
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file .env.local up -d --build
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file $(ENV_FILE) up -d --build
+
+# Avvio infrastruttura senza il microservizio svc-directory
+compose-up-infra:
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file $(ENV_FILE) up -d postgres zookeeper kafka keycloak prometheus grafana
 
 # Stop + cleanup completo (include volumi)
 compose-down:
