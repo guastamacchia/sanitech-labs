@@ -68,7 +68,7 @@ class OutboxKafkaPublisherTest {
         // Kafka send() mock: successo immediato
         String topic = AppConstants.Outbox.TOPIC_AUDIT_EVENTS;
         RecordMetadata meta = new RecordMetadata(new TopicPartition(topic, 0), 0, 0, System.currentTimeMillis(), 0L, 0, 0);
-        ProducerRecord<String, String> pr = new ProducerRecord<>(topic, "AUDIT_EVENT:1", "{"k":"v"}");
+        ProducerRecord<String, String> pr = new ProducerRecord<>(topic, "AUDIT_EVENT:1", "{\"k\":\"v\"}");
         SendResult<String, String> sr = new SendResult<>(pr, meta);
 
         when(kafkaTemplate.send(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), ArgumentMatchers.anyString()))

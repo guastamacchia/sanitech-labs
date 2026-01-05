@@ -2,6 +2,14 @@ SVC_NAME ?= svc-directory
 PORT ?= 8082
 MVN ?= ./mvnw
 
+COMPOSE_FILE ?= infra/docker-compose.yml
+DOCKERFILE ?= infra/Dockerfile
+IMAGE ?= sanitech/$(SVC_NAME):local
+
+# Se presente, viene utilizzato Docker Compose v2 (`docker compose`);
+# in alternativa viene utilizzato il comando legacy `docker-compose`.
+DOCKER_COMPOSE := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo "docker compose")
+
 .PHONY: build test run docker-build docker-run compose-up compose-down
 
 build:
@@ -13,14 +21,18 @@ test:
 run:
 	$(MVN) -q spring-boot:run
 
+# Build dell'immagine del microservizio usando il Dockerfile sotto infra/
 docker-build: build
-	docker build -f infra/Dockerfile.svc -t sanitech/$(SVC_NAME):local .
+	docker build -f $(DOCKERFILE) -t $(IMAGE) .
 
+# Run standalone dell'immagine (utile per smoke test rapido)
 docker-run:
-	docker run --rm -p $(PORT):$(PORT) sanitech/$(SVC_NAME):local
+	docker run --rm -p $(PORT):$(PORT) $(IMAGE)
 
+# Avvio stack completo (database, Kafka, Keycloak, svc, osservabilità)
 compose-up: build
-	docker-compose -f infra/docker-compose.yml --env-file .env.local up -d --build
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file .env.local up -d --build
 
+# Stop + cleanup completo (include volumi)
 compose-down:
-	docker-compose -f infra/docker-compose.yml down -v
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) down -v

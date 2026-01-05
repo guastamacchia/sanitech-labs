@@ -1,116 +1,212 @@
-services:
-  postgres:
-    image: postgres:16
-    container_name: sanitech-directory-postgres
-    environment:
-      POSTGRES_DB: sanitech_directory
-      POSTGRES_USER: sanitech
-      POSTGRES_PASSWORD: sanitech
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sanitech -d sanitech_directory"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+  services:
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.7.1
-    container_name: sanitech-directory-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
+    # =========================
+    # PostgreSQL
+    # =========================
+    # Database relazionale usato dal microservizio svc-directory.
+    # Espone solo la rete Docker interna; nessuna porta pubblica sull'host.
+    postgres:
+      image: postgres:16
+      environment:
+        POSTGRES_DB: sanitech_directory
+        POSTGRES_USER: sanitech
+        POSTGRES_PASSWORD: sanitech
+      volumes:
+        # Persistenza dei dati tra restart dei container
+        - sanitech_pgdata:/var/lib/postgresql/data
+      healthcheck:
+        # Verifica che il database sia pronto ad accettare connessioni
+        test: ["CMD-SHELL", "pg_isready -U sanitech -d sanitech_directory"]
+        interval: 5s
+        timeout: 5s
+        retries: 10
+      restart: unless-stopped
 
-  kafka:
-    image: confluentinc/cp-kafka:7.7.1
-    container_name: sanitech-directory-kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # KAFKA_ADVERTISED_HOST consente di sovrascrivere l'indirizzo annunciato ai client (es. IP della VM o dell'host).
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_ADVERTISED_HOST:-localhost}:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    # =========================
+    # Zookeeper
+    # =========================
+    # Necessario per Kafka (modalità Zookeeper-based).
+    # Non viene esposto all'esterno: è un componente interno dell'infrastruttura.
+    zookeeper:
+      image: confluentinc/cp-zookeeper:7.7.1
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+      healthcheck:
+        # Verifica che Zookeeper sia in ascolto sulla porta configurata
+        test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/2181'"]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+        start_period: 20s
+      restart: unless-stopped
 
-  keycloak:
-    build:
-      context: ./keycloak
-    image: sanitech/keycloak-directory:local
-    container_name: sanitech-directory-keycloak
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-      KEYCLOAK_HEALTH_ENABLED: "true"
-    ports:
-      - "8081:8080"
+    # =========================
+    # Kafka
+    # =========================
+    # Message broker usato per comunicazioni asincrone/event-driven.
+    # Configurato con due listener:
+    # - INTERNAL: per i container Docker (kafka:9092)
+    # - EXTERNAL: per accesso dall'host (localhost:29092)
+    kafka:
+      image: confluentinc/cp-kafka:7.7.1
+      depends_on:
+        zookeeper:
+          condition: service_healthy
+      ports:
+        # Porta esposta sull'host per tool locali (es. Kafka UI, CLI)
+        - "29092:29092"
+      environment:
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        # Listener interni ed esterni
+        KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+        KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${KAFKA_ADVERTISED_HOST:-localhost}:29092
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+        KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+        # Ambiente single-node (sviluppo / demo)
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      healthcheck:
+        # Kafka è considerato "ready" quando risponde alle API del broker
+        test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1 || exit 1"]
+        interval: 10s
+        timeout: 5s
+        retries: 12
+        start_period: 20s
+      restart: unless-stopped
 
-  svc-directory:
-    build:
-      context: ..
-      dockerfile: infra/Dockerfile
-      args:
-        JAR_FILE: target/*.jar
-    container_name: sanitech-svc-directory
-    depends_on:
-      postgres:
-        condition: service_healthy
-      kafka:
-        condition: service_started
-      keycloak:
-        condition: service_started
-    environment:
-      DB_URL: jdbc:postgresql://postgres:5432/sanitech_directory
-      DB_USER: sanitech
-      DB_PASSWORD: sanitech
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      # Per sviluppo locale: aggiornare con l'issuer del proprio Keycloak/realm
-      OAUTH2_JWK_SET_URI: http://keycloak:8080/realms/sanitech/protocol/openid-connect/certs
-      SPRING_PROFILES_ACTIVE: local
-      # RateLimiter Resilience4j più aggressivo per smoke test (seconda chiamata → 429)
-      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITFORPERIOD: 1
-      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITREFRESHPERIOD: 10s
-      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_TIMEOUTDURATION: 0
-      RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXCONCURRENTCALLS: 1
-      RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXWAITDURATION: 0
-    ports:
-      - "8082:8082"
+    # =========================
+    # Keycloak
+    # =========================
+    # Identity Provider (OIDC) usato dal microservizio.
+    # Build personalizzata con realm preconfigurato.
+    keycloak:
+      build:
+        context: ./keycloak
+      image: sanitech/keycloak-directory:local
+      environment:
+        KEYCLOAK_ADMIN: admin
+        KEYCLOAK_ADMIN_PASSWORD: admin
+        KC_HEALTH_ENABLED: "true"
+      ports:
+        # Esposto sull'host per accesso alla console di amministrazione
+        - "8081:8080"
+      healthcheck:
+        test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+        start_period: 40s
+      restart: unless-stopped
 
-  prometheus:
-    build:
-      context: ./prometheus
-    image: sanitech-prometheus:local
-    container_name: sanitech-prometheus
-    environment:
-      - TZ=${TZ:-Etc/UTC}
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-    ports:
-      - "9090:9090"
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
+    # =====================================================
+    # svc-directory
+    # =====================================================
+    # Microservizio Java (Spring Boot).
+    # Il JAR viene compilato esternamente (mvn package)
+    # e poi inserito nell'immagine Docker.
+    svc-directory:
+      build:
+        # Il contesto è la root del progetto svc-directory
+        context: ..
+        # Dockerfile dell'applicazione (sotto infra/)
+        dockerfile: infra/Dockerfile
+        args:
+          # Build argument usato dal Dockerfile per copiare
+          # il JAR corretto all'interno dell'immagine.
+          # Anche se il Dockerfile ha un default, qui viene
+          # dichiarato esplicitamente.
+          JAR_FILE: target/*.jar
+      image: sanitech/svc-directory:local
+      depends_on:
+        postgres:
+          condition: service_healthy
+        kafka:
+          condition: service_healthy
+        keycloak:
+          condition: service_healthy
+      environment:
+        # Configurazione database
+        DB_URL: jdbc:postgresql://postgres:5432/sanitech_directory
+        DB_USER: sanitech
+        DB_PASSWORD: sanitech
+        # Kafka interno alla rete Docker
+        KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+        # Endpoint JWK del realm Keycloak
+        OAUTH2_JWK_SET_URI: http://keycloak:8080/realms/sanitech/protocol/openid-connect/certs
+        # Profilo Spring attivo
+        SPRING_PROFILES_ACTIVE: local
+        # Configurazioni Resilience4j (profilo locale)
+        RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITFORPERIOD: 1
+        RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITREFRESHPERIOD: 10s
+        RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_TIMEOUTDURATION: 0
+        RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXCONCURRENTCALLS: 1
+        RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXWAITDURATION: 0
+      ports:
+        # Espone API REST sull'host
+        - "8082:8082"
+      healthcheck:
+        # Verifica che svc-directory sia in ascolto sulla porta applicativa
+        test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8082'"]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+        start_period: 25s
+      restart: unless-stopped
 
-  grafana:
-    build:
-      context: ./grafana
-    image: sanitech-grafana:local
-    container_name: sanitech-grafana
-    depends_on:
-      - prometheus
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - TZ=${TZ:-Etc/UTC}
-    ports:
-      - "3000:3000"
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
+    # =====================================================
+    # Prometheus
+    # =====================================================
+    # Raccolta delle metriche esposte dai servizi.
+    prometheus:
+      build:
+        context: ./prometheus
+      image: sanitech-prometheus:local
+      command:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+      ports:
+        - "9090:9090"
+      volumes:
+        - sanitech_prometheus:/prometheus
+      healthcheck:
+        # Verifica che Prometheus sia in ascolto sulla porta di servizio
+        test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/9090'"]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+        start_period: 15s
+      restart: unless-stopped
+
+    # =====================================================
+    # Grafana
+    # =====================================================
+    # Visualizzazione delle metriche raccolte da Prometheus.
+    grafana:
+      build:
+        context: ./grafana
+      image: sanitech-grafana:local
+      depends_on:
+        - prometheus
+      environment:
+        GF_SECURITY_ADMIN_USER: admin
+        GF_SECURITY_ADMIN_PASSWORD: admin
+      ports:
+        - "3000:3000"
+      volumes:
+        - sanitech_grafana:/var/lib/grafana
+      healthcheck:
+        # Verifica che Grafana sia in ascolto sulla porta di servizio
+        test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/3000'"]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+        start_period: 20s
+      restart: unless-stopped
+
+  # =====================================================
+  # Volumi persistenti
+  # =====================================================
+  volumes:
+    sanitech_pgdata:
+    sanitech_prometheus:
+    sanitech_grafana:
