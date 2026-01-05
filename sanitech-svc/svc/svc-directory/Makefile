@@ -5,6 +5,12 @@ MVN ?= ./mvnw
 COMPOSE_FILE ?= infra/docker-compose.yml
 DOCKERFILE ?= infra/Dockerfile
 IMAGE ?= sanitech/$(SVC_NAME):local
+ENV_FILE ?= .env.local
+
+ifneq (,$(wildcard $(ENV_FILE)))
+include $(ENV_FILE)
+export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' $(ENV_FILE))
+endif
 
 # Se presente, viene utilizzato Docker Compose v2 (`docker compose`);
 # in alternativa viene utilizzato il comando legacy `docker-compose`.
