@@ -1,13 +1,16 @@
 package it.sanitech.directory.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.sanitech.directory.TestJwtDecoderConfig;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import it.sanitech.directory.TestJwtDecoderConfig;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -24,8 +27,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(properties = {
         "spring.task.scheduling.enabled=false"
 })
-@Testcontainers
-class OutboxRepositoryTest {
+@Testcontainers(disabledWithoutDocker = true)
+class OutboxRepositoryIT {
+
+    private static final String REMOTE_DOCKER_HOST = System.getenv("TESTCONTAINERS_DOCKER_HOST");
+
+    static {
+        if (System.getProperty("DOCKER_HOST") == null
+                && REMOTE_DOCKER_HOST != null
+                && !REMOTE_DOCKER_HOST.isBlank()) {
+            System.setProperty("DOCKER_HOST", REMOTE_DOCKER_HOST.trim());
+        }
+    }
 
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
@@ -44,6 +57,12 @@ class OutboxRepositoryTest {
     private OutboxRepository outboxRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @BeforeAll
+    static void assumeDockerAvailable() {
+        Assumptions.assumeTrue(DockerClientFactory.instance().isDockerAvailable(),
+                "Docker non disponibile: il test di integrazione Outbox viene saltato.");
+    }
 
     @Test
     void lockBatch_returns_only_unpublished_events() throws Exception {
