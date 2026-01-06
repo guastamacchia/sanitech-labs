@@ -11,11 +11,11 @@ server:
 # Configurazione base dell'applicazione Spring Boot.
 spring:
   profiles:
-    active: "@spring.profile@"
+    active: ${SPRING_PROFILES_ACTIVE:local}
   application:
     # Nome logico del microservizio.
     # Usato per logging, metriche e tracing.
-    name: svc-directory
+    name: "@project.artifactId@"
 
   # =========================
   # Database (PostgreSQL)
