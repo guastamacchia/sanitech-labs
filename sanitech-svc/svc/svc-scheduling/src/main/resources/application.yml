@@ -96,7 +96,7 @@ sanitech:
 
     # Origini autorizzate (evitare wildcard se allow-credentials=true).
     allowed-origins:
-      - http://localhost:4200
+      - ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
 
     # Metodi HTTP permessi dal browser nelle richieste CORS.
     allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
