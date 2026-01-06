@@ -12,6 +12,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.data.web.config.EnableSpringDataWebSupport.PageSerializationMode;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -55,6 +57,7 @@ class RateLimitSmokeTest {
     }
 
     @TestConfiguration
+    @EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO)
     static class MockConfig {
 
         @Bean
