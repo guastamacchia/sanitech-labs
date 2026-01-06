@@ -2,6 +2,7 @@ package it.sanitech.directory.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,6 +14,13 @@ import static org.mockito.Mockito.*;
  * Unit test del publisher outbox → Kafka.
  */
 class OutboxKafkaPublisherTest {
+
+    @BeforeAll
+    static void enableByteBuddyForLatestJava() {
+        // Necessario con Java >= 23 per consentire a Byte Buddy (e quindi a Mockito inline)
+        // di strumentare le classi durante i test.
+        System.setProperty("net.bytebuddy.experimental", "true");
+    }
 
     @Test
     void publishBatch_marks_event_as_published_on_success() throws Exception {

@@ -1,7 +1,8 @@
 ARTIFACT_ID ?= svc-directory
 SVC_NAME ?= $(ARTIFACT_ID)
 PORT ?= 8082
-MVN ?= ./mvnw
+# Prefer Maven already installed on the host to avoid wrapper downloads when offline.
+MVN ?= $(shell command -v mvn >/dev/null 2>&1 && echo mvn || echo ./mvnw)
 
 # =====================================================
 # Variabili di progetto esportate

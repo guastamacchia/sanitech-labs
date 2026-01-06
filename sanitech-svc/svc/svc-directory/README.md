@@ -75,25 +75,19 @@ Il converter custom mappa:
   - `doctor` / `doctor` con ruolo `DOCTOR` e claim `dept=CARDIO`
 
 ### Smoke test locale
-Con Keycloak e il servizio avviati:
+Con Keycloak e il servizio avviati puoi eseguire l'intera suite di script con un solo prompt:
 ```bash
-./scripts/smoke.sh
+./scripts/run-scripts.sh
+```
+- Carica le variabili dall'env file, chiede i parametri una volta sola e lancia smoke, bulkhead, rate limit e loop in sequenza.
+
+Se vuoi eseguire i singoli script:
+```bash
+./scripts/bash/smoke.sh
+./scripts/bash/bulkhead.sh
+./scripts/bash/rate-limit.sh
 ```
 - Verifica health Keycloak, health del servizio, token OIDC, RateLimiter (seconda chiamata → 429) e metriche Resilience4j (bulkhead configurato a 1 chiamata concorrente).
-
-### Test Bulkhead (concurrency)
-Con configurazione bulkhead locale (maxConcurrentCalls=1) e Keycloak/servizio avviati:
-```bash
-./scripts/bulkhead.sh
-```
-- Esegue due richieste concorrenti su `/api/admin/patients`: una deve andare a buon fine, la seconda deve essere rifiutata dal bulkhead.
-
-### Test RateLimiter
-Con configurazione rate limiter aggressiva locale (limitForPeriod=1, limitRefreshPeriod=10s):
-```bash
-./scripts/rate-limit.sh
-```
-- Esegue due chiamate consecutive a `/api/doctors`: la prima deve restituire 200, la seconda 429.
 
 ### Note su fusi orari (Prometheus/Grafana)
 - Il compose imposta `TZ` (default `Etc/UTC`): puoi sovrascriverlo esportando `TZ=Europe/Rome` (o altro) prima di `make compose-up`.
@@ -106,7 +100,7 @@ Con configurazione rate limiter aggressiva locale (limitForPeriod=1, limitRefres
 ### Loop di test continuo
 Per eseguire chiamate ripetute su tutti gli endpoint principali (health, pubblici, admin):
 ```bash
-./scripts/loop.sh
+./scripts/bash/loop.sh
 ```
 - Richiede le stesse credenziali/env di `smoke.sh`, ottiene un token una sola volta e ripete le chiamate all'infinito (intervallo configurabile).
 
