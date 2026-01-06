@@ -54,6 +54,11 @@ public class SortUtils {
             direction = Sort.Direction.DESC;
         }
 
+        // Se il campo richiesto non è consentito, usiamo sempre la direzione di default (ASC)
+        if (!safeField.equals(requestedField)) {
+            direction = Sort.Direction.ASC;
+        }
+
         return new Sort.Order(direction, safeField);
     }
 }
