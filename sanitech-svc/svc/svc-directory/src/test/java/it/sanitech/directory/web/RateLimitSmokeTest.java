@@ -12,6 +12,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.data.web.config.EnableSpringDataWebSupport.PageSerializationMode;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -27,7 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "spring.task.scheduling.enabled=false",
     "resilience4j.ratelimiter.instances.directoryApi.limitForPeriod=1",
     "resilience4j.ratelimiter.instances.directoryApi.limitRefreshPeriod=10s",
-    "resilience4j.ratelimiter.instances.directoryApi.timeoutDuration=0"
+    "resilience4j.ratelimiter.instances.directoryApi.timeoutDuration=0",
+    "spring.data.web.page-serialization-mode=via_dto"
 })
 @AutoConfigureMockMvc(addFilters = false)
 class RateLimitSmokeTest {
@@ -54,6 +57,7 @@ class RateLimitSmokeTest {
     }
 
     @TestConfiguration
+    @EnableSpringDataWebSupport(pageSerializationMode = PageSerializationMode.VIA_DTO)
     static class MockConfig {
 
         @Bean
