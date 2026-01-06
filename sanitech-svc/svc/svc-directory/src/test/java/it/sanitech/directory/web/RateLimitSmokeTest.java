@@ -26,11 +26,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     RateLimitSmokeTest.MockConfig.class
 })
 @SpringBootTest(properties = {
-    "spring.task.scheduling.enabled=false",
     "resilience4j.ratelimiter.instances.directoryApi.limitForPeriod=1",
     "resilience4j.ratelimiter.instances.directoryApi.limitRefreshPeriod=10s",
-    "resilience4j.ratelimiter.instances.directoryApi.timeoutDuration=0",
-    "spring.data.web.page-serialization-mode=via_dto"
+    "resilience4j.ratelimiter.instances.directoryApi.timeoutDuration=0"
 })
 @AutoConfigureMockMvc(addFilters = false)
 class RateLimitSmokeTest {

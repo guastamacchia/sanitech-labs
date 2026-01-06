@@ -24,9 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Test di integrazione su {@link OutboxRepository} con PostgreSQL Testcontainers.
  */
 @Import(TestJwtDecoderConfig.class)
-@SpringBootTest(properties = {
-        "spring.task.scheduling.enabled=false"
-})
 @Testcontainers(disabledWithoutDocker = true)
 class OutboxRepositoryIT {
 

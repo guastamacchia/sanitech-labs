@@ -16,7 +16,8 @@ export SVC_NAME
 # PROFILE: profilo Spring (local | staging | prod)
 # ENV:     nome del file env (di default coincide con PROFILE)
 # PROFILE ?= local
-PROFILE ?= staging
+# PROFILE ?= staging
+PROFILE ?= remote
 ENV ?= $(PROFILE)
 export PROFILE
 export ENV
@@ -79,10 +80,10 @@ build:
 	$(MVN) clean -DskipTests package
 
 test:
-	$(MVN) -q test
+	$(MVN) test
 
 run:
-	$(MVN) -q spring-boot:run
+	$(MVN) spring-boot:run
 
 # =====================================================
 # Docker
