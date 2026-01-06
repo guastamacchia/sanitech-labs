@@ -2,8 +2,9 @@ SVC_NAME ?= svc-directory
 PORT ?= 8082
 MVN ?= ./mvnw
 
-# Default env
-ENV ?= staging
+# Default profile/env mapping
+PROFILE ?= local
+ENV ?= $(PROFILE)
 
 COMPOSE_FILE ?= infra/docker-compose.yml
 COMPOSE_INFRA_PORTS_FILE ?= infra/docker-compose.infra-ports.yml
