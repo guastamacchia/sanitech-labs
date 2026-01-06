@@ -1,6 +1,10 @@
-# Profilo "local": valori utili quando si avvia in docker-compose o in locale.
+# =========================
+# Profile: local
+# =========================
+# Configurazioni specifiche per il profilo "local".
 spring:
   jpa:
     properties:
       hibernate:
-        show_sql: false
+        # Abilita il logging delle query SQL.
+        show_sql: true

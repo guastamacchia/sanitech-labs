@@ -51,15 +51,6 @@ ehthumbs.db
 Desktop.ini
 
 ############################
-# ENV / SECRETS
-############################
-
-.env
-.env.*
-!.env.example
-!.env.template
-
-############################
 # SPRING / JAVA
 ############################
 
