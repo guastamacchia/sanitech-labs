@@ -36,33 +36,16 @@ curl_status() {
 }
 
 # =====================================================
-# Funzione: prompt interattivo con valore di default
-# =====================================================
-prompt() {
-  local var="$1"
-  local prompt="$2"
-  local default="$3"
-
-  read -rp "${prompt} [${default}]: " input
-
-  if [ -z "${input}" ]; then
-    eval "${var}=\"${default}\""
-  else
-    eval "${var}=\"${input}\""
-  fi
-}
-
-# =====================================================
 # Parametri configurabili (con default)
 # =====================================================
-prompt KEYCLOAK_URL "Keycloak base URL" "${KEYCLOAK_URL:-http://localhost:8081}"
-prompt REALM "Realm" "${REALM:-sanitech}"
-prompt SERVICE_URL "${SERVICE_NAME} base URL" "${DEFAULT_SERVICE_URL}"
-prompt CLIENT_ID "Client ID" "${DEFAULT_CLIENT_ID}"
-prompt CLIENT_SECRET "Client secret" "${DEFAULT_CLIENT_SECRET}"
-prompt USERNAME "Username" "${USERNAME:-admin}"
-prompt PASSWORD "Password" "${PASSWORD:-admin}"
-prompt SLEEP_SECONDS "Pausa tra i cicli (secondi)" "${SLEEP_SECONDS:-5}"
+KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:8081}"
+REALM="${REALM:-sanitech}"
+SERVICE_URL="${SERVICE_URL:-${DEFAULT_SERVICE_URL}}"
+CLIENT_ID="${CLIENT_ID:-${DEFAULT_CLIENT_ID}}"
+CLIENT_SECRET="${CLIENT_SECRET:-${DEFAULT_CLIENT_SECRET}}"
+USERNAME="${USERNAME:-admin}"
+PASSWORD="${PASSWORD:-admin}"
+SLEEP_SECONDS="${SLEEP_SECONDS:-5}"
 
 # Numero massimo di cicli
 MAX_CYCLES=5
