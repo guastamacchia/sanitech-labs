@@ -1,10 +1,13 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <!-- Parent aggregator multi-modulo -->
     <groupId>it.sanitech</groupId>
     <artifactId>svc</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
+    <!-- Elenco moduli -->
     <modules>
         <module>svc-directory</module>
         <module>svc-gateway</module>
@@ -19,23 +22,36 @@
         <module>svc-admissions</module>
     </modules>
     <properties>
+        <!-- Toolchain -->
         <java.version>21</java.version>
+        <maven.min.version>3.9.6</maven.min.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <!-- Compiler -->
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+        <!-- BOM -->
         <spring-boot.version>3.3.4</spring-boot.version>
         <spring-cloud.version>2023.0.4</spring-cloud.version>
+        <!-- Versioni librerie non sempre coperte dai BOM -->
         <springdoc.version>2.6.0</springdoc.version>
         <logstash.version>7.4</logstash.version>
-        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
         <lombok.version>1.18.42</lombok.version>
         <mapstruct.version>1.6.3</mapstruct.version>
-        <resilience4j-spring-boot3.version>2.2.0</resilience4j-spring-boot3.version>
-        <resilience4j-micrometer.version>2.2.0</resilience4j-micrometer.version>
+        <resilience4j.version>2.2.0</resilience4j.version>
+        <!-- Versioni plugin -->
+        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
+        <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
+        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+        <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
+        <!-- Proprietà usata dal filtering (@spring.active.profile@) -->
+        <spring.active.profile/>
     </properties>
+    <!-- Gestione centralizzata dipendenze e versioni -->
     <dependencyManagement>
         <dependencies>
+            <!-- BOM Spring Boot -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -43,6 +59,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- BOM Spring Cloud -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
@@ -50,21 +67,98 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!-- Springdoc -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <!-- Logstash encoder -->
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash.version}</version>
+            </dependency>
+            <!-- Resilience4j -->
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-spring-boot3</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-micrometer</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            <!-- MapStruct -->
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <!-- Lombok -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <build>
+        <!-- Filtra solo application*.yml con delimitatore @ per non interferire con ${...} di Spring -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>application*.yml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>application*.yml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <!-- Plugin management per eredità pulita sui moduli -->
         <pluginManagement>
             <plugins>
+                <!-- Enforcer per bloccare JDK/Maven non coerenti -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>enforce-toolchain</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules>
+                                    <requireMavenVersion>
+                                        <version>[${maven.min.version},)</version>
+                                    </requireMavenVersion>
+                                    <requireJavaVersion>
+                                        <version>[${java.version},)</version>
+                                    </requireJavaVersion>
+                                </rules>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <!-- Compiler con release 21 e annotation processors -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
-                        <release>${java.version}</release>
+                        <release>${maven.compiler.release}</release>
+                        <parameters>${maven.compiler.parameters}</parameters>
                         <compilerArgs>
-                            <!-- Lombok usa ancora sun.misc.Unsafe: disabilitiamo il warning terminally deprecated -->
                             <arg>-Xlint:-removal</arg>
-                            <arg>-parameters</arg>
                         </compilerArgs>
                         <annotationProcessorPaths>
                             <path>
@@ -80,12 +174,82 @@
                         </annotationProcessorPaths>
                     </configuration>
                 </plugin>
+                <!-- Resources con delimitatore @...@ -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${maven-resources-plugin.version}</version>
+                    <configuration>
+                        <delimiters>
+                            <delimiter>@</delimiter>
+                        </delimiters>
+                        <useDefaultDelimiters>false</useDefaultDelimiters>
+                    </configuration>
+                </plugin>
+                <!-- Surefire/Failsafe versionati per Java 21 -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven-failsafe-plugin.version}</version>
+                </plugin>
+                <!-- Spring Boot plugin in pluginManagement (i moduli lo attivano se necessario) -->
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
-                 </plugin>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
+    <!-- Profili Maven attivati da variabile d'ambiente SPRING_PROFILES_ACTIVE -->
+    <profiles>
+        <profile>
+            <id>local</id>
+            <activation>
+                <property>
+                    <name>env.SPRING_PROFILES_ACTIVE</name>
+                    <value>local</value>
+                </property>
+            </activation>
+            <properties>
+                <spring.active.profile>local</spring.active.profile>
+            </properties>
+        </profile>
+        <profile>
+            <id>staging</id>
+            <activation>
+                <property>
+                    <name>env.SPRING_PROFILES_ACTIVE</name>
+                    <value>staging</value>
+                </property>
+            </activation>
+            <properties>
+                <spring.active.profile>staging</spring.active.profile>
+            </properties>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <activation>
+                <property>
+                    <name>env.SPRING_PROFILES_ACTIVE</name>
+                    <value>prod</value>
+                </property>
+            </activation>
+            <properties>
+                <spring.active.profile>prod</spring.active.profile>
+            </properties>
+        </profile>
+    </profiles>
 </project>

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-ENV_FILE="${1:-../infra/env/env.staging}"
+ENV_FILE="${1:-../infra/env/env.local}"
+#ENV_FILE="${1:-../infra/env/env.staging}"
 
 if [ -f "${ENV_FILE}" ]; then
   set -a

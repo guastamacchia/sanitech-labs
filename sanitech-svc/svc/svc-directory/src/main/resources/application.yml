@@ -15,7 +15,7 @@ spring:
     # Usato per logging, metriche e tracing.
     name: "@project.artifactId@"
   profiles:
-    active: "@spring.profile@"
+    active: "@spring.active.profile@"
 
   # =========================
   # Database (PostgreSQL)
@@ -41,16 +41,17 @@ spring:
     # Disabilita Open Session in View.
     # Evita accessi al DB fuori dal layer applicativo.
     open-in-view: false
-
     hibernate:
       # Valida lo schema esistente senza modificarlo.
       ddl-auto: validate
-
     properties:
       hibernate:
         # Ottimizzazione per ridurre il numero di query
         # in presenza di collezioni lazy.
         default_batch_fetch_size: 50
+        # Disabilita il logging delle query SQL.
+        show_sql: false
+        format_sql: false
 
   # =========================
   # Flyway
