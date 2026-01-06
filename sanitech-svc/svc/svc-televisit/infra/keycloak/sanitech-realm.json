@@ -28,6 +28,32 @@
         "email"
       ],
       "optionalClientScopes": []
+    },
+    {
+      "clientId": "svc-televisit",
+      "name": "svc-televisit",
+      "secret": "svc-televisit-secret",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "*"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": []
     }
   ],
   "roles": {

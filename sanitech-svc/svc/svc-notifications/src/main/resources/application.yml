@@ -99,7 +99,7 @@ sanitech:
     path-patterns:
       - /api/**
     allowed-origins:
-      - http://localhost:4200
+      - ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
     allowed-methods:
       - GET
       - POST
