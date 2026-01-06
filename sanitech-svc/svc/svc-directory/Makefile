@@ -1,6 +1,10 @@
-SVC_NAME ?= svc-directory
+ARTIFACT_ID ?= svc-directory
+SVC_NAME ?= $(ARTIFACT_ID)
 PORT ?= 8082
 MVN ?= ./mvnw
+
+export ARTIFACT_ID
+export SVC_NAME
 
 # Default profile/env mapping
 PROFILE ?= local

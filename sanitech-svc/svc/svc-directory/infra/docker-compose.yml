@@ -127,7 +127,7 @@
           # Anche se il Dockerfile ha un default, qui viene
           # dichiarato esplicitamente.
           JAR_FILE: target/*.jar
-      image: sanitech/svc-directory:${SPRING_PROFILES_ACTIVE}
+      image: sanitech/${SVC_NAME:-svc-directory}:${SPRING_PROFILES_ACTIVE}
       depends_on:
         postgres:
           condition: service_healthy
