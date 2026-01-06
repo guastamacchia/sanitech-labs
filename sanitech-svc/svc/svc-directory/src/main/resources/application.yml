@@ -10,6 +10,8 @@ server:
 # =========================
 # Configurazione base dell'applicazione Spring Boot.
 spring:
+  profiles:
+    active: "@spring.profile@"
   application:
     # Nome logico del microservizio.
     # Usato per logging, metriche e tracing.
