@@ -14,8 +14,8 @@ export SVC_NAME
 # =====================================================
 # PROFILE: profilo Spring (local | staging | prod)
 # ENV:     nome del file env (di default coincide con PROFILE)
-PROFILE ?= local
-# PROFILE ?= staging
+# PROFILE ?= local
+PROFILE ?= staging
 ENV ?= $(PROFILE)
 export PROFILE
 export ENV
