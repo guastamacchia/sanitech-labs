@@ -11,6 +11,52 @@
     <artifactId>svc-directory</artifactId>
     <name>Sanitech - svc-directory</name>
     <description>Microservizio Directory di Sanitech (Medici, Pazienti, Reparti, Specializzazioni)</description>
+    <properties>
+        <spring.profile>local</spring.profile>
+        <svc.directory.host>localhost</svc.directory.host>
+        <svc.directory.port>8082</svc.directory.port>
+    </properties>
+    <profiles>
+        <profile>
+            <id>local</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <spring.profile>local</spring.profile>
+                <svc.directory.host>localhost</svc.directory.host>
+                <svc.directory.port>8082</svc.directory.port>
+            </properties>
+        </profile>
+        <profile>
+            <id>staging</id>
+            <activation>
+                <property>
+                    <name>env.SPRING_PROFILES_ACTIVE</name>
+                    <value>staging</value>
+                </property>
+            </activation>
+            <properties>
+                <spring.profile>staging</spring.profile>
+                <svc.directory.host>10.211.55.23</svc.directory.host>
+                <svc.directory.port>8082</svc.directory.port>
+            </properties>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <activation>
+                <property>
+                    <name>env.SPRING_PROFILES_ACTIVE</name>
+                    <value>prod</value>
+                </property>
+            </activation>
+            <properties>
+                <spring.profile>prod</spring.profile>
+                <svc.directory.host>svc-directory</svc.directory.host>
+                <svc.directory.port>8082</svc.directory.port>
+            </properties>
+        </profile>
+    </profiles>
     <dependencies>
         <!-- Spring Boot starters -->
         <dependency>
@@ -125,10 +171,40 @@
         </dependency>
     </dependencies>
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>application*.yml</include>
+                </includes>
+                <delimiters>
+                    <delimiter>@</delimiter>
+                </delimiters>
+                <useDefaultDelimiters>false</useDefaultDelimiters>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>application*.yml</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <profiles>
+                        <profile>${spring.profile}</profile>
+                    </profiles>
+                    <systemPropertyVariables>
+                        <spring.profiles.active>${spring.profile}</spring.profiles.active>
+                        <svc.directory.host>${svc.directory.host}</svc.directory.host>
+                        <svc.directory.port>${svc.directory.port}</svc.directory.port>
+                    </systemPropertyVariables>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
