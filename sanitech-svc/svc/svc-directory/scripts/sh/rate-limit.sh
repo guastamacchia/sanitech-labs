@@ -13,6 +13,15 @@
 set -euo pipefail
 
 # =====================================================
+# Service identifier (allineato con Makefile/application.yml)
+# =====================================================
+SERVICE_NAME="${SVC_NAME:-${ARTIFACT_ID:-svc-directory}}"
+SERVICE_PORT="${PORT:-8082}"
+DEFAULT_SERVICE_URL="${SERVICE_URL:-http://localhost:${SERVICE_PORT}}"
+DEFAULT_CLIENT_ID="${CLIENT_ID:-${SERVICE_NAME}}"
+DEFAULT_CLIENT_SECRET="${CLIENT_SECRET:-${SERVICE_NAME}-secret}"
+
+# =====================================================
 # Funzione: prompt interattivo con valore di default
 # =====================================================
 prompt() {
@@ -30,9 +39,9 @@ prompt() {
 # =====================================================
 prompt KEYCLOAK_URL "Keycloak base URL" "${KEYCLOAK_URL:-http://localhost:8081}"
 prompt REALM "Realm" "${REALM:-sanitech}"
-prompt SERVICE_URL "svc-directory base URL" "${SERVICE_URL:-http://localhost:8082}"
-prompt CLIENT_ID "Client ID" "${CLIENT_ID:-svc-directory}"
-prompt CLIENT_SECRET "Client secret" "${CLIENT_SECRET:-svc-directory-secret}"
+prompt SERVICE_URL "${SERVICE_NAME} base URL" "${DEFAULT_SERVICE_URL}"
+prompt CLIENT_ID "Client ID" "${DEFAULT_CLIENT_ID}"
+prompt CLIENT_SECRET "Client secret" "${DEFAULT_CLIENT_SECRET}"
 prompt USERNAME "Username" "${USERNAME:-admin}"
 prompt PASSWORD "Password" "${PASSWORD:-admin}"
 prompt SLEEP_SECONDS "Pausa tra i cicli (secondi)" "${SLEEP_SECONDS:-5}"
