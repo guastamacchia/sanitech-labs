@@ -13,8 +13,6 @@
     <description>Microservizio Directory di Sanitech (Medici, Pazienti, Reparti, Specializzazioni)</description>
     <properties>
         <spring.profile>local</spring.profile>
-        <svc.directory.host>localhost</svc.directory.host>
-        <svc.directory.port>8082</svc.directory.port>
     </properties>
     <profiles>
         <profile>
@@ -24,8 +22,6 @@
             </activation>
             <properties>
                 <spring.profile>local</spring.profile>
-                <svc.directory.host>localhost</svc.directory.host>
-                <svc.directory.port>8082</svc.directory.port>
             </properties>
         </profile>
         <profile>
@@ -38,8 +34,6 @@
             </activation>
             <properties>
                 <spring.profile>staging</spring.profile>
-                <svc.directory.host>10.211.55.23</svc.directory.host>
-                <svc.directory.port>8082</svc.directory.port>
             </properties>
         </profile>
         <profile>
@@ -52,8 +46,6 @@
             </activation>
             <properties>
                 <spring.profile>prod</spring.profile>
-                <svc.directory.host>svc-directory</svc.directory.host>
-                <svc.directory.port>8082</svc.directory.port>
             </properties>
         </profile>
     </profiles>
@@ -208,8 +200,6 @@
                     </profiles>
                     <systemPropertyVariables>
                         <spring.profiles.active>${spring.profile}</spring.profiles.active>
-                        <svc.directory.host>${svc.directory.host}</svc.directory.host>
-                        <svc.directory.port>${svc.directory.port}</svc.directory.port>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
