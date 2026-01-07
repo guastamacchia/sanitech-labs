@@ -9,4 +9,4 @@ rtc:
 
 # API keys (dev). In produzione gestire le chiavi tramite secret manager.
 keys:
-  devkey: devsecret
+  devkey: devsecretdevsecretdevsecretdevsecret
