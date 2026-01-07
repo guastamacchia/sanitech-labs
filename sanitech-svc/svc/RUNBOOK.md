@@ -6,7 +6,7 @@ Questo runbook copre le attività operative sul monorepo dei microservizi (`svc/
 
 - Java 21
 - Docker (per test locali con Compose)
-- Nessuna installazione Maven necessaria: usare il wrapper (`./mvnw`)
+- Nessuna installazione Maven necessaria: il Makefile userà `mvn` se disponibile, altrimenti il wrapper (`./mvnw`)
 
 ## Build & test
 
@@ -29,6 +29,39 @@ Variabili disponibili:
 - `MODULES`: lista di moduli (virgola) da includere con `-pl`/`-am`
 - `PROFILE`: profilo Maven (es. `local`, `prod`)
 - `MAVEN_ARGS`: extra flag (es. `-DskipTests=false`)
+- `MVN`: comando Maven da usare (default: `mvn` se disponibile, altrimenti `./mvnw`)
+- `COMPOSE_FILE`: path al `docker-compose.yml` (default: `../infra/docker-compose.yml`)
+- `COMPOSE_INFRA_PORTS_FILE`: override compose extra per porte infrastruttura
+- `COMPOSE_INFRA_SERVICES`: lista servizi avviati da `compose-up-infra`
+
+Nota: il Makefile aggregatore segue lo standard dei microservizi, ma mantiene la selezione moduli tramite `MODULES`/`PROFILE`.
+
+## Docker / Compose
+
+Avvio stack completo:
+```bash
+make compose-up
+```
+
+Avvio sola infrastruttura:
+```bash
+make compose-up-infra
+```
+
+Stop completo:
+```bash
+make compose-down
+```
+
+Debug configurazione:
+```bash
+make compose-config
+```
+
+Stampa variabili Compose risolte:
+```bash
+make env-print
+```
 
 ## Esecuzione di un singolo servizio
 
@@ -50,6 +83,7 @@ Dal root progetto `sanitech-svc/`:
 bash scripts/up.sh
 ```
 Questo usa `infra/docker-compose.yml` e avvia Keycloak, gateway, Kafka, Postgres, MinIO, Prometheus, Grafana, ecc.
+Gli script sotto `scripts/` sono utili per uno start/stop completo con opzioni extra (es. cleanup volumi), mentre i target `make compose-*` sono più rapidi per iterazioni locali.
 
 Spegnimento:
 ```bash
