@@ -1,8 +1,24 @@
 FROM quay.io/keycloak/keycloak:26.0.7
 
-# Copia il realm da importare all'avvio
+# -----------------------------------------------------
+# Import automatico del realm
+# -----------------------------------------------------
+# Crea la directory standard utilizzata da Keycloak
+# per l'import automatico dei realm all'avvio.
+# I file presenti in /opt/keycloak/data/import
+# vengono caricati automaticamente con l'opzione --import-realm.
 RUN mkdir -p /opt/keycloak/data/import
+
+# Copia il file JSON del realm all'interno dell'immagine.
+# Questo consente di avere un Identity Provider
+# già configurato al primo avvio, senza operazioni manuali.
 COPY sanitech-realm.json /opt/keycloak/data/import/sanitech-realm.json
 
-# Default: avvio in dev mode e import del realm
-ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start-dev", "--http-port=8080", "--import-realm", "--hostname-strict=false"]
+# -----------------------------------------------------
+# Avvio di Keycloak
+# -----------------------------------------------------
+# Avvia Keycloak in modalità "dev":
+# - server HTTP sulla porta 8080
+# - import automatico del realm configurato
+# - hostname-strict disabilitato (utile in ambienti Docker)
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh","start-dev","--http-port=8080","--import-realm","--hostname-strict=false"]
