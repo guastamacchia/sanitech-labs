@@ -30,7 +30,10 @@ public class AuditIngestionConsumer {
     private final AuditEventRepository repository;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "${sanitech.audit.ingestion.topics}", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(
+            topics = "#{'${sanitech.audit.ingestion.topics}'.split(',')}",
+            groupId = "${spring.kafka.consumer.group-id}"
+    )
     public void onMessage(ConsumerRecord<String, String> record) {
         try {
             JsonNode details = parse(record.value());

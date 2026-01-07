@@ -1,33 +1,58 @@
-# =======================
-# Build stage
-# =======================
-FROM maven:3.9-eclipse-temurin-21 AS build
-WORKDIR /app
-
-# Cache Maven deps
-COPY pom.xml mvnw ./
-COPY .mvn .mvn
-RUN chmod +x mvnw
-RUN ./mvnw -q -B -Dmaven.test.skip=true dependency:go-offline || mvn -q -B -Dmaven.test.skip=true dependency:go-offline
-
-# Build
-COPY src src
-RUN ./mvnw -q -B -DskipTests package || mvn -q -B -DskipTests package
-
-# =======================
-# Runtime stage
-# =======================
+# Immagine base Java Runtime (JRE) 21, distribuzione Eclipse Temurin.
+# Include solo il runtime necessario per eseguire l'applicazione.
 FROM eclipse-temurin:21-jre
 
-RUN useradd -r -u 1001 -g root sanitech \
-  && mkdir -p /app \
-  && chown -R sanitech:root /app
+# -----------------------------------------------------
+# Parametri di runtime
+# -----------------------------------------------------
+# Questi ARG permettono di configurare l'utente applicativo.
+ARG APP_USER=sanitech
+ARG APP_UID=1001
+ARG APP_GID=0
 
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -Djava.security.egd=file:/dev/./urandom"
+# -----------------------------------------------------
+# Utente non privilegiato
+# -----------------------------------------------------
+# L'applicazione non viene eseguita come root per ridurre la superficie di attacco.
+RUN useradd -r -u ${APP_UID} -g ${APP_GID} ${APP_USER} \
+    && mkdir -p /app \
+    && chown ${APP_UID}:${APP_GID} /app
+
+# -----------------------------------------------------
+# Opzioni JVM container-friendly
+# -----------------------------------------------------
+# JDK_JAVA_OPTIONS è riconosciuta automaticamente dalla JVM.
+# Le opzioni qui definite:
+# - limitano l'uso della memoria in base al container
+# - forzano l'uscita del processo in caso di OOM
+# - garantiscono encoding UTF-8 coerente
+#
+# Possono essere estese o sovrascritte a runtime
+# tramite JAVA_TOOL_OPTIONS o variabili d'ambiente.
+ENV JDK_JAVA_OPTIONS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
+
+# -----------------------------------------------------
+# Directory di lavoro
+# -----------------------------------------------------
 WORKDIR /app
 
-COPY --from=build /app/target/*.jar app.jar
-USER sanitech
+# -----------------------------------------------------
+# Artefatto applicativo
+# -----------------------------------------------------
+ARG JAR_FILE=target/*.jar
+COPY --chown=${APP_UID}:${APP_GID} ${JAR_FILE} app.jar
 
+# -----------------------------------------------------
+# Utente runtime
+# -----------------------------------------------------
+USER ${APP_UID}:${APP_GID}
+
+# -----------------------------------------------------
+# Porta applicativa
+# -----------------------------------------------------
 EXPOSE 8090
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
+
+# -----------------------------------------------------
+# Avvio dell'applicazione
+# -----------------------------------------------------
+ENTRYPOINT ["java","-jar","/app/app.jar"]

@@ -1,13 +1,5 @@
 -- V4__normalize_departments_specializations.sql
--- Evoluzione schema: rimozione "reparto/specializzazione principale" e introduzione liste (many-to-many).
---
--- Obiettivo:
---   - Tabella anagrafica dei reparti (departments)
---   - Tabella anagrafica delle specializzazioni (specializations)
---   - Associazioni many-to-many:
---       * doctors <-> departments
---       * doctors <-> specializations
---       * patients <-> departments
+-- Normalizza reparti/specializzazioni su tabelle dedicate + relazioni many-to-many.
 
 -- 1) Anagrafica reparti
 CREATE TABLE IF NOT EXISTS departments (
@@ -23,20 +15,25 @@ CREATE TABLE IF NOT EXISTS specializations (
     name  VARCHAR(200) NOT NULL
 );
 
--- 3) Popolamento anagrafiche a partire dai valori esistenti (legacy)
---    In questa fase name=code (placeholder). In ambienti reali si può sostituire con un mapping "umanizzato".
+-- 3) Popola anagrafiche dai valori legacy (name = code come placeholder).
+WITH legacy_departments AS (
+    SELECT DISTINCT UPPER(TRIM(department)) AS code
+    FROM doctors
+    WHERE department IS NOT NULL
+      AND TRIM(department) <> ''
+)
 INSERT INTO departments(code, name)
-SELECT DISTINCT UPPER(TRIM(department)) AS code, UPPER(TRIM(department)) AS name
-FROM doctors
-WHERE department IS NOT NULL
-  AND TRIM(department) <> ''
+SELECT code, code FROM legacy_departments
 ON CONFLICT (code) DO NOTHING;
 
+WITH legacy_specializations AS (
+    SELECT DISTINCT UPPER(TRIM(speciality)) AS code
+    FROM doctors
+    WHERE speciality IS NOT NULL
+      AND TRIM(speciality) <> ''
+)
 INSERT INTO specializations(code, name)
-SELECT DISTINCT UPPER(TRIM(speciality)) AS code, UPPER(TRIM(speciality)) AS name
-FROM doctors
-WHERE speciality IS NOT NULL
-  AND TRIM(speciality) <> ''
+SELECT code, code FROM legacy_specializations
 ON CONFLICT (code) DO NOTHING;
 
 -- 4) Tabelle di associazione
@@ -83,7 +80,7 @@ FROM doctors d
 JOIN specializations sp ON sp.code = UPPER(TRIM(d.speciality))
 ON CONFLICT DO NOTHING;
 
--- 6) Rimozione colonne legacy (non esiste più "principale": restano solo liste)
+-- 6) Rimozione colonne legacy (restano solo liste)
 ALTER TABLE doctors DROP COLUMN IF EXISTS department;
 ALTER TABLE doctors DROP COLUMN IF EXISTS speciality;
 

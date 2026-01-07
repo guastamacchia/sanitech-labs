@@ -28,6 +28,32 @@
         "email"
       ],
       "optionalClientScopes": []
+    },
+    {
+      "clientId": "svc-admissions",
+      "name": "svc-admissions",
+      "secret": "svc-admissions-secret",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "*"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": []
     }
   ],
   "roles": {

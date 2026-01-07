@@ -2,7 +2,12 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'svc-directory'
+  - job_name: 'svc-consents'
     metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['svc-directory:8082']
+      # Prima destinazione: container docker compose (svc-consents).
+      # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+      - targets:
+          - 'svc-consents:8085'
+          - 'host.docker.internal:8085'
+          - 'localhost:8085'
