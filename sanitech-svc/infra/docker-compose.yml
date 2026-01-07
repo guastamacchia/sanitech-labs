@@ -8,8 +8,6 @@ services:
       KC_HEALTH_ENABLED: true
     volumes:
       - ./keycloak/realm-export:/opt/keycloak/data/import:ro
-    ports:
-      - "8081:8080"
     healthcheck:
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
       interval: 10s
@@ -19,8 +17,6 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.7.1
-    ports:
-      - "29092:29092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -48,14 +44,9 @@ services:
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
-    ports:
-      - "9000:9000"
-      - "9001:9001"
 
   mailhog:
     image: mailhog/mailhog:v1.0.1
-    ports:
-      - "8025:8025"
 
   prometheus:
     build: ./prometheus
@@ -64,15 +55,11 @@ services:
       - --storage.tsdb.path=/prometheus
       - --web.console.libraries=/usr/share/prometheus/console_libraries
       - --web.console.templates=/usr/share/prometheus/consoles
-    ports:
-      - "9090:9090"
     volumes:
       - prometheus-data:/prometheus
 
   grafana:
     build: ./grafana
-    ports:
-      - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
@@ -166,8 +153,6 @@ services:
     build:
       context: ../svc/svc-gateway
       dockerfile: infra/Dockerfile
-    ports:
-      - "8080:8080"
     environment:
       OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/sanitech
@@ -198,8 +183,6 @@ services:
     build:
       context: ../svc/svc-directory
       dockerfile: infra/Dockerfile
-    ports:
-      - "8082:8082"
     environment:
       DB_URL: jdbc:postgresql://pg-directory:5432/sanitech_directory
       DB_USER: sanitech
@@ -215,8 +198,6 @@ services:
     build:
       context: ../svc/svc-scheduling
       dockerfile: infra/Dockerfile
-    ports:
-      - "8083:8083"
     environment:
       DB_URL: jdbc:postgresql://pg-scheduling:5432/sanitech_scheduling
       DB_USER: sanitech
@@ -232,8 +213,6 @@ services:
     build:
       context: ../svc/svc-admissions
       dockerfile: infra/Dockerfile
-    ports:
-      - "8084:8084"
     environment:
       DB_URL: jdbc:postgresql://pg-admissions:5432/sanitech_admissions
       DB_USER: sanitech
@@ -249,8 +228,6 @@ services:
     build:
       context: ../svc/svc-consents
       dockerfile: infra/Dockerfile
-    ports:
-      - "8085:8085"
     environment:
       DB_URL: jdbc:postgresql://pg-consents:5432/sanitech_consents
       DB_USER: sanitech
@@ -266,8 +243,6 @@ services:
     build:
       context: ../svc/svc-docs
       dockerfile: infra/Dockerfile
-    ports:
-      - "8086:8086"
     environment:
       DB_URL: jdbc:postgresql://pg-docs:5432/sanitech_docs
       DB_USER: sanitech
@@ -288,8 +263,6 @@ services:
     build:
       context: ../svc/svc-notifications
       dockerfile: infra/Dockerfile
-    ports:
-      - "8087:8087"
     environment:
       DB_URL: jdbc:postgresql://pg-notifications:5432/sanitech_notifications
       DB_USER: sanitech
@@ -308,8 +281,6 @@ services:
     build:
       context: ../svc/svc-audit
       dockerfile: infra/Dockerfile
-    ports:
-      - "8088:8088"
     environment:
       DB_URL: jdbc:postgresql://pg-audit:5432/sanitech_audit
       DB_USER: sanitech
@@ -325,8 +296,6 @@ services:
     build:
       context: ../svc/svc-televisit
       dockerfile: infra/Dockerfile
-    ports:
-      - "8089:8089"
     environment:
       DB_URL: jdbc:postgresql://pg-televisit:5432/sanitech_televisit
       DB_USER: sanitech
@@ -345,8 +314,6 @@ services:
     build:
       context: ../svc/svc-payments
       dockerfile: infra/Dockerfile
-    ports:
-      - "8090:8090"
     environment:
       DB_URL: jdbc:postgresql://pg-payments:5432/sanitech_payments
       DB_USER: sanitech
@@ -363,8 +330,6 @@ services:
     build:
       context: ../svc/svc-prescribing
       dockerfile: infra/Dockerfile
-    ports:
-      - "8091:8091"
     environment:
       DB_URL: jdbc:postgresql://pg-prescribing:5432/sanitech_prescribing
       DB_USER: sanitech
