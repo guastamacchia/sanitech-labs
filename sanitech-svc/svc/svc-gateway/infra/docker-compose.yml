@@ -4,32 +4,34 @@ services:
       context: ..
       dockerfile: infra/Dockerfile
     container_name: sanitech-svc-gateway
+    env_file:
+      - ${ENV_FILE}
     ports:
       - "8080:8080"
     environment:
       # Keycloak realm issuer (OIDC)
-      OAUTH2_ISSUER_URI: "http://host.docker.internal:8081/realms/sanitech"
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
 
-      # Downstream base URLs (local dev)
-      DIRECTORY_URL: "http://host.docker.internal:8082"
-      SCHEDULING_URL: "http://host.docker.internal:8083"
-      ADMISSIONS_URL: "http://host.docker.internal:8084"
-      CONSENTS_URL: "http://host.docker.internal:8085"
-      DOCS_URL: "http://host.docker.internal:8086"
-      NOTIFICATIONS_URL: "http://host.docker.internal:8087"
-      AUDIT_URL: "http://host.docker.internal:8088"
-      TELEVISIT_URL: "http://host.docker.internal:8089"
-      PAYMENTS_URL: "http://host.docker.internal:8090"
-      PRESCRIBING_URL: "http://host.docker.internal:8091"
+      # Downstream base URLs (configurabili via env)
+      DIRECTORY_URL: ${DIRECTORY_URL}
+      SCHEDULING_URL: ${SCHEDULING_URL}
+      ADMISSIONS_URL: ${ADMISSIONS_URL}
+      CONSENTS_URL: ${CONSENTS_URL}
+      DOCS_URL: ${DOCS_URL}
+      NOTIFICATIONS_URL: ${NOTIFICATIONS_URL}
+      AUDIT_URL: ${AUDIT_URL}
+      TELEVISIT_URL: ${TELEVISIT_URL}
+      PAYMENTS_URL: ${PAYMENTS_URL}
+      PRESCRIBING_URL: ${PRESCRIBING_URL}
 
-      # OpenAPI targets (local dev)
-      OPENAPI_DIRECTORY_URL: "http://host.docker.internal:8082/v3/api-docs/directory"
-      OPENAPI_SCHEDULING_URL: "http://host.docker.internal:8083/v3/api-docs/scheduling"
-      OPENAPI_ADMISSIONS_URL: "http://host.docker.internal:8084/v3/api-docs/admissions"
-      OPENAPI_CONSENTS_URL: "http://host.docker.internal:8085/v3/api-docs/consents"
-      OPENAPI_DOCS_URL: "http://host.docker.internal:8086/v3/api-docs/docs"
-      OPENAPI_NOTIFICATIONS_URL: "http://host.docker.internal:8087/v3/api-docs/notifications"
-      OPENAPI_AUDIT_URL: "http://host.docker.internal:8088/v3/api-docs/audit"
-      OPENAPI_TELEVISIT_URL: "http://host.docker.internal:8089/v3/api-docs/televisit"
-      OPENAPI_PAYMENTS_URL: "http://host.docker.internal:8090/v3/api-docs/payments"
-      OPENAPI_PRESCRIBING_URL: "http://host.docker.internal:8091/v3/api-docs/prescribing"
+      # OpenAPI targets (configurabili via env)
+      OPENAPI_DIRECTORY_URL: ${OPENAPI_DIRECTORY_URL}
+      OPENAPI_SCHEDULING_URL: ${OPENAPI_SCHEDULING_URL}
+      OPENAPI_ADMISSIONS_URL: ${OPENAPI_ADMISSIONS_URL}
+      OPENAPI_CONSENTS_URL: ${OPENAPI_CONSENTS_URL}
+      OPENAPI_DOCS_URL: ${OPENAPI_DOCS_URL}
+      OPENAPI_NOTIFICATIONS_URL: ${OPENAPI_NOTIFICATIONS_URL}
+      OPENAPI_AUDIT_URL: ${OPENAPI_AUDIT_URL}
+      OPENAPI_TELEVISIT_URL: ${OPENAPI_TELEVISIT_URL}
+      OPENAPI_PAYMENTS_URL: ${OPENAPI_PAYMENTS_URL}
+      OPENAPI_PRESCRIBING_URL: ${OPENAPI_PRESCRIBING_URL}
