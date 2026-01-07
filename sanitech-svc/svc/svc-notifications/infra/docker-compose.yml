@@ -79,7 +79,7 @@
         - "1025:1025"
         - "8025:8025"
       healthcheck:
-        test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8025/ || exit 1"]
+        test: ["CMD-SHELL", "wget -q --server-response --spider http://127.0.0.1:8025/ 2>&1 | grep -qE 'HTTP/1\\.[01] (200|401)'"]
         interval: 10s
         timeout: 5s
         retries: 20
