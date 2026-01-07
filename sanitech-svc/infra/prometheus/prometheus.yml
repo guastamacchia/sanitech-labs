@@ -13,7 +13,7 @@ scrape_configs:
     scrape_interval: 30s
     static_configs:
       - targets:
-          - "api-gateway:8080"
+          - "svc-gateway:8080"
           - "svc-directory:8082"
           - "svc-scheduling:8083"
           - "svc-admissions:8084"
