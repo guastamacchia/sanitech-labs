@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 /**
  * Mapper MapStruct per convertire {@link TelevisitSession} ↔ DTO.
  */
-@Mapper
+@Mapper(componentModel = "spring")
 public interface TelevisitMapper {
 
     TelevisitDto toDto(TelevisitSession entity);
