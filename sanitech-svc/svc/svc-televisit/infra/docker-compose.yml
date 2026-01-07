@@ -69,13 +69,13 @@
     # =========================
     livekit:
       image: livekit/livekit-server:v1.7.2
-      command: ["--config", "/etc/livekit.yaml"]
+      command: ["--config", "/etc/livekit/livekit.yaml"]
       ports:
         - "7880:7880"
         - "7881:7881"
         - "7882:7882/udp"
       volumes:
-        - ../livekit.yaml:/etc/livekit.yaml:ro
+        - ../livekit.yaml:/etc/livekit/livekit.yaml:ro
       restart: unless-stopped
 
     # =====================================================
