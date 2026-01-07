@@ -84,7 +84,7 @@ sanitech:
 
     # Lista origini consentite (in prod usare domini espliciti).
     allowed-origins:
-      - http://localhost:3000
+      - ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
 
     allowed-methods:
       - GET

@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 /**
  * Mapper MapStruct tra entità {@link Admission} e DTO.
  */
-@Mapper
+@Mapper(componentModel = "spring")
 public interface AdmissionMapper {
 
     AdmissionDto toDto(Admission entity);
