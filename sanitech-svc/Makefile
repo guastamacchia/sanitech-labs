@@ -12,7 +12,8 @@ MAVEN_ARGS ?=
 # =====================================================
 COMPOSE_FILE ?= $(INFRA_DIR)/docker-compose.yml
 COMPOSE_INFRA_PORTS_FILE ?= $(INFRA_DIR)/docker-compose.infra-ports.yml
-COMPOSE_ENV_FILE ?= $(INFRA_DIR)/env/env.local
+ENV ?= local
+COMPOSE_ENV_FILE ?= $(INFRA_DIR)/env/env.$(ENV)
 COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
 
 DOCKER_COMPOSE := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo "docker compose")
@@ -70,4 +71,5 @@ env-print:
 	@echo "COMPOSE_FILE=$(COMPOSE_FILE)"
 	@echo "COMPOSE_INFRA_PORTS_FILE=$(COMPOSE_INFRA_PORTS_FILE)"
 	@echo "COMPOSE_ENV_FILE=$(COMPOSE_ENV_FILE)"
+	@echo "ENV=$(ENV)"
 	@echo "COMPOSE_INFRA_SERVICES=$(COMPOSE_INFRA_SERVICES)"
