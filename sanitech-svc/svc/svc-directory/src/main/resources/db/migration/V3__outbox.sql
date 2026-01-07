@@ -1,5 +1,5 @@
 -- V3__outbox.sql
--- Tabella Outbox per garantire consegna affidabile di eventi su Kafka.
+-- Outbox per consegna affidabile eventi Kafka.
 
 CREATE TABLE IF NOT EXISTS outbox_events (
     id             BIGSERIAL PRIMARY KEY,
@@ -12,5 +12,5 @@ CREATE TABLE IF NOT EXISTS outbox_events (
     published_at   TIMESTAMPTZ
 );
 
--- Indice ottimizzato per recuperare velocemente i messaggi non pubblicati.
+-- Ricerca rapida eventi non pubblicati.
 CREATE INDEX IF NOT EXISTS idx_outbox_unpublished ON outbox_events (published, occurred_at);
