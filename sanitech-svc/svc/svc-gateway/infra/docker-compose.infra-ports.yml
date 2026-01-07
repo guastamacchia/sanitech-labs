@@ -1,4 +1,8 @@
 services:
-  svc-gateway:
+  postgres:
     ports:
-      - "8080:8080"
+      - "5437:5432"
+  kafka:
+    ports:
+      - "9092:9092"
+      - "29092:29092"

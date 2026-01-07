@@ -1,39 +1,42 @@
 services:
   keycloak:
     build: ./keycloak
-    command: ["start-dev", "--http-port=8081", "--import-realm"]
+    command: ["start-dev", "--http-port=8080", "--import-realm", "--hostname-strict=false"]
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: true
     volumes:
       - ./keycloak/realm-export:/opt/keycloak/data/import:ro
-    ports:
-      - "8081:8081"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/health/ready || exit 1"]
+      test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
       interval: 10s
       timeout: 5s
       retries: 30
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      start_period: 40s
 
   kafka:
-    image: confluentinc/cp-kafka:7.6.0
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
+    image: confluentinc/cp-kafka:7.7.1
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      CLUSTER_ID: FJj8tJxkQp2y7Qm3u1kGxA
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:9092 >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
 
   minio:
     image: minio/minio:RELEASE.2024-10-29T16-01-48Z
@@ -41,14 +44,9 @@ services:
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
-    ports:
-      - "9000:9000"
-      - "9001:9001"
 
   mailhog:
     image: mailhog/mailhog:v1.0.1
-    ports:
-      - "8025:8025"
 
   prometheus:
     build: ./prometheus
@@ -57,15 +55,11 @@ services:
       - --storage.tsdb.path=/prometheus
       - --web.console.libraries=/usr/share/prometheus/console_libraries
       - --web.console.templates=/usr/share/prometheus/consoles
-    ports:
-      - "9090:9090"
     volumes:
       - prometheus-data:/prometheus
 
   grafana:
     build: ./grafana
-    ports:
-      - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
@@ -155,86 +149,106 @@ services:
   # =========================
   # Microservices
   # =========================
-  api-gateway:
-    build: ../svc/svc-gateway
-    ports:
-      - "8080:8080"
+  svc-gateway:
+    build:
+      context: ../svc/svc-gateway
+      dockerfile: infra/Dockerfile
     environment:
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/sanitech
+      DIRECTORY_URL: http://svc-directory:8082
+      SCHEDULING_URL: http://svc-scheduling:8083
+      ADMISSIONS_URL: http://svc-admissions:8084
+      CONSENTS_URL: http://svc-consents:8085
+      DOCS_URL: http://svc-docs:8086
+      NOTIFICATIONS_URL: http://svc-notifications:8087
+      AUDIT_URL: http://svc-audit:8088
+      TELEVISIT_URL: http://svc-televisit:8089
+      PAYMENTS_URL: http://svc-payments:8090
+      PRESCRIBING_URL: http://svc-prescribing:8091
+      OPENAPI_DIRECTORY_URL: http://svc-directory:8082/v3/api-docs/directory
+      OPENAPI_SCHEDULING_URL: http://svc-scheduling:8083/v3/api-docs/scheduling
+      OPENAPI_ADMISSIONS_URL: http://svc-admissions:8084/v3/api-docs/admissions
+      OPENAPI_CONSENTS_URL: http://svc-consents:8085/v3/api-docs/consents
+      OPENAPI_DOCS_URL: http://svc-docs:8086/v3/api-docs/docs
+      OPENAPI_NOTIFICATIONS_URL: http://svc-notifications:8087/v3/api-docs/notifications
+      OPENAPI_AUDIT_URL: http://svc-audit:8088/v3/api-docs/audit
+      OPENAPI_TELEVISIT_URL: http://svc-televisit:8089/v3/api-docs/televisit
+      OPENAPI_PAYMENTS_URL: http://svc-payments:8090/v3/api-docs/payments
+      OPENAPI_PRESCRIBING_URL: http://svc-prescribing:8091/v3/api-docs/prescribing
     depends_on:
       - keycloak
 
   svc-directory:
-    build: ../svc/svc-directory
-    ports:
-      - "8082:8082"
+    build:
+      context: ../svc/svc-directory
+      dockerfile: infra/Dockerfile
     environment:
       DB_URL: jdbc:postgresql://pg-directory:5432/sanitech_directory
       DB_USER: sanitech
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
     depends_on:
       - pg-directory
       - kafka
       - keycloak
 
   svc-scheduling:
-    build: ../svc/svc-scheduling
-    ports:
-      - "8083:8083"
+    build:
+      context: ../svc/svc-scheduling
+      dockerfile: infra/Dockerfile
     environment:
       DB_URL: jdbc:postgresql://pg-scheduling:5432/sanitech_scheduling
       DB_USER: sanitech
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
     depends_on:
       - pg-scheduling
       - kafka
       - keycloak
 
   svc-admissions:
-    build: ../svc/svc-admissions
-    ports:
-      - "8084:8084"
+    build:
+      context: ../svc/svc-admissions
+      dockerfile: infra/Dockerfile
     environment:
       DB_URL: jdbc:postgresql://pg-admissions:5432/sanitech_admissions
       DB_USER: sanitech
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
     depends_on:
       - pg-admissions
       - kafka
       - keycloak
 
   svc-consents:
-    build: ../svc/svc-consents
-    ports:
-      - "8085:8085"
+    build:
+      context: ../svc/svc-consents
+      dockerfile: infra/Dockerfile
     environment:
       DB_URL: jdbc:postgresql://pg-consents:5432/sanitech_consents
       DB_USER: sanitech
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
     depends_on:
       - pg-consents
       - kafka
       - keycloak
 
   svc-docs:
-    build: ../svc/svc-docs
-    ports:
-      - "8086:8086"
+    build:
+      context: ../svc/svc-docs
+      dockerfile: infra/Dockerfile
     environment:
       DB_URL: jdbc:postgresql://pg-docs:5432/sanitech_docs
       DB_USER: sanitech
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: minio
       S3_SECRET_KEY: minio123
@@ -246,15 +260,15 @@ services:
       - keycloak
 
   svc-notifications:
-    build: ../svc/svc-notifications
-    ports:
-      - "8087:8087"
+    build:
+      context: ../svc/svc-notifications
+      dockerfile: infra/Dockerfile
     environment:
       DB_URL: jdbc:postgresql://pg-notifications:5432/sanitech_notifications
       DB_USER: sanitech
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
       SMTP_HOST: mailhog
       SMTP_PORT: 1025
     depends_on:
@@ -264,30 +278,30 @@ services:
       - keycloak
 
   svc-audit:
-    build: ../svc/svc-audit
-    ports:
-      - "8088:8088"
+    build:
+      context: ../svc/svc-audit
+      dockerfile: infra/Dockerfile
     environment:
       DB_URL: jdbc:postgresql://pg-audit:5432/sanitech_audit
       DB_USER: sanitech
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
     depends_on:
       - pg-audit
       - kafka
       - keycloak
 
   svc-televisit:
-    build: ../svc/svc-televisit
-    ports:
-      - "8089:8089"
+    build:
+      context: ../svc/svc-televisit
+      dockerfile: infra/Dockerfile
     environment:
       DB_URL: jdbc:postgresql://pg-televisit:5432/sanitech_televisit
       DB_USER: sanitech
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
       LIVEKIT_URL: ${LIVEKIT_URL:-https://your-livekit.example}
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-change_me}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-change_me}
@@ -297,15 +311,15 @@ services:
       - keycloak
 
   svc-payments:
-    build: ../svc/svc-payments
-    ports:
-      - "8090:8090"
+    build:
+      context: ../svc/svc-payments
+      dockerfile: infra/Dockerfile
     environment:
       DB_URL: jdbc:postgresql://pg-payments:5432/sanitech_payments
       DB_USER: sanitech
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_change_me}
     depends_on:
       - pg-payments
@@ -313,15 +327,15 @@ services:
       - keycloak
 
   svc-prescribing:
-    build: ../svc/svc-prescribing
-    ports:
-      - "8091:8091"
+    build:
+      context: ../svc/svc-prescribing
+      dockerfile: infra/Dockerfile
     environment:
       DB_URL: jdbc:postgresql://pg-prescribing:5432/sanitech_prescribing
       DB_USER: sanitech
       DB_PASSWORD: sanitech
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      OAUTH2_ISSUER_URI: http://keycloak:8081/realms/sanitech
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
       CONSENTS_BASE_URL: http://svc-consents:8085
     depends_on:
       - pg-prescribing
