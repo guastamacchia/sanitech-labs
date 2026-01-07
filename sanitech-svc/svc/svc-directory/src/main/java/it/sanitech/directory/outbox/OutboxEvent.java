@@ -19,9 +19,9 @@ import java.time.Instant;
  */
 @Entity
 @Table(name = "outbox_events",
-        indexes = {
-                @Index(name = "idx_outbox_unpublished", columnList = "published, occurred_at")
-        })
+    indexes = {
+        @Index(name = "idx_outbox_unpublished", columnList = "published, occurred_at")
+    })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
