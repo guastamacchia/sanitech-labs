@@ -13,8 +13,7 @@ import org.springframework.stereotype.Component;
  * Logger di ciclo di vita applicativo.
  *
  * <p>
- * Centralizza log "startup/shutdown" con informazioni essenziali (nome applicazione, porta),
- * utili in ambienti container/Kubernetes e per la diagnostica in esercizio.
+ * Centralizza log "startup/shutdown" con informazioni essenziali (nome applicazione, porta).
  * </p>
  */
 @Slf4j

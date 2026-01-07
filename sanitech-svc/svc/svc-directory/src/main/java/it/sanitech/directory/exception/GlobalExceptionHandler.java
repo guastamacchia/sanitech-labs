@@ -98,7 +98,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Violazioni vincoli DB (es. unique email) → 409 Conflict.
+     * Violazioni vincoli database (es. unique email) → 409 Conflict.
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ProblemDetails> conflict(DataIntegrityViolationException ex, HttpServletRequest request) {
