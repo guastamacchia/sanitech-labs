@@ -163,7 +163,9 @@ services:
   # Microservices
   # =========================
   svc-gateway:
-    build: ../svc/svc-gateway
+    build:
+      context: ../svc/svc-gateway
+      dockerfile: infra/Dockerfile
     ports:
       - "8080:8080"
     environment:
@@ -193,7 +195,9 @@ services:
       - keycloak
 
   svc-directory:
-    build: ../svc/svc-directory
+    build:
+      context: ../svc/svc-directory
+      dockerfile: infra/Dockerfile
     ports:
       - "8082:8082"
     environment:
@@ -208,7 +212,9 @@ services:
       - keycloak
 
   svc-scheduling:
-    build: ../svc/svc-scheduling
+    build:
+      context: ../svc/svc-scheduling
+      dockerfile: infra/Dockerfile
     ports:
       - "8083:8083"
     environment:
@@ -223,7 +229,9 @@ services:
       - keycloak
 
   svc-admissions:
-    build: ../svc/svc-admissions
+    build:
+      context: ../svc/svc-admissions
+      dockerfile: infra/Dockerfile
     ports:
       - "8084:8084"
     environment:
@@ -238,7 +246,9 @@ services:
       - keycloak
 
   svc-consents:
-    build: ../svc/svc-consents
+    build:
+      context: ../svc/svc-consents
+      dockerfile: infra/Dockerfile
     ports:
       - "8085:8085"
     environment:
@@ -253,7 +263,9 @@ services:
       - keycloak
 
   svc-docs:
-    build: ../svc/svc-docs
+    build:
+      context: ../svc/svc-docs
+      dockerfile: infra/Dockerfile
     ports:
       - "8086:8086"
     environment:
@@ -273,7 +285,9 @@ services:
       - keycloak
 
   svc-notifications:
-    build: ../svc/svc-notifications
+    build:
+      context: ../svc/svc-notifications
+      dockerfile: infra/Dockerfile
     ports:
       - "8087:8087"
     environment:
@@ -291,7 +305,9 @@ services:
       - keycloak
 
   svc-audit:
-    build: ../svc/svc-audit
+    build:
+      context: ../svc/svc-audit
+      dockerfile: infra/Dockerfile
     ports:
       - "8088:8088"
     environment:
@@ -306,7 +322,9 @@ services:
       - keycloak
 
   svc-televisit:
-    build: ../svc/svc-televisit
+    build:
+      context: ../svc/svc-televisit
+      dockerfile: infra/Dockerfile
     ports:
       - "8089:8089"
     environment:
@@ -324,7 +342,9 @@ services:
       - keycloak
 
   svc-payments:
-    build: ../svc/svc-payments
+    build:
+      context: ../svc/svc-payments
+      dockerfile: infra/Dockerfile
     ports:
       - "8090:8090"
     environment:
@@ -340,7 +360,9 @@ services:
       - keycloak
 
   svc-prescribing:
-    build: ../svc/svc-prescribing
+    build:
+      context: ../svc/svc-prescribing
+      dockerfile: infra/Dockerfile
     ports:
       - "8091:8091"
     environment:
