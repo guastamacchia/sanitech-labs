@@ -75,7 +75,7 @@
         - "7881:7881"
         - "7882:7882/udp"
       volumes:
-        - ./livekit.yaml:/etc/livekit.yaml:ro
+        - ../livekit.yaml:/etc/livekit.yaml:ro
       restart: unless-stopped
 
     # =====================================================
