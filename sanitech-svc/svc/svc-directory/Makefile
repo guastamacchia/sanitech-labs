@@ -101,7 +101,7 @@ docker-run:
 # =====================================================
 # Avvio stack completo (database, Kafka, Keycloak, svc, osservabilità)
 compose-up: build
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file $(ENV_FILE) up -d --build
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) -f $(COMPOSE_INFRA_PORTS_FILE) --env-file $(ENV_FILE) up -d --build
 
 # Avvio infrastruttura senza il microservizio
 compose-up-infra:
