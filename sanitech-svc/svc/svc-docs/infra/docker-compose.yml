@@ -93,7 +93,7 @@
 
     # Inizializza bucket "sanitech-docs"
     minio-mc:
-      image: minio/mc:RELEASE.2024-10-02T09-55-05Z
+      image: minio/mc:latest
       depends_on:
         minio:
           condition: service_healthy
