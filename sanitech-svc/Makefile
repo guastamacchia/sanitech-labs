@@ -1,6 +1,8 @@
 # Prefer Maven already installed on the host to avoid wrapper downloads when offline.
-MVN ?= $(shell command -v mvn >/dev/null 2>&1 && echo mvn || echo ./svc/mvnw)
-POM ?= svc/pom.xml
+SVC_DIR ?= svc
+INFRA_DIR ?= infra
+MVN ?= $(shell command -v mvn >/dev/null 2>&1 && echo mvn || echo ./$(SVC_DIR)/mvnw)
+POM ?= $(SVC_DIR)/pom.xml
 MODULES ?=
 PROFILE ?=
 MAVEN_ARGS ?=
@@ -8,9 +10,11 @@ MAVEN_ARGS ?=
 # =====================================================
 # Docker Compose
 # =====================================================
-COMPOSE_FILE ?= infra/docker-compose.yml
-COMPOSE_INFRA_PORTS_FILE ?=
-COMPOSE_INFRA_SERVICES ?= postgres kafka keycloak prometheus grafana
+COMPOSE_FILE ?= $(INFRA_DIR)/docker-compose.yml
+COMPOSE_INFRA_PORTS_FILE ?= $(INFRA_DIR)/docker-compose.infra-ports.yml
+ENV ?= local
+COMPOSE_ENV_FILE ?= $(INFRA_DIR)/env/env.$(ENV)
+COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
 
 DOCKER_COMPOSE := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo "docker compose")
 
@@ -41,27 +45,31 @@ clean:
 # Docker / Compose
 # =====================================================
 docker-build: build
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) build
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) build
 
 docker-run:
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) up -d
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) up -d
 
 compose-up: build
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) up -d --build
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) up -d --build
 
 compose-up-infra:
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) up -d $(COMPOSE_INFRA_SERVICES)
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) up -d $(COMPOSE_INFRA_SERVICES)
 
 compose-down:
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) down -v
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) down -v
 
 compose-down-infra:
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) down -v
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) down -v
 
 compose-config:
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) config
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) config
 
 env-print:
+	@echo "SVC_DIR=$(SVC_DIR)"
+	@echo "INFRA_DIR=$(INFRA_DIR)"
 	@echo "COMPOSE_FILE=$(COMPOSE_FILE)"
 	@echo "COMPOSE_INFRA_PORTS_FILE=$(COMPOSE_INFRA_PORTS_FILE)"
+	@echo "COMPOSE_ENV_FILE=$(COMPOSE_ENV_FILE)"
+	@echo "ENV=$(ENV)"
 	@echo "COMPOSE_INFRA_SERVICES=$(COMPOSE_INFRA_SERVICES)"
