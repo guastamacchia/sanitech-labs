@@ -16,6 +16,15 @@ ENV ?= local
 COMPOSE_ENV_FILE ?= $(INFRA_DIR)/env/env.$(ENV)
 COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
 
+MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+COMPOSE_FILE := $(abspath $(COMPOSE_FILE))
+COMPOSE_INFRA_PORTS_FILE := $(abspath $(COMPOSE_INFRA_PORTS_FILE))
+COMPOSE_ENV_FILE := $(abspath $(COMPOSE_ENV_FILE))
+
+ifeq (,$(wildcard $(COMPOSE_ENV_FILE)))
+$(error Env file non trovato: $(COMPOSE_ENV_FILE))
+endif
+
 DOCKER_COMPOSE := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo "docker compose")
 
 MODULE_SELECTOR = $(if $(strip $(MODULES)),-pl $(MODULES) -am,)
