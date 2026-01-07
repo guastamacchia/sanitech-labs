@@ -1,8 +1,6 @@
 package it.sanitech.prescribing.outbox;
 
-import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,7 +20,6 @@ public interface OutboxRepository extends JpaRepository<OutboxEvent, Long> {
      * tra più repliche: ogni replica prende solo righe non già lockate.
      * </p>
      */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(value = """
             SELECT * FROM outbox_events
             WHERE published = false
