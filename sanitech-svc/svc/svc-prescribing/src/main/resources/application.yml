@@ -54,7 +54,8 @@ sanitech:
   cors:
     path-patterns:
       - /api/**
-    allowed-origins: []
+    allowed-origins:
+      - ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
     allow-credentials: false
 
   integrations:

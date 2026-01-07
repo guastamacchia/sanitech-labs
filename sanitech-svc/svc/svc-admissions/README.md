@@ -1,67 +1,91 @@
 # Sanitech — svc-admissions
 
-Microservizio **Admissions** della piattaforma **Sanitech**.
+Microservizio **Admissions** della piattaforma **Sanitech**: gestione ricoveri/ammissioni, outbox → Kafka
+(`admissions.events`) e policy ABAC per reparto (`DEPT_*`).
 
-## Scopo (bounded context)
+## Stack tecnico
 
-Questo servizio gestisce:
+- Java 21 (LTS)
+- Spring Boot 3.3.x
+- Spring Security Resource Server (JWT) per Keycloak OIDC
+- PostgreSQL 16+, Flyway
+- Kafka + Outbox Pattern
+- Resilience4j: Retry, RateLimiter, Bulkhead
+- Springdoc OpenAPI (Swagger UI)
+- Actuator + Prometheus/Grafana
 
-- **Ricoveri** (ammissioni) dei pazienti in un reparto (`departmentCode`)
-- **Disponibilità posti letto** per reparto (capacità configurata da profilo **Admin**)
+## Come eseguire (3 comandi)
 
-> Nota: le **visite** (in sede o in tele-visita) sono gestite dal microservizio `svc-scheduling`.
-> Questo servizio gestisce **solo** i ricoveri (inpatient/day-hospital/observation).
-
-## Policy “Consenso”
-
-Il **consenso** non viene gestito qui.
-Il consenso viene verificato nei servizi clinici (es. cartella clinica/referti) quando un **DOCTOR** tenta di accedere ai dati di un **PAZIENTE**.
-
-## Requisiti
-
-- Java 21
-- PostgreSQL 16+
-- Kafka (solo per pubblicazione outbox events)
-- Keycloak (OIDC) come Identity Provider
-
-## Come eseguire (locale)
-
-1) Avvia stack locale (servizio + dipendenze):
+### 1) Avvio infrastruttura (Postgres + Kafka + Keycloak + Prometheus + Grafana)
 ```bash
-docker compose -f infra/docker-compose.yml up -d --build
+make compose-up
+# (il target esegue anche mvn package per generare il JAR prima della build dell'immagine)
+# oppure, se preferisci solo l'infrastruttura:
+# make compose-up-infra
+# (espone Postgres/Kafka anche verso l'host via docker-compose.infra-ports.yml)
+```
+- Il servizio Keycloak viene buildato localmente (Dockerfile in `infra/keycloak`) includendo il realm `sanitech`.
+- Prometheus e Grafana vengono buildati localmente con la configurazione già inclusa.
+
+### 2) Build + test
+```bash
+./mvnw -q test
 ```
 
-2) Per eseguire dal sorgente (senza container), esporta le variabili minime
-(o usa i default in `application.yml`), ferma il container `svc-admissions`
-e avvia Spring Boot:
+### 3) Run
 ```bash
-export DB_URL=jdbc:postgresql://localhost:5432/sanitech_admissions
-export DB_USER=sanitech
-export DB_PASSWORD=sanitech
-export OAUTH2_ISSUER_URI=http://localhost:8081/realms/sanitech
-export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 ./mvnw -q spring-boot:run
 ```
 
-3) Swagger:
-- `http://localhost:8084/swagger-ui/index.html`
+Endpoint utili:
+- svc-admissions: `http://localhost:8084`
+- Swagger UI: `http://localhost:8084/swagger-ui/index.html`
+- Health: `http://localhost:8084/actuator/health`
+- Kafka (listener EXTERNAL): `localhost:29092`
+- Postgres (via `compose-up-infra`): `localhost:5435`
+- Keycloak: `http://localhost:8081`
+- Grafana: `http://localhost:3000`
+- I file env sono in `infra/env/env.<env>` (selezionabili via `PROFILE=<env>` nei target Makefile, default `remote`).
 
-## Endpoints (high level)
+## Variabili d'ambiente principali
 
-- `GET /api/admissions` (ricerca paginata; rate-limited)
-- `POST /api/admissions` (crea un ricovero; DOCTOR/ADMIN con controllo reparto)
-- `POST /api/admissions/{id}/discharge` (dimette un paziente)
-- `GET /api/departments/capacity` (lista capacità e occupazione)
-- `PUT /api/admin/departments/{dept}/capacity` (ADMIN: imposta posti letto)
+- `DB_URL`, `DB_USER`, `DB_PASSWORD`
+- `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_ADVERTISED_HOST`
+- `OAUTH2_ISSUER_URI`
+- `CORS_ALLOWED_ORIGINS`
 
 ## Outbox pattern
 
-Ogni operazione rilevante (create/discharge/capacity update) genera un evento nella tabella `outbox_events`.
-Un job schedulato pubblica gli eventi su Kafka topic `admissions.events` e marca gli eventi come pubblicati.
+Ogni ammissione aggiornata genera un evento in `outbox_events`
+nella **stessa transazione** dell'operazione di dominio. Un job schedulato pubblica su Kafka
+`admissions.events` con retry/backoff e marca gli eventi come pubblicati.
 
-## Build & test
+## Sicurezza (Keycloak JWT)
 
+Il servizio è configurato come **Resource Server** JWT.
+
+- `ROLE_ADMIN`: gestione completa delle API
+- `ROLE_DOCTOR`: accesso a dati coerenti col reparto (authority `DEPT_<CODE>`)
+- `ROLE_PATIENT`: accesso ai propri ricoveri
+
+### Keycloak locale pronto all'uso
+- `docker compose up keycloak svc-admissions` importa automaticamente il realm `sanitech` da `keycloak/sanitech-realm.json`.
+- Client configurati:
+  - `svc-admissions` (secret: `svc-admissions-secret`)
+  - `svc-directory` (secret: `svc-directory-secret`)
+- Utenti di test:
+  - `admin` / `admin` con ruolo `ADMIN`
+  - `doctor` / `doctor` con ruolo `DOCTOR` e claim `dept=CARDIO`
+
+### Smoke test locale
 ```bash
-./mvnw -q -DskipTests package
-./mvnw -q test
+./scripts/smoke.sh
+./scripts/rate-limit.sh
+./scripts/bulkhead.sh
+./scripts/loop.sh
 ```
+- Gli script verificano health, metriche, rate limit e loop continuo sugli endpoint principali (`SERVICE_URL` di default `http://localhost:8084`).
+
+### Postman
+- Collezione: `postman/svc-admissions.postman_collection.json`
+- Environment di esempio: `postman/svc-admissions.postman_environment.json`
