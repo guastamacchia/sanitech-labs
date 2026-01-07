@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Mapper MapStruct per convertire tra entità JPA e DTO.
  */
-@Mapper(unmappedTargetPolicy = ReportingPolicy.ERROR)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface PrescriptionMapper {
 
     PrescriptionDto toDto(Prescription entity);
