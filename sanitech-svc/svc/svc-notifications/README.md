@@ -1,74 +1,98 @@
 # Sanitech — svc-notifications
 
-Microservizio **Notifications** della piattaforma Sanitech.
+Microservizio **Notifications** della piattaforma **Sanitech**: gestione notifiche in-app/email,
+invio SMTP, outbox → Kafka (`notifications.events`) e policy ABAC per reparto (`DEPT_*`).
 
-## Scopo
-Gestisce:
-- creazione e consultazione di notifiche (in-app / email);
-- invio email via SMTP;
-- pubblicazione eventi tramite **Outbox pattern** su Kafka (topic `notifications.events`).
+## Stack tecnico
 
-## Stack
-- Java 21, Spring Boot 3.5.x
-- PostgreSQL 16+ + Flyway
-- Spring Security Resource Server (JWT) con Keycloak OIDC
-- Kafka (producer) per outbox
-- Resilience4j (RateLimiter/Bulkhead/Retry)
-- Actuator + Prometheus
+- Java 21 (LTS)
+- Spring Boot 3.3.x
+- Spring Security Resource Server (JWT) per Keycloak OIDC
+- PostgreSQL 16+, Flyway
+- Kafka + Outbox Pattern
+- MailHog (dev) come SMTP
+- Resilience4j: CircuitBreaker, Retry, RateLimiter, Bulkhead
+- Springdoc OpenAPI (Swagger UI)
+- Actuator + Prometheus/Grafana
 
-## Avvio locale (dev)
-1) Avvia servizio e dipendenze (Postgres, Kafka, MailHog):
+## Come eseguire (3 comandi)
+
+### 1) Avvio infrastruttura (Postgres + Kafka + Keycloak + MailHog + Prometheus + Grafana)
 ```bash
-docker compose -f infra/docker-compose.yml up -d --build
+make compose-up
+# (il target esegue anche mvn package per generare il JAR prima della build dell'immagine)
+# oppure, se preferisci solo l'infrastruttura:
+# make compose-up-infra
+# (espone Postgres/Kafka/MailHog anche verso l'host via docker-compose.infra-ports.yml)
+```
+- Il servizio Keycloak viene buildato localmente (Dockerfile in `infra/keycloak`) includendo il realm `sanitech`.
+- MailHog espone SMTP `1025` e UI `http://localhost:8025`.
+- Prometheus e Grafana vengono buildati localmente con la configurazione già inclusa.
+
+### 2) Build + test
+```bash
+./mvnw -q test
 ```
 
-> Per sviluppo con `./mvnw spring-boot:run`, ferma il container `svc-notifications`
-> o avvia solo i servizi `postgres`/`redpanda`/`mailhog` dal compose.
+### 3) Run
+```bash
+./mvnw -q spring-boot:run
+```
 
-2) URL utili:
+Endpoint utili:
+- svc-notifications: `http://localhost:8087`
 - Swagger UI: `http://localhost:8087/swagger-ui/index.html`
-- OpenAPI JSON: `http://localhost:8087/v3/api-docs/notifications`
 - Health: `http://localhost:8087/actuator/health`
+- Kafka (listener EXTERNAL): `localhost:29092`
+- Postgres (via `compose-up-infra`): `localhost:5436`
 - MailHog UI: `http://localhost:8025`
+- Keycloak: `http://localhost:8081`
+- Grafana: `http://localhost:3000`
+- I file env sono in `infra/env/env.<env>` (selezionabili via `PROFILE=<env>` nei target Makefile, default `remote`).
 
-## Configurazione (principali variabili)
-- DB:
-  - `DB_URL` (default: `jdbc:postgresql://localhost:5436/sanitech_notifications`)
-  - `DB_USER`, `DB_PASSWORD`
-- Keycloak (issuer):
-  - `spring.security.oauth2.resourceserver.jwt.issuer-uri`
-- Kafka:
-  - `KAFKA_BOOTSTRAP_SERVERS` (default `localhost:9092`)
-- SMTP:
-  - `spring.mail.host` (default `localhost`)
-  - `spring.mail.port` (default `1025`)
-  - `sanitech.notifications.mail.from`
+## Variabili d'ambiente principali
 
-## Sicurezza
-Il servizio è protetto da JWT (Keycloak Resource Server).  
-Il converter mappa:
-- `realm_access.roles` → `ROLE_*`
-- `scope` → `SCOPE_*`
-- claim `dept` → `DEPT_*` (ABAC; non essenziale per questo servizio ma mantenuto per coerenza architetturale)
+- `DB_URL`, `DB_USER`, `DB_PASSWORD`
+- `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_ADVERTISED_HOST`
+- `OAUTH2_ISSUER_URI`
+- `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM`
+- `CORS_ALLOWED_ORIGINS`
 
-Endpoint pubblici:
-- `/v3/api-docs/**`, `/swagger-ui/**`, `/actuator/health/**`
+## Outbox pattern
 
-Endpoint amministrativi:
-- `/api/admin/**` richiede `ROLE_ADMIN`.
+Ogni notifica generata/aggiornata produce un evento in tabella `outbox_events`
+nella **stessa transazione** dell'operazione applicativa. Un job schedulato pubblica su Kafka
+`notifications.events` con retry/backoff e marca gli eventi come pubblicati.
 
-## Outbox pattern (eventi)
-Ogni operazione rilevante genera un record su `outbox_events` nella stessa transazione dell'operazione applicativa.
-Un job schedulato pubblica gli eventi su Kafka e marca il record come pubblicato.
+## Sicurezza (Keycloak JWT)
 
-Topic: `notifications.events`
+Il servizio è configurato come **Resource Server** JWT.
 
-## Esecuzione test
+- `ROLE_ADMIN`: gestione completa
+- `ROLE_DOCTOR`: accesso alle proprie notifiche (ABAC `DEPT_*`)
+
+### Keycloak locale pronto all'uso
+- `docker compose up keycloak svc-notifications` importa automaticamente il realm `sanitech` da `keycloak/sanitech-realm.json`.
+- Client configurati:
+  - `svc-notifications` (secret: `svc-notifications-secret`)
+  - `svc-directory` (secret: `svc-directory-secret`)
+- Utenti di test:
+  - `admin` / `admin` con ruolo `ADMIN`
+  - `doctor` / `doctor` con ruolo `DOCTOR` e claim `dept=CARDIO`
+
+### SMTP (MailHog in dev)
+- SMTP: `MAIL_HOST`/`MAIL_PORT` (default `localhost:1025`)
+- UI: `http://localhost:8025` per verificare le email inviate.
+
+### Smoke test locale
 ```bash
-./mvnw test
+./scripts/smoke.sh
+./scripts/rate-limit.sh
+./scripts/bulkhead.sh
+./scripts/loop.sh
 ```
+- Gli script verificano health, metriche, rate limit e loop continuo sugli endpoint principali (`SERVICE_URL` di default `http://localhost:8087`).
 
-## Docker build
-```bash
-docker build -t svc-notifications:local .
-```
+### Postman
+- Collezione: `postman/svc-notifications.postman_collection.json`
+- Environment di esempio: `postman/svc-notifications.postman_environment.json`
