@@ -85,20 +85,16 @@ spring:
   # - Locale: localhost + porta esposta
   kafka:
     bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
-
     producer:
       # Serializzazione dei messaggi come String (JSON).
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
-
       # Numero massimo di retry in caso di errore.
       retries: ${KAFKA_PRODUCER_RETRIES:10}
-
       properties:
         # "all" garantisce durabilità del messaggio
         # (leader + repliche).
         acks: ${KAFKA_PRODUCER_ACKS:all}
-
         # Tempo di attesa per batching (ms).
         linger.ms: ${KAFKA_PRODUCER_LINGER_MS:5}
 
