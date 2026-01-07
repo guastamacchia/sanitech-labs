@@ -49,7 +49,7 @@ docker-run:
 	docker run --rm --env-file $(ENV_FILE) -p $(PORT):$(PORT) $(IMAGE)
 
 compose-up: build
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file $(ENV_FILE) up -d --build
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) -f $(COMPOSE_INFRA_PORTS_FILE) --env-file $(ENV_FILE) up -d --build
 
 compose-up-infra:
 	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) -f $(COMPOSE_INFRA_PORTS_FILE) --env-file $(ENV_FILE) up -d postgres kafka keycloak prometheus grafana
