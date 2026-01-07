@@ -3,7 +3,7 @@
 ## Prerequisiti
 - Docker / Docker Compose
 - Java 21
-- Maven (wrapper incluso: `./mvnw`)
+- Maven (wrapper incluso: `./svc/mvnw`)
 
 ## Avvio stack locale (infra + microservizi)
 ```bash
@@ -22,7 +22,6 @@ Servizi esposti (host):
 
 ## Build & test (aggregatore)
 ```bash
-cd svc
 make build   # package con skip test
 make test    # test su tutti i moduli (usa MODULES=svc-... per filtrare)
 ```
@@ -31,6 +30,35 @@ Variabili utili:
 - `MODULES=svc-directory,svc-consents`
 - `PROFILE=local`
 - `MAVEN_ARGS=-DskipTests=false`
+- `MVN=mvn`
+- `POM=svc/pom.xml`
+
+## Docker / Compose (Makefile root)
+
+Avvio stack completo:
+```bash
+make compose-up
+```
+
+Avvio sola infrastruttura:
+```bash
+make compose-up-infra
+```
+
+Stop completo:
+```bash
+make compose-down
+```
+
+Debug configurazione:
+```bash
+make compose-config
+```
+
+Stampa variabili Compose risolte:
+```bash
+make env-print
+```
 
 ## Postman
 - Collezione ed environment: `postman/`
@@ -38,3 +66,4 @@ Variabili utili:
 ## Note operative
 - I Dockerfile per Prometheus/Grafana/Keycloak sono in `infra/`.
 - Ogni microservizio ha il proprio `infra/docker-compose.yml` e Makefile locale per run/build.
+- Gli script sotto `scripts/` sono utili per uno start/stop completo con opzioni extra (es. cleanup volumi), mentre i target `make compose-*` sono più rapidi per iterazioni locali.
