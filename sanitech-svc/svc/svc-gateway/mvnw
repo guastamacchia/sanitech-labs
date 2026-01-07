@@ -1,67 +1,24 @@
 #!/bin/sh
-# ----------------------------------------------------------------------------
-# Maven Wrapper startup script, version 3.3.2
-# (https://github.com/takari/maven-wrapper)
-# ----------------------------------------------------------------------------
+# Maven Wrapper - minimal script (generated)
+# Runs Maven using the wrapper JAR downloaded automatically if missing.
 
-# Required for POSIX compliance
-set -e
+BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-MVNW_REPOURL="https://repo.maven.apache.org/maven2"
-MVNW_VERBOSE="${MVNW_VERBOSE:-false}"
+WRAPPER_JAR="$BASE_DIR/.mvn/wrapper/maven-wrapper.jar"
+WRAPPER_PROPERTIES="$BASE_DIR/.mvn/wrapper/maven-wrapper.properties"
 
-# Resolve the location of the script
-PRG="$0"
-while [ -h "$PRG" ]; do
-  ls=`ls -ld "$PRG"`
-  link=`expr "$ls" : '.*-> \(.*\)$'`
-  if expr "$link" : '/.*' > /dev/null; then
-    PRG="$link"
-  else
-    PRG=`dirname "$PRG"`"/$link"
-  fi
-done
-
-SAVEDIR=`pwd`
-BASEDIR=`dirname "$PRG"`
-BASEDIR=`cd "$BASEDIR" && pwd`
-cd "$SAVEDIR"
-
-WRAPPER_DIR="$BASEDIR/.mvn/wrapper"
-JAR="$WRAPPER_DIR/maven-wrapper.jar"
-PROPERTIES="$WRAPPER_DIR/maven-wrapper.properties"
-
-# Download maven-wrapper.jar if needed
-if [ ! -f "$JAR" ]; then
-  if [ "$MVNW_VERBOSE" = "true" ]; then
-    echo "Downloading $JAR"
-  fi
-
-  if [ ! -f "$PROPERTIES" ]; then
-    echo "Missing $PROPERTIES"
-    exit 1
-  fi
-
-  WRAPPER_URL=`grep -E '^wrapperUrl=' "$PROPERTIES" | cut -d'=' -f2-`
-  if [ -z "$WRAPPER_URL" ]; then
-    WRAPPER_URL="$MVNW_REPOURL/org/apache/maven/wrapper/maven-wrapper/3.3.2/maven-wrapper-3.3.2.jar"
-  fi
-
-  mkdir -p "$WRAPPER_DIR"
-
+if [ ! -f "$WRAPPER_JAR" ]; then
+  echo "maven-wrapper.jar not found, downloading..."
+  MAVEN_WRAPPER_URL="https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-wrapper/3.3.2/maven-wrapper-3.3.2.jar"
+  mkdir -p "$(dirname "$WRAPPER_JAR")"
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$WRAPPER_URL" -o "$JAR"
+    curl -fsSL "$MAVEN_WRAPPER_URL" -o "$WRAPPER_JAR"
   elif command -v wget >/dev/null 2>&1; then
-    wget -q "$WRAPPER_URL" -O "$JAR"
+    wget -q "$MAVEN_WRAPPER_URL" -O "$WRAPPER_JAR"
   else
-    echo "To use the Maven Wrapper, please install curl or wget."
+    echo "ERROR: curl or wget required to download maven-wrapper.jar"
     exit 1
   fi
 fi
 
-JAVA_EXEC="${JAVA_HOME:-}/bin/java"
-if [ ! -x "$JAVA_EXEC" ]; then
-  JAVA_EXEC="java"
-fi
-
-exec "$JAVA_EXEC" -jar "$JAR" "$@"
+exec java -jar "$WRAPPER_JAR" "$@"
