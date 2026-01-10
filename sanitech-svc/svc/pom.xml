@@ -9,6 +9,8 @@
     <packaging>pom</packaging>
     <!-- Elenco moduli -->
     <modules>
+        <module>commons-libraries</module>
+        <module>outbox-event-managed</module>
         <module>svc-directory</module>
         <module>svc-gateway</module>
         <module>svc-scheduling</module>

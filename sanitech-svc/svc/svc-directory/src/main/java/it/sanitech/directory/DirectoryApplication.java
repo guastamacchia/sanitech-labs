@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * il publisher Outbox → Kafka.
  * </p>
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"it.sanitech.directory", "it.sanitech.commons", "it.sanitech.outbox"})
 @EnableScheduling
 public class DirectoryApplication {
 

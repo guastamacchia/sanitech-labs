@@ -3,7 +3,7 @@ package it.sanitech.directory.web;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import it.sanitech.directory.services.DoctorService;
 import it.sanitech.directory.services.dto.DoctorDto;
-import it.sanitech.directory.utilities.AppConstants;
+import it.sanitech.commons.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;

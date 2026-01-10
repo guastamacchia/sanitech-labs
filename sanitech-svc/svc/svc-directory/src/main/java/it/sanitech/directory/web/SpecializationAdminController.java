@@ -4,7 +4,7 @@ import it.sanitech.directory.services.SpecializationService;
 import it.sanitech.directory.services.dto.SpecializationDto;
 import it.sanitech.directory.services.dto.create.SpecializationCreateDto;
 import it.sanitech.directory.services.dto.update.SpecializationUpdateDto;
-import it.sanitech.directory.utilities.AppConstants;
+import it.sanitech.commons.utilities.AppConstants;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
