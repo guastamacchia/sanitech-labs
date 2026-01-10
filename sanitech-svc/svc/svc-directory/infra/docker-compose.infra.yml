@@ -7,7 +7,9 @@ services:
   # =========================
   # Database relazionale usato dal microservizio.
   postgres:
-    image: postgres:16
+    build:
+      context: ./postgres
+    image: sanitech/postgres-directory:${SPRING_PROFILES_ACTIVE}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${DATABASE_NAME}
@@ -36,7 +38,9 @@ services:
   # - INTERNAL: per i container Docker (kafka:9092)
   # - EXTERNAL: per accesso dall'host (${KAFKA_ADVERTISED_HOST}:29092)
   kafka:
-    image: confluentinc/cp-kafka:7.7.1
+    build:
+      context: ./kafka
+    image: sanitech/kafka-directory:${SPRING_PROFILES_ACTIVE}
     ports:
       - "9092:9092"
       - "29092:29092"
@@ -78,6 +82,9 @@ services:
       timeout: 10s
       retries: 30
       start_period: 60s
+    volumes:
+      # Persistenza dei log e dei dati di Kafka (KRaft)
+      - sanitech_kafka_data:/var/lib/kafka/data
     restart: unless-stopped
 
   # =========================
@@ -169,5 +176,6 @@ services:
 # =====================================================
 volumes:
   sanitech_pgdata:
+  sanitech_kafka_data:
   sanitech_prometheus:
   sanitech_grafana:
