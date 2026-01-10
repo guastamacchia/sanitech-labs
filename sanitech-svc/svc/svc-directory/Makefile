@@ -1,32 +1,44 @@
+# =====================================================
+# Makefile — Sanitech svc-directory
+# =====================================================
+# Convenzioni:
+# - PROFILE: profilo Spring (es. local | remote | staging | prod)
+# - ENV:     selettore del file env (di default coincide con PROFILE)
+#
+# Note sui file env:
+# - infra/env/env.<ENV> deve essere in formato semplice KEY=VALUE (senza spazi non quotati).
+# - Le variabili del file env vengono importate (include) ed esportate ai processi figli.
+# =====================================================
+
 ARTIFACT_ID ?= svc-directory
-SVC_NAME ?= $(ARTIFACT_ID)
-PORT ?= 8082
-# Prefer Maven already installed on the host to avoid wrapper downloads when offline.
+SVC_NAME    ?= $(ARTIFACT_ID)
+PORT        ?= 8082
+
+# Si preferisce Maven già installato sull'host per evitare il download del wrapper quando si è offline.
 MVN ?= $(shell command -v mvn >/dev/null 2>&1 && echo mvn || echo ./mvnw)
+
+# =====================================================
+# Mapping profilo/env
+# =====================================================
+PROFILE ?= remote
+ENV     ?= $(PROFILE)
 
 # =====================================================
 # Variabili di progetto esportate
 # =====================================================
 export ARTIFACT_ID
 export SVC_NAME
-
-# =====================================================
-# Mapping profilo/env
-# =====================================================
-# PROFILE: profilo Spring (local | staging | prod)
-# ENV:     nome del file env (di default coincide con PROFILE)
-# PROFILE ?= local
-# PROFILE ?= staging
-PROFILE ?= remote
-ENV ?= $(PROFILE)
 export PROFILE
 export ENV
 
 # =====================================================
 # File di configurazione
 # =====================================================
-COMPOSE_FILE ?= infra/docker-compose.yml
-COMPOSE_INFRA_PORTS_FILE ?= infra/docker-compose.infra-ports.yml
+# Full stack (include anche il microservizio)
+COMPOSE_FILE        ?= infra/docker-compose.yml
+# Infra-only (postgres/kafka/keycloak/etc.)
+COMPOSE_INFRA_FILE  ?= infra/docker-compose.infra.yml
+
 DOCKERFILE ?= infra/Dockerfile
 
 # Tag immagine: sanitech/<svc-name>:<env>
@@ -38,10 +50,11 @@ ENV_FILE ?= infra/env/env.$(ENV)
 # =====================================================
 # Path assoluti per evitare problemi con IDE e working dir diversi
 # =====================================================
-MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-ENV_FILE := $(abspath $(ENV_FILE))
-COMPOSE_FILE := $(abspath $(COMPOSE_FILE))
-COMPOSE_INFRA_PORTS_FILE := $(abspath $(COMPOSE_INFRA_PORTS_FILE))
+MAKEFILE_DIR         := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+ENV_FILE             := $(abspath $(ENV_FILE))
+COMPOSE_FILE         := $(abspath $(COMPOSE_FILE))
+COMPOSE_INFRA_FILE   := $(abspath $(COMPOSE_INFRA_FILE))
+DOCKERFILE           := $(abspath $(DOCKERFILE))
 
 # Rende visibile ENV_FILE a docker-compose.yml (es. env_file: - ${ENV_FILE})
 export ENV_FILE
@@ -56,26 +69,42 @@ endif
 # =====================================================
 # Caricamento variabili dal file .env per comandi host (mvn run/test/build)
 # =====================================================
-# NOTE:
-# - include legge le coppie KEY=VALUE dal file
-# - export rende disponibili le variabili ai processi figli (mvn, ecc.)
 include $(ENV_FILE)
 export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' $(ENV_FILE))
 
 # =====================================================
 # Selezione comando Docker Compose
 # =====================================================
-# Se presente, usa docker-compose (legacy); altrimenti docker compose (v2).
 DOCKER_COMPOSE := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo "docker compose")
 
-.PHONY: build test run docker-build docker-run compose-up compose-up-infra compose-down compose-down-infra env-print compose-config
+.PHONY: help \
+        build test run \
+        docker-build docker-run \
+        compose-up compose-down compose-config \
+        infra-up infra-down infra-config \
+        env-print
+
+help:
+	@echo "Target disponibili:"
+	@echo "  build                 mvn clean package (skipTests)"
+	@echo "  test                  mvn test"
+	@echo "  run                   avvia Spring Boot su host (SPRING_PROFILES_ACTIVE=$(PROFILE))"
+	@echo "  docker-build          build immagine microservizio (richiede build jar)"
+	@echo "  docker-run            run immagine microservizio standalone"
+	@echo ""
+	@echo "  compose-up            avvia FULL stack (include $(ARTIFACT_ID)) via compose"
+	@echo "  compose-down          stop + cleanup FULL stack (include volumi)"
+	@echo "  compose-config        stampa config FULL stack risultante (debug)"
+	@echo ""
+	@echo "  infra-up              avvia solo infrastruttura via compose infra-only"
+	@echo "  infra-down            stop + cleanup solo infrastruttura (include volumi)"
+	@echo "  infra-config          stampa config infra-only risultante (debug)"
+	@echo ""
+	@echo "  env-print             stampa contesto risolto"
 
 # =====================================================
-# Maven
+# Maven (host)
 # =====================================================
-# I target Maven usano:
-# - il profilo Spring definito in PROFILE
-# - le variabili caricate da ENV_FILE (DATABASE_*, OAUTH2_*, KAFKA_*, ecc.)
 build:
 	$(MVN) clean -DskipTests package
 
@@ -83,42 +112,44 @@ test:
 	$(MVN) test
 
 run:
-	$(MVN) spring-boot:run
+	SPRING_PROFILES_ACTIVE=$(PROFILE) $(MVN) spring-boot:run
 
 # =====================================================
-# Docker
+# Docker (microservizio)
 # =====================================================
-# Build dell'immagine del microservizio usando il Dockerfile sotto infra/
 docker-build: build
 	docker build -f $(DOCKERFILE) -t $(IMAGE) .
 
-# Run standalone dell'immagine (utile per smoke test rapido)
 docker-run:
 	docker run --rm --env-file $(ENV_FILE) -p $(PORT):$(PORT) $(IMAGE)
 
 # =====================================================
-# Docker Compose
+# Docker Compose — FULL stack (include microservizio)
 # =====================================================
-# Avvio stack completo (database, Kafka, Keycloak, svc, osservabilità)
 compose-up: build
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) -f $(COMPOSE_INFRA_PORTS_FILE) --env-file $(ENV_FILE) up -d --build
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file $(ENV_FILE) up -d --build
 
-# Avvio infrastruttura senza il microservizio
-compose-up-infra:
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) -f $(COMPOSE_INFRA_PORTS_FILE) --env-file $(ENV_FILE) up -d postgres kafka keycloak prometheus grafana
-
-# Stop + cleanup completo (include volumi)
 compose-down:
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file $(ENV_FILE) down -v
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file $(ENV_FILE) down -v --remove-orphans
 
-# Stop + cleanup dell'infrastruttura
-compose-down-infra:
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) -f $(COMPOSE_INFRA_PORTS_FILE) --env-file $(ENV_FILE) down -v
+compose-config:
+	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file $(ENV_FILE) config
+
+# =====================================================
+# Docker Compose — INFRA ONLY (senza microservizio)
+# =====================================================
+infra-up:
+	$(DOCKER_COMPOSE) -f $(COMPOSE_INFRA_FILE) --env-file $(ENV_FILE) up -d --build
+
+infra-down:
+	$(DOCKER_COMPOSE) -f $(COMPOSE_INFRA_FILE) --env-file $(ENV_FILE) down -v --remove-orphans
+
+infra-config:
+	$(DOCKER_COMPOSE) -f $(COMPOSE_INFRA_FILE) --env-file $(ENV_FILE) config
 
 # =====================================================
 # Utilità / Debug
 # =====================================================
-# Stampa a video il contesto env/profilo risolto
 env-print:
 	@echo "ARTIFACT_ID=$(ARTIFACT_ID)"
 	@echo "SVC_NAME=$(SVC_NAME)"
@@ -126,8 +157,8 @@ env-print:
 	@echo "ENV=$(ENV)"
 	@echo "ENV_FILE=$(ENV_FILE)"
 	@echo "IMAGE=$(IMAGE)"
+	@echo "PORT=$(PORT)"
 	@echo "COMPOSE_FILE=$(COMPOSE_FILE)"
-
-# Stampa la configurazione Compose risultante (utile per debug interpolazione variabili)
-compose-config:
-	$(DOCKER_COMPOSE) -f $(COMPOSE_FILE) --env-file $(ENV_FILE) config
+	@echo "COMPOSE_INFRA_FILE=$(COMPOSE_INFRA_FILE)"
+	@echo "DOCKERFILE=$(DOCKERFILE)"
+	@echo "DOCKER_COMPOSE=$(DOCKER_COMPOSE)"

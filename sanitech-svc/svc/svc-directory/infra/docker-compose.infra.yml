@@ -110,37 +110,6 @@ services:
       start_period: 40s
     restart: unless-stopped
 
-  # Microservizio Java (Spring Boot). Il JAR viene compilato esternamente e poi inserito nell'immagine Docker.
-  svc-directory:
-    build:
-      # Il contesto è la root del progetto.
-      context: ..
-      # Dockerfile dell'applicazione.
-      dockerfile: infra/Dockerfile
-      args:
-        JAR_FILE: target/*.jar
-    image: sanitech/svc-directory:${SPRING_PROFILES_ACTIVE}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
-    ports:
-      # Espone API REST sull'host.
-      - "${PORT:-8082}:8082"
-    healthcheck:
-      # Verifica che il microservizio sia in ascolto sulla porta applicativa
-      test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8082'"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 25s
-    restart: unless-stopped
-
   # =========================
   # Prometheus
   # =========================
