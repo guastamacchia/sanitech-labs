@@ -12,6 +12,14 @@
     <name>Sanitech - svc-directory</name>
     <description>Microservizio Directory di Sanitech (Medici, Pazienti, Reparti, Specializzazioni)</description>
     <dependencies>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>commons-libraries</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>outbox-event-managed</artifactId>
+        </dependency>
         <!-- Spring Boot web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

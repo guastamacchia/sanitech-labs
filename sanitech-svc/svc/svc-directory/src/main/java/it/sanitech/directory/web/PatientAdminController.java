@@ -4,7 +4,7 @@ import it.sanitech.directory.services.PatientService;
 import it.sanitech.directory.services.dto.PatientDto;
 import it.sanitech.directory.services.dto.create.PatientCreateDto;
 import it.sanitech.directory.services.dto.update.PatientUpdateDto;
-import it.sanitech.directory.utilities.AppConstants;
+import it.sanitech.commons.utilities.AppConstants;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;

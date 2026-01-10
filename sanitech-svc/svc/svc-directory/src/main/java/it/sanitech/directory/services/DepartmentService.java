@@ -1,6 +1,6 @@
 package it.sanitech.directory.services;
 
-import it.sanitech.directory.exception.NotFoundException;
+import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.directory.repositories.DepartmentRepository;
 import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.services.dto.DepartmentDto;
