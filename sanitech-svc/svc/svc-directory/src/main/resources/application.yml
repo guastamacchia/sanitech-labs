@@ -76,6 +76,30 @@ spring:
           # supportare Docker, locale e ambienti remoti.
           jwk-set-uri: ${OAUTH2_SCHEME}://${OAUTH2_HOST}:${OAUTH2_PORT}/realms/${OAUTH2_REALM}/protocol/openid-connect/certs
 
+# =========================
+# Sanitech Commons
+# =========================
+sanitech:
+  cors:
+    enabled: true
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+  openapi:
+    enabled: true
+    group: directory
+    packages-to-scan:
+      - it.sanitech.directory.web
+    title: Sanitech — Directory API
+    version: v1
+
   # =========================
   # Kafka
   # =========================
