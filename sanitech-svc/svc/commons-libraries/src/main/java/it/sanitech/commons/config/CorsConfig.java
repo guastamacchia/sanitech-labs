@@ -1,5 +1,6 @@
 package it.sanitech.commons.config;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -9,12 +10,22 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import java.util.List;
+
 /**
- * Configurazione CORS condivisa.
+ * Configurazione CORS condivisa tra i microservizi Sanitech.
  *
  * <p>
- * La policy viene costruita leggendo {@link CorsProperties} (da YAML) e
- * applicata ai path configurati.
+ * Questa classe si occupa di:
+ * </p>
+ * <ul>
+ *   <li>validare la coerenza della configurazione CORS a startup</li>
+ *   <li>creare e registrare un {@link CorsFilter} sui path configurati</li>
+ * </ul>
+ *
+ * <p>
+ * La normalizzazione dei valori (trim, rimozione null/vuoti, deduplica, normalizzazione path)
+ * è demandata a {@link CorsProperties}.
  * </p>
  */
 @Slf4j
@@ -25,8 +36,79 @@ public class CorsConfig {
 
     private final CorsProperties props;
 
+    /**
+     * Validazione della configurazione CORS.
+     */
+    @PostConstruct
+    public void validateConfiguration() {
+        log.debug("CORS: avvio validazione configurazione (properties già normalizzate).");
+
+        List<String> origins = props.getAllowedOrigins();
+        List<String> methods = props.getAllowedMethods();
+        List<String> headers = props.getAllowedHeaders();
+        List<String> exposed = props.getExposedHeaders();
+        List<String> paths = props.getPathPatterns();
+
+        log.debug("CORS: allowCredentials={}", props.isAllowCredentials());
+        log.debug("CORS: maxAge (secondi)={}", props.getMaxAge());
+        log.debug("CORS: allowedOrigins={}", origins);
+        log.debug("CORS: allowedMethods={}", methods);
+        log.debug("CORS: allowedHeaders={}", headers);
+        log.debug("CORS: exposedHeaders={}", exposed);
+        log.debug("CORS: pathPatterns={}", paths);
+
+        boolean hasWildcardOrigin = origins != null && origins.stream().anyMatch("*"::equals);
+
+        if (props.isAllowCredentials() && hasWildcardOrigin) {
+            log.error("CORS: configurazione non valida. allowCredentials=true non è compatibile con allowedOrigins=['*'].");
+            log.error("CORS: correzione richiesta: impostare origini esplicite oppure migrare a allowedOriginPatterns.");
+            throw new IllegalStateException("Configurazione CORS non valida: allowCredentials=true con allowedOrigins='*'.");
+        }
+
+        if (paths == null || paths.isEmpty()) {
+            log.warn("CORS: nessun pathPatterns configurato. La policy CORS non verrà applicata a nessun endpoint.");
+        } else {
+            log.debug("CORS: numero di pathPatterns configurati: {}", paths.size());
+        }
+
+        if (methods == null || methods.isEmpty()) {
+            log.warn("CORS: allowedMethods è vuoto. Le richieste cross-site potrebbero essere bloccate (preflight/OPTIONS).");
+        }
+        if (headers == null || headers.isEmpty()) {
+            log.warn("CORS: allowedHeaders è vuoto. Header custom inviati dal client potrebbero causare fallimento del preflight.");
+        }
+
+        log.debug("CORS: validazione completata con successo.");
+    }
+
     @Bean
     public CorsFilter corsFilter() {
+        log.debug("CORS: creazione CorsFilter e registrazione configurazioni per i path.");
+
+        CorsConfiguration base = buildCorsConfiguration();
+
+        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+
+        List<String> paths = props.getPathPatterns();
+        if (paths == null || paths.isEmpty()) {
+            log.debug("CORS: nessun path da registrare. CorsFilter creato senza configurazioni associate.");
+            return new CorsFilter(src);
+        }
+
+        for (String path : paths) {
+            log.debug("CORS: registrazione policy sul path pattern '{}'.", path);
+            src.registerCorsConfiguration(path, new CorsConfiguration(base));
+        }
+
+        log.debug("CORS: registrazione completata. Path registrati: {}", paths.size());
+        log.debug("CORS: CorsFilter inizializzato correttamente.");
+        return new CorsFilter(src);
+    }
+
+    /**
+     * Costruisce la {@link CorsConfiguration} a partire dalle properties (già normalizzate).
+     */
+    private CorsConfiguration buildCorsConfiguration() {
         CorsConfiguration cfg = new CorsConfiguration();
 
         cfg.setAllowedOrigins(props.getAllowedOrigins());
@@ -36,15 +118,17 @@ public class CorsConfig {
         cfg.setAllowCredentials(props.isAllowCredentials());
         cfg.setMaxAge(props.getMaxAge());
 
-        // Nota di sicurezza: allowCredentials=true NON è compatibile con origini wildcard.
-        if (props.isAllowCredentials() && props.getAllowedOrigins().stream().anyMatch("*"::equals)) {
-            log.warn("Configurazione CORS: allow-credentials=true non è compatibile con allowed-origins=['*'].");
-        }
+        log.debug("CORS: CorsConfiguration costruita con le seguenti impostazioni: " +
+                  "allowedOrigins={}, allowedMethods={}, allowedHeaders={}, exposedHeaders={}, " +
+                  "allowCredentials={}, maxAge={}.",
+                  props.getAllowedOrigins(),
+                  props.getAllowedMethods(),
+                  props.getAllowedHeaders(),
+                  props.getExposedHeaders(),
+                  props.isAllowCredentials(),
+                  props.getMaxAge()
+        );
 
-        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
-        for (String path : props.getPathPatterns()) {
-            src.registerCorsConfiguration(path, cfg);
-        }
-        return new CorsFilter(src);
+        return cfg;
     }
 }

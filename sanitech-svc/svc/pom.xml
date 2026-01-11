@@ -53,6 +53,16 @@
     <!-- Gestione centralizzata dipendenze e versioni -->
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>it.sanitech</groupId>
+                <artifactId>commons-libraries</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>it.sanitech</groupId>
+                <artifactId>outbox-event-managed</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <!-- BOM Spring Boot -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
