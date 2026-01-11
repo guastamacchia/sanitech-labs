@@ -1,19 +1,22 @@
-package it.sanitech.commons.config;
+package it.sanitech.commons.autoconfigure;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import it.sanitech.commons.utilities.AppConstants;
+import it.sanitech.commons.autoconfigure.properties.OpenApiProperties;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,9 +39,15 @@ import java.util.Objects;
  */
 @Slf4j
 @Configuration
-public class OpenApiConfig {
+@RequiredArgsConstructor
+@EnableConfigurationProperties(OpenApiProperties.class)
+@ConditionalOnClass(GroupedOpenApi.class)
+@ConditionalOnProperty(prefix = OpenApiProperties.PREFIX, name = "enabled", havingValue = "true")
+public class OpenApiAutoConfiguration {
 
     private static final String BEARER_AUTH = "bearerAuth";
+
+    private final OpenApiProperties props;
 
     /**
      * Validazione della configurazione OpenAPI.
@@ -47,10 +56,10 @@ public class OpenApiConfig {
     public void validateConfiguration() {
         log.debug("OpenAPI: avvio validazione configurazione Springdoc.");
 
-        String group = AppConstants.OpenApi.GROUP_DIRECTORY;
-        String packages = AppConstants.OpenApi.PACKAGES_TO_SCAN;
-        String title = AppConstants.OpenApi.TITLE;
-        String version = AppConstants.OpenApi.VERSION;
+        String group = props.getGroup();
+        List<String> packages = props.getPackagesToScan();
+        String title = props.getTitle();
+        String version = props.getVersion();
 
         log.debug("OpenAPI: group='{}'.", group);
         log.debug("OpenAPI: packagesToScan='{}'.", packages);
@@ -62,7 +71,7 @@ public class OpenApiConfig {
             throw new IllegalStateException("Configurazione OpenAPI non valida: group vuoto.");
         }
 
-        if (!StringUtils.hasText(packages)) {
+        if (Objects.isNull(packages) || packages.isEmpty()) {
             log.error("OpenAPI: configurazione NON valida. packagesToScan è vuoto o nullo.");
             throw new IllegalStateException("Configurazione OpenAPI non valida: packagesToScan vuoto.");
         }
@@ -72,20 +81,19 @@ public class OpenApiConfig {
         }
 
         if (!StringUtils.hasText(version)) {
-            log.warn("OpenAPI: version non valorizzata.");
+            log.warn("OpenAPI: version non valorizzato.");
         }
 
         log.debug("OpenAPI: validazione configurazione completata con successo.");
     }
 
     @Bean
-    public GroupedOpenApi directoryApi() {
-        log.debug("OpenAPI: creazione GroupedOpenApi per il gruppo '{}'.",
-                AppConstants.OpenApi.GROUP_DIRECTORY);
+    public GroupedOpenApi serviceApi() {
+        log.debug("OpenAPI: creazione GroupedOpenApi per il gruppo '{}'.", props.getGroup());
 
         GroupedOpenApi api = GroupedOpenApi.builder()
-                .group(AppConstants.OpenApi.GROUP_DIRECTORY)
-                .packagesToScan(AppConstants.OpenApi.PACKAGES_TO_SCAN)
+                .group(props.getGroup())
+                .packagesToScan(props.getPackagesToScan().toArray(String[]::new))
                 .addOpenApiCustomizer(this::applyDefaults)
                 .build();
 
@@ -102,7 +110,7 @@ public class OpenApiConfig {
      * </p>
      */
     private void applyDefaults(OpenAPI openApi) {
-        if (openApi == null) {
+        if (Objects.isNull(openApi)) {
             log.warn("OpenAPI: modello OpenAPI nullo ricevuto dal customizer. Nessuna modifica applicata.");
             return;
         }
@@ -117,32 +125,32 @@ public class OpenApiConfig {
 
     private void applyInfoDefaults(OpenAPI openApi) {
         Info info = openApi.getInfo();
-        if (info == null) {
+        if (Objects.isNull(info)) {
             info = new Info();
             openApi.setInfo(info);
             log.debug("OpenAPI: sezione Info assente. Creata nuova istanza.");
         }
 
-        if (!StringUtils.hasText(info.getTitle()) && StringUtils.hasText(AppConstants.OpenApi.TITLE)) {
-            info.setTitle(AppConstants.OpenApi.TITLE);
-            log.debug("OpenAPI: impostato title='{}'.", AppConstants.OpenApi.TITLE);
+        if (!StringUtils.hasText(info.getTitle()) && StringUtils.hasText(props.getTitle())) {
+            info.setTitle(props.getTitle());
+            log.debug("OpenAPI: impostato title='{}'.", props.getTitle());
         }
 
-        if (!StringUtils.hasText(info.getVersion()) && StringUtils.hasText(AppConstants.OpenApi.VERSION)) {
-            info.setVersion(AppConstants.OpenApi.VERSION);
-            log.debug("OpenAPI: impostata version='{}'.", AppConstants.OpenApi.VERSION);
+        if (!StringUtils.hasText(info.getVersion()) && StringUtils.hasText(props.getVersion())) {
+            info.setVersion(props.getVersion());
+            log.debug("OpenAPI: impostata version='{}'.", props.getVersion());
         }
     }
 
     private void applyBearerSecurity(OpenAPI openApi) {
         Components components = openApi.getComponents();
-        if (components == null) {
+        if (Objects.isNull(components)) {
             components = new Components();
             openApi.setComponents(components);
             log.debug("OpenAPI: sezione Components assente. Creata nuova istanza.");
         }
 
-        if (components.getSecuritySchemes() == null ||
+        if (Objects.isNull(components.getSecuritySchemes()) ||
                 !components.getSecuritySchemes().containsKey(BEARER_AUTH)) {
 
             components.addSecuritySchemes(BEARER_AUTH,
@@ -167,11 +175,11 @@ public class OpenApiConfig {
     }
 
     private static boolean hasBearerRequirement(List<SecurityRequirement> security) {
-        if (security == null || security.isEmpty()) {
+        if (Objects.isNull(security) || security.isEmpty()) {
             return false;
         }
         return security.stream()
                 .filter(Objects::nonNull)
-                .anyMatch(req -> req.containsKey(OpenApiConfig.BEARER_AUTH));
+                .anyMatch(req -> req.containsKey(OpenApiAutoConfiguration.BEARER_AUTH));
     }
 }

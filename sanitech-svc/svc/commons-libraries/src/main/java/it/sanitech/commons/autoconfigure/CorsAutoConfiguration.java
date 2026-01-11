@@ -1,8 +1,10 @@
-package it.sanitech.commons.config;
+package it.sanitech.commons.autoconfigure;
 
+import it.sanitech.commons.autoconfigure.properties.CorsProperties;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +13,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Configurazione CORS condivisa tra i microservizi Sanitech.
@@ -32,7 +35,8 @@ import java.util.List;
 @Configuration
 @RequiredArgsConstructor
 @EnableConfigurationProperties(CorsProperties.class)
-public class CorsConfig {
+@ConditionalOnProperty(prefix = CorsProperties.PREFIX, name = "enabled", havingValue = "true")
+public class CorsAutoConfiguration {
 
     private final CorsProperties props;
 
@@ -57,7 +61,7 @@ public class CorsConfig {
         log.debug("CORS: exposedHeaders={}", exposed);
         log.debug("CORS: pathPatterns={}", paths);
 
-        boolean hasWildcardOrigin = origins != null && origins.stream().anyMatch("*"::equals);
+        boolean hasWildcardOrigin = Objects.nonNull(origins) && origins.stream().anyMatch("*"::equals);
 
         if (props.isAllowCredentials() && hasWildcardOrigin) {
             log.error("CORS: configurazione non valida. allowCredentials=true non è compatibile con allowedOrigins=['*'].");
@@ -65,16 +69,16 @@ public class CorsConfig {
             throw new IllegalStateException("Configurazione CORS non valida: allowCredentials=true con allowedOrigins='*'.");
         }
 
-        if (paths == null || paths.isEmpty()) {
+        if (Objects.isNull(paths) || paths.isEmpty()) {
             log.warn("CORS: nessun pathPatterns configurato. La policy CORS non verrà applicata a nessun endpoint.");
         } else {
             log.debug("CORS: numero di pathPatterns configurati: {}", paths.size());
         }
 
-        if (methods == null || methods.isEmpty()) {
+        if (Objects.isNull(methods) || methods.isEmpty()) {
             log.warn("CORS: allowedMethods è vuoto. Le richieste cross-site potrebbero essere bloccate (preflight/OPTIONS).");
         }
-        if (headers == null || headers.isEmpty()) {
+        if (Objects.isNull(headers) || headers.isEmpty()) {
             log.warn("CORS: allowedHeaders è vuoto. Header custom inviati dal client potrebbero causare fallimento del preflight.");
         }
 
@@ -90,7 +94,7 @@ public class CorsConfig {
         UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
 
         List<String> paths = props.getPathPatterns();
-        if (paths == null || paths.isEmpty()) {
+        if (Objects.isNull(paths) || paths.isEmpty()) {
             log.debug("CORS: nessun path da registrare. CorsFilter creato senza configurazioni associate.");
             return new CorsFilter(src);
         }

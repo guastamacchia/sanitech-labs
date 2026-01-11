@@ -1,4 +1,4 @@
-package it.sanitech.commons.config;
+package it.sanitech.commons.autoconfigure.properties;
 
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -28,6 +28,11 @@ import java.util.stream.Collectors;
 public class CorsProperties {
 
     public static final String PREFIX = "sanitech.cors";
+
+    /**
+     * Abilita la configurazione CORS condivisa.
+     */
+    private boolean enabled = false;
 
     /**
      * Pattern di path su cui applicare la policy CORS (es. {@code /api/**}).
@@ -86,6 +91,7 @@ public class CorsProperties {
         this.exposedHeaders = normalizeList(this.exposedHeaders);
 
         log.debug("CORS properties: normalizzazione completata.");
+        log.debug("CORS properties: enabled={}", enabled);
         log.debug("CORS properties: pathPatterns={}", pathPatterns);
         log.debug("CORS properties: allowedOrigins={}", allowedOrigins);
         log.debug("CORS properties: allowedMethods={}", allowedMethods);
@@ -100,7 +106,7 @@ public class CorsProperties {
      * Se un valore è vuoto/non valido, usa "/**" come fallback.
      */
     private static List<String> normalizePathPatterns(List<String> raw) {
-        if (raw == null || raw.isEmpty()) return List.of();
+        if (Objects.isNull(raw) || raw.isEmpty()) return List.of();
 
         return raw.stream()
             .map(CorsProperties::normalizePath) // 1) trasforma
@@ -124,7 +130,7 @@ public class CorsProperties {
      * Normalizza una lista: rimuove null/vuoti, fa trim, deduplica preservando l’ordine.
      */
     private static List<String> normalizeList(List<String> raw) {
-        if (raw == null || raw.isEmpty()) return List.of();
+        if (Objects.isNull(raw) || raw.isEmpty()) return List.of();
         return raw.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)
