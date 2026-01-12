@@ -33,19 +33,23 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
 
         // 1) realm_access.roles → ROLE_*
         Map<String, Object> realmAccess = jwt.getClaim(AppConstants.Security.CLAIM_REALM_ACCESS);
-        if (realmAccess != null && realmAccess.get(AppConstants.Security.CLAIM_ROLES) instanceof Collection<?> roles) {
-            authorities.addAll(roles.stream()
-                    .map(Object::toString)
-                    .filter(r -> !r.isBlank())
-                    .map(r -> r.startsWith(AppConstants.Security.ROLE_PREFIX) ? r : AppConstants.Security.ROLE_PREFIX + r)
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toSet()));
+        if (Objects.nonNull(realmAccess) && realmAccess.get(AppConstants.Security.CLAIM_ROLES) instanceof Collection<?> roles) {
+            authorities.addAll(
+                    roles.stream()
+                            .filter(Objects::nonNull)
+                            .map(Object::toString)
+                            .map(String::trim)
+                            .filter(s -> !s.isBlank())
+                            .map(this::toRoleAuthority)
+                            .map(SimpleGrantedAuthority::new)
+                            .collect(Collectors.toSet())
+            );
         }
 
         // 2) scope → SCOPE_*
         String scope = jwt.getClaimAsString(AppConstants.Security.CLAIM_SCOPE);
-        if (scope != null && !scope.isBlank()) {
-            for (String s : scope.split(" ")) {
+        if (Objects.nonNull(scope) && !scope.isBlank()) {
+            for (String s : scope.trim().split("\\s+")) {
                 if (!s.isBlank()) {
                     authorities.add(new SimpleGrantedAuthority(AppConstants.Security.SCOPE_PREFIX + s));
                 }
@@ -57,16 +61,35 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
         if (deptClaim instanceof String deptStr) {
             addDeptAuthority(authorities, deptStr);
         } else if (deptClaim instanceof Collection<?> deptList) {
-            deptList.stream().map(Object::toString).forEach(d -> addDeptAuthority(authorities, d));
+            deptList.stream()
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .forEach(d -> addDeptAuthority(authorities, d));
         }
 
         return new JwtAuthenticationToken(jwt, authorities, jwt.getSubject());
     }
 
+    /**
+     * Converte un ruolo in authority con prefisso ROLE_ (se mancante).
+     */
+    private String toRoleAuthority(String role) {
+        return role.startsWith(AppConstants.Security.ROLE_PREFIX)
+                ? role
+                : AppConstants.Security.ROLE_PREFIX + role;
+    }
+
+    /**
+     * Aggiunge authority di reparto (DEPT_*) a partire da un valore claim.
+     */
     private static void addDeptAuthority(Set<GrantedAuthority> authorities, String dept) {
-        if (dept == null) return;
+        if (Objects.isNull(dept)) return;
+
         String normalized = dept.trim();
         if (normalized.isBlank()) return;
-        authorities.add(new SimpleGrantedAuthority(AppConstants.Security.DEPT_PREFIX + normalized.toUpperCase()));
+
+        authorities.add(new SimpleGrantedAuthority(
+                AppConstants.Security.DEPT_PREFIX + normalized.toUpperCase(Locale.ROOT)
+        ));
     }
 }

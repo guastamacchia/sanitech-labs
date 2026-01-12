@@ -7,6 +7,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,7 +17,11 @@ import java.util.stream.Collectors;
  *
  * <p>
  * Il mapping delle authority {@code DEPT_*} avviene tramite {@link JwtAuthConverter}.
- * Questo componente centralizza la logica di verifica per ridurre duplicazioni nei service/controller.
+ * </p>
+ *
+ * <p>
+ * Policy "fail-closed": in caso di input non valido (dept nullo/vuoto o lista priva di codici validi)
+ * l'accesso viene negato.
  * </p>
  */
 @Component
@@ -33,55 +39,54 @@ public class DeptGuard {
      * </p>
      */
     public boolean canManage(String dept, Authentication auth) {
-        if (auth == null) return false;
+        if (Objects.isNull(auth)) return false;
 
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(AppConstants.Security.ROLE_PREFIX + "ADMIN"));
-        if (isAdmin) return true;
+        if (isAdmin(auth)) return true;
 
-        if (dept == null || dept.isBlank()) return false;
+        String normalized = normalizeDeptCode(dept);
+        if (Objects.isNull(normalized)) return false;
 
-        String needed = AppConstants.Security.DEPT_PREFIX + dept.trim().toUpperCase();
-        return auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals(needed));
+        String needed = AppConstants.Security.DEPT_PREFIX + normalized;
+        return authorities(auth).contains(needed);
     }
 
     /**
      * Variante "tutti": utile quando una richiesta contiene più reparti e si vuole richiedere
      * autorizzazione su ciascuno di essi.
+     *
+     * <p>
+     * Importante: se la collection non contiene alcun codice valido (solo null/vuoti),
+     * la policy è "fail-closed" e ritorna false.
+     * </p>
      */
     public boolean canManageAll(Collection<String> deptCodes, Authentication auth) {
-        if (auth == null) return false;
+        if (Objects.isNull(auth)) return false;
 
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(AppConstants.Security.ROLE_PREFIX + "ADMIN"));
-        if (isAdmin) return true;
+        if (isAdmin(auth)) return true;
 
-        if (deptCodes == null || deptCodes.isEmpty()) return false;
+        if (Objects.isNull(deptCodes) || deptCodes.isEmpty()) return false;
 
         Set<String> required = deptCodes.stream()
-                .filter(d -> d != null && !d.isBlank())
-                .map(d -> AppConstants.Security.DEPT_PREFIX + d.trim().toUpperCase())
+                .map(DeptGuard::normalizeDeptCode)
+                .filter(Objects::nonNull)
+                .map(code -> AppConstants.Security.DEPT_PREFIX + code)
                 .collect(Collectors.toSet());
 
-        Set<String> current = auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet());
+        // Fail-closed: nessun codice valido -> non autorizzare.
+        if (required.isEmpty()) return false;
 
+        Set<String> current = authorities(auth);
         return current.containsAll(required);
     }
 
     /**
      * Estrae i codici reparto dalle authority dell'utente (prefisso {@code DEPT_}).
-     *
-     * <p>
-     * Utile per filtrare dati per reparto (es. un DOCTOR vede solo pazienti del proprio reparto).
-     * </p>
      */
     public Set<String> extractDeptCodes(Authentication auth) {
-        if (auth == null) return Set.of();
-        return auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .filter(a -> a != null && a.startsWith(AppConstants.Security.DEPT_PREFIX))
+        if (Objects.isNull(auth)) return Set.of();
+
+        return authorities(auth).stream()
+                .filter(a -> a.startsWith(AppConstants.Security.DEPT_PREFIX))
                 .map(a -> a.substring(AppConstants.Security.DEPT_PREFIX.length()))
                 .filter(s -> !s.isBlank())
                 .collect(Collectors.toSet());
@@ -103,5 +108,41 @@ public class DeptGuard {
         if (!canManageAll(deptCodes, auth)) {
             throw DepartmentAccessDeniedException.forDepartments(deptCodes);
         }
+    }
+
+    /**
+     * Determina se l'utente ha il ruolo amministratore.
+     *
+     * <p>
+     * Separato per:
+     * - ridurre duplicazione
+     * - mantenere allineata la semantica tra i metodi di guard
+     * </p>
+     */
+    private static boolean isAdmin(Authentication auth) {
+        String admin = AppConstants.Security.ROLE_PREFIX + "ADMIN";
+        return authorities(auth).contains(admin);
+    }
+
+    /**
+     * Normalizza un codice reparto:
+     * - null/vuoto -> null
+     * - trim
+     * - uppercase (Locale.ROOT)
+     */
+    private static String normalizeDeptCode(String dept) {
+        if (Objects.isNull(dept) || dept.isBlank()) return null;
+        return dept.trim().toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Estrae le authority dell'utente in forma di set (senza null).
+     */
+    private static Set<String> authorities(Authentication auth) {
+        if (Objects.isNull(auth) || Objects.isNull(auth.getAuthorities())) return Set.of();
+        return auth.getAuthorities().stream()
+                .filter(a -> Objects.nonNull(a) && Objects.nonNull(a.getAuthority()))
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toSet());
     }
 }
