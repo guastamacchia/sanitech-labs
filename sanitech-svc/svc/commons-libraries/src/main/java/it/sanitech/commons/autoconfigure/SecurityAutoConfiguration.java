@@ -17,11 +17,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.util.StringUtils;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Configurazione di sicurezza del microservizio (Spring Security 6).
@@ -30,7 +29,7 @@ import java.util.Objects;
  * Principi adottati:
  * </p>
  * <ul>
- *   <li>Il servizio è un Resource Server JWT (OIDC/Keycloak).</li>
+ *   <li>Il servizio di AuthN/AuthZ è un Resource Server JWT (OIDC/Keycloak).</li>
  *   <li>Sessione stateless: ogni richiesta deve includere il token.</li>
  *   <li>Gli endpoint tecnici configurati nelle property {@code sanitech.security.public-endpoints} sono pubblici.</li>
  *   <li>Tutto il resto richiede autenticazione; autorizzazioni fine-grained via {@code @PreAuthorize}.</li>
@@ -51,35 +50,31 @@ public class SecurityAutoConfiguration {
 
     /**
      * Validazione e diagnostica della configurazione a startup.
-     *
-     * <p>
-     * Scopo: rendere visibile la configurazione effettiva e intercettare errori banali
-     * (es. lista endpoint pubblici vuota o converter non disponibile).
-     * </p>
      */
     @PostConstruct
     public void validateConfiguration() {
         log.debug("Sicurezza: avvio validazione configurazione Spring Security.");
 
-        List<String> publicEndpoints = props.getPublicEndpoints();
-
-        log.debug("Sicurezza: policy sessione prevista: STATELESS.");
-        log.debug("Sicurezza: CORS abilitato (policy definita nella configurazione CORS).");
-        log.debug("Sicurezza: endpoint pubblici configurati: {}.",
-                Objects.isNull(publicEndpoints) ? "null" : Arrays.toString(publicEndpoints.toArray(String[]::new)));
-
+        // In condizioni normali non è null (ConditionalOnBean + injection), ma rendiamo il check esplicito.
         if (Objects.isNull(jwtAuthConverter)) {
-            log.error("Sicurezza: configurazione NON valida. JwtAuthConverter è nullo.");
+            log.error("Sicurezza: configurazione non valida. JwtAuthConverter è nullo.");
             throw new IllegalStateException("Configurazione sicurezza non valida: JwtAuthConverter nullo.");
         }
 
-        if (Objects.isNull(publicEndpoints) || publicEndpoints.isEmpty()) {
-            log.warn("Sicurezza: publicEndpoints è nullo o vuoto. Tutti gli endpoint risulteranno protetti.");
+        List<String> publicEndpoints = Optional.ofNullable(props.getPublicEndpoints()).orElse(List.of());
+
+        log.debug("Sicurezza: policy sessione prevista: STATELESS.");
+        log.debug("Sicurezza: CORS abilitato (policy definita dalla configurazione CORS).");
+
+        if (publicEndpoints.isEmpty()) {
+            log.warn("Sicurezza: publicEndpoints è vuoto. Tutti gli endpoint risulteranno protetti.");
         } else {
-            boolean hasEmpty = publicEndpoints.stream().anyMatch(e -> !StringUtils.hasText(e));
-            if (hasEmpty) {
-                log.warn("Sicurezza: publicEndpoints contiene valori vuoti o non validi. Verificare sanitech.security.public-endpoints.");
+            // SecurityProperties normalizza già (trim, remove empty). Se qui troviamo comunque vuoti, è un segnale di uso non standard.
+            boolean hasBlank = publicEndpoints.stream().anyMatch(s -> Objects.isNull(s) || s.isBlank());
+            if (hasBlank) {
+                log.warn("Sicurezza: publicEndpoints contiene valori vuoti/non validi dopo normalizzazione. Verificare sanitech.security.public-endpoints.");
             }
+            log.debug("Sicurezza: numero endpoint pubblici configurati: {}", publicEndpoints.size());
         }
 
         log.debug("Sicurezza: validazione configurazione completata con successo.");
@@ -103,37 +98,37 @@ public class SecurityAutoConfiguration {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         log.debug("Sicurezza: costruzione SecurityFilterChain.");
 
-        List<String> publicEndpoints = props.getPublicEndpoints();
+        String[] publicMatchers = Optional.ofNullable(props.getPublicEndpoints()).orElse(List.of()).toArray(String[]::new);
 
         http
-                // API stateless: CSRF non necessario
-                .csrf(AbstractHttpConfigurer::disable)
+            // API stateless: CSRF non necessario
+            .csrf(AbstractHttpConfigurer::disable)
 
-                // Abilita CORS: policy definita altrove (CorsAutoConfiguration)
-                .cors(Customizer.withDefaults())
+            // Abilita CORS: policy definita altrove (CorsAutoConfiguration)
+            .cors(Customizer.withDefaults())
 
-                // Nessuna sessione server-side
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Nessuna sessione server-side
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // Regole di autorizzazione
-                .authorizeHttpRequests(auth -> {
-                    if (Objects.nonNull(publicEndpoints) && !publicEndpoints.isEmpty()) {
-                        auth.requestMatchers(publicEndpoints.toArray(String[]::new)).permitAll();
-                    }
-                    auth.anyRequest().authenticated();
-                })
+            // Regole di autorizzazione
+            .authorizeHttpRequests(auth -> {
+                if (publicMatchers.length > 0) {
+                    auth.requestMatchers(publicMatchers).permitAll();
+                }
+                auth.anyRequest().authenticated();
+            })
 
-                // Resource server JWT con mapping custom delle authorities
-                .oauth2ResourceServer(oauth -> oauth
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
-                );
+            // Resource server JWT con mapping custom delle authorities
+            .oauth2ResourceServer(oauth -> oauth
+                    .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
+            );
 
         SecurityFilterChain chain = http.build();
 
         log.debug("Sicurezza: SecurityFilterChain costruita correttamente.");
-        log.debug("Sicurezza: riepilogo configurazione: publicEndpoints={}, stateless={}, jwtConverter={}.",
-                Objects.isNull(publicEndpoints) ? "null" : Arrays.toString(publicEndpoints.toArray(String[]::new)),
+        log.debug("Sicurezza: riepilogo runtime: stateless={}, publicMatchersCount={}, jwtConverter={}.",
                 true,
+                publicMatchers.length,
                 jwtAuthConverter.getClass().getName()
         );
 

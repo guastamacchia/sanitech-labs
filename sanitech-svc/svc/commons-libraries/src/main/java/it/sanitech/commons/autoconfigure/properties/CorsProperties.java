@@ -9,16 +9,18 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
  * Proprietà CORS comuni ai microservizi (namespace {@code sanitech.cors}).
  *
  * <p>
- * Questa classe rappresenta esclusivamente la configurazione dichiarativa.
- * Normalizza i valori letti da YAML per garantire coerenza e ridurre errori
- * di configurazione (spazi, null, duplicati).
+ * Questa classe rappresenta la configurazione dichiarativa e applica una normalizzazione
+ * dei valori letti da YAML per garantire coerenza e ridurre errori di configurazione
+ * (spazi, null, duplicati, casing dei metodi HTTP).
  * </p>
  */
 @Slf4j
@@ -46,6 +48,10 @@ public class CorsProperties {
 
     /**
      * Metodi HTTP consentiti nelle richieste cross-site.
+     *
+     * <p>
+     * In normalizzazione vengono convertiti in uppercase (es. "get" -> "GET") per uniformità.
+     * </p>
      */
     private List<String> allowedMethods = new ArrayList<>();
 
@@ -76,8 +82,9 @@ public class CorsProperties {
      * Scopo:
      * - rimuovere valori null o vuoti
      * - applicare trim
-     * - eliminare duplicati
+     * - eliminare duplicati (preservando l'ordine)
      * - normalizzare i path (prefisso '/')
+     * - normalizzare i metodi HTTP (uppercase)
      * </p>
      */
     @PostConstruct
@@ -86,7 +93,7 @@ public class CorsProperties {
 
         this.pathPatterns = normalizePathPatterns(this.pathPatterns);
         this.allowedOrigins = normalizeList(this.allowedOrigins);
-        this.allowedMethods = normalizeList(this.allowedMethods);
+        this.allowedMethods = normalizeMethods(this.allowedMethods);
         this.allowedHeaders = normalizeList(this.allowedHeaders);
         this.exposedHeaders = normalizeList(this.exposedHeaders);
 
@@ -102,39 +109,86 @@ public class CorsProperties {
     }
 
     /**
-     * Normalizza i path pattern: rimuove null/vuoti, trim, assicura prefisso '/', deduplica.
-     * Se un valore è vuoto/non valido, usa "/**" come fallback.
+     * Normalizza una lista generica: trim, rimozione null/vuoti, deduplica preservando ordine.
      */
-    private static List<String> normalizePathPatterns(List<String> raw) {
-        if (Objects.isNull(raw) || raw.isEmpty()) return List.of();
-
-        return raw.stream()
-            .map(CorsProperties::normalizePath) // 1) trasforma
-            .toList()
-            .stream()
-            .collect(Collectors.collectingAndThen(
-                    Collectors.toList(),
-                    CorsProperties::normalizeList // 2) pulisce e deduplica
-            ));
-    }
-
-    private static String normalizePath(String path) {
-        if (!StringUtils.hasText(path)) {
-            return "/**";
-        }
-        String t = path.trim();
-        return t.startsWith("/") ? t : "/" + t;
+    private static List<String> normalizeList(List<String> raw) {
+        return normalizeInternal(raw, null, null);
     }
 
     /**
-     * Normalizza una lista: rimuove null/vuoti, fa trim, deduplica preservando l’ordine.
+     * Normalizza i metodi HTTP: trim, uppercase, deduplica preservando ordine.
      */
-    private static List<String> normalizeList(List<String> raw) {
+    private static List<String> normalizeMethods(List<String> raw) {
+        return normalizeInternal(raw, null, s -> s.toUpperCase(Locale.ROOT));
+    }
+
+    /**
+     * Normalizza i path pattern:
+     * - per singole voci vuote/non valide applica fallback "/**"
+     * - assicura prefisso '/'
+     * - trim, rimozione vuoti, deduplica preservando ordine
+     *
+     * <p>
+     * Nota: se l'intera lista è vuota/null, ritorna List.of() (nessun path registrato).
+     * </p>
+     */
+    private static List<String> normalizePathPatterns(List<String> raw) {
+        return normalizeInternal(raw, CorsProperties::normalizePathPreMap, null);
+    }
+
+    /**
+     * Trasformazione "a monte" specifica per i path:
+     * - se non ha testo -> "/**"
+     * - se manca '/' all'inizio, lo aggiunge
+     *
+     * <p>
+     * Viene invocata prima del filtro hasText e della deduplica.
+     * </p>
+     */
+    private static String normalizePathPreMap(String path) {
+        if (!StringUtils.hasText(path)) {
+            return "/**";
+        }
+        return path.startsWith("/") ? path : "/" + path;
+    }
+
+    /**
+     * Motore unico di normalizzazione per liste di stringhe.
+     *
+     * <p>
+     * Pipeline:
+     * 1) null/empty -> List.of()
+     * 2) preMap opzionale (trasformazioni "a monte" specifiche del dominio)
+     * 4) trim
+     * 5) filter hasText
+     * 6) postMap opzionale (trasformazioni "a valle": uppercase, ecc.)
+     * 7) distinct (preserva ordine nello stream)
+     * </p>
+     *
+     * @param raw     lista di input
+     * @param preMap  trasformazione applicata prima di trim/filter (può gestire fallback)
+     * @param postMap trasformazione applicata dopo trim/filter (finale)
+     */
+    private static List<String> normalizeInternal(List<String> raw,
+                                                  UnaryOperator<String> preMap,
+                                                  UnaryOperator<String> postMap) {
+
         if (Objects.isNull(raw) || raw.isEmpty()) return List.of();
+
         return raw.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
+                // 1) preMap applicata anche a null
+                .map(s -> Objects.nonNull(preMap) ? preMap.apply(s) : s)
+
+                // 2) trim centralizzato
+                .map(s -> Objects.nonNull(s) ? s.trim() : null)
+
+                // 3) filtro logico: solo stringhe significative
                 .filter(StringUtils::hasText)
+
+                // 4) postMap applicata a valle dei filtri effettuati (uppercase, ecc.)
+                .map(s -> Objects.nonNull(postMap) ? postMap.apply(s) : s)
+
+                // 5) deduplica preservando ordine
                 .distinct()
                 .collect(Collectors.toList());
     }

@@ -14,6 +14,11 @@ import java.util.stream.Collectors;
 
 /**
  * Proprietà di sicurezza comuni ai microservizi (namespace {@code sanitech.security}).
+ *
+ * <p>
+ * Questa classe rappresenta la configurazione dichiarativa e applica una normalizzazione
+ * minima per ridurre errori di configurazione (spazi, null/valori vuoti, duplicati).
+ * </p>
  */
 @Slf4j
 @Getter
@@ -30,19 +35,43 @@ public class SecurityProperties {
 
     /**
      * Endpoint pubblici (es. Swagger/Actuator) ammessi senza autenticazione.
+     *
+     * <p>
+     * I valori vengono normalizzati con trim, rimozione null/vuoti e deduplica preservando l'ordine.
+     * </p>
      */
     private List<String> publicEndpoints = new ArrayList<>();
 
+    /**
+     * Normalizzazione delle proprietà lette da YAML.
+     *
+     * <p>
+     * Scopo:
+     * - rimuovere valori null o vuoti
+     * - applicare trim
+     * - eliminare duplicati preservando l'ordine
+     * </p>
+     */
     @PostConstruct
     void normalize() {
         log.debug("Security properties: avvio normalizzazione valori letti da configurazione.");
 
         publicEndpoints = normalizeList(publicEndpoints);
 
+        log.debug("Security properties: normalizzazione completata.");
         log.debug("Security properties: enabled={}", enabled);
         log.debug("Security properties: publicEndpoints={}", publicEndpoints);
+
     }
 
+    /**
+     * Normalizza una lista:
+     * - null/empty -> List.of()
+     * - rimuove null
+     * - trim
+     * - rimuove stringhe vuote
+     * - deduplica preservando ordine
+     */
     private static List<String> normalizeList(List<String> raw) {
         if (Objects.isNull(raw) || raw.isEmpty()) return List.of();
         return raw.stream()

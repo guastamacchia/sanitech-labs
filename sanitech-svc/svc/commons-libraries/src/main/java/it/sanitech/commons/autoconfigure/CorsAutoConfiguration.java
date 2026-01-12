@@ -14,6 +14,7 @@ import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Configurazione CORS condivisa tra i microservizi Sanitech.
@@ -47,38 +48,29 @@ public class CorsAutoConfiguration {
     public void validateConfiguration() {
         log.debug("CORS: avvio validazione configurazione (properties già normalizzate).");
 
-        List<String> origins = props.getAllowedOrigins();
-        List<String> methods = props.getAllowedMethods();
-        List<String> headers = props.getAllowedHeaders();
-        List<String> exposed = props.getExposedHeaders();
-        List<String> paths = props.getPathPatterns();
+        List<String> origins = Optional.ofNullable(props.getAllowedOrigins()).orElse(List.of());
+        List<String> methods = Optional.ofNullable(props.getAllowedMethods()).orElse(List.of());
+        List<String> headers = Optional.ofNullable(props.getAllowedHeaders()).orElse(List.of());
+        List<String> paths = Optional.ofNullable(props.getPathPatterns()).orElse(List.of());
 
-        log.debug("CORS: allowCredentials={}", props.isAllowCredentials());
-        log.debug("CORS: maxAge (secondi)={}", props.getMaxAge());
-        log.debug("CORS: allowedOrigins={}", origins);
-        log.debug("CORS: allowedMethods={}", methods);
-        log.debug("CORS: allowedHeaders={}", headers);
-        log.debug("CORS: exposedHeaders={}", exposed);
-        log.debug("CORS: pathPatterns={}", paths);
-
-        boolean hasWildcardOrigin = Objects.nonNull(origins) && origins.stream().anyMatch("*"::equals);
+        boolean hasWildcardOrigin = origins.contains("*");
 
         if (props.isAllowCredentials() && hasWildcardOrigin) {
             log.error("CORS: configurazione non valida. allowCredentials=true non è compatibile con allowedOrigins=['*'].");
-            log.error("CORS: correzione richiesta: impostare origini esplicite oppure migrare a allowedOriginPatterns.");
+            log.error("CORS: correzione richiesta: impostare origini esplicite oppure usare allowedOriginPatterns (supporto nativo Spring CORS).");
             throw new IllegalStateException("Configurazione CORS non valida: allowCredentials=true con allowedOrigins='*'.");
         }
 
-        if (Objects.isNull(paths) || paths.isEmpty()) {
+        if (paths.isEmpty()) {
             log.warn("CORS: nessun pathPatterns configurato. La policy CORS non verrà applicata a nessun endpoint.");
         } else {
             log.debug("CORS: numero di pathPatterns configurati: {}", paths.size());
         }
 
-        if (Objects.isNull(methods) || methods.isEmpty()) {
+        if (methods.isEmpty()) {
             log.warn("CORS: allowedMethods è vuoto. Le richieste cross-site potrebbero essere bloccate (preflight/OPTIONS).");
         }
-        if (Objects.isNull(headers) || headers.isEmpty()) {
+        if (headers.isEmpty()) {
             log.warn("CORS: allowedHeaders è vuoto. Header custom inviati dal client potrebbero causare fallimento del preflight.");
         }
 
@@ -122,16 +114,7 @@ public class CorsAutoConfiguration {
         cfg.setAllowCredentials(props.isAllowCredentials());
         cfg.setMaxAge(props.getMaxAge());
 
-        log.debug("CORS: CorsConfiguration costruita con le seguenti impostazioni: " +
-                  "allowedOrigins={}, allowedMethods={}, allowedHeaders={}, exposedHeaders={}, " +
-                  "allowCredentials={}, maxAge={}.",
-                  props.getAllowedOrigins(),
-                  props.getAllowedMethods(),
-                  props.getAllowedHeaders(),
-                  props.getExposedHeaders(),
-                  props.isAllowCredentials(),
-                  props.getMaxAge()
-        );
+        log.debug("CORS: CorsConfiguration costruita.");
 
         return cfg;
     }

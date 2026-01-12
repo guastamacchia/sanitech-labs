@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Configurazione OpenAPI (Springdoc).
@@ -31,11 +32,6 @@ import java.util.Objects;
  *   <li>validare e diagnosticare la configurazione a startup</li>
  *   <li>applicare impostazioni di default (Info + sicurezza JWT bearer)</li>
  * </ul>
- *
- * <p>
- * Le impostazioni vengono applicate in modo idempotente per evitare duplicazioni
- * in presenza di più OpenApiCustomizer.
- * </p>
  */
 @Slf4j
 @Configuration
@@ -57,31 +53,24 @@ public class OpenApiAutoConfiguration {
         log.debug("OpenAPI: avvio validazione configurazione Springdoc.");
 
         String group = props.getGroup();
-        List<String> packages = props.getPackagesToScan();
-        String title = props.getTitle();
-        String version = props.getVersion();
-
-        log.debug("OpenAPI: group='{}'.", group);
-        log.debug("OpenAPI: packagesToScan='{}'.", packages);
-        log.debug("OpenAPI: title='{}'.", title);
-        log.debug("OpenAPI: version='{}'.", version);
+        List<String> packages = Optional.ofNullable(props.getPackagesToScan()).orElse(List.of());
 
         if (!StringUtils.hasText(group)) {
-            log.error("OpenAPI: configurazione NON valida. Il nome del gruppo è vuoto o nullo.");
+            log.error("OpenAPI: configurazione non valida. Il nome del gruppo è vuoto o nullo.");
             throw new IllegalStateException("Configurazione OpenAPI non valida: group vuoto.");
         }
 
-        if (Objects.isNull(packages) || packages.isEmpty()) {
-            log.error("OpenAPI: configurazione NON valida. packagesToScan è vuoto o nullo.");
+        if (packages.isEmpty()) {
+            log.error("OpenAPI: configurazione non valida. packagesToScan è vuoto o nullo.");
             throw new IllegalStateException("Configurazione OpenAPI non valida: packagesToScan vuoto.");
         }
 
-        if (!StringUtils.hasText(title)) {
-            log.warn("OpenAPI: title non valorizzato.");
+        // Title e version sono opzionali: se non presenti, non blocchiamo la startup.
+        if (!StringUtils.hasText(props.getTitle())) {
+            log.warn("OpenAPI: title non valorizzato. Verrà usato l'eventuale valore predefinito di Springdoc.");
         }
-
-        if (!StringUtils.hasText(version)) {
-            log.warn("OpenAPI: version non valorizzato.");
+        if (!StringUtils.hasText(props.getVersion())) {
+            log.warn("OpenAPI: version non valorizzato. Verrà usato l'eventuale valore predefinito di Springdoc.");
         }
 
         log.debug("OpenAPI: validazione configurazione completata con successo.");
@@ -91,9 +80,11 @@ public class OpenApiAutoConfiguration {
     public GroupedOpenApi serviceApi() {
         log.debug("OpenAPI: creazione GroupedOpenApi per il gruppo '{}'.", props.getGroup());
 
+        String[] pkgs = Optional.ofNullable(props.getPackagesToScan()).orElse(List.of()).toArray(String[]::new);
+
         GroupedOpenApi api = GroupedOpenApi.builder()
                 .group(props.getGroup())
-                .packagesToScan(props.getPackagesToScan().toArray(String[]::new))
+                .packagesToScan(pkgs)
                 .addOpenApiCustomizer(this::applyDefaults)
                 .build();
 
@@ -131,14 +122,16 @@ public class OpenApiAutoConfiguration {
             log.debug("OpenAPI: sezione Info assente. Creata nuova istanza.");
         }
 
-        if (!StringUtils.hasText(info.getTitle()) && StringUtils.hasText(props.getTitle())) {
-            info.setTitle(props.getTitle());
-            log.debug("OpenAPI: impostato title='{}'.", props.getTitle());
+        String title = props.getTitle();
+        if (!StringUtils.hasText(info.getTitle()) && StringUtils.hasText(title)) {
+            info.setTitle(title);
+            log.debug("OpenAPI: impostato title='{}'.", title);
         }
 
-        if (!StringUtils.hasText(info.getVersion()) && StringUtils.hasText(props.getVersion())) {
-            info.setVersion(props.getVersion());
-            log.debug("OpenAPI: impostata version='{}'.", props.getVersion());
+        String version = props.getVersion();
+        if (!StringUtils.hasText(info.getVersion()) && StringUtils.hasText(version)) {
+            info.setVersion(version);
+            log.debug("OpenAPI: impostata version='{}'.", version);
         }
     }
 
@@ -150,9 +143,8 @@ public class OpenApiAutoConfiguration {
             log.debug("OpenAPI: sezione Components assente. Creata nuova istanza.");
         }
 
-        if (Objects.isNull(components.getSecuritySchemes()) ||
-                !components.getSecuritySchemes().containsKey(BEARER_AUTH)) {
-
+        if (Objects.isNull(components.getSecuritySchemes())
+        || !components.getSecuritySchemes().containsKey(BEARER_AUTH)) {
             components.addSecuritySchemes(BEARER_AUTH,
                     new SecurityScheme()
                             .type(SecurityScheme.Type.HTTP)

@@ -94,31 +94,10 @@ public class AppConstants {
     }
 
     /**
-     * OpenAPI / Swagger.
-     */
-    @UtilityClass
-    public static class OpenApi {
-        public static final String GROUP_DIRECTORY = "directory";
-        public static final String PACKAGES_TO_SCAN = "it.sanitech.directory.web";
-        public static final String TITLE = "Sanitech — Directory API";
-        public static final String VERSION = "v1";
-    }
-
-    /**
      * Sicurezza: endpoint pubblici (es. Swagger/Actuator) e claim/authority.
      */
     @UtilityClass
     public static class Security {
-        public static final String[] PUBLIC_ENDPOINTS = {
-                "/v3/api-docs/**",
-                "/swagger-ui/**",
-                "/swagger-ui.html",
-                "/actuator/health/**",
-                "/actuator/info",
-                "/actuator/metrics/**",
-                "/actuator/prometheus"
-        };
-
         /** Prefisso authority per i ruoli applicativi derivati da {@code realm_access.roles}. */
         public static final String ROLE_PREFIX = "ROLE_";
 
