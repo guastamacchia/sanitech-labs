@@ -9,8 +9,8 @@
     <packaging>pom</packaging>
     <!-- Elenco moduli -->
     <modules>
-        <module>libs/commons</module>
-        <module>libs/outbox-event-management</module>
+        <module>libs/sanitech-commons</module>
+        <module>libs/sanitech-outbox-event-management</module>
         <module>svc-directory</module>
         <module>svc-gateway</module>
         <module>svc-scheduling</module>
