@@ -7,21 +7,24 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Objects;
 
 /**
- * Evento Outbox persistito a DB.
+ * Evento Outbox persistito a database.
  *
  * <p>
- * L'Outbox Pattern garantisce che la "scrittura a DB" dell'operazione di dominio e
+ * L'Outbox Pattern garantisce che la "scrittura a database" dell'operazione di dominio e
  * la "registrazione dell'evento" avvengano nella <b>stessa transazione</b>.
  * Un job separato pubblica poi gli eventi su Kafka e marca {@code published=true}.
  * </p>
  */
 @Entity
-@Table(name = "outbox_events",
+@Table(
+    name = "outbox_events",
     indexes = {
         @Index(name = "idx_outbox_unpublished", columnList = "published, occurred_at")
-    })
+    }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -45,14 +48,16 @@ public class OutboxEvent {
      * Payload dell'evento in formato JSON (persistito come JSONB in Postgres).
      *
      * <p>
-     * {@link JdbcTypeCode} forza Hibernate ad usare il tipo JDBC JSON, evitando problemi
-     * di validazione schema e consentendo lettura/scrittura nativa su Postgres JSONB.
+     * Nota: {@code nullable=false} a database implica che questo campo debba essere sempre valorizzato.
      * </p>
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "jsonb")
     private JsonNode payload;
 
+    /**
+     * Timestamp di occorrenza dell'evento.
+     */
     @Builder.Default
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt = Instant.now();
@@ -65,14 +70,36 @@ public class OutboxEvent {
     private Instant publishedAt;
 
     /**
+     * Guardrail JPA: assicura valori coerenti prima della persistenza.
+     */
+    @PrePersist
+    private void prePersist() {
+        if (occurredAt == null) {
+            occurredAt = Instant.now();
+        }
+        // Fail-fast: a database è NOT NULL.
+        if (Objects.isNull(payload)) {
+            throw new IllegalStateException("OutboxEvent non valido: payload nullo (DB column payload è NOT NULL).");
+        }
+    }
+
+    /**
      * Marca l'evento come pubblicato.
      *
      * <p>
-     * Questo aggiornamento viene salvato a DB nella stessa transazione del job di publishing.
+     * Questo aggiornamento viene salvato a database nella stessa transazione del job di publishing.
+     * </p>
+     *
+     * <p>
+     * Policy: idempotenza soft. Se già pubblicato, non sovrascriviamo {@code publishedAt}.
      * </p>
      */
     public void markPublished(Instant publishedAt) {
+        if (this.published) {
+            // già pubblicato: preserviamo lo stato esistente
+            return;
+        }
         this.published = true;
-        this.publishedAt = publishedAt != null ? publishedAt : Instant.now();
+        this.publishedAt = Objects.nonNull(publishedAt) ? publishedAt : Instant.now();
     }
 }

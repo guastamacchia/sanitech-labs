@@ -59,6 +59,7 @@ public class AppConstants {
         public static class Outbox {
             /** Default: job Outbox ogni 1000ms. */
             public static final long PUBLISHER_DELAY_MS = 1000;
+            public static final int DEFAULT_BATCH_SIZE = 100;
         }
     }
 
