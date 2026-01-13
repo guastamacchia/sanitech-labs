@@ -6,15 +6,15 @@
         <groupId>it.sanitech</groupId>
         <artifactId>svc</artifactId>
         <version>1.0.0</version>
-        <relativePath>../pom.xml</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>outbox-event-managed</artifactId>
-    <name>Sanitech - outbox-event-managed</name>
+    <artifactId>sanitech-outbox-event-management</artifactId>
+    <name>Sanitech - outbox-event-management</name>
     <description>Gestione outbox eventi per i microservizi Sanitech</description>
     <dependencies>
         <dependency>
             <groupId>it.sanitech</groupId>
-            <artifactId>commons-libraries</artifactId>
+            <artifactId>sanitech-commons</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>

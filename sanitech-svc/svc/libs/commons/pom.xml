@@ -6,10 +6,10 @@
         <groupId>it.sanitech</groupId>
         <artifactId>svc</artifactId>
         <version>1.0.0</version>
-        <relativePath>../pom.xml</relativePath>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>commons-libraries</artifactId>
-    <name>Sanitech - commons-libraries</name>
+    <artifactId>sanitech-commons</artifactId>
+    <name>Sanitech - commons</name>
     <description>Librerie comuni per i microservizi Sanitech</description>
     <dependencies>
         <dependency>
