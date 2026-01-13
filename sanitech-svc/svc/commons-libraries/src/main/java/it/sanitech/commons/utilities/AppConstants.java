@@ -3,33 +3,15 @@ package it.sanitech.commons.utilities;
 import lombok.experimental.UtilityClass;
 
 /**
- * Collezione di costanti applicative del microservizio <b>Sanitech — svc-directory</b>.
+ * Collezione di costanti applicative Sanitech.
  *
  * <p>
- * Le costanti sono raggruppate per ambito (configurazione, sicurezza, OpenAPI, Outbox, ecc.)
- * per ridurre le stringhe "cablata" nel codice e mantenere coerenza tra i layer.
+ * Le costanti sono raggruppate per ambito (configurazione, sicurezza, OpenAPI, Problem Details, Outbox, ecc.)
+ * per ridurre le stringhe hard-coded nel codice e mantenere coerenza tra i layer.
  * </p>
  */
 @UtilityClass
 public class AppConstants {
-
-    /**
-     * Costanti generali dell'applicazione (chiavi environment/property e default).
-     */
-    @UtilityClass
-    public static class App {
-        /** Chiave property Spring per il nome applicativo. */
-        public static final String SPRING_APPLICATION_NAME_KEY = "spring.application.name";
-
-        /** Chiave property Spring per la porta HTTP. */
-        public static final String SERVER_PORT_KEY = "server.port";
-
-        /** Default applicativo usato se {@code spring.application.name} non è definito. */
-        public static final String DEFAULT_APP_NAME = "svc-directory";
-
-        /** Default porta usata se {@code server.port} non è definito. */
-        public static final String DEFAULT_SERVER_PORT = "8080";
-    }
 
     /**
      * Chiavi di configurazione (custom namespace {@code sanitech.*}) utilizzate nei file YAML.
@@ -40,6 +22,15 @@ public class AppConstants {
         @UtilityClass
         public static class Cors {
             public static final String PREFIX = "sanitech.cors";
+        }
+
+        @UtilityClass
+        public static class OpenApi {
+            public static final String PREFIX = "sanitech.openapi";
+        }
+
+        public static class Security {
+            public static final String PREFIX = "sanitech.security";
         }
 
         @UtilityClass
@@ -72,28 +63,6 @@ public class AppConstants {
     }
 
     /**
-     * Path REST e prefissi comuni.
-     */
-    @UtilityClass
-    public static class ApiPath {
-        public static final String API = "/api";
-        public static final String ADMIN = API + "/admin";
-
-        public static final String DOCTORS = API + "/doctors";
-        public static final String PATIENTS = API + "/patients";
-        public static final String DEPARTMENTS = API + "/departments";
-        public static final String SPECIALIZATIONS = API + "/specializations";
-
-        public static final String ADMIN_DOCTORS = ADMIN + "/doctors";
-        public static final String ADMIN_PATIENTS = ADMIN + "/patients";
-        public static final String ADMIN_DEPARTMENTS = ADMIN + "/departments";
-        public static final String ADMIN_SPECIALIZATIONS = ADMIN + "/specializations";
-
-        public static final String BULK = "/_bulk";
-        public static final String EXPORT = "/_export";
-    }
-
-    /**
      * Sicurezza: endpoint pubblici (es. Swagger/Actuator) e claim/authority.
      */
     @UtilityClass
@@ -114,16 +83,6 @@ public class AppConstants {
     }
 
     /**
-     * Sorting: whitelist dei campi ordinabili esposti via API.
-     */
-    @UtilityClass
-    public static class SortField {
-        // NB: evitare di esporre sorting su campi "tecnici" o non indicizzati.
-        public static final java.util.Set<String> DOCTOR_ALLOWED = java.util.Set.of("id", "firstName", "lastName", "email");
-        public static final java.util.Set<String> PATIENT_ALLOWED = java.util.Set.of("id", "firstName", "lastName", "email");
-    }
-
-    /**
      * RFC 7807: URI "type" standardizzati per le principali classi di errore.
      */
     @UtilityClass
@@ -135,10 +94,11 @@ public class AppConstants {
         public static final String TYPE_TOO_MANY_REQUESTS = "https://sanitech.it/problems/too-many-requests";
         public static final String TYPE_SERVICE_UNAVAILABLE = "https://sanitech.it/problems/service-unavailable";
         public static final String TYPE_INTERNAL_ERROR = "https://sanitech.it/problems/internal-error";
+        public static final String TYPE_CONFLICT = "https://sanitech.it/problems/conflict";
     }
 
     /**
-     * Messaggi (in italiano) usati nei Problem Details.
+     * Messaggi usati nei Problem Details.
      */
     @UtilityClass
     public static class ErrorMessage {
@@ -149,11 +109,35 @@ public class AppConstants {
         public static final String ERR_TOO_MANY_REQUESTS = "Troppe richieste";
         public static final String ERR_SERVICE_UNAVAILABLE = "Servizio non disponibile";
         public static final String ERR_INTERNAL = "Errore interno";
+        public static final String ERR_CONFLICT = "Conflitto sui dati";
+
+        // fallback standard
+        public static final String FALLBACK_VALUE = "N/D";
+
+        public static final String MSG_NOT_FOUND = "%s non trovato.";
+        public static final String MSG_NOT_FOUND_BY_ID = "%s con id %s non trovato.";
 
         public static final String MSG_VALIDATION_FAILED = "La richiesta contiene campi non validi.";
         public static final String MSG_TOO_MANY_REQUESTS = "Hai superato il limite di richieste consentite. Riprova più tardi.";
         public static final String MSG_SERVICE_UNAVAILABLE = "Servizio temporaneamente non disponibile. Riprova più tardi.";
         public static final String MSG_INTERNAL_ERROR = "Si è verificato un errore inatteso.";
+
+        public static final String MSG_CONFLICT = "Operazione non eseguibile: violazione di vincoli sui dati.";
+    }
+
+    /**
+     * RFC 7807 - "extra": chiavi e default utilizzati nella sezione extra dei ProblemDetails.
+     *
+     * <p>
+     * Serve a evitare stringhe hard-coded come "campo", "messaggio" o "Valore non valido"
+     * nei mapper degli errori di validazione.
+     * </p>
+     */
+    @UtilityClass
+    public static class ProblemExtra {
+        public static final String FIELD = "campo";
+        public static final String MESSAGE = "messaggio";
+        public static final String DEFAULT_FIELD_ERROR = "Valore non valido";
     }
 
     /**
@@ -161,32 +145,10 @@ public class AppConstants {
      */
     @UtilityClass
     public static class Outbox {
-        public static final String TOPIC_DIRECTORY_EVENTS = "directory.events";
-
         public static final String OUTBOX_EVENTS_SAVED_COUNT = "outbox.events.saved.count";
         public static final String OUTBOX_EVENTS_PUBLISHED = "outbox.events.published";
 
         public static final String TAG_AGGREGATE_TYPE = "aggregateType";
         public static final String TAG_EVENT_TYPE = "eventType";
-
-        /** Tipi aggregato standard per eventi Outbox. */
-        @lombok.experimental.UtilityClass
-        public static class AggregateType {
-            public static final String DOCTOR = "DOCTOR";
-            public static final String PATIENT = "PATIENT";
-        }
-
-        /** Tipi evento standard per Outbox (Directory). */
-        @lombok.experimental.UtilityClass
-        public static class EventType {
-            public static final String DOCTOR_CREATED = "DOCTOR_CREATED";
-            public static final String DOCTOR_UPDATED = "DOCTOR_UPDATED";
-            public static final String DOCTOR_DELETED = "DOCTOR_DELETED";
-
-            public static final String PATIENT_CREATED = "PATIENT_CREATED";
-            public static final String PATIENT_UPDATED = "PATIENT_UPDATED";
-            public static final String PATIENT_DELETED = "PATIENT_DELETED";
-        }
-
     }
 }

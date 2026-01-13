@@ -1,6 +1,7 @@
 package it.sanitech.commons.autoconfigure;
 
 import it.sanitech.commons.autoconfigure.properties.CorsProperties;
+import it.sanitech.commons.utilities.AppConstants;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,7 @@ import java.util.Optional;
 @Configuration
 @RequiredArgsConstructor
 @EnableConfigurationProperties(CorsProperties.class)
-@ConditionalOnProperty(prefix = CorsProperties.PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = AppConstants.ConfigKeys.Cors.PREFIX, name = "enabled", havingValue = "true")
 public class CorsAutoConfiguration {
 
     private final CorsProperties props;

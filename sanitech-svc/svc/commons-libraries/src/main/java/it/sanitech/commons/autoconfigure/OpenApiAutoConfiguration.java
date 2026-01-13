@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import it.sanitech.commons.autoconfigure.properties.OpenApiProperties;
+import it.sanitech.commons.utilities.AppConstants;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +39,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @EnableConfigurationProperties(OpenApiProperties.class)
 @ConditionalOnClass(GroupedOpenApi.class)
-@ConditionalOnProperty(prefix = OpenApiProperties.PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = AppConstants.ConfigKeys.OpenApi.PREFIX, name = "enabled", havingValue = "true")
 public class OpenApiAutoConfiguration {
 
     private static final String BEARER_AUTH = "bearerAuth";

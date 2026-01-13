@@ -1,5 +1,6 @@
 package it.sanitech.commons.autoconfigure.properties;
 
+import it.sanitech.commons.utilities.AppConstants;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,10 +27,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Getter
 @Setter
-@ConfigurationProperties(prefix = CorsProperties.PREFIX)
+@ConfigurationProperties(prefix = AppConstants.ConfigKeys.Cors.PREFIX)
 public class CorsProperties {
-
-    public static final String PREFIX = "sanitech.cors";
 
     /**
      * Abilita la configurazione CORS condivisa.
@@ -68,12 +67,12 @@ public class CorsProperties {
     /**
      * Se true, abilita invio credenziali (cookie/Authorization) in richieste cross-site.
      */
-    private boolean allowCredentials = false;
+    private boolean allowCredentials = AppConstants.ConfigDefaultValue.Cors.ALLOW_CREDENTIALS;
 
     /**
      * Cache del preflight (OPTIONS) espressa in secondi.
      */
-    private long maxAge = 3600;
+    private long maxAge = AppConstants.ConfigDefaultValue.Cors.MAX_AGE_SECONDS;
 
     /**
      * Normalizzazione delle proprietà lette da YAML.

@@ -1,5 +1,6 @@
 package it.sanitech.commons.autoconfigure.properties;
 
+import it.sanitech.commons.utilities.AppConstants;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,10 +24,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Getter
 @Setter
-@ConfigurationProperties(prefix = OpenApiProperties.PREFIX)
+@ConfigurationProperties(prefix = AppConstants.ConfigKeys.OpenApi.PREFIX)
 public class OpenApiProperties {
-
-    public static final String PREFIX = "sanitech.openapi";
 
     /**
      * Abilita la configurazione OpenAPI condivisa.

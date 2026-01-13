@@ -4,39 +4,59 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.Objects;
+
 /**
- * Modello RFC 7807 "Problem Details" per risposte di errore.
+ * Modello RFC 7807 "Problem Details" per risposte di errore HTTP.
  *
  * <p>
- * Campi standard:
+ * Campi standard (RFC 7807):
  * <ul>
  *   <li>{@code type}: URI che identifica la tipologia di problema</li>
- *   <li>{@code title}: titolo breve, leggibile</li>
+ *   <li>{@code title}: titolo breve, leggibile (human-readable)</li>
  *   <li>{@code status}: HTTP status code</li>
- *   <li>{@code detail}: dettaglio descrittivo</li>
+ *   <li>{@code detail}: descrizione dettagliata dell'errore</li>
  *   <li>{@code instance}: URI della richiesta che ha generato l'errore</li>
  * </ul>
+ * </p>
  *
- * Campo esteso:
+ * <p>
+ * Campo esteso (non standard RFC 7807):
  * <ul>
- *   <li>{@code extra}: dettagli aggiuntivi (es. lista errori di validazione)</li>
+ *   <li>{@code extra}: payload aggiuntivo strutturato (es. errori field-level)</li>
  * </ul>
  * </p>
  */
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ProblemDetails {
+public final class ProblemDetails {
 
-    private String type;
-    private String title;
-    private Integer status;
-    private String detail;
-    private String instance;
+    /** URI che identifica la tipologia di problema (RFC 7807). */
+    private final String type;
+
+    /** Titolo breve e leggibile del problema. */
+    private final String title;
+
+    /** HTTP status code associato al problema. */
+    private final Integer status;
+
+    /** Descrizione dettagliata dell'errore. */
+    private final String detail;
+
+    /** URI della richiesta che ha generato l'errore. */
+    private final String instance;
 
     /**
      * Payload aggiuntivo (non standard RFC 7807) per arricchire la risposta.
-     * Esempio tipico: lista errori field-level in caso di validazione.
+     *
+     * <p>
+     * Tipicamente usato per:
+     * <ul>
+     *   <li>errori di validazione field-level</li>
+     *   <li>dettagli strutturati per il frontend</li>
+     * </ul>
+     * </p>
      */
-    private Object extra;
+    private final Object extra;
 }

@@ -2,6 +2,7 @@ package it.sanitech.commons.autoconfigure;
 
 import it.sanitech.commons.autoconfigure.properties.SecurityProperties;
 import it.sanitech.commons.security.JwtAuthConverter;
+import it.sanitech.commons.utilities.AppConstants;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +43,7 @@ import java.util.Optional;
 @EnableConfigurationProperties(SecurityProperties.class)
 @ConditionalOnClass(SecurityFilterChain.class)
 @ConditionalOnBean(JwtAuthConverter.class)
-@ConditionalOnProperty(prefix = SecurityProperties.PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = AppConstants.ConfigKeys.Security.PREFIX, name = "enabled", havingValue = "true")
 public class SecurityAutoConfiguration {
 
     private final JwtAuthConverter jwtAuthConverter;

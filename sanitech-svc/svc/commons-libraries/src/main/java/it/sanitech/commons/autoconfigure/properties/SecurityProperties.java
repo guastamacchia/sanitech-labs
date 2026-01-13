@@ -1,5 +1,6 @@
 package it.sanitech.commons.autoconfigure.properties;
 
+import it.sanitech.commons.utilities.AppConstants;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,10 +24,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Getter
 @Setter
-@ConfigurationProperties(prefix = SecurityProperties.PREFIX)
+@ConfigurationProperties(prefix = AppConstants.ConfigKeys.Security.PREFIX)
 public class SecurityProperties {
-
-    public static final String PREFIX = "sanitech.security";
 
     /**
      * Abilita la configurazione di sicurezza condivisa.

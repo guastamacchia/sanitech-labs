@@ -12,10 +12,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Gestore globale delle eccezioni del microservizio.
@@ -34,13 +32,12 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ProblemDetails> notFound(NotFoundException ex, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ProblemDetails.builder()
-                .type(AppConstants.Problem.TYPE_NOT_FOUND)
-                .title(AppConstants.ErrorMessage.ERR_NOT_FOUND)
-                .status(HttpStatus.NOT_FOUND.value())
-                .detail(ex.getMessage())
-                .instance(request.getRequestURI())
-                .build());
+        return build(HttpStatus.NOT_FOUND,
+                AppConstants.Problem.TYPE_NOT_FOUND,
+                AppConstants.ErrorMessage.ERR_NOT_FOUND,
+                ex.getMessage(),
+                request,
+                null);
     }
 
     /**
@@ -48,13 +45,12 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(DepartmentAccessDeniedException.class)
     public ResponseEntity<ProblemDetails> deptDenied(DepartmentAccessDeniedException ex, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ProblemDetails.builder()
-                .type(AppConstants.Problem.TYPE_FORBIDDEN)
-                .title(AppConstants.ErrorMessage.ERR_FORBIDDEN)
-                .status(HttpStatus.FORBIDDEN.value())
-                .detail(ex.getMessage())
-                .instance(request.getRequestURI())
-                .build());
+        return build(HttpStatus.FORBIDDEN,
+                AppConstants.Problem.TYPE_FORBIDDEN,
+                AppConstants.ErrorMessage.ERR_FORBIDDEN,
+                ex.getMessage(),
+                request,
+                null);
     }
 
     /**
@@ -62,25 +58,16 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ProblemDetails> validation(MethodArgumentNotValidException ex, HttpServletRequest request) {
-
-        // Dettagli field-level: usati dal frontend per evidenziare i campi invalidi.
-        List<Map<String, String>> dettagli = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(err -> Map.of(
-                        "campo", err.getField(),
-                        "messaggio", Optional.ofNullable(err.getDefaultMessage()).orElse("Valore non valido")
-                ))
-                .collect(Collectors.toList());
-
-        return ResponseEntity.badRequest().body(ProblemDetails.builder()
-                .type(AppConstants.Problem.TYPE_VALIDATION_ERROR)
-                .title(AppConstants.ErrorMessage.ERR_VALIDATION)
-                .status(HttpStatus.BAD_REQUEST.value())
-                .detail(AppConstants.ErrorMessage.MSG_VALIDATION_FAILED)
-                .instance(request.getRequestURI())
-                .extra(dettagli)
-                .build());
+        return build(
+                HttpStatus.BAD_REQUEST,
+                AppConstants.Problem.TYPE_VALIDATION_ERROR,
+                AppConstants.ErrorMessage.ERR_VALIDATION,
+                AppConstants.ErrorMessage.MSG_VALIDATION_FAILED,
+                request,
+                ex.getBindingResult().getFieldErrors().stream()
+                    .map(GlobalExceptionHandler::toFieldErrorExtra)
+                    .toList()
+        );
     }
 
     /**
@@ -88,27 +75,33 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ProblemDetails> badRequest(IllegalArgumentException ex, HttpServletRequest request) {
-        return ResponseEntity.badRequest().body(ProblemDetails.builder()
-                .type(AppConstants.Problem.TYPE_BAD_REQUEST)
-                .title(AppConstants.ErrorMessage.ERR_BAD_REQUEST)
-                .status(HttpStatus.BAD_REQUEST.value())
-                .detail(ex.getMessage())
-                .instance(request.getRequestURI())
-                .build());
+        return build(HttpStatus.BAD_REQUEST,
+                AppConstants.Problem.TYPE_BAD_REQUEST,
+                AppConstants.ErrorMessage.ERR_BAD_REQUEST,
+                ex.getMessage(),
+                request,
+                null);
     }
 
     /**
      * Violazioni vincoli database (es. unique email) → 409 Conflict.
+     *
+     * <p>
+     * Nota: la detail è volutamente generica per non esporre dettagli interni del DB.
+     * </p>
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ProblemDetails> conflict(DataIntegrityViolationException ex, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ProblemDetails.builder()
-                .type("https://sanitech.it/problems/conflict")
-                .title("Conflitto sui dati")
-                .status(HttpStatus.CONFLICT.value())
-                .detail("Operazione non eseguibile: violazione di vincoli sui dati (es. email già presente).")
-                .instance(request.getRequestURI())
-                .build());
+        log.warn("Conflitto dati su {}: {}", safeUri(request), ex.getMostSpecificCause().getMessage());
+
+        return build(
+                HttpStatus.CONFLICT,
+                AppConstants.Problem.TYPE_CONFLICT,
+                AppConstants.ErrorMessage.ERR_CONFLICT,
+                AppConstants.ErrorMessage.MSG_CONFLICT,
+                request,
+                null
+        );
     }
 
     /**
@@ -116,32 +109,29 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(RequestNotPermitted.class)
     public ResponseEntity<ProblemDetails> tooManyRequests(RequestNotPermitted ex, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(ProblemDetails.builder()
-                .type(AppConstants.Problem.TYPE_TOO_MANY_REQUESTS)
-                .title(AppConstants.ErrorMessage.ERR_TOO_MANY_REQUESTS)
-                .status(HttpStatus.TOO_MANY_REQUESTS.value())
-                .detail(AppConstants.ErrorMessage.MSG_TOO_MANY_REQUESTS)
-                .instance(request.getRequestURI())
-                .build());
+        return build(HttpStatus.TOO_MANY_REQUESTS,
+                AppConstants.Problem.TYPE_TOO_MANY_REQUESTS,
+                AppConstants.ErrorMessage.ERR_TOO_MANY_REQUESTS,
+                AppConstants.ErrorMessage.MSG_TOO_MANY_REQUESTS,
+                request,
+                null);
     }
 
     /**
      * Circuit breaker aperto (503).
      *
      * <p>
-     * Nel solo svc-directory non ci sono chiamate a servizi esterni "critiche", ma
-     * manteniamo l'handler per coerenza e future estensioni.
+     * Manteniamo l'handler per coerenza e future estensioni.
      * </p>
      */
     @ExceptionHandler(CallNotPermittedException.class)
     public ResponseEntity<ProblemDetails> serviceUnavailable(CallNotPermittedException ex, HttpServletRequest request) {
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ProblemDetails.builder()
-                .type(AppConstants.Problem.TYPE_SERVICE_UNAVAILABLE)
-                .title(AppConstants.ErrorMessage.ERR_SERVICE_UNAVAILABLE)
-                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
-                .detail(AppConstants.ErrorMessage.MSG_SERVICE_UNAVAILABLE)
-                .instance(request.getRequestURI())
-                .build());
+        return build(HttpStatus.SERVICE_UNAVAILABLE,
+                AppConstants.Problem.TYPE_SERVICE_UNAVAILABLE,
+                AppConstants.ErrorMessage.ERR_SERVICE_UNAVAILABLE,
+                AppConstants.ErrorMessage.MSG_SERVICE_UNAVAILABLE,
+                request,
+                null);
     }
 
     /**
@@ -149,14 +139,53 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetails> generic(Exception ex, HttpServletRequest request) {
-        log.error("Errore inatteso su {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        log.error("Errore inatteso su {}: {}", safeUri(request), ex.getMessage(), ex);
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ProblemDetails.builder()
-                .type(AppConstants.Problem.TYPE_INTERNAL_ERROR)
-                .title(AppConstants.ErrorMessage.ERR_INTERNAL)
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .detail(AppConstants.ErrorMessage.MSG_INTERNAL_ERROR)
-                .instance(request.getRequestURI())
-                .build());
+        return build(HttpStatus.INTERNAL_SERVER_ERROR,
+                AppConstants.Problem.TYPE_INTERNAL_ERROR,
+                AppConstants.ErrorMessage.ERR_INTERNAL,
+                AppConstants.ErrorMessage.MSG_INTERNAL_ERROR,
+                request,
+                null);
+    }
+
+    /**
+     * Builder centralizzato per ProblemDetails, per evitare duplicazioni e garantire coerenza.
+     */
+    private static ResponseEntity<ProblemDetails> build(HttpStatus status,
+                                                 String type,
+                                                 String title,
+                                                 String detail,
+                                                 HttpServletRequest request,
+                                                 Object extra) {
+
+        ProblemDetails.ProblemDetailsBuilder builder = ProblemDetails.builder()
+                .type(type)
+                .title(title)
+                .status(status.value())
+                .detail(detail)
+                .instance(safeUri(request));
+
+        Optional.ofNullable(extra).ifPresent(builder::extra);
+
+        return ResponseEntity.status(status).body(builder.build());
+    }
+
+
+    /**
+     * Estrae in modo safe la request URI.
+     */
+    private static String safeUri(HttpServletRequest request) {
+        return Optional.ofNullable(request)
+                .map(HttpServletRequest::getRequestURI)
+                .orElse("");
+    }
+
+    private static Map<String, String> toFieldErrorExtra(org.springframework.validation.FieldError err) {
+        return Map.of(
+                AppConstants.ProblemExtra.FIELD, err.getField(),
+                AppConstants.ProblemExtra.MESSAGE,
+                Optional.ofNullable(err.getDefaultMessage()).orElse(AppConstants.ProblemExtra.DEFAULT_FIELD_ERROR)
+        );
     }
 }

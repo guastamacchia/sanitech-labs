@@ -1,5 +1,6 @@
 package it.sanitech.directory.utilities;
 
+import it.sanitech.commons.utilities.SortUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Sort;
 
