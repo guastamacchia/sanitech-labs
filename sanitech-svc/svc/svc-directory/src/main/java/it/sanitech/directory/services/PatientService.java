@@ -14,8 +14,7 @@ import it.sanitech.directory.services.dto.PatientDto;
 import it.sanitech.directory.services.dto.create.PatientCreateDto;
 import it.sanitech.directory.services.dto.update.PatientUpdateDto;
 import it.sanitech.directory.services.mapper.PatientMapper;
-import it.sanitech.commons.utilities.AppConstants;
-import it.sanitech.commons.utilities.CsvUtils;
+import it.sanitech.directory.utilities.AppConstants;
 import it.sanitech.commons.utilities.PageableUtils;
 import it.sanitech.commons.utilities.SortUtils;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +23,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Service applicativo per la gestione dei Pazienti.
+ * Service applicativo per la gestione dei pazienti.
+ *
+ * <p>
+ * Gestisce creazione, aggiornamento, ricerca paginata e cancellazione dei pazienti,
+ * applicando controlli di coerenza sui reparti, normalizzazione dei dati anagrafici e
+ * pubblicazione di eventi Outbox per la sincronizzazione con altri servizi.
+ * </p>
  */
 @Service
 @RequiredArgsConstructor
@@ -205,40 +209,6 @@ public class PatientService {
         );
 
         return result.map(patientMapper::toDto);
-    }
-
-    public List<PatientDto> bulkCreate(List<PatientCreateDto> items, Authentication auth) {
-        if (items == null || items.isEmpty()) return List.of();
-        List<PatientDto> created = new ArrayList<>(items.size());
-        for (PatientCreateDto dto : items) {
-            created.add(create(dto, auth));
-        }
-        return created;
-    }
-
-    @Transactional(readOnly = true)
-    public byte[] exportCsv(String q, String departmentCode) {
-        List<Patient> patients = patientRepository.findAll(
-                PatientSpecifications.search(q, departmentCode),
-                Sort.by("lastName").ascending().and(Sort.by("firstName").ascending())
-        );
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("id,firstName,lastName,email,phone,departments\n");
-
-        for (Patient p : patients) {
-            String departments = CsvUtils.join(p.getDepartments().stream().map(Department::getCode).toList(), "|");
-
-            sb.append(p.getId()).append(',')
-                    .append(CsvUtils.csv(p.getFirstName())).append(',')
-                    .append(CsvUtils.csv(p.getLastName())).append(',')
-                    .append(CsvUtils.csv(p.getEmail())).append(',')
-                    .append(CsvUtils.csv(p.getPhone())).append(',')
-                    .append(CsvUtils.csv(departments))
-                    .append('\n');
-        }
-
-        return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     private Set<Department> resolveDepartments(Set<String> deptCodes) {

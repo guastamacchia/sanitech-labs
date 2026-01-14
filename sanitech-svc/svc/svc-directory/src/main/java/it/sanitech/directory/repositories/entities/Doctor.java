@@ -10,8 +10,9 @@ import java.util.Set;
  * Entità Medico (Directory).
  *
  * <p>
- * Nota: il medico può appartenere a più reparti e avere più specializzazioni.
- * Le relazioni sono modellate con tabelle di associazione many-to-many.
+ * Rappresenta i dati anagrafici del medico e le relazioni con reparti e specializzazioni.
+ * Le associazioni many-to-many sono gestite tramite tabelle ponte dedicate e la mail è
+ * vincolata a unicità per evitare duplicazioni anagrafiche.
  * </p>
  */
 @Entity

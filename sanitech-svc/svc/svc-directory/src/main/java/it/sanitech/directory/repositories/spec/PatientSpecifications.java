@@ -13,6 +13,11 @@ import java.util.Set;
 
 /**
  * Specifiche JPA per la ricerca di {@link Patient}.
+ *
+ * <p>
+ * Fornisce filtri componibili per ricerca testuale e per vincoli di reparto,
+ * con gestione di query distinct per evitare duplicazioni dovute alle join.
+ * </p>
  */
 public final class PatientSpecifications {
 
