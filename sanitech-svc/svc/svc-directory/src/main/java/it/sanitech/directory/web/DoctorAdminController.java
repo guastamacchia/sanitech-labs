@@ -4,20 +4,21 @@ import it.sanitech.directory.services.DoctorService;
 import it.sanitech.directory.services.dto.DoctorDto;
 import it.sanitech.directory.services.dto.create.DoctorCreateDto;
 import it.sanitech.directory.services.dto.update.DoctorUpdateDto;
-import it.sanitech.commons.utilities.AppConstants;
+import it.sanitech.directory.utilities.AppConstants;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
- * API amministrativa per gestione medici.
+ * API amministrativa per la gestione dei medici.
+ *
+ * <p>
+ * Espone operazioni di creazione, aggiornamento parziale, ricerca paginata e cancellazione,
+ * riservate agli utenti con ruolo amministrativo.
+ * </p>
  */
 @RestController
 @RequiredArgsConstructor
@@ -52,24 +53,5 @@ public class DoctorAdminController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         doctorService.delete(id);
-    }
-
-    @PostMapping(value = AppConstants.ApiPath.BULK, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<DoctorDto> bulk(@Valid @RequestBody List<DoctorCreateDto> items, Authentication auth) {
-        return doctorService.bulkCreate(items, auth);
-    }
-
-    @GetMapping(value = AppConstants.ApiPath.EXPORT, produces = "text/csv")
-    public ResponseEntity<byte[]> export(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String department,
-            @RequestParam(required = false) String specialization
-    ) {
-        byte[] csv = doctorService.exportCsv(q, department, specialization);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"doctors.csv\"")
-                .contentType(MediaType.parseMediaType("text/csv"))
-                .body(csv);
     }
 }

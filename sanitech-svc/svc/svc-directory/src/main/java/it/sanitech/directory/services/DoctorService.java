@@ -15,8 +15,7 @@ import it.sanitech.directory.services.dto.DoctorDto;
 import it.sanitech.directory.services.dto.create.DoctorCreateDto;
 import it.sanitech.directory.services.dto.update.DoctorUpdateDto;
 import it.sanitech.directory.services.mapper.DoctorMapper;
-import it.sanitech.commons.utilities.AppConstants;
-import it.sanitech.commons.utilities.CsvUtils;
+import it.sanitech.directory.utilities.AppConstants;
 import it.sanitech.commons.utilities.PageableUtils;
 import it.sanitech.commons.utilities.SortUtils;
 import lombok.RequiredArgsConstructor;
@@ -25,21 +24,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Service applicativo per la gestione dei Medici.
+ * Service applicativo per la gestione dei medici.
  *
  * <p>
- * Include:
- * <ul>
- *   <li>CRUD + ricerca paginata con filtri combinabili</li>
- *   <li>bulk import</li>
- *   <li>export CSV</li>
- *   <li>produzione eventi su Outbox (Kafka via job schedulato)</li>
- * </ul>
+ * Coordina la logica di dominio per la creazione, l'aggiornamento, la ricerca paginata e la
+ * cancellazione dei medici, includendo la risoluzione di reparti/specializzazioni, la
+ * validazione di unicità dell'email e la pubblicazione di eventi Outbox per l'integrazione
+ * asincrona con altri servizi.
  * </p>
  */
 @Service
@@ -188,42 +183,6 @@ public class DoctorService {
         );
 
         return result.map(doctorMapper::toDto);
-    }
-
-    public List<DoctorDto> bulkCreate(List<DoctorCreateDto> items, Authentication auth) {
-        if (items == null || items.isEmpty()) return List.of();
-        List<DoctorDto> created = new ArrayList<>(items.size());
-        for (DoctorCreateDto dto : items) {
-            created.add(create(dto, auth));
-        }
-        return created;
-    }
-
-    @Transactional(readOnly = true)
-    public byte[] exportCsv(String q, String departmentCode, String specializationCode) {
-        // Export semplice: per dataset molto grandi valutare streaming o export asincrono.
-        List<Doctor> doctors = doctorRepository.findAll(
-                DoctorSpecifications.search(q, departmentCode, specializationCode),
-                Sort.by("lastName").ascending().and(Sort.by("firstName").ascending())
-        );
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("id,firstName,lastName,email,departments,specializations\n");
-
-        for (Doctor d : doctors) {
-            String departments = CsvUtils.join(d.getDepartments().stream().map(Department::getCode).toList(), "|");
-            String specializations = CsvUtils.join(d.getSpecializations().stream().map(Specialization::getCode).toList(), "|");
-
-            sb.append(d.getId()).append(',')
-                    .append(CsvUtils.csv(d.getFirstName())).append(',')
-                    .append(CsvUtils.csv(d.getLastName())).append(',')
-                    .append(CsvUtils.csv(d.getEmail())).append(',')
-                    .append(CsvUtils.csv(departments)).append(',')
-                    .append(CsvUtils.csv(specializations))
-                    .append('\n');
-        }
-
-        return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     private Set<Department> resolveDepartments(Set<String> deptCodes) {

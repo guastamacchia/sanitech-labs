@@ -2,7 +2,7 @@ package it.sanitech.directory.web;
 
 import it.sanitech.directory.services.PatientService;
 import it.sanitech.directory.services.dto.PatientDto;
-import it.sanitech.commons.utilities.AppConstants;
+import it.sanitech.directory.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
@@ -14,7 +14,8 @@ import org.springframework.web.bind.annotation.*;
  * API di consultazione pazienti.
  *
  * <p>
- * Regola principale: un utente DOCTOR vede solo i pazienti dei reparti presenti nelle sue authority {@code DEPT_*}.
+ * Espone endpoint di lettura per utenti ADMIN e DOCTOR. In base alle authority {@code DEPT_*},
+ * applica regole ABAC che limitano la visibilità ai soli reparti consentiti.
  * </p>
  */
 @RestController
@@ -35,7 +36,7 @@ public class PatientController {
             Authentication auth
     ) {
         boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(AppConstants.Security.ROLE_PREFIX + "ADMIN"));
+                .anyMatch(a -> a.getAuthority().equals(it.sanitech.commons.utilities.AppConstants.Security.ROLE_PREFIX + "ADMIN"));
 
         return isAdmin
                 ? patientService.searchAdmin(q, department, page, size, sort)
@@ -45,7 +46,7 @@ public class PatientController {
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public PatientDto get(@PathVariable Long id, Authentication auth) {
         boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(AppConstants.Security.ROLE_PREFIX + "ADMIN"));
+                .anyMatch(a -> a.getAuthority().equals(it.sanitech.commons.utilities.AppConstants.Security.ROLE_PREFIX + "ADMIN"));
 
         return isAdmin
                 ? patientService.get(id)

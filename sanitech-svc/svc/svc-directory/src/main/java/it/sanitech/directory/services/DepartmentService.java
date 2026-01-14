@@ -15,7 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Service applicativo per l'anagrafica Reparti.
+ * Service applicativo per l'anagrafica reparti.
+ *
+ * <p>
+ * Gestisce la consultazione e la manutenzione dei reparti, applicando normalizzazioni
+ * sui codici e controlli di unicità prima della persistenza.
+ * </p>
  */
 @Service
 @RequiredArgsConstructor

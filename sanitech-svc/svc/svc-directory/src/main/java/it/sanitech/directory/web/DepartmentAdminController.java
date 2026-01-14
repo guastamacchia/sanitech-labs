@@ -4,7 +4,7 @@ import it.sanitech.directory.services.DepartmentService;
 import it.sanitech.directory.services.dto.DepartmentDto;
 import it.sanitech.directory.services.dto.create.DepartmentCreateDto;
 import it.sanitech.directory.services.dto.update.DepartmentUpdateDto;
-import it.sanitech.commons.utilities.AppConstants;
+import it.sanitech.directory.utilities.AppConstants;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -12,7 +12,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * API amministrativa per gestione reparti.
+ * API amministrativa per la gestione dei reparti.
+ *
+ * <p>
+ * Consente operazioni di CRUD e ricerca semplice, protette da autorizzazione
+ * con ruolo amministrativo.
+ * </p>
  */
 @RestController
 @RequiredArgsConstructor

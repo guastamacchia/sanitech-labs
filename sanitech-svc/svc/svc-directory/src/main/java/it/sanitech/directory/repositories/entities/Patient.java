@@ -10,9 +10,9 @@ import java.util.Set;
  * Entità Paziente (Directory).
  *
  * <p>
- * Un paziente può essere associato a più reparti (es. in carico a più unità).
- * La distinzione tra ricovero/visita è gestita in microservizi dedicati
- * (es. admissions/scheduling); qui manteniamo solo l'informazione anagrafica di appartenenza.
+ * Gestisce i dati anagrafici del paziente e le associazioni ai reparti di competenza.
+ * Le informazioni su ricoveri/visite sono responsabilità di altri microservizi
+ * (es. admissions/scheduling); qui si mantiene la sola appartenenza logica per filtri e ABAC.
  * </p>
  */
 @Entity

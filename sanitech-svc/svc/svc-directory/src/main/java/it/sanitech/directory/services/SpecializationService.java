@@ -15,7 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Service applicativo per l'anagrafica Specializzazioni.
+ * Service applicativo per l'anagrafica specializzazioni.
+ *
+ * <p>
+ * Fornisce operazioni di lettura e manutenzione, includendo normalizzazione dei codici
+ * e validazioni di unicità per evitare duplicati di dominio.
+ * </p>
  */
 @Service
 @RequiredArgsConstructor
