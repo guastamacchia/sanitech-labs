@@ -16,6 +16,18 @@ import java.util.Set;
 public class AppConstants {
 
     /**
+     * Costanti runtime legate alla configurazione Spring Boot.
+     */
+    @UtilityClass
+    public static class Spring {
+        public static final String APP_NAME_KEY = "spring.application.name";
+        public static final String DEFAULT_APP_NAME = "svc-directory";
+
+        public static final String SERVER_PORT_KEY = "server.port";
+        public static final String DEFAULT_SERVER_PORT = "8082";
+    }
+
+    /**
      * Path REST e prefissi comuni del microservizio.
      */
     @UtilityClass
