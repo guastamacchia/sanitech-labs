@@ -8,8 +8,8 @@
         <version>1.0.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>sanitech-commons</artifactId>
-    <name>Sanitech - commons</name>
+    <artifactId>commons-libraries</artifactId>
+    <name>Sanitech - commons-libraries</name>
     <description>Librerie comuni per i microservizi Sanitech</description>
     <dependencies>
         <dependency>

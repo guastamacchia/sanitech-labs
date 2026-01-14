@@ -9,8 +9,8 @@
     <packaging>pom</packaging>
     <!-- Elenco moduli -->
     <modules>
-        <module>libs/sanitech-commons</module>
-        <module>libs/sanitech-outbox-event-management</module>
+        <module>libs/commons-libraries</module>
+        <module>libs/outbox-event-management</module>
         <module>svc-directory</module>
         <module>svc-gateway</module>
         <module>svc-scheduling</module>
@@ -55,12 +55,12 @@
         <dependencies>
             <dependency>
                 <groupId>it.sanitech</groupId>
-                <artifactId>sanitech-commons</artifactId>
+                <artifactId>commons-libraries</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>it.sanitech</groupId>
-                <artifactId>sanitech-outbox-event-management</artifactId>
+                <artifactId>outbox-event-management</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- BOM Spring Boot -->
