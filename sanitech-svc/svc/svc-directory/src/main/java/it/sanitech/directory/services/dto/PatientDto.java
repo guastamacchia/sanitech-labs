@@ -4,6 +4,10 @@ import java.util.Set;
 
 /**
  * DTO utilizzato per esporre i dati anagrafici del paziente verso i controller REST.
+ *
+ * <p>
+ * Include i reparti di appartenenza per supportare la visualizzazione e i filtri lato client.
+ * </p>
  */
 public record PatientDto(
 

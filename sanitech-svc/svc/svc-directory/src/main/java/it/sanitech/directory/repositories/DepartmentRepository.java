@@ -8,7 +8,13 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository per l'anagrafica {@link Department}.
+ * Repository JPA per l'anagrafica {@link Department}.
+ *
+ * <p>
+ * Espone metodi di query focalizzati sui codici reparto e sulle ricerche testuali
+ * (codice/nome), utilizzati dal service layer per validazioni di unicità e per
+ * filtri di ricerca lato API.
+ * </p>
  */
 public interface DepartmentRepository extends JpaRepository<Department, Long> {
 

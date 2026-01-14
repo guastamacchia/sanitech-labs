@@ -4,6 +4,11 @@ import jakarta.validation.constraints.NotBlank;
 
 /**
  * DTO utilizzato per creare una nuova specializzazione.
+ *
+ * <p>
+ * Richiede codice e nome, che verranno normalizzati e validati
+ * dal service prima della persistenza.
+ * </p>
  */
 public record SpecializationCreateDto(
 
