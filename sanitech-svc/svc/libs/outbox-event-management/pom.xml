@@ -8,13 +8,13 @@
         <version>1.0.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>sanitech-outbox-event-management</artifactId>
+    <artifactId>outbox-event-management</artifactId>
     <name>Sanitech - outbox-event-management</name>
     <description>Gestione outbox eventi per i microservizi Sanitech</description>
     <dependencies>
         <dependency>
             <groupId>it.sanitech</groupId>
-            <artifactId>sanitech-commons</artifactId>
+            <artifactId>commons-libraries</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
