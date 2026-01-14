@@ -8,6 +8,11 @@ import java.util.Set;
 
 /**
  * DTO utilizzato per creare un nuovo medico.
+ *
+ * <p>
+ * Richiede dati anagrafici e l'associazione ad almeno un reparto e una specializzazione,
+ * che verranno validati dal service prima della creazione.
+ * </p>
  */
 public record DoctorCreateDto(
 

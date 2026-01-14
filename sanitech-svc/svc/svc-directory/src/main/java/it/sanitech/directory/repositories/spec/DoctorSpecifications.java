@@ -13,6 +13,11 @@ import java.util.List;
 
 /**
  * Specifiche JPA per la ricerca di {@link Doctor} con filtri combinabili.
+ *
+ * <p>
+ * Produce {@link Specification} componibili per nome/cognome/email e per filtri su reparto e
+ * specializzazione, mantenendo la query distinct per gestire le join many-to-many.
+ * </p>
  */
 public final class DoctorSpecifications {
 

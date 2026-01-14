@@ -11,6 +11,12 @@ import java.util.Set;
 
 /**
  * Repository Spring Data JPA per l'entità {@link Patient}.
+ *
+ * <p>
+ * Oltre alle funzionalità CRUD e alle {@link JpaSpecificationExecutor} per filtri combinabili,
+ * espone query dedicate al controllo ABAC sui reparti, utilizzate per limitare la visibilità
+ * dei pazienti in contesto medico.
+ * </p>
  */
 public interface PatientRepository extends JpaRepository<Patient, Long>, JpaSpecificationExecutor<Patient> {
 

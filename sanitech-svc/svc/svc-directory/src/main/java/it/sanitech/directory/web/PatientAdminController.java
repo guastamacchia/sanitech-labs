@@ -7,17 +7,18 @@ import it.sanitech.directory.services.dto.update.PatientUpdateDto;
 import it.sanitech.commons.utilities.AppConstants;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
- * API amministrativa per gestione pazienti.
+ * API amministrativa per la gestione dei pazienti.
+ *
+ * <p>
+ * Espone operazioni di creazione, aggiornamento parziale, ricerca paginata e cancellazione,
+ * riservate agli utenti con ruolo amministrativo.
+ * </p>
  */
 @RestController
 @RequiredArgsConstructor
@@ -53,23 +54,5 @@ public class PatientAdminController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         patientService.delete(id);
-    }
-
-    @PostMapping(value = AppConstants.ApiPath.BULK, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<PatientDto> bulk(@Valid @RequestBody List<PatientCreateDto> items, Authentication auth) {
-        return patientService.bulkCreate(items, auth);
-    }
-
-    @GetMapping(value = AppConstants.ApiPath.EXPORT, produces = "text/csv")
-    public ResponseEntity<byte[]> export(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String department
-    ) {
-        byte[] csv = patientService.exportCsv(q, department);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"patients.csv\"")
-                .contentType(MediaType.parseMediaType("text/csv"))
-                .body(csv);
     }
 }

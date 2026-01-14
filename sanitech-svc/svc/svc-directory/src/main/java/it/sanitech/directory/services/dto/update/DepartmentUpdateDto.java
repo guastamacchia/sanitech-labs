@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
  *
  * <p>
  * Per semplicità, il {@code code} non viene modificato: si aggiorna solo il {@code name}.
+ * La validazione garantisce un valore non vuoto prima della persistenza.
  * </p>
  */
 public record DepartmentUpdateDto(
