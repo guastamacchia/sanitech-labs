@@ -9,7 +9,8 @@ import java.util.Set;
  *
  * <p>
  * Tutti i campi sono opzionali: i valori {@code null} vengono ignorati dal mapper MapStruct
- * (mapping con {@code nullValuePropertyMappingStrategy = IGNORE}).
+ * (mapping con {@code nullValuePropertyMappingStrategy = IGNORE}). I codici reparto, se presenti,
+ * sostituiscono l'insieme corrente dopo validazione ABAC.
  * </p>
  */
 public record PatientUpdateDto(

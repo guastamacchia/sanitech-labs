@@ -7,7 +7,9 @@ import lombok.*;
  * Anagrafica Reparto.
  *
  * <p>
- * Il campo {@code code} è l'identificativo stabile usato anche nelle policy ABAC (authority {@code DEPT_*}).
+ * Modella i reparti clinici con un codice stabile e un nome descrittivo, utilizzati sia per la
+ * presentazione in UI sia per le policy ABAC (authority {@code DEPT_*}) applicate agli accessi.
+ * Il vincolo di unicità sul codice garantisce la stabilità dei riferimenti nel tempo.
  * </p>
  */
 @Entity

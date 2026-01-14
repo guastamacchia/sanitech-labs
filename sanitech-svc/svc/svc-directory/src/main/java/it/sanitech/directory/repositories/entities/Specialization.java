@@ -7,7 +7,8 @@ import lombok.*;
  * Anagrafica Specializzazione.
  *
  * <p>
- * Il campo {@code code} è l'identificativo stabile (es. CARDIOLOGY).
+ * Rappresenta la tassonomia delle specializzazioni mediche tramite un codice stabile e un nome
+ * leggibile. Il codice è usato per filtrare e collegare i medici alle competenze dichiarate.
  * </p>
  */
 @Entity
