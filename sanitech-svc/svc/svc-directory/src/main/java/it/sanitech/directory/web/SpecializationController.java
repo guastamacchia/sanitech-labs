@@ -2,7 +2,7 @@ package it.sanitech.directory.web;
 
 import it.sanitech.directory.services.SpecializationService;
 import it.sanitech.directory.services.dto.SpecializationDto;
-import it.sanitech.commons.utilities.AppConstants;
+import it.sanitech.directory.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;

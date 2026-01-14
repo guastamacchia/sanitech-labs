@@ -14,7 +14,7 @@ import it.sanitech.directory.services.dto.PatientDto;
 import it.sanitech.directory.services.dto.create.PatientCreateDto;
 import it.sanitech.directory.services.dto.update.PatientUpdateDto;
 import it.sanitech.directory.services.mapper.PatientMapper;
-import it.sanitech.commons.utilities.AppConstants;
+import it.sanitech.directory.utilities.AppConstants;
 import it.sanitech.commons.utilities.PageableUtils;
 import it.sanitech.commons.utilities.SortUtils;
 import lombok.RequiredArgsConstructor;
