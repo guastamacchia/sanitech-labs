@@ -14,7 +14,8 @@ import org.springframework.web.bind.annotation.*;
  * API di consultazione pazienti.
  *
  * <p>
- * Regola principale: un utente DOCTOR vede solo i pazienti dei reparti presenti nelle sue authority {@code DEPT_*}.
+ * Espone endpoint di lettura per utenti ADMIN e DOCTOR. In base alle authority {@code DEPT_*},
+ * applica regole ABAC che limitano la visibilità ai soli reparti consentiti.
  * </p>
  */
 @RestController

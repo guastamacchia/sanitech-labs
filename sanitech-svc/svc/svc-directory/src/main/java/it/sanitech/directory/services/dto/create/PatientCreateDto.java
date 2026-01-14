@@ -7,6 +7,11 @@ import java.util.Set;
 
 /**
  * DTO utilizzato per creare un nuovo paziente.
+ *
+ * <p>
+ * Contiene i dati anagrafici minimi e un elenco opzionale di reparti,
+ * soggetto a validazione ABAC nel service.
+ * </p>
  */
 public record PatientCreateDto(
 
