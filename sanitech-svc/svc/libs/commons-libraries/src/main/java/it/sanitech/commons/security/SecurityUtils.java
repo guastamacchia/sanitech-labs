@@ -15,10 +15,30 @@ public final class SecurityUtils {
     private SecurityUtils() {}
 
     public static boolean hasAuthority(Authentication auth, String authority) {
-        if (auth == null) {
+        if (auth == null || auth.getAuthorities() == null) {
             return false;
         }
-        return auth.getAuthorities().stream().anyMatch(a -> Objects.equals(a.getAuthority(), authority));
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> Objects.equals(a.getAuthority(), authority));
+    }
+
+    public static boolean isAdmin(Authentication auth) {
+        return hasRole(auth, AppConstants.Security.ROLE_ADMIN);
+    }
+
+    public static boolean isDoctor(Authentication auth) {
+        return hasRole(auth, AppConstants.Security.ROLE_DOCTOR);
+    }
+
+    public static boolean isPatient(Authentication auth) {
+        return hasRole(auth, AppConstants.Security.ROLE_PATIENT);
+    }
+
+    public static boolean hasRole(Authentication auth, String role) {
+        String roleAuthority = role.startsWith(AppConstants.Security.ROLE_PREFIX)
+                ? role
+                : AppConstants.Security.ROLE_PREFIX + role;
+        return hasAuthority(auth, roleAuthority);
     }
 
     public static boolean isAdmin(Authentication auth) {
