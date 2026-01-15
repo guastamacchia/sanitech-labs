@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Service applicativo per l'anagrafica specializzazioni.
@@ -40,7 +41,7 @@ public class SpecializationService {
 
     @Transactional(readOnly = true)
     public List<SpecializationDto> search(String q) {
-        if (q == null || q.isBlank()) {
+        if (Objects.isNull(q) || q.isBlank()) {
             return list();
         }
         String like = q.trim();
@@ -85,7 +86,7 @@ public class SpecializationService {
     }
 
     private String normalizeCode(String code) {
-        if (code == null) throw new IllegalArgumentException("Codice specializzazione obbligatorio.");
+        if (Objects.isNull(code)) throw new IllegalArgumentException("Codice specializzazione obbligatorio.");
         return code.trim().toUpperCase();
     }
 }

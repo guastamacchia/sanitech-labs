@@ -104,7 +104,7 @@ public class DoctorService {
     public DoctorDto patch(Long id, DoctorUpdateDto dto, Authentication auth) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
 
-        if (dto.email() != null && !dto.email().isBlank()) {
+        if (Objects.nonNull(dto.email()) && !dto.email().isBlank()) {
             String email = normalizeEmail(dto.email());
             if (!email.equalsIgnoreCase(entity.getEmail()) && doctorRepository.existsByEmailIgnoreCase(email)) {
                 throw new IllegalArgumentException("Esiste già un medico con email '" + email + "'.");
@@ -120,13 +120,13 @@ public class DoctorService {
         entity.setEmail(normalizeEmail(entity.getEmail()));
 
         // Reparti e specializzazioni: se presenti nel DTO, sostituiscono l'insieme corrente.
-        if (dto.departmentCodes() != null) {
+        if (Objects.nonNull(dto.departmentCodes())) {
             Set<String> deptCodes = normalizeCodes(dto.departmentCodes());
             deptGuard.checkCanManageAll(deptCodes, auth);
             entity.setDepartments(resolveDepartments(deptCodes));
         }
 
-        if (dto.specializationCodes() != null) {
+        if (Objects.nonNull(dto.specializationCodes())) {
             Set<String> specCodes = normalizeCodes(dto.specializationCodes());
             entity.setSpecializations(resolveSpecializations(specCodes));
         }
@@ -214,12 +214,12 @@ public class DoctorService {
     }
 
     private String normalizeEmail(String email) {
-        if (email == null) throw new IllegalArgumentException("Email obbligatoria.");
+        if (Objects.isNull(email)) throw new IllegalArgumentException("Email obbligatoria.");
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private Set<String> normalizeCodes(Set<String> codes) {
-        if (codes == null || codes.isEmpty()) return Set.of();
+        if (Objects.isNull(codes) || codes.isEmpty()) return Set.of();
         return codes.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)
