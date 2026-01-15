@@ -6,7 +6,7 @@ import it.sanitech.admissions.services.AdmissionService;
 import it.sanitech.admissions.services.dto.AdmissionDto;
 import it.sanitech.admissions.services.dto.create.AdmissionCreateDto;
 import it.sanitech.admissions.utilities.AppConstants;
-import it.sanitech.admissions.utilities.SortUtils;
+import it.sanitech.commons.utilities.SortUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

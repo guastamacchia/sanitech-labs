@@ -1,17 +1,18 @@
 package it.sanitech.admissions.services;
 
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
-import it.sanitech.admissions.exception.ConflictException;
 import it.sanitech.admissions.exception.NoBedAvailableException;
-import it.sanitech.admissions.exception.NotFoundException;
 import it.sanitech.admissions.repositories.AdmissionRepository;
 import it.sanitech.admissions.repositories.DepartmentCapacityRepository;
 import it.sanitech.admissions.repositories.entities.*;
 import it.sanitech.admissions.services.dto.AdmissionDto;
 import it.sanitech.admissions.services.dto.create.AdmissionCreateDto;
 import it.sanitech.admissions.services.mapper.AdmissionMapper;
-import it.sanitech.admissions.utilities.SecurityUtils;
+import it.sanitech.commons.exception.ConflictException;
+import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
+import it.sanitech.commons.security.SecurityUtils;
+import it.sanitech.commons.utilities.AppConstants;
 import it.sanitech.outbox.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -128,7 +129,7 @@ public class AdmissionService {
     @Bulkhead(name = "admissionsRead", type = Bulkhead.Type.SEMAPHORE)
     @Transactional(readOnly = true)
     public Page<AdmissionDto> list(Authentication auth, String department, AdmissionStatus status, Pageable pageable) {
-        boolean isAdmin = SecurityUtils.hasAuthority(auth, it.sanitech.admissions.utilities.AppConstants.Security.ROLE_ADMIN);
+        boolean isAdmin = SecurityUtils.hasAuthority(auth, AppConstants.Security.ROLE_ADMIN);
 
         if (isAdmin) {
             return listForAdmin(department, status, pageable).map(mapper::toDto);
