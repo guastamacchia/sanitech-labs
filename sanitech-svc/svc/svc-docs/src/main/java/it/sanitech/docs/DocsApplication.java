@@ -16,7 +16,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * </ul>
  * </p>
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"it.sanitech.docs", "it.sanitech.commons", "it.sanitech.outbox"})
 @EnableScheduling
 public class DocsApplication {
 
