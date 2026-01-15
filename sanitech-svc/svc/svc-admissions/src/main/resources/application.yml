@@ -96,6 +96,7 @@ resilience4j:
 
 sanitech:
   cors:
+    enabled: true
     # Pattern di path su cui applicare il filtro CORS.
     path-patterns:
       - /api/**
@@ -113,7 +114,27 @@ sanitech:
     # Cache del preflight (OPTIONS) in secondi.
     max-age: 3600
 
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
+  openapi:
+    enabled: true
+    group: admissions
+    packages-to-scan:
+      - it.sanitech.admissions.web
+    title: Sanitech — Admissions API
+    version: v1
+
   outbox:
+    topic: ${OUTBOX_TOPIC:admissions.events}
     publisher:
       # Flush periodico degli eventi non pubblicati.
       delay-ms: 1000

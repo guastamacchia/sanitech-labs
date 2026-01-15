@@ -19,17 +19,6 @@ import lombok.NoArgsConstructor;
 public final class AppConstants {
 
     /**
-     * Costanti per OpenAPI / Swagger.
-     */
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class OpenApi {
-        public static final String GROUP = "admissions";
-        public static final String PACKAGES_TO_SCAN = "it.sanitech.admissions.web";
-        public static final String TITLE = "Sanitech — Admissions API";
-        public static final String VERSION = "v1";
-    }
-
-    /**
      * Costanti RFC 7807 (Problem Details).
      */
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -85,49 +74,6 @@ public final class AppConstants {
         public static final String ROLE_PATIENT = "ROLE_PATIENT";
     }
 
-    /**
-     * Costanti di configurazione (keys) esposte via {@code application.yml}.
-     */
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class ConfigKeys {
-
-        @NoArgsConstructor(access = AccessLevel.PRIVATE)
-        public static final class Cors {
-            public static final String PREFIX = "sanitech.cors";
-            public static final String PATH_PATTERNS = PREFIX + ".path-patterns";
-            public static final String ALLOWED_ORIGINS = PREFIX + ".allowed-origins";
-            public static final String ALLOWED_METHODS = PREFIX + ".allowed-methods";
-            public static final String ALLOWED_HEADERS = PREFIX + ".allowed-headers";
-            public static final String EXPOSED_HEADERS = PREFIX + ".exposed-headers";
-            public static final String ALLOW_CREDENTIALS = PREFIX + ".allow-credentials";
-            public static final String MAX_AGE = PREFIX + ".max-age";
-        }
-
-        @NoArgsConstructor(access = AccessLevel.PRIVATE)
-        public static final class Outbox {
-            public static final String PUBLISHER_DELAY_MS = "sanitech.outbox.publisher.delay-ms";
-        }
-    }
-
-    /**
-     * Valori di default per configurazioni opzionali.
-     */
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class ConfigDefaultValue {
-
-        @NoArgsConstructor(access = AccessLevel.PRIVATE)
-        public static final class Cors {
-            public static final long MAX_AGE_SECONDS = 3600;
-            public static final boolean ALLOW_CREDENTIALS = false;
-        }
-
-        @NoArgsConstructor(access = AccessLevel.PRIVATE)
-        public static final class Outbox {
-            public static final long PUBLISHER_DELAY_MS = 1000;
-        }
-    }
-
-
 
     /**
      * Whitelist di campi ordinabili via API (protezione per sorting/paging).
@@ -157,17 +103,4 @@ public final class AppConstants {
         public static final String DEFAULT_SERVER_PORT = "8084";
     }
 
-    /**
-     * Costanti Outbox/Kafka/metriche.
-     */
-    @NoArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Outbox {
-        public static final String TOPIC_ADMISSIONS_EVENTS = "admissions.events";
-
-        public static final String METRIC_OUTBOX_SAVED = "outbox.events.saved.count";
-        public static final String METRIC_OUTBOX_PUBLISHED = "outbox.events.published";
-
-        public static final String TAG_AGGREGATE_TYPE = "aggregateType";
-        public static final String TAG_EVENT_TYPE = "eventType";
-    }
 }

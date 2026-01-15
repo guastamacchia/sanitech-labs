@@ -3,6 +3,7 @@ package it.sanitech.admissions.exception;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import it.sanitech.admissions.utilities.AppConstants;
+import it.sanitech.commons.exception.DepartmentAccessDeniedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
