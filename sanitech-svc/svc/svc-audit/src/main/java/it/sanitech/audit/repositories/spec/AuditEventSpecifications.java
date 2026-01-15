@@ -1,6 +1,6 @@
-package it.sanitech.audit.repositories;
+package it.sanitech.audit.repositories.spec;
 
-import it.sanitech.audit.domain.AuditEvent;
+import it.sanitech.audit.repositories.entities.AuditEvent;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;

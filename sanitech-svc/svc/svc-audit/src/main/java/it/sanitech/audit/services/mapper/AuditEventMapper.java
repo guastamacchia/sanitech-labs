@@ -1,6 +1,6 @@
 package it.sanitech.audit.services.mapper;
 
-import it.sanitech.audit.domain.AuditEvent;
+import it.sanitech.audit.repositories.entities.AuditEvent;
 import it.sanitech.audit.services.dto.AuditEventDto;
 import org.mapstruct.Mapper;
 

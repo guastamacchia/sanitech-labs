@@ -12,6 +12,14 @@
     <name>Sanitech - svc-audit</name>
     <description>Sanitech Audit microservice (eventi di audit e tracciamento accessi)</description>
     <dependencies>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>commons-libraries</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>outbox-event-management</artifactId>
+        </dependency>
         <!-- Spring Boot web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

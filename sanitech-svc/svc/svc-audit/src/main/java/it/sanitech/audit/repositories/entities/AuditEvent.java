@@ -1,4 +1,4 @@
-package it.sanitech.audit.domain;
+package it.sanitech.audit.repositories.entities;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;

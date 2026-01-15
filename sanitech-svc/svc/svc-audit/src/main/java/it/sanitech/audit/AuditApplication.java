@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * Entry-point del microservizio {@code svc-audit} per Sanitech.
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"it.sanitech.audit", "it.sanitech.commons", "it.sanitech.outbox"})
 @EnableScheduling
 public class AuditApplication {
 
