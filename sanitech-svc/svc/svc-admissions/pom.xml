@@ -12,6 +12,14 @@
     <name>Sanitech - svc-admissions</name>
     <description>Microservizio Admissions (ricoveri e disponibilità posti letto) - Sanitech</description>
     <dependencies>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>commons-libraries</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>outbox-event-management</artifactId>
+        </dependency>
         <!-- Spring Boot web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
