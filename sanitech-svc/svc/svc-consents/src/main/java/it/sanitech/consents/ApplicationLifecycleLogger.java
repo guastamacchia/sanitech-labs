@@ -1,4 +1,4 @@
-package it.sanitech.consents.logging;
+package it.sanitech.consents;
 
 import it.sanitech.consents.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;

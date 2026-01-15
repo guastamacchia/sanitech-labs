@@ -1,14 +1,14 @@
 package it.sanitech.consents.services;
 
-import it.sanitech.consents.domain.Consent;
-import it.sanitech.consents.domain.ConsentScope;
-import it.sanitech.consents.exception.NotFoundException;
-import it.sanitech.consents.outbox.DomainEventPublisher;
+import it.sanitech.commons.exception.NotFoundException;
+import it.sanitech.consents.repositories.entities.Consent;
+import it.sanitech.consents.repositories.entities.ConsentScope;
 import it.sanitech.consents.repositories.ConsentRepository;
 import it.sanitech.consents.services.dto.ConsentCheckResponse;
 import it.sanitech.consents.services.dto.ConsentCreateDto;
 import it.sanitech.consents.services.dto.ConsentDto;
 import it.sanitech.consents.services.mapper.ConsentMapper;
+import it.sanitech.outbox.DomainEventPublisher;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -99,7 +99,7 @@ public class ConsentService {
     @Transactional
     public void revokeForPatient(Long patientId, Long doctorId, ConsentScope scope) {
         Consent consent = repository.findByPatientIdAndDoctorIdAndScope(patientId, doctorId, scope)
-                .orElseThrow(() -> new NotFoundException("Consenso non trovato per patientId=%d, doctorId=%d, scope=%s"
+                .orElseThrow(() -> NotFoundException.of("Consenso per patientId=%d, doctorId=%d, scope=%s"
                         .formatted(patientId, doctorId, scope)));
 
         consent.revoke();

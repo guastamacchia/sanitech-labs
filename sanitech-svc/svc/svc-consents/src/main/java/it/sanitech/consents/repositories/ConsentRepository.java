@@ -1,8 +1,8 @@
 package it.sanitech.consents.repositories;
 
-import it.sanitech.consents.domain.Consent;
-import it.sanitech.consents.domain.ConsentScope;
-import it.sanitech.consents.domain.ConsentStatus;
+import it.sanitech.consents.repositories.entities.Consent;
+import it.sanitech.consents.repositories.entities.ConsentScope;
+import it.sanitech.consents.repositories.entities.ConsentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

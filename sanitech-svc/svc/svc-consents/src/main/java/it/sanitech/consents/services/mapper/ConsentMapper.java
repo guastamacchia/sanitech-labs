@@ -1,6 +1,6 @@
 package it.sanitech.consents.services.mapper;
 
-import it.sanitech.consents.domain.Consent;
+import it.sanitech.consents.repositories.entities.Consent;
 import it.sanitech.consents.services.dto.ConsentDto;
 import org.mapstruct.Mapper;
 
