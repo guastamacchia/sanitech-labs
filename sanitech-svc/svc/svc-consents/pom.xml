@@ -12,6 +12,14 @@
     <name>Sanitech - svc-consents</name>
     <description>Sanitech Consents microservice (gestione consensi paziente → medico)</description>
     <dependencies>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>commons-libraries</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>outbox-event-management</artifactId>
+        </dependency>
         <!-- Spring Boot web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -170,5 +178,4 @@
         </plugins>
     </build>
 </project>
-
 

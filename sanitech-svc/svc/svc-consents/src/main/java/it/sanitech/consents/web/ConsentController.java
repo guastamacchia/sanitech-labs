@@ -1,7 +1,6 @@
 package it.sanitech.consents.web;
 
-import it.sanitech.consents.domain.ConsentScope;
-import it.sanitech.consents.exception.ForbiddenOperationException;
+import it.sanitech.consents.repositories.entities.ConsentScope;
 import it.sanitech.consents.security.AuthClaims;
 import it.sanitech.consents.services.ConsentService;
 import it.sanitech.consents.services.dto.ConsentCheckResponse;
@@ -11,6 +10,7 @@ import it.sanitech.consents.utilities.AppConstants;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -79,7 +79,7 @@ public class ConsentController {
 
     private static Long requirePatientId(Authentication auth) {
         return AuthClaims.patientId(auth)
-                .orElseThrow(() -> new ForbiddenOperationException("Token privo della claim patient id (pid)."));
+                .orElseThrow(() -> new AccessDeniedException("Token privo della claim patient id (pid)."));
     }
 
     private static Long resolveDoctorId(Long doctorIdFromRequest, Authentication auth) {
@@ -90,13 +90,13 @@ public class ConsentController {
             if (!isAdmin) {
                 Long tokenDoctorId = AuthClaims.doctorId(auth).orElse(null);
                 if (tokenDoctorId != null && !tokenDoctorId.equals(doctorIdFromRequest)) {
-                    throw new ForbiddenOperationException("Non è consentito verificare consensi per un altro medico.");
+                    throw new AccessDeniedException("Non è consentito verificare consensi per un altro medico.");
                 }
             }
             return doctorIdFromRequest;
         }
 
         return AuthClaims.doctorId(auth)
-                .orElseThrow(() -> new ForbiddenOperationException("doctorId mancante e claim did non presente nel token."));
+                .orElseThrow(() -> new AccessDeniedException("doctorId mancante e claim did non presente nel token."));
     }
 }

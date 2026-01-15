@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * Entry-point del microservizio {@code svc-consents} per Sanitech.
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"it.sanitech.consents", "it.sanitech.commons", "it.sanitech.outbox"})
 @EnableScheduling
 public class ConsentsApplication {
 

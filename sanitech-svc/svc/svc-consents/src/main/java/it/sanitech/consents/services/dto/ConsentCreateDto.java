@@ -1,6 +1,6 @@
 package it.sanitech.consents.services.dto;
 
-import it.sanitech.consents.domain.ConsentScope;
+import it.sanitech.consents.repositories.entities.ConsentScope;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;

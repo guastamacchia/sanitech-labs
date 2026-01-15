@@ -1,4 +1,4 @@
-package it.sanitech.consents.domain;
+package it.sanitech.consents.repositories.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
