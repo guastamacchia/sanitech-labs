@@ -48,10 +48,6 @@ public class AppConstants {
 
     /**
      * Sorting: whitelist dei campi ordinabili esposti via API.
-     *
-     * <p>
-     * Dipende dai DTO/entità esposte dal servizio e viene usata per validare i parametri "sort".
-     * </p>
      */
     @UtilityClass
     public static class SortField {

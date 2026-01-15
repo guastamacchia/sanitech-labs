@@ -47,7 +47,6 @@ public class PatientAdminController {
             @RequestParam(required = false) String[] sort,
             Authentication auth
     ) {
-        // Admin controller: force admin search to bypass department filters.
         return patientService.searchAdmin(q, department, page, size, sort);
     }
 
