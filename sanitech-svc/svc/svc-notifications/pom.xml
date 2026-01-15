@@ -12,6 +12,14 @@
     <name>Sanitech - svc-notifications</name>
     <description>Microservizio Notifications (invio e consultazione notifiche)</description>
     <dependencies>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>commons-libraries</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>outbox-event-management</artifactId>
+        </dependency>
         <!-- Spring Boot web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -175,4 +183,3 @@
         </plugins>
     </build>
 </project>
-

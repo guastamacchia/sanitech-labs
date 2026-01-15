@@ -1,4 +1,4 @@
-package it.sanitech.notifications.config;
+package it.sanitech.notifications;
 
 import lombok.Getter;
 import lombok.Setter;
