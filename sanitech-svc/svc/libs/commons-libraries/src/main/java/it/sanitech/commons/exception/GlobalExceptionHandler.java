@@ -84,6 +84,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Conflitto di dominio (409).
+     */
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ProblemDetails> conflict(ConflictException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT,
+                AppConstants.Problem.TYPE_CONFLICT,
+                AppConstants.ErrorMessage.ERR_CONFLICT,
+                ex.getMessage(),
+                request,
+                null);
+    }
+
+    /**
      * Violazioni vincoli database (es. unique email) → 409 Conflict.
      *
      * <p>

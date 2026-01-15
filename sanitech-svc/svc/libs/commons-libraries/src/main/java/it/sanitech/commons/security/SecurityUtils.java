@@ -1,5 +1,6 @@
-package it.sanitech.admissions.utilities;
+package it.sanitech.commons.security;
 
+import it.sanitech.commons.utilities.AppConstants;
 import org.springframework.security.core.Authentication;
 
 import java.util.Objects;
@@ -14,7 +15,9 @@ public final class SecurityUtils {
     private SecurityUtils() {}
 
     public static boolean hasAuthority(Authentication auth, String authority) {
-        if (auth == null) return false;
+        if (auth == null) {
+            return false;
+        }
         return auth.getAuthorities().stream().anyMatch(a -> Objects.equals(a.getAuthority(), authority));
     }
 
@@ -22,11 +25,13 @@ public final class SecurityUtils {
      * Estrae l'insieme dei reparti autorizzati (authorities {@code DEPT_*}).
      */
     public static Set<String> departmentCodes(Authentication auth) {
-        if (auth == null) return Set.of();
+        if (auth == null) {
+            return Set.of();
+        }
         return auth.getAuthorities().stream()
                 .map(a -> a.getAuthority())
-                .filter(a -> a != null && a.startsWith(AppConstants.Security.AUTH_PREFIX_DEPT))
-                .map(a -> a.substring(AppConstants.Security.AUTH_PREFIX_DEPT.length()))
+                .filter(a -> a != null && a.startsWith(AppConstants.Security.DEPT_PREFIX))
+                .map(a -> a.substring(AppConstants.Security.DEPT_PREFIX.length()))
                 .filter(s -> !s.isBlank())
                 .map(String::toUpperCase)
                 .collect(Collectors.toSet());

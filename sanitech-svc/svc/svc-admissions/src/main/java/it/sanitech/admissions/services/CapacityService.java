@@ -1,11 +1,11 @@
 package it.sanitech.admissions.services;
 
-import it.sanitech.admissions.exception.ConflictException;
 import it.sanitech.admissions.repositories.AdmissionRepository;
 import it.sanitech.admissions.repositories.DepartmentCapacityRepository;
 import it.sanitech.admissions.repositories.entities.AdmissionStatus;
 import it.sanitech.admissions.repositories.entities.DepartmentCapacity;
 import it.sanitech.admissions.services.dto.CapacityDto;
+import it.sanitech.commons.exception.ConflictException;
 import it.sanitech.outbox.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
