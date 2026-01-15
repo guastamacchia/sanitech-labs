@@ -1,4 +1,4 @@
-package it.sanitech.admissions.config;
+package it.sanitech.admissions;
 
 import it.sanitech.admissions.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;
