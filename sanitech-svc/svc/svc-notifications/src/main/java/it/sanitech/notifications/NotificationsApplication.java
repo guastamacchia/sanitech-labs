@@ -2,6 +2,7 @@ package it.sanitech.notifications;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -14,7 +15,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * </ul>
  * </p>
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"it.sanitech.notifications", "it.sanitech.commons", "it.sanitech.outbox"})
+@ConfigurationPropertiesScan
 @EnableScheduling
 public class NotificationsApplication {
 

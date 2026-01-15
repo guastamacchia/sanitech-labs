@@ -1,13 +1,12 @@
 package it.sanitech.notifications.services;
 
-import it.sanitech.notifications.exception.BadRequestException;
-import it.sanitech.notifications.exception.NotFoundException;
-import it.sanitech.notifications.outbox.DomainEventPublisher;
+import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.notifications.repositories.NotificationRepository;
 import it.sanitech.notifications.repositories.entities.*;
 import it.sanitech.notifications.services.dto.NotificationDto;
 import it.sanitech.notifications.services.dto.create.NotificationCreateDto;
 import it.sanitech.notifications.services.mapper.NotificationMapper;
+import it.sanitech.outbox.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -47,7 +46,7 @@ public class NotificationService {
         // Validazione di difesa (oltre alla bean validation)
         if (entity.getChannel() == NotificationChannel.EMAIL) {
             if (entity.getToAddress() == null || entity.getToAddress().isBlank()) {
-                throw new BadRequestException("Per il canale EMAIL è obbligatorio l'indirizzo email del destinatario.");
+                throw new IllegalArgumentException("Per il canale EMAIL è obbligatorio l'indirizzo email del destinatario.");
             }
         }
 

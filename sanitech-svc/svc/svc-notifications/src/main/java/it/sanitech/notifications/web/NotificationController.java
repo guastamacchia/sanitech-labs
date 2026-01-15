@@ -58,10 +58,10 @@ public class NotificationController {
             return RecipientType.PATIENT;
         }
         Set<String> authorities = auth.getAuthorities().stream().map(a -> a.getAuthority()).collect(java.util.stream.Collectors.toSet());
-        if (authorities.contains(AppConstants.Security.ROLE_ADMIN)) {
+        if (authorities.contains(it.sanitech.commons.utilities.AppConstants.Security.ROLE_ADMIN)) {
             return RecipientType.ADMIN;
         }
-        if (authorities.contains("ROLE_DOCTOR")) {
+        if (authorities.contains(it.sanitech.commons.utilities.AppConstants.Security.ROLE_DOCTOR)) {
             return RecipientType.DOCTOR;
         }
         return RecipientType.PATIENT;
