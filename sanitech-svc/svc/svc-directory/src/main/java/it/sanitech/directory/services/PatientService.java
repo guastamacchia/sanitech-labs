@@ -92,7 +92,7 @@ public class PatientService {
                 .firstName(dto.firstName().trim())
                 .lastName(dto.lastName().trim())
                 .email(email)
-                .phone(dto.phone() == null ? null : dto.phone().trim())
+                .phone(Objects.isNull(dto.phone()) ? null : dto.phone().trim())
                 .departments(deptCodes.isEmpty() ? new HashSet<>() : resolveDepartments(deptCodes))
                 .build();
 
@@ -118,7 +118,7 @@ public class PatientService {
     public PatientDto patch(Long id, PatientUpdateDto dto, Authentication auth) {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
 
-        if (dto.email() != null && !dto.email().isBlank()) {
+        if (Objects.nonNull(dto.email()) && !dto.email().isBlank()) {
             String email = normalizeEmail(dto.email());
             if (!email.equalsIgnoreCase(entity.getEmail()) && patientRepository.existsByEmailIgnoreCase(email)) {
                 throw new IllegalArgumentException("Esiste già un paziente con email '" + email + "'.");
@@ -130,11 +130,11 @@ public class PatientService {
         entity.setFirstName(entity.getFirstName().trim());
         entity.setLastName(entity.getLastName().trim());
         entity.setEmail(normalizeEmail(entity.getEmail()));
-        if (entity.getPhone() != null) {
+        if (Objects.nonNull(entity.getPhone())) {
             entity.setPhone(entity.getPhone().trim());
         }
 
-        if (dto.departmentCodes() != null) {
+        if (Objects.nonNull(dto.departmentCodes())) {
             Set<String> deptCodes = normalizeCodes(dto.departmentCodes());
             if (!deptCodes.isEmpty()) {
                 deptGuard.checkCanManageAll(deptCodes, auth);
@@ -226,12 +226,12 @@ public class PatientService {
     }
 
     private String normalizeEmail(String email) {
-        if (email == null) throw new IllegalArgumentException("Email obbligatoria.");
+        if (Objects.isNull(email)) throw new IllegalArgumentException("Email obbligatoria.");
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private Set<String> normalizeCodes(Set<String> codes) {
-        if (codes == null || codes.isEmpty()) return Set.of();
+        if (Objects.isNull(codes) || codes.isEmpty()) return Set.of();
         return codes.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)
