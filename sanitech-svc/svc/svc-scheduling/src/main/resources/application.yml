@@ -90,6 +90,7 @@ resilience4j:
 
 sanitech:
   cors:
+    enabled: true
     # Elenco dei pattern di path su cui applicare il filtro CORS.
     path-patterns:
       - /api/**
@@ -113,7 +114,27 @@ sanitech:
     # Cache del preflight (seconds).
     max-age: 3600
 
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
+  openapi:
+    enabled: true
+    group: scheduling
+    packages-to-scan:
+      - it.sanitech.scheduling.web
+    title: Sanitech — Scheduling API
+    version: v1
+
   outbox:
+    topic: ${OUTBOX_TOPIC:scheduling.events}
     publisher:
       # Esegue periodicamente il flush degli eventi non pubblicati.
       delay-ms: 1000

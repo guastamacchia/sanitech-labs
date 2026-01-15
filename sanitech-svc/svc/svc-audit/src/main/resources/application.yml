@@ -75,12 +75,49 @@ resilience4j:
         maxWaitDuration: 0
 
 sanitech:
+  cors:
+    enabled: true
+    path-patterns:
+      - /api/**
+    allowed-origins:
+      - ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    allowed-methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "PATCH"
+      - "DELETE"
+      - "OPTIONS"
+    allowed-headers:
+      - "*"
+    exposed-headers:
+      - "Location"
+    allow-credentials: false
+    max-age: 3600
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+  openapi:
+    enabled: true
+    group: audit
+    packages-to-scan:
+      - it.sanitech.audit.web
+    title: Sanitech — Audit API
+    version: v1
   audit:
     ingestion:
       # Se true, il servizio consuma eventi (es. directory.events) per persisterli come audit.
       enabled: true
       topics: ${AUDIT_INGESTION_TOPICS:directory.events,consents.events}
   outbox:
+    topic: ${OUTBOX_TOPIC:audit.events}
     publisher:
       delay-ms: 1000
 
