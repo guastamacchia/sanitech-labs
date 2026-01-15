@@ -1,8 +1,8 @@
 package it.sanitech.payments.security;
 
-import it.sanitech.payments.exception.PaymentAccessDeniedException;
 import it.sanitech.payments.repositories.entities.PaymentOrder;
 import it.sanitech.payments.utilities.AppConstants;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +22,7 @@ public class PaymentAccessGuard {
 
     public void checkCanAccess(PaymentOrder order, Authentication auth) {
         if (auth == null) {
-            throw PaymentAccessDeniedException.standard();
+            throw new AccessDeniedException("Accesso negato al pagamento.");
         }
 
         boolean isAdmin = auth.getAuthorities().stream()
@@ -36,6 +36,6 @@ public class PaymentAccessGuard {
             if (pid != null && pid.equals(order.getPatientId())) return;
         }
 
-        throw PaymentAccessDeniedException.standard();
+        throw new AccessDeniedException("Accesso negato al pagamento.");
     }
 }

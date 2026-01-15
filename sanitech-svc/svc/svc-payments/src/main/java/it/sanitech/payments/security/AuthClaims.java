@@ -14,7 +14,7 @@ import java.util.Optional;
 public class AuthClaims {
 
     public static Optional<Long> patientId(Authentication auth) {
-        return extractLongClaim(auth, AppConstants.Security.CLAIM_PATIENT_ID);
+        return extractLongClaim(auth, AppConstants.Claims.PATIENT_ID);
     }
 
     private static Optional<Long> extractLongClaim(Authentication auth, String claim) {

@@ -26,7 +26,7 @@ public class PaymentsAdminController {
 
     @PostMapping
     public PaymentOrderDto create(@Valid @RequestBody PaymentAdminCreateDto dto,
-                                  @RequestHeader(value = AppConstants.ConfigKeys.Headers.X_IDEMPOTENCY_KEY, required = false) String idempotencyKey,
+                                  @RequestHeader(value = AppConstants.Headers.X_IDEMPOTENCY_KEY, required = false) String idempotencyKey,
                                   Authentication auth) {
         return service.adminCreate(dto, idempotencyKey, auth);
     }

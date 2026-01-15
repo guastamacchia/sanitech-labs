@@ -101,8 +101,6 @@ sanitech:
     publisher:
       # Delay dello scheduler per flush outbox (ms).
       delay-ms: 1000
-      # Batch size: massimo eventi per iterazione.
-      batch-size: 100
 
   cors:
     enabled: true

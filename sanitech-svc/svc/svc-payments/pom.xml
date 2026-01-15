@@ -12,6 +12,14 @@
     <name>Sanitech - svc-payments</name>
     <description>Microservizio Sanitech per gestione pagamenti (ordini, esiti, outbox events).</description>
     <dependencies>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>commons-libraries</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>it.sanitech</groupId>
+            <artifactId>outbox-event-management</artifactId>
+        </dependency>
         <!-- Spring Boot web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

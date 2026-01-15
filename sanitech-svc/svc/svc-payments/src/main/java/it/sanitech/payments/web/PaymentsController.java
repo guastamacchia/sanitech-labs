@@ -1,11 +1,11 @@
 package it.sanitech.payments.web;
 
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.payments.services.PaymentOrderService;
 import it.sanitech.payments.services.dto.PaymentOrderDto;
 import it.sanitech.payments.services.dto.create.PaymentCreateDto;
 import it.sanitech.payments.utilities.AppConstants;
-import it.sanitech.payments.utilities.SortUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -49,8 +49,8 @@ public class PaymentsController {
             @RequestParam(required = false, name = "sort") String[] sort,
             Authentication auth
     ) {
-        Sort.Order[] orders = SortUtils.toOrders(sort, ALLOWED_SORT_FIELDS, AppConstants.Sort.DEFAULT_FIELD);
-        PageRequest pr = PageRequest.of(page, size, Sort.by(orders));
+        Sort sortSpec = SortUtils.safeSort(sort, ALLOWED_SORT_FIELDS, AppConstants.Sort.DEFAULT_FIELD);
+        PageRequest pr = PageRequest.of(page, size, sortSpec);
         return service.listForCurrentUser(pr, auth);
     }
 
@@ -68,7 +68,7 @@ public class PaymentsController {
      */
     @PostMapping
     public PaymentOrderDto create(@Valid @RequestBody PaymentCreateDto dto,
-                                  @RequestHeader(value = AppConstants.ConfigKeys.Headers.X_IDEMPOTENCY_KEY, required = false) String idempotencyKey,
+                                  @RequestHeader(value = AppConstants.Headers.X_IDEMPOTENCY_KEY, required = false) String idempotencyKey,
                                   Authentication auth) {
         return service.createForCurrentPatient(dto, idempotencyKey, auth);
     }

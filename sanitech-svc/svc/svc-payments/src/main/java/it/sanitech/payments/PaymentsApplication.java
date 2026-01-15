@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * Le {@code @ConfigurationProperties} vengono scansionate automaticamente.
  * </p>
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"it.sanitech.payments", "it.sanitech.commons", "it.sanitech.outbox"})
 @EnableScheduling
 @ConfigurationPropertiesScan
 public class PaymentsApplication {
