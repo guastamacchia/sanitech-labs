@@ -2,7 +2,7 @@ package it.sanitech.audit.ingestion;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.sanitech.audit.domain.AuditEvent;
+import it.sanitech.audit.repositories.entities.AuditEvent;
 import it.sanitech.audit.repositories.AuditEventRepository;
 import it.sanitech.audit.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;

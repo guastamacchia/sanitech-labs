@@ -1,6 +1,6 @@
 package it.sanitech.audit.repositories;
 
-import it.sanitech.audit.domain.AuditEvent;
+import it.sanitech.audit.repositories.entities.AuditEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 

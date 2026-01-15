@@ -1,4 +1,4 @@
-package it.sanitech.audit.logging;
+package it.sanitech.audit;
 
 import it.sanitech.audit.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;

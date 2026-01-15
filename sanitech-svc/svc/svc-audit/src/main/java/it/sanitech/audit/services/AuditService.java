@@ -2,15 +2,15 @@ package it.sanitech.audit.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.sanitech.audit.domain.AuditEvent;
-import it.sanitech.audit.exception.NotFoundException;
-import it.sanitech.audit.outbox.DomainEventPublisher;
 import it.sanitech.audit.repositories.AuditEventRepository;
-import it.sanitech.audit.repositories.AuditEventSpecifications;
+import it.sanitech.audit.repositories.entities.AuditEvent;
+import it.sanitech.audit.repositories.spec.AuditEventSpecifications;
 import it.sanitech.audit.services.dto.AuditEventCreateDto;
 import it.sanitech.audit.services.dto.AuditEventDto;
 import it.sanitech.audit.services.mapper.AuditEventMapper;
 import it.sanitech.audit.utilities.AppConstants;
+import it.sanitech.commons.exception.NotFoundException;
+import it.sanitech.outbox.DomainEventPublisher;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
@@ -122,7 +122,8 @@ public class AuditService {
         if (auth == null) {
             return "ANONYMOUS";
         }
-        boolean hasRole = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().startsWith(AppConstants.Security.PREFIX_ROLE));
+        boolean hasRole = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().startsWith(it.sanitech.commons.utilities.AppConstants.Security.ROLE_PREFIX));
         return hasRole ? "USER" : "SERVICE";
     }
 }
