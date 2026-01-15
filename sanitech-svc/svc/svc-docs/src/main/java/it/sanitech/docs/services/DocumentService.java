@@ -1,15 +1,15 @@
 package it.sanitech.docs.services;
 
-import it.sanitech.docs.exception.NotFoundException;
+import it.sanitech.commons.exception.NotFoundException;
+import it.sanitech.commons.security.DeptGuard;
+import it.sanitech.commons.security.SecurityUtils;
 import it.sanitech.docs.integrations.consents.ConsentClient;
-import it.sanitech.docs.outbox.DomainEventPublisher;
+import it.sanitech.outbox.DomainEventPublisher;
 import it.sanitech.docs.repositories.DocumentRepository;
 import it.sanitech.docs.repositories.entities.Document;
-import it.sanitech.docs.security.DeptGuard;
 import it.sanitech.docs.services.dto.DocumentDto;
 import it.sanitech.docs.services.mappers.DocumentMapper;
 import it.sanitech.docs.storage.S3StorageService;
-import it.sanitech.docs.utilities.AppConstants;
 import it.sanitech.docs.utilities.AuthUtils;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
@@ -65,7 +65,7 @@ public class DocumentService {
 
         JwtAuthenticationToken jwt = AuthUtils.requireJwt(auth);
 
-        if (!AuthUtils.hasRole(auth, "ADMIN") && !AuthUtils.hasRole(auth, "DOCTOR")) {
+        if (!SecurityUtils.isAdmin(auth) && !SecurityUtils.isDoctor(auth)) {
             throw new AccessDeniedException("Solo ADMIN o DOCTOR possono caricare documenti.");
         }
 
@@ -83,7 +83,7 @@ public class DocumentService {
         }
 
         // ABAC: un DOCTOR può caricare documenti solo per i propri reparti.
-        if (AuthUtils.hasRole(auth, "DOCTOR")) {
+        if (SecurityUtils.isDoctor(auth)) {
             deptGuard.checkCanManage(departmentCode, auth);
         }
 
@@ -155,14 +155,14 @@ public class DocumentService {
     @Transactional(readOnly = true)
     public Page<DocumentDto> list(Authentication auth, Long patientId, Pageable pageable) {
 
-        if (AuthUtils.hasRole(auth, "ADMIN")) {
+        if (SecurityUtils.isAdmin(auth)) {
             Page<Document> page = (patientId == null)
                     ? documents.findAll(pageable)
                     : documents.findByPatientId(patientId, pageable);
             return page.map(mapper::toDto);
         }
 
-        if (AuthUtils.hasRole(auth, "DOCTOR")) {
+        if (SecurityUtils.isDoctor(auth)) {
             if (patientId == null) {
                 throw new IllegalArgumentException("patientId è obbligatorio per il ruolo DOCTOR.");
             }
@@ -170,7 +170,7 @@ public class DocumentService {
             JwtAuthenticationToken jwt = AuthUtils.requireJwt(auth);
             consentClient.assertConsentForDocs(patientId, jwt);
 
-            Set<String> depts = AuthUtils.departments(auth);
+            Set<String> depts = SecurityUtils.departmentCodes(auth);
             if (depts.isEmpty()) {
                 throw new AccessDeniedException("Nessun reparto associato all'utenza.");
             }
@@ -179,13 +179,13 @@ public class DocumentService {
                     .map(mapper::toDto);
         }
 
-        if (AuthUtils.hasRole(auth, "PATIENT")) {
+        if (SecurityUtils.isPatient(auth)) {
             Long pid = AuthUtils.patientId(auth)
                     .orElseThrow(() -> new AccessDeniedException("Claim pid mancante per utenza PATIENT."));
             return documents.findByPatientId(pid, pageable).map(mapper::toDto);
         }
 
-        throw new AccessDeniedException(AppConstants.ErrorMessage.MSG_ACCESS_DENIED);
+        throw new AccessDeniedException("Non sei autorizzato ad accedere ai documenti.");
     }
 
     /**
@@ -206,11 +206,11 @@ public class DocumentService {
     public Document getAuthorizedDocument(UUID id, Authentication auth) {
         Document doc = documents.findById(id).orElseThrow(() -> NotFoundException.of("Documento", id));
 
-        if (AuthUtils.hasRole(auth, "ADMIN")) {
+        if (SecurityUtils.isAdmin(auth)) {
             return doc;
         }
 
-        if (AuthUtils.hasRole(auth, "DOCTOR")) {
+        if (SecurityUtils.isDoctor(auth)) {
             JwtAuthenticationToken jwt = AuthUtils.requireJwt(auth);
 
             // 1) Consenso paziente (svc-consents)
@@ -222,7 +222,7 @@ public class DocumentService {
             return doc;
         }
 
-        if (AuthUtils.hasRole(auth, "PATIENT")) {
+        if (SecurityUtils.isPatient(auth)) {
             Long pid = AuthUtils.patientId(auth)
                     .orElseThrow(() -> new AccessDeniedException("Claim pid mancante per utenza PATIENT."));
             if (!pid.equals(doc.getPatientId())) {
@@ -243,7 +243,7 @@ public class DocumentService {
      */
     @Transactional
     public void delete(UUID id, Authentication auth) {
-        if (!AuthUtils.hasRole(auth, "ADMIN")) {
+        if (!SecurityUtils.isAdmin(auth)) {
             throw new AccessDeniedException("Solo ADMIN può eliminare documenti.");
         }
 

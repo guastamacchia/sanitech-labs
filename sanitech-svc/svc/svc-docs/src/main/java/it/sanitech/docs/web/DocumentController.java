@@ -4,8 +4,8 @@ import it.sanitech.docs.repositories.entities.Document;
 import it.sanitech.docs.services.DocumentService;
 import it.sanitech.docs.services.dto.DocumentDto;
 import it.sanitech.docs.storage.S3StorageService;
+import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.docs.utilities.AppConstants;
-import it.sanitech.docs.utilities.SortUtils;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.InputStreamResource;
 
-import java.util.Arrays;
 import java.util.UUID;
 
 /**
@@ -41,7 +40,7 @@ public class DocumentController {
      * Rate-limit applicato per proteggere il servizio in scenari di consultazione massiva.
      * </p>
      */
-    @GetMapping(AppConstants.Api.DOCS)
+    @GetMapping(AppConstants.ApiPath.DOCS)
     @RateLimiter(name = "docsApi")
     public ResponseEntity<Page<DocumentDto>> list(@RequestParam(required = false) Long patientId,
                                                   @RequestParam(defaultValue = "0") int page,
@@ -49,10 +48,10 @@ public class DocumentController {
                                                   @RequestParam(required = false) String[] sort,
                                                   Authentication auth) {
 
-        Sort safeSort = SortUtils.toSafeSort(
+        Sort safeSort = SortUtils.safeSort(
                 sort,
-                Arrays.asList(AppConstants.Docs.ALLOWED_SORT_FIELDS),
-                AppConstants.Docs.DEFAULT_SORT_FIELD
+                AppConstants.SortField.DOCS_ALLOWED,
+                AppConstants.SortField.DOCS_DEFAULT
         );
 
         Pageable pageable = PageRequest.of(page, size, safeSort);
@@ -63,12 +62,12 @@ public class DocumentController {
                 .body(result);
     }
 
-    @GetMapping(AppConstants.Api.DOCS + "/{id}")
+    @GetMapping(AppConstants.ApiPath.DOCS + "/{id}")
     public DocumentDto getMetadata(@PathVariable UUID id, Authentication auth) {
         return service.getMetadata(id, auth);
     }
 
-    @GetMapping(AppConstants.Api.DOCS + "/{id}/download")
+    @GetMapping(AppConstants.ApiPath.DOCS + "/{id}/download")
     public ResponseEntity<InputStreamResource> download(@PathVariable UUID id, Authentication auth) {
 
         Document doc = service.getAuthorizedDocument(id, auth);
@@ -81,7 +80,7 @@ public class DocumentController {
                 .body(new InputStreamResource(stream));
     }
 
-    @PostMapping(value = AppConstants.Api.DOCS + "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = AppConstants.ApiPath.DOCS + "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public ResponseEntity<DocumentDto> upload(@RequestPart("file") MultipartFile file,
                                               @RequestParam Long patientId,
@@ -94,7 +93,7 @@ public class DocumentController {
         return ResponseEntity.status(201).body(dto);
     }
 
-    @DeleteMapping(AppConstants.Api.ADMIN_DOCS + "/{id}")
+    @DeleteMapping(AppConstants.ApiPath.ADMIN_DOCS + "/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable UUID id, Authentication auth) {
         service.delete(id, auth);

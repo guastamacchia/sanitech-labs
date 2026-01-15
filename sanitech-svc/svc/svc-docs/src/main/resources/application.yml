@@ -180,7 +180,7 @@ sanitech:
     topic: ${OUTBOX_TOPIC:docs.events}
     publisher:
       # Delay tra un ciclo e l'altro di pubblicazione eventi.
-      delay-ms: 1000
+      delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
   # Integrazione verso svc-consents (verifica consenso medico→paziente)
   consents:
