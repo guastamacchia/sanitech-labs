@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * {@link EnableScheduling} abilita i job schedulati (es. publisher outbox).
  * </p>
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"it.sanitech.admissions", "it.sanitech.commons", "it.sanitech.outbox"})
 @EnableScheduling
 public class AdmissionsApplication {
 
