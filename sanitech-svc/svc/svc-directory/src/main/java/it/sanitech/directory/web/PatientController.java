@@ -1,5 +1,6 @@
 package it.sanitech.directory.web;
 
+import it.sanitech.commons.security.RoleUtils;
 import it.sanitech.directory.services.PatientService;
 import it.sanitech.directory.services.dto.PatientDto;
 import it.sanitech.directory.utilities.AppConstants;
@@ -35,20 +36,14 @@ public class PatientController {
             @RequestParam(required = false) String[] sort,
             Authentication auth
     ) {
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(it.sanitech.commons.utilities.AppConstants.Security.ROLE_PREFIX + "ADMIN"));
-
-        return isAdmin
+        return RoleUtils.isAdmin(auth)
                 ? patientService.searchAdmin(q, department, page, size, sort)
                 : patientService.searchForDoctor(q, page, size, sort, auth);
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public PatientDto get(@PathVariable Long id, Authentication auth) {
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(it.sanitech.commons.utilities.AppConstants.Security.ROLE_PREFIX + "ADMIN"));
-
-        return isAdmin
+        return RoleUtils.isAdmin(auth)
                 ? patientService.get(id)
                 : patientService.getForDoctor(id, auth);
     }

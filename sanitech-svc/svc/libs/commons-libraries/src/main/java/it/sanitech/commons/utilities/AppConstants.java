@@ -70,6 +70,9 @@ public class AppConstants {
     public static class Security {
         /** Prefisso authority per i ruoli applicativi derivati da {@code realm_access.roles}. */
         public static final String ROLE_PREFIX = "ROLE_";
+        public static final String ROLE_ADMIN = ROLE_PREFIX + "ADMIN";
+        public static final String ROLE_DOCTOR = ROLE_PREFIX + "DOCTOR";
+        public static final String ROLE_PATIENT = ROLE_PREFIX + "PATIENT";
 
         /** Prefisso authority per gli scope OAuth2 derivati da {@code scope}. */
         public static final String SCOPE_PREFIX = "SCOPE_";
