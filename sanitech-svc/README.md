@@ -114,7 +114,8 @@ Ogni microservizio include:
 - `Makefile`: comandi rapidi di build/run per il singolo servizio
 - `RUNBOOK.md`: procedure operative e troubleshooting
 - `scripts/`: script di smoke/load test locali
-- `postman/`: collezioni ed environment Postman dedicati
+
+Le collezioni Postman non sono più versionate nel repository.
 
 ## Makefile (root)
 
