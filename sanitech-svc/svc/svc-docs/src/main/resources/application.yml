@@ -128,6 +128,7 @@ resilience4j:
 sanitech:
   # CORS (configurazione per ambiente)
   cors:
+    enabled: true
     path-patterns:
       - /api/**
     allowed-origins:
@@ -156,7 +157,27 @@ sanitech:
     allow-credentials: false
     max-age: 3600
 
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
+  openapi:
+    enabled: true
+    group: docs
+    packages-to-scan:
+      - it.sanitech.docs.web
+    title: Sanitech — Docs API
+    version: v1
+
   outbox:
+    topic: ${OUTBOX_TOPIC:docs.events}
     publisher:
       # Delay tra un ciclo e l'altro di pubblicazione eventi.
       delay-ms: 1000

@@ -97,6 +97,7 @@ sanitech:
       secret: ${SANITECH_PAYMENTS_WEBHOOK_SECRET:change-me}
 
   outbox:
+    topic: ${OUTBOX_TOPIC:payments.events}
     publisher:
       # Delay dello scheduler per flush outbox (ms).
       delay-ms: 1000
@@ -104,6 +105,7 @@ sanitech:
       batch-size: 100
 
   cors:
+    enabled: true
     # Path su cui applicare CORS (tipicamente API).
     path-patterns:
       - /api/**
@@ -135,6 +137,25 @@ sanitech:
     allow-credentials: false
     # Cache preflight (secondi).
     max-age: 3600
+
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
+  openapi:
+    enabled: true
+    group: payments
+    packages-to-scan:
+      - it.sanitech.payments.web
+    title: Sanitech — Payments API
+    version: v1
 
 springdoc:
   api-docs:

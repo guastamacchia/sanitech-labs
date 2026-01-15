@@ -78,6 +78,7 @@ resilience4j:
 
 sanitech:
   cors:
+    enabled: true
     # Applichiamo CORS solo alle API pubbliche del microservizio.
     path-patterns:
       - /api/**
@@ -114,12 +115,28 @@ sanitech:
     # Cache preflight (secondi).
     max-age: 3600
 
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
   outbox:
+    topic: ${OUTBOX_TOPIC:televisit.events}
     publisher:
       # Delay tra un batch e il successivo (millisecondi).
       delay-ms: 1000
 
   openapi:
+    enabled: true
+    group: televisit
+    packages-to-scan:
+      - it.sanitech.televisit.web
     title: "Sanitech — Televisit API"
     version: "v1"
 

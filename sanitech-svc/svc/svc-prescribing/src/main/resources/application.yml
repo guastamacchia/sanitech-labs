@@ -52,11 +52,43 @@ management:
 # Config CORS: per default non abilitiamo origini, così il servizio è "closed by default".
 sanitech:
   cors:
+    enabled: true
     path-patterns:
       - /api/**
     allowed-origins:
       - ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    allowed-methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "PATCH"
+      - "DELETE"
+      - "OPTIONS"
+    allowed-headers:
+      - "*"
+    exposed-headers:
+      - "Location"
     allow-credentials: false
+    max-age: 3600
+
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
+  openapi:
+    enabled: true
+    group: prescribing
+    packages-to-scan:
+      - it.sanitech.prescribing.web
+    title: Sanitech — Prescribing API
+    version: v1
 
   integrations:
     consents:
@@ -64,6 +96,7 @@ sanitech:
       base-url: ${CONSENTS_BASE_URL:http://localhost:8085}
 
   outbox:
+    topic: ${OUTBOX_TOPIC:prescribing.events}
     publisher:
       # Frequenza (ms) del job che pubblica gli eventi Outbox verso Kafka.
       delay-ms: ${OUTBOX_PUBLISH_DELAY_MS:1000}

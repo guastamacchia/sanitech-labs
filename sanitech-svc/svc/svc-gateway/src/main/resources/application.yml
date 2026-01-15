@@ -36,6 +36,7 @@ management:
 # =========================================================
 sanitech:
   cors:
+    enabled: true
     # Pattern di path su cui applicare il filtro CORS.
     # Per il gateway tipicamente conviene applicarlo a tutte le route.
     path-patterns:
@@ -78,6 +79,25 @@ sanitech:
 
     # Durata in secondi della cache del preflight (OPTIONS).
     max-age: 3600
+
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
+  openapi:
+    enabled: true
+    group: gateway
+    packages-to-scan:
+      - it.sanitech.gateway.web
+    title: Sanitech — Gateway API
+    version: v1
 
   gateway:
     # URL base dei microservizi downstream (routing).
