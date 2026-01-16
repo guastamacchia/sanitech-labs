@@ -1,6 +1,5 @@
 package it.sanitech.prescribing.integrations.consents;
 
-import it.sanitech.prescribing.utilities.AppConstants;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

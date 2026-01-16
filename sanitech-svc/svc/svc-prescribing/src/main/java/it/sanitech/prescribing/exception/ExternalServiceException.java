@@ -1,12 +1,12 @@
 package it.sanitech.prescribing.exception;
 
-import it.sanitech.prescribing.utilities.AppConstants;
+import it.sanitech.commons.utilities.AppConstants;
 
 /**
  * Eccezione per errori di integrazione con servizi downstream (es. {@code svc-consents}).
  *
  * <p>
- * Tradotta in HTTP 503 dal {@link GlobalExceptionHandler}.
+ * Tradotta in HTTP 503 dal {@link PrescribingExceptionHandler}.
  * </p>
  */
 public class ExternalServiceException extends RuntimeException {

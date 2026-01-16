@@ -2,7 +2,7 @@ package it.sanitech.prescribing.integrations.consents;
 
 import it.sanitech.prescribing.exception.ConsentDeniedException;
 import it.sanitech.prescribing.exception.ExternalServiceException;
-import it.sanitech.prescribing.utilities.SecurityUtils;
+import it.sanitech.prescribing.security.JwtClaimUtils;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class ConsentClient {
     @CircuitBreaker(name = CONSENTS_CB, fallbackMethod = "fallbackAssert")
     @Retry(name = CONSENTS_RETRY)
     public void assertPrescriptionConsent(Long patientId, Long doctorId, Authentication auth) {
-        String token = SecurityUtils.bearerToken(auth)
+        String token = JwtClaimUtils.bearerToken(auth)
                 .orElseThrow(() -> ExternalServiceException.missingBearerToken("Token JWT mancante: impossibile interrogare svc-consents."));
 
         boolean allowed;

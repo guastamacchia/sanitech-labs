@@ -1,12 +1,12 @@
 package it.sanitech.prescribing.web;
 
+import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.prescribing.services.PrescriptionService;
 import it.sanitech.prescribing.services.dto.PrescriptionDto;
 import it.sanitech.prescribing.services.dto.create.PrescriptionCreateDto;
 import it.sanitech.prescribing.services.dto.update.PrescriptionPatchDto;
 import it.sanitech.prescribing.services.dto.update.PrescriptionUpdateDto;
 import it.sanitech.prescribing.utilities.AppConstants;
-import it.sanitech.prescribing.utilities.SortUtils;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -30,7 +30,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DoctorPrescriptionController {
 
-    private static final Set<String> ALLOWED_SORT = SortUtils.allowedFields(
+    private static final Set<String> ALLOWED_SORT = Set.of(
             "id", "createdAt", "updatedAt", "issuedAt", "status"
     );
 
@@ -64,7 +64,7 @@ public class DoctorPrescriptionController {
             @RequestParam(required = false) String[] sort,
             Authentication auth
     ) {
-        Sort s = SortUtils.parse(sort, ALLOWED_SORT, "createdAt");
+        Sort s = SortUtils.safeSort(sort, ALLOWED_SORT, "createdAt");
         Pageable pageable = PageRequest.of(page, size, s);
         return service.listForDoctor(patientId, departmentCode, pageable, auth);
     }

@@ -1,9 +1,9 @@
 package it.sanitech.prescribing.web;
 
+import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.prescribing.services.PrescriptionService;
 import it.sanitech.prescribing.services.dto.PrescriptionDto;
 import it.sanitech.prescribing.utilities.AppConstants;
-import it.sanitech.prescribing.utilities.SortUtils;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -25,7 +25,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AdminPrescriptionController {
 
-    private static final Set<String> ALLOWED_SORT = SortUtils.allowedFields(
+    private static final Set<String> ALLOWED_SORT = Set.of(
             "id", "createdAt", "updatedAt", "issuedAt", "status", "patientId", "doctorId"
     );
 
@@ -41,7 +41,7 @@ public class AdminPrescriptionController {
             @RequestParam(defaultValue = "50") @Min(1) @Max(200) int size,
             @RequestParam(required = false) String[] sort
     ) {
-        Sort s = SortUtils.parse(sort, ALLOWED_SORT, "createdAt");
+        Sort s = SortUtils.safeSort(sort, ALLOWED_SORT, "createdAt");
         Pageable pageable = PageRequest.of(page, size, s);
         return service.adminList(patientId, doctorId, pageable);
     }
