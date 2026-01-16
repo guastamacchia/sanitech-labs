@@ -1,4 +1,4 @@
-package it.sanitech.payments.config;
+package it.sanitech.payments.properties;
 
 import lombok.Getter;
 import lombok.Setter;

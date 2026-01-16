@@ -1,13 +1,14 @@
 package it.sanitech.payments.web;
 
-import it.sanitech.payments.config.PaymentWebhookProperties;
-import it.sanitech.payments.exception.WebhookUnauthorizedException;
+import it.sanitech.payments.properties.PaymentWebhookProperties;
 import it.sanitech.payments.services.PaymentOrderService;
 import it.sanitech.payments.services.dto.PaymentOrderDto;
 import it.sanitech.payments.services.dto.webhook.PaymentWebhookDto;
 import it.sanitech.payments.utilities.AppConstants;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Endpoint webhook per notifiche da provider esterni.
@@ -30,9 +31,9 @@ public class PaymentsWebhookController {
 
     @PostMapping("/provider")
     public PaymentOrderDto providerUpdate(@Valid @RequestBody PaymentWebhookDto dto,
-                                          @RequestHeader(value = AppConstants.ConfigKeys.Headers.X_WEBHOOK_SECRET, required = false) String secret) {
+                                          @RequestHeader(value = AppConstants.Headers.X_WEBHOOK_SECRET, required = false) String secret) {
         if (secret == null || !secret.equals(webhookProperties.getSecret())) {
-            throw WebhookUnauthorizedException.standard();
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Webhook non autorizzato: secret non valido.");
         }
 
         return service.updateFromWebhook(dto.provider(), dto.providerReference(), dto.status());

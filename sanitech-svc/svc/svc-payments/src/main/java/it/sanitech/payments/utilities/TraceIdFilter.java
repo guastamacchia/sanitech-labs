@@ -28,13 +28,13 @@ public class TraceIdFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String traceId = request.getHeader(AppConstants.ConfigKeys.Headers.X_REQUEST_ID);
+        String traceId = request.getHeader(AppConstants.Headers.X_REQUEST_ID);
         if (traceId == null || traceId.isBlank()) {
             traceId = UUID.randomUUID().toString();
         }
 
         MDC.put(MDC_KEY_TRACE_ID, traceId);
-        response.setHeader(AppConstants.ConfigKeys.Headers.X_REQUEST_ID, traceId);
+        response.setHeader(AppConstants.Headers.X_REQUEST_ID, traceId);
 
         try {
             filterChain.doFilter(request, response);
