@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  *
  * <p>Abilita {@link EnableScheduling} per il publisher Outbox (flush periodico verso Kafka).</p>
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"it.sanitech.televisit", "it.sanitech.commons", "it.sanitech.outbox"})
 @EnableScheduling
 public class TelevisitApplication {
 
