@@ -1,19 +1,20 @@
 package it.sanitech.prescribing.services;
 
+import it.sanitech.commons.exception.NotFoundException;
+import it.sanitech.commons.security.DeptGuard;
+import it.sanitech.outbox.DomainEventPublisher;
 import it.sanitech.prescribing.integrations.consents.ConsentClient;
-import it.sanitech.prescribing.outbox.DomainEventPublisher;
 import it.sanitech.prescribing.repositories.PrescriptionRepository;
 import it.sanitech.prescribing.repositories.entities.Prescription;
 import it.sanitech.prescribing.repositories.entities.PrescriptionItem;
 import it.sanitech.prescribing.repositories.entities.PrescriptionStatus;
-import it.sanitech.prescribing.security.DeptGuard;
+import it.sanitech.prescribing.security.JwtClaimUtils;
 import it.sanitech.prescribing.services.dto.PrescriptionDto;
 import it.sanitech.prescribing.services.dto.create.PrescriptionCreateDto;
 import it.sanitech.prescribing.services.dto.update.PrescriptionPatchDto;
 import it.sanitech.prescribing.services.dto.update.PrescriptionUpdateDto;
 import it.sanitech.prescribing.services.mappers.PrescriptionMapper;
 import it.sanitech.prescribing.utilities.AppConstants;
-import it.sanitech.prescribing.utilities.SecurityUtils;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -52,7 +53,7 @@ public class PrescriptionService {
      */
     @Transactional
     public PrescriptionDto create(PrescriptionCreateDto dto, Authentication auth) {
-        Long doctorId = SecurityUtils.requireDoctorId(auth);
+        Long doctorId = JwtClaimUtils.requireDoctorId(auth);
         deptGuard.checkCanManage(dto.departmentCode(), auth);
 
         consentClient.assertPrescriptionConsent(dto.patientId(), doctorId, auth);
@@ -83,9 +84,9 @@ public class PrescriptionService {
      */
     @Transactional(readOnly = true)
     public PrescriptionDto getMine(Long prescriptionId, Authentication auth) {
-        Long patientId = SecurityUtils.requirePatientId(auth);
+        Long patientId = JwtClaimUtils.requirePatientId(auth);
         Prescription p = prescriptions.findByIdAndPatientId(prescriptionId, patientId)
-                .orElseThrow(() -> it.sanitech.prescribing.exception.NotFoundException.of("Prescrizione", prescriptionId));
+                .orElseThrow(() -> NotFoundException.of("Prescrizione", prescriptionId));
         return mapper.toDto(p);
     }
 
@@ -95,7 +96,7 @@ public class PrescriptionService {
     @Transactional(readOnly = true)
     @Bulkhead(name = "prescribingRead", type = Bulkhead.Type.SEMAPHORE)
     public Page<PrescriptionDto> listMine(PrescriptionStatus status, Pageable pageable, Authentication auth) {
-        Long patientId = SecurityUtils.requirePatientId(auth);
+        Long patientId = JwtClaimUtils.requirePatientId(auth);
         Page<Prescription> page = (status == null)
                 ? prescriptions.findByPatientId(patientId, pageable)
                 : prescriptions.findByPatientIdAndStatus(patientId, status, pageable);
@@ -112,9 +113,9 @@ public class PrescriptionService {
      */
     @Transactional(readOnly = true)
     public PrescriptionDto getForDoctor(Long prescriptionId, Authentication auth) {
-        Long doctorId = SecurityUtils.requireDoctorId(auth);
+        Long doctorId = JwtClaimUtils.requireDoctorId(auth);
         Prescription p = prescriptions.findDetailedById(prescriptionId)
-                .orElseThrow(() -> it.sanitech.prescribing.exception.NotFoundException.of("Prescrizione", prescriptionId));
+                .orElseThrow(() -> NotFoundException.of("Prescrizione", prescriptionId));
 
         deptGuard.checkCanManage(p.getDepartmentCode(), auth);
         consentClient.assertPrescriptionConsent(p.getPatientId(), doctorId, auth);
@@ -132,7 +133,7 @@ public class PrescriptionService {
     @Transactional(readOnly = true)
     @Bulkhead(name = "prescribingRead", type = Bulkhead.Type.SEMAPHORE)
     public Page<PrescriptionDto> listForDoctor(Long patientId, String departmentCode, Pageable pageable, Authentication auth) {
-        Long doctorId = SecurityUtils.requireDoctorId(auth);
+        Long doctorId = JwtClaimUtils.requireDoctorId(auth);
         deptGuard.checkCanManage(departmentCode, auth);
 
         consentClient.assertPrescriptionConsent(patientId, doctorId, auth);
@@ -147,9 +148,9 @@ public class PrescriptionService {
      */
     @Transactional
     public PrescriptionDto update(Long prescriptionId, PrescriptionUpdateDto dto, Authentication auth) {
-        Long doctorId = SecurityUtils.requireDoctorId(auth);
+        Long doctorId = JwtClaimUtils.requireDoctorId(auth);
         Prescription p = prescriptions.findDetailedById(prescriptionId)
-                .orElseThrow(() -> it.sanitech.prescribing.exception.NotFoundException.of("Prescrizione", prescriptionId));
+                .orElseThrow(() -> NotFoundException.of("Prescrizione", prescriptionId));
 
         deptGuard.checkCanManage(p.getDepartmentCode(), auth);
         consentClient.assertPrescriptionConsent(p.getPatientId(), doctorId, auth);
@@ -174,9 +175,9 @@ public class PrescriptionService {
      */
     @Transactional
     public PrescriptionDto patch(Long prescriptionId, PrescriptionPatchDto dto, Authentication auth) {
-        Long doctorId = SecurityUtils.requireDoctorId(auth);
+        Long doctorId = JwtClaimUtils.requireDoctorId(auth);
         Prescription p = prescriptions.findDetailedById(prescriptionId)
-                .orElseThrow(() -> it.sanitech.prescribing.exception.NotFoundException.of("Prescrizione", prescriptionId));
+                .orElseThrow(() -> NotFoundException.of("Prescrizione", prescriptionId));
 
         deptGuard.checkCanManage(p.getDepartmentCode(), auth);
         consentClient.assertPrescriptionConsent(p.getPatientId(), doctorId, auth);
@@ -200,9 +201,9 @@ public class PrescriptionService {
      */
     @Transactional
     public void cancel(Long prescriptionId, Authentication auth) {
-        Long doctorId = SecurityUtils.requireDoctorId(auth);
+        Long doctorId = JwtClaimUtils.requireDoctorId(auth);
         Prescription p = prescriptions.findDetailedById(prescriptionId)
-                .orElseThrow(() -> it.sanitech.prescribing.exception.NotFoundException.of("Prescrizione", prescriptionId));
+                .orElseThrow(() -> NotFoundException.of("Prescrizione", prescriptionId));
 
         deptGuard.checkCanManage(p.getDepartmentCode(), auth);
         consentClient.assertPrescriptionConsent(p.getPatientId(), doctorId, auth);
@@ -265,7 +266,7 @@ public class PrescriptionService {
     @Transactional(readOnly = true)
     public PrescriptionDto adminGet(Long id) {
         Prescription p = prescriptions.findDetailedById(id)
-                .orElseThrow(() -> it.sanitech.prescribing.exception.NotFoundException.of("Prescrizione", id));
+                .orElseThrow(() -> NotFoundException.of("Prescrizione", id));
         return mapper.toDto(p);
     }
 

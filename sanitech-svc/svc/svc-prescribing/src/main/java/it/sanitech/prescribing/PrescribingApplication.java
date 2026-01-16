@@ -11,7 +11,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * Abilita {@link EnableScheduling} per il publisher Outbox → Kafka.
  * </p>
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {
+        "it.sanitech.prescribing",
+        "it.sanitech.commons",
+        "it.sanitech.outbox"
+})
 @EnableScheduling
 public class PrescribingApplication {
 

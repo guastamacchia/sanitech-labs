@@ -1,6 +1,6 @@
-package it.sanitech.prescribing.utilities;
+package it.sanitech.prescribing.security;
 
-import it.sanitech.prescribing.exception.BadRequestException;
+import it.sanitech.prescribing.utilities.AppConstants;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
@@ -10,9 +10,9 @@ import java.util.Optional;
  * Utility per leggere in modo consistente le informazioni dal {@link Authentication}
  * (JWT validato dal Resource Server).
  */
-public final class SecurityUtils {
+public final class JwtClaimUtils {
 
-    private SecurityUtils() {
+    private JwtClaimUtils() {
     }
 
     /**
@@ -57,7 +57,7 @@ public final class SecurityUtils {
      */
     public static Long requirePatientId(Authentication auth) {
         return longClaim(auth, AppConstants.JwtClaim.PATIENT_ID)
-                .orElseThrow(() -> BadRequestException.missingClaim(AppConstants.JwtClaim.PATIENT_ID));
+                .orElseThrow(() -> new IllegalArgumentException("Claim JWT mancante: " + AppConstants.JwtClaim.PATIENT_ID));
     }
 
     /**
@@ -65,6 +65,6 @@ public final class SecurityUtils {
      */
     public static Long requireDoctorId(Authentication auth) {
         return longClaim(auth, AppConstants.JwtClaim.DOCTOR_ID)
-                .orElseThrow(() -> BadRequestException.missingClaim(AppConstants.JwtClaim.DOCTOR_ID));
+                .orElseThrow(() -> new IllegalArgumentException("Claim JWT mancante: " + AppConstants.JwtClaim.DOCTOR_ID));
     }
 }
