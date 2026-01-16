@@ -1,0 +1,15 @@
+-- V2__outbox.sql
+-- Tabella Outbox per publish affidabile verso Kafka.
+
+CREATE TABLE IF NOT EXISTS outbox_events (
+    id             BIGSERIAL PRIMARY KEY,
+    aggregate_type VARCHAR(64) NOT NULL,
+    aggregate_id   VARCHAR(64) NOT NULL,
+    event_type     VARCHAR(64) NOT NULL,
+    payload        JSONB NOT NULL,
+    occurred_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    published      BOOLEAN NOT NULL DEFAULT false,
+    published_at   TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_outbox_unpublished ON outbox_events(published, occurred_at);

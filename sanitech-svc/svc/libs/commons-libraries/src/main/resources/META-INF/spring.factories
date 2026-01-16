@@ -1,0 +1,4 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+it.sanitech.commons.autoconfigure.CorsAutoConfiguration,\
+it.sanitech.commons.autoconfigure.OpenApiAutoConfiguration,\
+it.sanitech.commons.autoconfigure.SecurityAutoConfiguration

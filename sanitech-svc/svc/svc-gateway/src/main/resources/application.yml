@@ -1,0 +1,187 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: svc-gateway
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Issuer URI del realm Keycloak (OIDC).
+          # Deve combaciare con il valore "iss" presente nei JWT.
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8081/realms/sanitech}
+
+  cloud:
+    gateway:
+      httpclient:
+        # Timeout di connessione (ms) per chiamate verso downstream.
+        connect-timeout: 2000
+        # Timeout di risposta complessivo (es. "5s").
+        response-timeout: 5s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# =========================================================
+# Sanitech custom properties
+# =========================================================
+sanitech:
+  cors:
+    enabled: true
+    # Pattern di path su cui applicare il filtro CORS.
+    # Per il gateway tipicamente conviene applicarlo a tutte le route.
+    path-patterns:
+      - "/**"
+
+    # Lista delle origini autorizzate (allowlist).
+    # In dev è comune usare localhost; in prod usare i domini reali.
+    allowed-origins:
+      - "http://localhost:3000"
+      - "http://localhost:5173"
+
+    # Metodi HTTP permessi dal browser nelle richieste CORS.
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+
+    # Header ammessi nella richiesta CORS.
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - Accept
+      - Origin
+      - X-Requested-With
+      - X-Request-Id
+
+    # Header della risposta che il client è autorizzato a leggere.
+    exposed-headers:
+      - Location
+      - Content-Disposition
+      - X-Request-Id
+      - X-Total-Count
+
+    # Se true, consente al browser di inviare cookie/authorization cross-site.
+    # ATTENZIONE: non compatibile con origini wildcard, usare domini espliciti.
+    allow-credentials: false
+
+    # Durata in secondi della cache del preflight (OPTIONS).
+    max-age: 3600
+
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
+  openapi:
+    enabled: true
+    group: gateway
+    packages-to-scan:
+      - it.sanitech.gateway.web
+    title: Sanitech — Gateway API
+    version: v1
+
+  gateway:
+    # URL base dei microservizi downstream (routing).
+    services:
+      directory: ${DIRECTORY_URL:http://localhost:8082}
+      scheduling: ${SCHEDULING_URL:http://localhost:8083}
+      admissions: ${ADMISSIONS_URL:http://localhost:8084}
+      consents: ${CONSENTS_URL:http://localhost:8085}
+      docs: ${DOCS_URL:http://localhost:8086}
+      notifications: ${NOTIFICATIONS_URL:http://localhost:8087}
+      audit: ${AUDIT_URL:http://localhost:8088}
+      televisit: ${TELEVISIT_URL:http://localhost:8089}
+      payments: ${PAYMENTS_URL:http://localhost:8090}
+      prescribing: ${PRESCRIBING_URL:http://localhost:8091}
+
+    # Redirect della root (/) verso Swagger, utile in ambienti interni.
+    ui:
+      redirect-root-to-swagger: false
+
+    # Configurazione dell'aggregatore OpenAPI.
+    openapi:
+      # Whitelist: serviceName -> URL completo della spec OpenAPI.
+      targets:
+        directory: ${OPENAPI_DIRECTORY_URL:http://localhost:8082/v3/api-docs/directory}
+        scheduling: ${OPENAPI_SCHEDULING_URL:http://localhost:8083/v3/api-docs/scheduling}
+        admissions: ${OPENAPI_ADMISSIONS_URL:http://localhost:8084/v3/api-docs/admissions}
+        consents: ${OPENAPI_CONSENTS_URL:http://localhost:8085/v3/api-docs/consents}
+        docs: ${OPENAPI_DOCS_URL:http://localhost:8086/v3/api-docs/docs}
+        notifications: ${OPENAPI_NOTIFICATIONS_URL:http://localhost:8087/v3/api-docs/notifications}
+        audit: ${OPENAPI_AUDIT_URL:http://localhost:8088/v3/api-docs/audit}
+        televisit: ${OPENAPI_TELEVISIT_URL:http://localhost:8089/v3/api-docs/televisit}
+        payments: ${OPENAPI_PAYMENTS_URL:http://localhost:8090/v3/api-docs/payments}
+        prescribing: ${OPENAPI_PRESCRIBING_URL:http://localhost:8091/v3/api-docs/prescribing}
+
+      # TTL della cache della spec “merged”.
+      merged-cache-ttl-seconds: 30
+
+      # Timeout HTTP per il download delle specifiche.
+      http:
+        connect-timeout-ms: 2000
+        response-timeout-ms: 5000
+
+# =========================================================
+# Resilience4j (CircuitBreaker usato da Spring Cloud Gateway)
+# =========================================================
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+    instances:
+      directory:
+        baseConfig: default
+      scheduling:
+        baseConfig: default
+      admissions:
+        baseConfig: default
+      consents:
+        baseConfig: default
+      docs:
+        baseConfig: default
+      notifications:
+        baseConfig: default
+      audit:
+        baseConfig: default
+      televisit:
+        baseConfig: default
+      payments:
+        baseConfig: default
+      prescribing:
+        baseConfig: default
+
+# =========================================================
+# Springdoc (Swagger UI)
+# =========================================================
+springdoc:
+  swagger-ui:
+    enabled: true
+    # La Swagger UI del gateway carica la spec aggregata.
+    url: /openapi/merged
+    disable-swagger-default-url: true

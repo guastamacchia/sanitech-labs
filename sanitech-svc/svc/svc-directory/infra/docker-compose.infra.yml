@@ -1,0 +1,181 @@
+version: "3.9"
+name: svc-directory
+services:
+
+  # =========================
+  # PostgreSQL
+  # =========================
+  # Database relazionale usato dal microservizio.
+  postgres:
+    build:
+      context: ./postgres
+    image: sanitech/postgres-directory:${SPRING_PROFILES_ACTIVE}
+    environment:
+      # Mapping tecnico richiesto dall'immagine Postgres.
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persistenza dei dati tra restart dei container
+      - sanitech_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Verifica che il database sia pronto ad accettare connessioni
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # =========================
+  # Kafka (KRaft)
+  # =========================
+  # Message broker usato per comunicazioni asincrone/event-driven.
+  # Configurato in modalità KRaft (senza Zookeeper).
+  #
+  # Listener:
+  # - INTERNAL: per i container Docker (kafka:9092)
+  # - EXTERNAL: per accesso dall'host (${KAFKA_ADVERTISED_HOST}:29092)
+  kafka:
+    build:
+      context: ./kafka
+    image: sanitech/kafka-directory:${SPRING_PROFILES_ACTIVE}
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      # =========================
+      # KRaft core
+      # =========================
+      # Single node: broker + controller nello stesso processo.
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      # =========================
+      # Controller listener (KRaft)
+      # =========================
+      # Porta dedicata al ruolo di controller in modalità KRaft.
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # Listener per il controller.
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # =========================
+      # Listeners (INTERNAL/EXTERNAL/CONTROLLER)
+      # =========================
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${KAFKA_ADVERTISED_HOST}:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      # =========================
+      # KRaft storage
+      # =========================
+      CLUSTER_ID: ${CLUSTER_ID}
+      # =========================
+      # Single-node settings
+      # =========================
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:9092 >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
+    volumes:
+      # Persistenza dei log e dei dati di Kafka (KRaft)
+      - sanitech_kafka_data:/var/lib/kafka/data
+    restart: unless-stopped
+
+  # =========================
+  # Keycloak
+  # =========================
+  # Identity Provider (OIDC) usato dal microservizio.
+  keycloak:
+    build:
+      context: ./keycloak
+    image: sanitech/keycloak-directory:${SPRING_PROFILES_ACTIVE}
+    environment:
+      # =========================
+      # Bootstrap admin user
+      # =========================
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      # =========================
+      # Health endpoint
+      # =========================
+      KC_HEALTH_ENABLED: ${KC_HEALTH_ENABLED}
+    ports:
+      # Espone la console di amministrazione
+      - "8081:8080"
+    healthcheck:
+      # Verifica che Keycloak sia in ascolto sulla porta HTTP
+      test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    restart: unless-stopped
+
+  # =========================
+  # Prometheus
+  # =========================
+  # Raccolta delle metriche esposte dai servizi (Spring Actuator /prometheus).
+  prometheus:
+    build:
+      context: ./prometheus
+    image: sanitech/prometheus-directory:${SPRING_PROFILES_ACTIVE}
+    command:
+      # File di configurazione statico di Prometheus.
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      # Espone l'interfaccia web di Prometheus sull'host.
+      - "9090:9090"
+    volumes:
+      # Persistenza delle serie temporali.
+      - sanitech_prometheus:/prometheus
+    healthcheck:
+      # Verifica che Prometheus sia in ascolto sulla porta HTTP.
+      test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/9090'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    restart: unless-stopped
+
+  # =========================
+  # Grafana
+  # =========================
+  # Visualizzazione delle metriche raccolte da Prometheus.
+  grafana:
+    build:
+      context: ./grafana
+    image: sanitech/grafana-directory:${SPRING_PROFILES_ACTIVE}
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+    ports:
+      # Espone l'interfaccia web sull'host.
+      - "3000:3000"
+    volumes:
+      # Persistenza dati (dashboard, utenti, datasource).
+      - sanitech_grafana:/var/lib/grafana
+    healthcheck:
+      # Verifica che Grafana sia in ascolto sulla porta HTTP.
+      test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/3000'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+
+# =====================================================
+# Volumi persistenti
+# =====================================================
+volumes:
+  sanitech_pgdata:
+  sanitech_kafka_data:
+  sanitech_prometheus:
+  sanitech_grafana:

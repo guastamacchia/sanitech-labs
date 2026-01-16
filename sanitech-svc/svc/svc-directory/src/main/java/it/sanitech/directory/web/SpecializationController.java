@@ -10,7 +10,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * API pubblica (autenticata) per consultazione specializzazioni.
+ * API pubblica (autenticata) per la consultazione delle specializzazioni.
+ *
+ * <p>
+ * Espone la lista completa delle specializzazioni disponibili per i client autenticati.
+ * </p>
  */
 @RestController
 @RequiredArgsConstructor

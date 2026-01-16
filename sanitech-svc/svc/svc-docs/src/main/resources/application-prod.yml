@@ -1,0 +1,27 @@
+# =============================================================================
+# Profilo production (spring.profiles.active=prod)
+# =============================================================================
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+
+# In produzione è consigliato disabilitare auto-creazione bucket
+sanitech:
+  docs:
+    s3:
+      auto-create-bucket: false
+
+logging:
+  level:
+    root: INFO

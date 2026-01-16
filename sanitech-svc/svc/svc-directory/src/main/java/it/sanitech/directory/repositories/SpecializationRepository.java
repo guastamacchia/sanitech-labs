@@ -8,7 +8,12 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository per l'anagrafica {@link Specialization}.
+ * Repository JPA per l'anagrafica {@link Specialization}.
+ *
+ * <p>
+ * Supporta lookup per codice, insiemi di codici e ricerche testuali su codice/nome,
+ * utili per validazioni e filtri applicativi nei servizi.
+ * </p>
  */
 public interface SpecializationRepository extends JpaRepository<Specialization, Long> {
 

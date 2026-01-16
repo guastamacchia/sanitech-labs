@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'svc-docs'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      # Prima destinazione: container docker compose (svc-docs).
+      # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+      - targets:
+          - 'svc-docs:8086'
+          - 'host.docker.internal:8086'
+          - 'localhost:8086'

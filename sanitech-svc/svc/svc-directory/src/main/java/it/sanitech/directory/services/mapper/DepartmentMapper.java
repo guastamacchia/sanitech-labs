@@ -8,6 +8,11 @@ import org.mapstruct.*;
 
 /**
  * Mapper MapStruct per {@link Department}.
+ *
+ * <p>
+ * Gestisce la conversione tra entità e DTO per l'anagrafica reparti, applicando
+ * la strategia di update "null-ignore" per supportare patch parziali.
+ * </p>
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
         unmappedTargetPolicy = ReportingPolicy.IGNORE)

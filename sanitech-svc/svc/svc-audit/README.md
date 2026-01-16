@@ -1,0 +1,92 @@
+# Sanitech — svc-audit
+
+Microservizio **Audit** della piattaforma **Sanitech**: persistenza centralizzata degli eventi
+di audit (API + ingestion Kafka), opzionale outbox → Kafka (`audit.events`) e policy ABAC per reparto (`DEPT_*`).
+
+## Stack tecnico
+
+- Java 21 (LTS)
+- Spring Boot 3.3.x
+- Spring Security Resource Server (JWT) per Keycloak OIDC
+- PostgreSQL 16+, Flyway
+- Kafka (consumer + producer opzionale per outbox)
+- Resilience4j: Retry, RateLimiter, Bulkhead
+- Springdoc OpenAPI (Swagger UI)
+- Actuator + Prometheus/Grafana
+
+## Come eseguire (3 comandi)
+
+### 1) Avvio infrastruttura (Postgres + Kafka + Keycloak + Prometheus + Grafana)
+```bash
+make compose-up
+# (il target esegue anche mvn package per generare il JAR prima della build dell'immagine)
+# oppure, se preferisci solo l'infrastruttura:
+# make compose-up-infra
+# (espone Postgres/Kafka anche verso l'host via docker-compose.infra-ports.yml)
+```
+- Il servizio Keycloak viene buildato localmente (Dockerfile in `infra/keycloak`) includendo il realm `sanitech`.
+- Prometheus e Grafana vengono buildati localmente con la configurazione già inclusa.
+
+### 2) Build + test
+```bash
+./mvnw -q test
+```
+
+### 3) Run
+```bash
+./mvnw -q spring-boot:run
+```
+
+Endpoint utili:
+- svc-audit: `http://localhost:8088`
+- Swagger UI: `http://localhost:8088/swagger-ui/index.html`
+- Health: `http://localhost:8088/actuator/health`
+- Kafka (listener EXTERNAL): `localhost:29092`
+- Postgres (via `compose-up-infra`): `localhost:5443`
+- Keycloak: `http://localhost:8081`
+- Grafana: `http://localhost:3000`
+- I file env sono in `infra/env/env.<env>` (selezionabili via `PROFILE=<env>` nei target Makefile, default `remote`).
+
+## Variabili d'ambiente principali
+
+- `DB_URL`, `DB_USER`, `DB_PASSWORD`
+- `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_ADVERTISED_HOST`
+- `OAUTH2_ISSUER_URI`
+- `AUDIT_INGESTION_TOPICS`, `KAFKA_CONSUMER_GROUP`
+
+## Ingestion Kafka
+Se abilitato (`sanitech.audit.ingestion.enabled=true`), il servizio consuma i topic elencati in `AUDIT_INGESTION_TOPICS`
+per persistere eventi di audit provenienti da altri microservizi.
+
+## Outbox pattern (opzionale)
+Se abilitato, gli eventi generati vengono salvati in `outbox_events`
+e un job schedulato li pubblica su Kafka `audit.events` con retry/backoff.
+
+## Sicurezza (Keycloak JWT)
+
+Il servizio è configurato come **Resource Server** JWT.
+
+- `ROLE_ADMIN`: gestione completa delle API di audit
+- Scopes dedicati: `SCOPE_audit.write`, `SCOPE_audit.read`
+
+### Keycloak locale pronto all'uso
+- `docker compose up keycloak svc-audit` importa automaticamente il realm `sanitech` da `keycloak/sanitech-realm.json`.
+- Client configurati:
+  - `svc-audit` (secret: `svc-audit-secret`)
+  - `svc-directory` (secret: `svc-directory-secret`)
+- Utenti di test:
+  - `admin` / `admin` con ruolo `ADMIN`
+  - `doctor` / `doctor` con ruolo `DOCTOR` e claim `dept=CARDIO`
+
+### Smoke test locale
+```bash
+./scripts/smoke.sh
+./scripts/rate-limit.sh
+./scripts/bulkhead.sh
+./scripts/loop.sh
+```
+- Gli script verificano health, metriche, rate limit e loop continuo sugli endpoint principali (`SERVICE_URL` di default `http://localhost:8088`).
+
+### Postman
+- Collezione: `postman/svc-audit.postman_collection.json`
+- Environment di esempio: `postman/svc-audit.postman_environment.json`

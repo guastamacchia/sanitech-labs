@@ -1,0 +1,12 @@
+spring:
+  # In locale si può aumentare il dettaglio log.
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+sanitech:
+  cors:
+    # In locale possiamo consentire origine wildcard per lo sviluppo (senza credentials).
+    allowed-origins:
+      - "*"

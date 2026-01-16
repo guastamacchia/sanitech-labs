@@ -1,35 +1,39 @@
 package it.sanitech.directory.services;
 
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
-import it.sanitech.directory.exception.DepartmentAccessDeniedException;
-import it.sanitech.directory.exception.NotFoundException;
-import it.sanitech.directory.outbox.DomainEventPublisher;
+import it.sanitech.commons.exception.DepartmentAccessDeniedException;
+import it.sanitech.commons.exception.NotFoundException;
+import it.sanitech.outbox.DomainEventPublisher;
 import it.sanitech.directory.repositories.DepartmentRepository;
 import it.sanitech.directory.repositories.PatientRepository;
 import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.repositories.entities.Patient;
 import it.sanitech.directory.repositories.spec.PatientSpecifications;
-import it.sanitech.directory.security.DeptGuard;
+import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.directory.services.dto.PatientDto;
 import it.sanitech.directory.services.dto.create.PatientCreateDto;
 import it.sanitech.directory.services.dto.update.PatientUpdateDto;
 import it.sanitech.directory.services.mapper.PatientMapper;
 import it.sanitech.directory.utilities.AppConstants;
-import it.sanitech.directory.utilities.CsvUtils;
-import it.sanitech.directory.utilities.PageableUtils;
-import it.sanitech.directory.utilities.SortUtils;
+import it.sanitech.commons.utilities.PageableUtils;
+import it.sanitech.commons.utilities.SortUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Service applicativo per la gestione dei Pazienti.
+ * Service applicativo per la gestione dei pazienti.
+ *
+ * <p>
+ * Gestisce creazione, aggiornamento, ricerca paginata e cancellazione dei pazienti,
+ * applicando controlli di coerenza sui reparti, normalizzazione dei dati anagrafici e
+ * pubblicazione di eventi Outbox per la sincronizzazione con altri servizi.
+ * </p>
  */
 @Service
 @RequiredArgsConstructor
@@ -88,7 +92,7 @@ public class PatientService {
                 .firstName(dto.firstName().trim())
                 .lastName(dto.lastName().trim())
                 .email(email)
-                .phone(dto.phone() == null ? null : dto.phone().trim())
+                .phone(Objects.isNull(dto.phone()) ? null : dto.phone().trim())
                 .departments(deptCodes.isEmpty() ? new HashSet<>() : resolveDepartments(deptCodes))
                 .build();
 
@@ -114,7 +118,7 @@ public class PatientService {
     public PatientDto patch(Long id, PatientUpdateDto dto, Authentication auth) {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
 
-        if (dto.email() != null && !dto.email().isBlank()) {
+        if (Objects.nonNull(dto.email()) && !dto.email().isBlank()) {
             String email = normalizeEmail(dto.email());
             if (!email.equalsIgnoreCase(entity.getEmail()) && patientRepository.existsByEmailIgnoreCase(email)) {
                 throw new IllegalArgumentException("Esiste già un paziente con email '" + email + "'.");
@@ -126,11 +130,11 @@ public class PatientService {
         entity.setFirstName(entity.getFirstName().trim());
         entity.setLastName(entity.getLastName().trim());
         entity.setEmail(normalizeEmail(entity.getEmail()));
-        if (entity.getPhone() != null) {
+        if (Objects.nonNull(entity.getPhone())) {
             entity.setPhone(entity.getPhone().trim());
         }
 
-        if (dto.departmentCodes() != null) {
+        if (Objects.nonNull(dto.departmentCodes())) {
             Set<String> deptCodes = normalizeCodes(dto.departmentCodes());
             if (!deptCodes.isEmpty()) {
                 deptGuard.checkCanManageAll(deptCodes, auth);
@@ -207,40 +211,6 @@ public class PatientService {
         return result.map(patientMapper::toDto);
     }
 
-    public List<PatientDto> bulkCreate(List<PatientCreateDto> items, Authentication auth) {
-        if (items == null || items.isEmpty()) return List.of();
-        List<PatientDto> created = new ArrayList<>(items.size());
-        for (PatientCreateDto dto : items) {
-            created.add(create(dto, auth));
-        }
-        return created;
-    }
-
-    @Transactional(readOnly = true)
-    public byte[] exportCsv(String q, String departmentCode) {
-        List<Patient> patients = patientRepository.findAll(
-                PatientSpecifications.search(q, departmentCode),
-                Sort.by("lastName").ascending().and(Sort.by("firstName").ascending())
-        );
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("id,firstName,lastName,email,phone,departments\n");
-
-        for (Patient p : patients) {
-            String departments = CsvUtils.join(p.getDepartments().stream().map(Department::getCode).toList(), "|");
-
-            sb.append(p.getId()).append(',')
-                    .append(CsvUtils.csv(p.getFirstName())).append(',')
-                    .append(CsvUtils.csv(p.getLastName())).append(',')
-                    .append(CsvUtils.csv(p.getEmail())).append(',')
-                    .append(CsvUtils.csv(p.getPhone())).append(',')
-                    .append(CsvUtils.csv(departments))
-                    .append('\n');
-        }
-
-        return sb.toString().getBytes(StandardCharsets.UTF_8);
-    }
-
     private Set<Department> resolveDepartments(Set<String> deptCodes) {
         List<Department> found = departmentRepository.findByCodeIn(deptCodes);
         Set<String> foundCodes = found.stream().map(Department::getCode).collect(Collectors.toSet());
@@ -256,12 +226,12 @@ public class PatientService {
     }
 
     private String normalizeEmail(String email) {
-        if (email == null) throw new IllegalArgumentException("Email obbligatoria.");
+        if (Objects.isNull(email)) throw new IllegalArgumentException("Email obbligatoria.");
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private Set<String> normalizeCodes(Set<String> codes) {
-        if (codes == null || codes.isEmpty()) return Set.of();
+        if (Objects.isNull(codes) || codes.isEmpty()) return Set.of();
         return codes.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)

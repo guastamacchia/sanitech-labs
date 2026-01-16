@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+it.sanitech.outbox.autoconfigure.OutboxAutoConfiguration

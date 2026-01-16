@@ -20,12 +20,12 @@ Microservizio **Directory** della piattaforma **Sanitech**: gestione anagrafiche
 make compose-up
 # (il target esegue anche mvn package per generare il JAR prima della build dell'immagine)
 # oppure, se si preferisce solo l'infrastruttura:
-# docker compose -f docker/docker-compose.yml up -d postgres kafka keycloak prometheus grafana
+# docker compose -f infra/docker-compose.yml up -d postgres kafka keycloak prometheus grafana
 ```
-- Il servizio Keycloak viene buildato localmente (Dockerfile in `docker/Dockerfile.keycloak`) includendo il realm `sanitech` nel layer immagine e con health abilitato (`KEYCLOAK_HEALTH_ENABLED=true`), così l'import avviene anche con Docker Engine remoto (senza bind mount locale).
+- Il servizio Keycloak viene buildato localmente (Dockerfile in `infra/Dockerfile.keycloak`) includendo il realm `sanitech` nel layer immagine e con health abilitato (`KEYCLOAK_HEALTH_ENABLED=true`), così l'import avviene anche con Docker Engine remoto (senza bind mount locale).
   Assicurati che il JAR sia presente in `target/` prima della build (il `make compose-up` lo genera automaticamente).
-- Prometheus viene buildato localmente (`docker/Dockerfile.prometheus`) con la configurazione già inclusa, per evitare problemi di bind mount.
-- Grafana (porta `3000`, credenziali predefinite `admin`/`admin`) parte con la datasource Prometheus già configurata (cartella `docker/grafana/provisioning`).
+- Prometheus viene buildato localmente (`infra/Dockerfile.prometheus`) con la configurazione già inclusa, per evitare problemi di bind mount.
+- Grafana (porta `3000`, credenziali predefinite `admin`/`admin`) parte con la datasource Prometheus già configurata (cartella `infra/grafana/provisioning`).
 
 ### 2) Build + test
 ```bash
@@ -75,25 +75,19 @@ Il converter custom mappa:
   - `doctor` / `doctor` con ruolo `DOCTOR` e claim `dept=CARDIO`
 
 ### Smoke test locale
-Con Keycloak e il servizio avviati:
+Con Keycloak e il servizio avviati puoi eseguire l'intera suite di script con un solo prompt:
 ```bash
-./scripts/smoke.sh
+./scripts/run-scripts.sh
+```
+- Carica le variabili dall'env file, chiede i parametri una volta sola e lancia smoke, bulkhead, rate limit e loop in sequenza.
+
+Se vuoi eseguire i singoli script:
+```bash
+./scripts/bash/smoke.sh
+./scripts/bash/bulkhead.sh
+./scripts/bash/rate-limit.sh
 ```
 - Verifica health Keycloak, health del servizio, token OIDC, RateLimiter (seconda chiamata → 429) e metriche Resilience4j (bulkhead configurato a 1 chiamata concorrente).
-
-### Test Bulkhead (concurrency)
-Con configurazione bulkhead locale (maxConcurrentCalls=1) e Keycloak/servizio avviati:
-```bash
-./scripts/bulkhead.sh
-```
-- Esegue due richieste concorrenti su `/api/admin/patients`: una deve andare a buon fine, la seconda deve essere rifiutata dal bulkhead.
-
-### Test RateLimiter
-Con configurazione rate limiter aggressiva locale (limitForPeriod=1, limitRefreshPeriod=10s):
-```bash
-./scripts/rate-limit.sh
-```
-- Esegue due chiamate consecutive a `/api/doctors`: la prima deve restituire 200, la seconda 429.
 
 ### Note su fusi orari (Prometheus/Grafana)
 - Il compose imposta `TZ` (default `Etc/UTC`): puoi sovrascriverlo esportando `TZ=Europe/Rome` (o altro) prima di `make compose-up`.
@@ -106,7 +100,7 @@ Con configurazione rate limiter aggressiva locale (limitForPeriod=1, limitRefres
 ### Loop di test continuo
 Per eseguire chiamate ripetute su tutti gli endpoint principali (health, pubblici, admin):
 ```bash
-./scripts/loop.sh
+./scripts/bash/loop.sh
 ```
 - Richiede le stesse credenziali/env di `smoke.sh`, ottiene un token una sola volta e ripete le chiamate all'infinito (intervallo configurabile).
 
