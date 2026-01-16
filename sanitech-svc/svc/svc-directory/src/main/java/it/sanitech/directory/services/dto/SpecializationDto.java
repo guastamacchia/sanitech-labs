@@ -2,6 +2,10 @@ package it.sanitech.directory.services.dto;
 
 /**
  * DTO di lettura per Specializzazione.
+ *
+ * <p>
+ * Espone i dati anagrafici della specializzazione per le API di consultazione.
+ * </p>
  */
 public record SpecializationDto(
 

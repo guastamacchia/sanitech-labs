@@ -1,8 +1,8 @@
 package it.sanitech.directory.services;
 
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
-import it.sanitech.directory.exception.NotFoundException;
-import it.sanitech.directory.outbox.DomainEventPublisher;
+import it.sanitech.commons.exception.NotFoundException;
+import it.sanitech.outbox.DomainEventPublisher;
 import it.sanitech.directory.repositories.DoctorRepository;
 import it.sanitech.directory.repositories.DepartmentRepository;
 import it.sanitech.directory.repositories.SpecializationRepository;
@@ -10,36 +10,31 @@ import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.repositories.entities.Doctor;
 import it.sanitech.directory.repositories.entities.Specialization;
 import it.sanitech.directory.repositories.spec.DoctorSpecifications;
-import it.sanitech.directory.security.DeptGuard;
+import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.directory.services.dto.DoctorDto;
 import it.sanitech.directory.services.dto.create.DoctorCreateDto;
 import it.sanitech.directory.services.dto.update.DoctorUpdateDto;
 import it.sanitech.directory.services.mapper.DoctorMapper;
 import it.sanitech.directory.utilities.AppConstants;
-import it.sanitech.directory.utilities.CsvUtils;
-import it.sanitech.directory.utilities.PageableUtils;
-import it.sanitech.directory.utilities.SortUtils;
+import it.sanitech.commons.utilities.PageableUtils;
+import it.sanitech.commons.utilities.SortUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Service applicativo per la gestione dei Medici.
+ * Service applicativo per la gestione dei medici.
  *
  * <p>
- * Include:
- * <ul>
- *   <li>CRUD + ricerca paginata con filtri combinabili</li>
- *   <li>bulk import</li>
- *   <li>export CSV</li>
- *   <li>produzione eventi su Outbox (Kafka via job schedulato)</li>
- * </ul>
+ * Coordina la logica di dominio per la creazione, l'aggiornamento, la ricerca paginata e la
+ * cancellazione dei medici, includendo la risoluzione di reparti/specializzazioni, la
+ * validazione di unicità dell'email e la pubblicazione di eventi Outbox per l'integrazione
+ * asincrona con altri servizi.
  * </p>
  */
 @Service
@@ -109,7 +104,7 @@ public class DoctorService {
     public DoctorDto patch(Long id, DoctorUpdateDto dto, Authentication auth) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
 
-        if (dto.email() != null && !dto.email().isBlank()) {
+        if (Objects.nonNull(dto.email()) && !dto.email().isBlank()) {
             String email = normalizeEmail(dto.email());
             if (!email.equalsIgnoreCase(entity.getEmail()) && doctorRepository.existsByEmailIgnoreCase(email)) {
                 throw new IllegalArgumentException("Esiste già un medico con email '" + email + "'.");
@@ -125,13 +120,13 @@ public class DoctorService {
         entity.setEmail(normalizeEmail(entity.getEmail()));
 
         // Reparti e specializzazioni: se presenti nel DTO, sostituiscono l'insieme corrente.
-        if (dto.departmentCodes() != null) {
+        if (Objects.nonNull(dto.departmentCodes())) {
             Set<String> deptCodes = normalizeCodes(dto.departmentCodes());
             deptGuard.checkCanManageAll(deptCodes, auth);
             entity.setDepartments(resolveDepartments(deptCodes));
         }
 
-        if (dto.specializationCodes() != null) {
+        if (Objects.nonNull(dto.specializationCodes())) {
             Set<String> specCodes = normalizeCodes(dto.specializationCodes());
             entity.setSpecializations(resolveSpecializations(specCodes));
         }
@@ -190,42 +185,6 @@ public class DoctorService {
         return result.map(doctorMapper::toDto);
     }
 
-    public List<DoctorDto> bulkCreate(List<DoctorCreateDto> items, Authentication auth) {
-        if (items == null || items.isEmpty()) return List.of();
-        List<DoctorDto> created = new ArrayList<>(items.size());
-        for (DoctorCreateDto dto : items) {
-            created.add(create(dto, auth));
-        }
-        return created;
-    }
-
-    @Transactional(readOnly = true)
-    public byte[] exportCsv(String q, String departmentCode, String specializationCode) {
-        // Export semplice: per dataset molto grandi valutare streaming o export asincrono.
-        List<Doctor> doctors = doctorRepository.findAll(
-                DoctorSpecifications.search(q, departmentCode, specializationCode),
-                Sort.by("lastName").ascending().and(Sort.by("firstName").ascending())
-        );
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("id,firstName,lastName,email,departments,specializations\n");
-
-        for (Doctor d : doctors) {
-            String departments = CsvUtils.join(d.getDepartments().stream().map(Department::getCode).toList(), "|");
-            String specializations = CsvUtils.join(d.getSpecializations().stream().map(Specialization::getCode).toList(), "|");
-
-            sb.append(d.getId()).append(',')
-                    .append(CsvUtils.csv(d.getFirstName())).append(',')
-                    .append(CsvUtils.csv(d.getLastName())).append(',')
-                    .append(CsvUtils.csv(d.getEmail())).append(',')
-                    .append(CsvUtils.csv(departments)).append(',')
-                    .append(CsvUtils.csv(specializations))
-                    .append('\n');
-        }
-
-        return sb.toString().getBytes(StandardCharsets.UTF_8);
-    }
-
     private Set<Department> resolveDepartments(Set<String> deptCodes) {
         List<Department> found = departmentRepository.findByCodeIn(deptCodes);
         Set<String> foundCodes = found.stream().map(Department::getCode).collect(Collectors.toSet());
@@ -255,12 +214,12 @@ public class DoctorService {
     }
 
     private String normalizeEmail(String email) {
-        if (email == null) throw new IllegalArgumentException("Email obbligatoria.");
+        if (Objects.isNull(email)) throw new IllegalArgumentException("Email obbligatoria.");
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private Set<String> normalizeCodes(Set<String> codes) {
-        if (codes == null || codes.isEmpty()) return Set.of();
+        if (Objects.isNull(codes) || codes.isEmpty()) return Set.of();
         return codes.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)

@@ -9,7 +9,8 @@ import java.util.Set;
  *
  * <p>
  * Tutti i campi sono opzionali: i valori {@code null} vengono ignorati dal mapper MapStruct
- * (mapping con {@code nullValuePropertyMappingStrategy = IGNORE}).
+ * (mapping con {@code nullValuePropertyMappingStrategy = IGNORE}). I codici reparto e
+ * specializzazione, se presenti, vengono validati e sostituiscono l'insieme corrente.
  * </p>
  */
 public record DoctorUpdateDto(

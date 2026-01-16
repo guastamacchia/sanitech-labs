@@ -1,0 +1,10 @@
+# Config minimale LiveKit per ambiente di sviluppo.
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  udp_port: 7882
+
+# API keys (dev). In prod gestire le chiavi tramite secret manager.
+keys:
+  devkey: devsecretdevsecretdevsecretdevsecret

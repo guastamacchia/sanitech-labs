@@ -1,0 +1,162 @@
+server:
+  # Porta HTTP del microservizio (dev).
+  port: 8089
+
+spring:
+  application:
+    # Nome applicazione usato anche nei log.
+    name: svc-televisit
+
+  datasource:
+    # In dev usa default locali; in prod passare variabili d'ambiente obbligatorie.
+    url: ${DB_URL:jdbc:postgresql://localhost:5434/sanitech_televisit}
+    username: ${DB_USER:sanitech}
+    password: ${DB_PASSWORD:sanitech}
+
+  jpa:
+    hibernate:
+      # Lo schema è gestito da Flyway: in runtime validiamo soltanto.
+      ddl-auto: validate
+    properties:
+      hibernate.format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # URI dell’issuer OIDC (Keycloak).
+          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8081/realms/sanitech}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        # Richiede conferma da tutte le repliche ISR (maggiore affidabilità).
+        acks: all
+        # Retry lato Kafka (in aggiunta al retry applicativo Resilience4j).
+        retries: 5
+        retry.backoff.ms: 200
+        delivery.timeout.ms: 120000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# Resilience4j (retry/backoff outbox + rate limit API)
+resilience4j:
+  retry:
+    instances:
+      outboxPublish:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2.0
+        retryExceptions:
+          - org.apache.kafka.common.errors.TimeoutException
+          - org.apache.kafka.common.errors.NetworkException
+          - org.springframework.kafka.KafkaException
+
+  ratelimiter:
+    instances:
+      televisitApi:
+        # Rate limit “base” per proteggere endpoint di lettura e token.
+        limitForPeriod: 60
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+
+sanitech:
+  cors:
+    enabled: true
+    # Applichiamo CORS solo alle API pubbliche del microservizio.
+    path-patterns:
+      - /api/**
+
+    # Lista origini consentite (in prod usare domini espliciti).
+    allowed-origins:
+      - ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - Accept
+      - Origin
+      - X-Requested-With
+      - X-Request-Id
+
+    exposed-headers:
+      - Location
+      - X-Request-Id
+      - X-Total-Count
+
+    # Se true, consente cookie/authorization cross-site.
+    # ATTENZIONE: non compatibile con origini wildcard.
+    allow-credentials: false
+
+    # Cache preflight (secondi).
+    max-age: 3600
+
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
+  outbox:
+    topic: ${OUTBOX_TOPIC:televisit.events}
+    publisher:
+      # Delay tra un batch e il successivo (millisecondi).
+      delay-ms: 1000
+
+  openapi:
+    enabled: true
+    group: televisit
+    packages-to-scan:
+      - it.sanitech.televisit.web
+    title: "Sanitech — Televisit API"
+    version: "v1"
+
+  livekit:
+    # URL LiveKit server.
+    url: ${LIVEKIT_URL:http://localhost:7880}
+    # In dev puoi usare le chiavi del docker-compose (devkey/devsecret).
+    api-key: ${LIVEKIT_API_KEY:devkey}
+    api-secret: ${LIVEKIT_API_SECRET:devsecret}
+    token-ttl-seconds: ${LIVEKIT_TOKEN_TTL_SECONDS:900}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+    operationsSorter: method
+    tagsSorter: alpha
+    use-root-path: false
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json

@@ -4,6 +4,11 @@ import java.util.Set;
 
 /**
  * DTO utilizzato per esporre i dati anagrafici del medico verso i controller REST.
+ *
+ * <p>
+ * Include i riferimenti ai reparti e alle specializzazioni associati, già risolti
+ * e pronti per la serializzazione in risposta.
+ * </p>
  */
 public record DoctorDto(
 

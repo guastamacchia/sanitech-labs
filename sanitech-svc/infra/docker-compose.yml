@@ -1,0 +1,370 @@
+services:
+  keycloak:
+    build: ./keycloak
+    command: ["start-dev", "--http-port=8080", "--import-realm", "--hostname-strict=false"]
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HEALTH_ENABLED: ${KC_HEALTH_ENABLED}
+    volumes:
+      - ./keycloak/realm-export:/opt/keycloak/data/import:ro
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  kafka:
+    image: confluentinc/cp-kafka:7.7.1
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${KAFKA_ADVERTISED_HOST}:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      CLUSTER_ID: ${CLUSTER_ID}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:9092 >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
+
+  minio:
+    image: minio/minio:RELEASE.2024-10-29T16-01-48Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+
+  prometheus:
+    build: ./prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    volumes:
+      - prometheus-data:/prometheus
+
+  grafana:
+    build: ./grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+  # =========================
+  # Postgres (one per service)
+  # =========================
+  pg-directory:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_directory
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sanitech -d sanitech_directory"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  pg-scheduling:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_scheduling
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+
+  pg-admissions:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_admissions
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+
+  pg-consents:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_consents
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+
+  pg-docs:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_docs
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+
+  pg-notifications:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_notifications
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+
+  pg-audit:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_audit
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+
+  pg-televisit:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_televisit
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+
+  pg-payments:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_payments
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+
+  pg-prescribing:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sanitech_prescribing
+      POSTGRES_USER: sanitech
+      POSTGRES_PASSWORD: sanitech
+
+  # =========================
+  # Microservices
+  # =========================
+  svc-gateway:
+    build:
+      context: ../svc/svc-gateway
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/sanitech
+      DIRECTORY_URL: http://svc-directory:8082
+      SCHEDULING_URL: http://svc-scheduling:8083
+      ADMISSIONS_URL: http://svc-admissions:8084
+      CONSENTS_URL: http://svc-consents:8085
+      DOCS_URL: http://svc-docs:8086
+      NOTIFICATIONS_URL: http://svc-notifications:8087
+      AUDIT_URL: http://svc-audit:8088
+      TELEVISIT_URL: http://svc-televisit:8089
+      PAYMENTS_URL: http://svc-payments:8090
+      PRESCRIBING_URL: http://svc-prescribing:8091
+      OPENAPI_DIRECTORY_URL: http://svc-directory:8082/v3/api-docs/directory
+      OPENAPI_SCHEDULING_URL: http://svc-scheduling:8083/v3/api-docs/scheduling
+      OPENAPI_ADMISSIONS_URL: http://svc-admissions:8084/v3/api-docs/admissions
+      OPENAPI_CONSENTS_URL: http://svc-consents:8085/v3/api-docs/consents
+      OPENAPI_DOCS_URL: http://svc-docs:8086/v3/api-docs/docs
+      OPENAPI_NOTIFICATIONS_URL: http://svc-notifications:8087/v3/api-docs/notifications
+      OPENAPI_AUDIT_URL: http://svc-audit:8088/v3/api-docs/audit
+      OPENAPI_TELEVISIT_URL: http://svc-televisit:8089/v3/api-docs/televisit
+      OPENAPI_PAYMENTS_URL: http://svc-payments:8090/v3/api-docs/payments
+      OPENAPI_PRESCRIBING_URL: http://svc-prescribing:8091/v3/api-docs/prescribing
+    depends_on:
+      - keycloak
+
+  svc-directory:
+    build:
+      context: ../svc/svc-directory
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      DB_URL: jdbc:postgresql://pg-directory:5432/sanitech_directory
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+    depends_on:
+      - pg-directory
+      - kafka
+      - keycloak
+
+  svc-scheduling:
+    build:
+      context: ../svc/svc-scheduling
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      DB_URL: jdbc:postgresql://pg-scheduling:5432/sanitech_scheduling
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+    depends_on:
+      - pg-scheduling
+      - kafka
+      - keycloak
+
+  svc-admissions:
+    build:
+      context: ../svc/svc-admissions
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      DB_URL: jdbc:postgresql://pg-admissions:5432/sanitech_admissions
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+    depends_on:
+      - pg-admissions
+      - kafka
+      - keycloak
+
+  svc-consents:
+    build:
+      context: ../svc/svc-consents
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      DB_URL: jdbc:postgresql://pg-consents:5432/sanitech_consents
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+    depends_on:
+      - pg-consents
+      - kafka
+      - keycloak
+
+  svc-docs:
+    build:
+      context: ../svc/svc-docs
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8086:8086"
+    environment:
+      DB_URL: jdbc:postgresql://pg-docs:5432/sanitech_docs
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio123
+      S3_BUCKET: documents
+    depends_on:
+      - pg-docs
+      - kafka
+      - minio
+      - keycloak
+
+  svc-notifications:
+    build:
+      context: ../svc/svc-notifications
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8087:8087"
+    environment:
+      DB_URL: jdbc:postgresql://pg-notifications:5432/sanitech_notifications
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+    depends_on:
+      - pg-notifications
+      - kafka
+      - mailhog
+      - keycloak
+
+  svc-audit:
+    build:
+      context: ../svc/svc-audit
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8088:8088"
+    environment:
+      DB_URL: jdbc:postgresql://pg-audit:5432/sanitech_audit
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+    depends_on:
+      - pg-audit
+      - kafka
+      - keycloak
+
+  svc-televisit:
+    build:
+      context: ../svc/svc-televisit
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8089:8089"
+    environment:
+      DB_URL: jdbc:postgresql://pg-televisit:5432/sanitech_televisit
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+      LIVEKIT_URL: ${LIVEKIT_URL}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+    depends_on:
+      - pg-televisit
+      - kafka
+      - keycloak
+
+  svc-payments:
+    build:
+      context: ../svc/svc-payments
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      DB_URL: jdbc:postgresql://pg-payments:5432/sanitech_payments
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+    depends_on:
+      - pg-payments
+      - kafka
+      - keycloak
+
+  svc-prescribing:
+    build:
+      context: ../svc/svc-prescribing
+      dockerfile: infra/Dockerfile
+    ports:
+      - "8091:8091"
+    environment:
+      DB_URL: jdbc:postgresql://pg-prescribing:5432/sanitech_prescribing
+      DB_USER: sanitech
+      DB_PASSWORD: sanitech
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER_URI: http://keycloak:8080/realms/sanitech
+      CONSENTS_BASE_URL: http://svc-consents:8085
+    depends_on:
+      - pg-prescribing
+      - kafka
+      - keycloak
+      - svc-consents
+
+volumes:
+  grafana-data:
+  prometheus-data:

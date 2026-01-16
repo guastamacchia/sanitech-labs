@@ -1,0 +1,148 @@
+  services:
+
+    # =========================
+    # PostgreSQL
+    # =========================
+    postgres:
+      image: postgres:16
+      environment:
+        POSTGRES_DB: ${DATABASE_NAME}
+        POSTGRES_USER: ${DATABASE_USER}
+        POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      volumes:
+        - sanitech_audit_pgdata:/var/lib/postgresql/data
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+        interval: 5s
+        timeout: 5s
+        retries: 10
+      restart: unless-stopped
+
+    # =========================
+    # Kafka (KRaft)
+    # =========================
+    kafka:
+      image: confluentinc/cp-kafka:7.7.1
+      ports:
+        - "29092:29092"
+      environment:
+        KAFKA_NODE_ID: 1
+        KAFKA_PROCESS_ROLES: broker,controller
+        KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+        KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+        KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+        KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${KAFKA_ADVERTISED_HOST}:29092
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+        KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+        CLUSTER_ID: ${CLUSTER_ID}
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+        KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      healthcheck:
+        test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:9092 >/dev/null 2>&1 || exit 1"]
+        interval: 10s
+        timeout: 10s
+        retries: 30
+        start_period: 60s
+      restart: unless-stopped
+
+    # =========================
+    # Keycloak
+    # =========================
+    keycloak:
+      build:
+        context: ./keycloak
+      image: sanitech/keycloak-audit:${SPRING_PROFILES_ACTIVE}
+      environment:
+        KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+        KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+        KC_HEALTH_ENABLED: ${KC_HEALTH_ENABLED}
+      ports:
+        - "8081:8080"
+      healthcheck:
+        test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+        start_period: 40s
+      restart: unless-stopped
+
+    # =====================================================
+    # svc-audit
+    # =====================================================
+    svc-audit:
+      build:
+        context: ..
+        dockerfile: infra/Dockerfile
+        args:
+          JAR_FILE: target/*.jar
+      image: sanitech/${SVC_NAME:-svc-audit}:${SPRING_PROFILES_ACTIVE}
+      depends_on:
+        postgres:
+          condition: service_healthy
+        kafka:
+          condition: service_healthy
+        keycloak:
+          condition: service_healthy
+      env_file:
+        - ${ENV_FILE}
+      ports:
+        - "8088:8088"
+      healthcheck:
+        test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8088'"]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+        start_period: 25s
+      restart: unless-stopped
+
+    # =========================
+    # Prometheus
+    # =========================
+    prometheus:
+      build:
+        context: ./prometheus
+      image: sanitech/prometheus-audit:${SPRING_PROFILES_ACTIVE}
+      command:
+        - "--config.file=/etc/prometheus/prometheus.yml"
+      ports:
+        - "9090:9090"
+      volumes:
+        - sanitech_audit_prometheus:/prometheus
+      healthcheck:
+        test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/9090'"]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+        start_period: 15s
+      restart: unless-stopped
+
+    # =========================
+    # Grafana
+    # =========================
+    grafana:
+      build:
+        context: ./grafana
+      image: sanitech/grafana-audit:${SPRING_PROFILES_ACTIVE}
+      depends_on:
+        - prometheus
+      environment:
+        GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+        GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+      ports:
+        - "3000:3000"
+      volumes:
+        - sanitech_audit_grafana:/var/lib/grafana
+      healthcheck:
+        test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/3000'"]
+        interval: 10s
+        timeout: 5s
+        retries: 30
+        start_period: 20s
+      restart: unless-stopped
+
+  volumes:
+    sanitech_audit_pgdata:
+    sanitech_audit_prometheus:
+    sanitech_audit_grafana:

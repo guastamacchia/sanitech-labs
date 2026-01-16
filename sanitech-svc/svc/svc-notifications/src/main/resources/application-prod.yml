@@ -1,0 +1,11 @@
+# =========================
+# Profile: prod
+# =========================
+# Configurazioni specifiche per il profilo "prod".
+# Ottimizzate per ambienti di produzione:
+# - logging essenziale
+# - riduzione del rumore
+logging:
+  level:
+    root: INFO
+    it.sanitech.notifications: INFO

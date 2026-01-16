@@ -12,7 +12,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * API amministrativa per gestione specializzazioni.
+ * API amministrativa per la gestione delle specializzazioni.
+ *
+ * <p>
+ * Consente creazione, aggiornamento, ricerca e cancellazione con accesso riservato
+ * agli utenti con ruolo amministrativo.
+ * </p>
  */
 @RestController
 @RequiredArgsConstructor

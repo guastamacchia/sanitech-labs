@@ -10,7 +10,12 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * API pubblica (autenticata) per consultazione medici.
+ * API pubblica (autenticata) per la consultazione dei medici.
+ *
+ * <p>
+ * Offre accesso in sola lettura alla ricerca e ai dettagli dei medici, con protezione
+ * tramite rate limiting per mitigare carichi eccessivi.
+ * </p>
  */
 @RestController
 @RequiredArgsConstructor

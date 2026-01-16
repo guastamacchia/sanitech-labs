@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    # In produzione le credenziali arrivano da Secret/Env
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+
+logging:
+  level:
+    root: INFO
+  pattern:
+    # Pattern testuale leggibile (non JSON), con traceId se presente
+    console: "%d{ISO8601} %-5level [%X{traceId:-}] %logger{36} - %msg%n"

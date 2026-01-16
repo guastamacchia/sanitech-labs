@@ -12,7 +12,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * API amministrativa per gestione reparti.
+ * API amministrativa per la gestione dei reparti.
+ *
+ * <p>
+ * Consente operazioni di CRUD e ricerca semplice, protette da autorizzazione
+ * con ruolo amministrativo.
+ * </p>
  */
 @RestController
 @RequiredArgsConstructor

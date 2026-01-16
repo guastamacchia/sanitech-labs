@@ -1,6 +1,6 @@
 package it.sanitech.directory.services;
 
-import it.sanitech.directory.exception.NotFoundException;
+import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.directory.repositories.DepartmentRepository;
 import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.services.dto.DepartmentDto;
@@ -13,9 +13,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Service applicativo per l'anagrafica Reparti.
+ * Service applicativo per l'anagrafica reparti.
+ *
+ * <p>
+ * Gestisce la consultazione e la manutenzione dei reparti, applicando normalizzazioni
+ * sui codici e controlli di unicità prima della persistenza.
+ * </p>
  */
 @Service
 @RequiredArgsConstructor
@@ -35,7 +41,7 @@ public class DepartmentService {
 
     @Transactional(readOnly = true)
     public List<DepartmentDto> search(String q) {
-        if (q == null || q.isBlank()) {
+        if (Objects.isNull(q) || q.isBlank()) {
             return list();
         }
         String like = q.trim();
@@ -80,7 +86,7 @@ public class DepartmentService {
     }
 
     private String normalizeCode(String code) {
-        if (code == null) throw new IllegalArgumentException("Codice reparto obbligatorio.");
+        if (Objects.isNull(code)) throw new IllegalArgumentException("Codice reparto obbligatorio.");
         return code.trim().toUpperCase();
     }
 }
