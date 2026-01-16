@@ -1,0 +1,41 @@
+<nav class="navbar navbar-expand-lg bg-white shadow-sm border-bottom">
+  <div class="container">
+    <a class="navbar-brand fw-bold text-primary" routerLink="/">Sanitech</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navLinks">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/" routerLinkActive="active">Portale pubblico</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/portal" routerLinkActive="active">Area privata</a>
+        </li>
+      </ul>
+      <div class="d-flex align-items-center gap-2 ms-lg-3">
+        <span class="small text-muted" *ngIf="auth.isAuthenticated">👋 {{ auth.displayName }}</span>
+        <button class="btn btn-outline-primary" *ngIf="!auth.isAuthenticated" (click)="login()">
+          Accedi
+        </button>
+        <button class="btn btn-outline-secondary" *ngIf="auth.isAuthenticated" (click)="logout()">
+          Esci
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <router-outlet></router-outlet>
+</main>
+
+<footer class="py-4 bg-dark text-white mt-5">
+  <div class="container d-flex flex-wrap justify-content-between align-items-center">
+    <span>© 2024 Sanitech Labs — Portale SPA</span>
+    <div class="d-flex gap-3 small">
+      <a class="link-light text-decoration-none" href="/api-docs" target="_blank" rel="noreferrer">API Gateway</a>
+      <span class="text-white-50">Ambiente: {{ auth.isAuthenticated ? 'Autenticato' : 'Pubblico' }}</span>
+    </div>
+  </div>
+</footer>
