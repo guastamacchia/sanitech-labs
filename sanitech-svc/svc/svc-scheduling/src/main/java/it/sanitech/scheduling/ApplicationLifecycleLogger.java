@@ -30,8 +30,8 @@ public class ApplicationLifecycleLogger implements ApplicationListener<ContextCl
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onReady() {
-        String appName = env.getProperty(AppConstants.Runtime.SPRING_APP_NAME_KEY, AppConstants.Runtime.DEFAULT_APP_NAME);
-        String port = env.getProperty(AppConstants.Runtime.SERVER_PORT_KEY, AppConstants.Runtime.DEFAULT_SERVER_PORT);
+        String appName = env.getProperty(AppConstants.Spring.APP_NAME_KEY, AppConstants.Spring.DEFAULT_APP_NAME);
+        String port = env.getProperty(AppConstants.Spring.SERVER_PORT_KEY, AppConstants.Spring.DEFAULT_SERVER_PORT);
         log.info("Microservizio {} avviato correttamente (port {}).", appName, port);
     }
 
@@ -40,7 +40,7 @@ public class ApplicationLifecycleLogger implements ApplicationListener<ContextCl
      */
     @Override
     public void onApplicationEvent(@NonNull ContextClosedEvent event) {
-        String appName = env.getProperty(AppConstants.Runtime.SPRING_APP_NAME_KEY, AppConstants.Runtime.DEFAULT_APP_NAME);
+        String appName = env.getProperty(AppConstants.Spring.APP_NAME_KEY, AppConstants.Spring.DEFAULT_APP_NAME);
         log.warn("Arresto del microservizio {} in corso…", appName);
     }
 }

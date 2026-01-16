@@ -1,7 +1,10 @@
 package it.sanitech.scheduling.services;
 
-import it.sanitech.scheduling.exception.NotFoundException;
-import it.sanitech.scheduling.outbox.DomainEventPublisher;
+import it.sanitech.commons.exception.NotFoundException;
+import it.sanitech.commons.security.SecurityUtils;
+import it.sanitech.commons.utilities.PageableUtils;
+import it.sanitech.commons.utilities.SortUtils;
+import it.sanitech.outbox.DomainEventPublisher;
 import it.sanitech.scheduling.repositories.AppointmentRepository;
 import it.sanitech.scheduling.repositories.SlotRepository;
 import it.sanitech.scheduling.repositories.entities.*;
@@ -10,8 +13,6 @@ import it.sanitech.scheduling.services.dto.AppointmentDto;
 import it.sanitech.scheduling.services.dto.create.AppointmentCreateDto;
 import it.sanitech.scheduling.services.mapper.AppointmentMapper;
 import it.sanitech.scheduling.utilities.AppConstants;
-import it.sanitech.scheduling.utilities.PageableUtils;
-import it.sanitech.scheduling.utilities.SortUtils;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -114,16 +115,16 @@ public class AppointmentService {
 
         Specification<Appointment> spec = (root, query, cb) -> cb.conjunction();
 
-        if (JwtClaimUtils.isAdmin(auth)) {
+        if (SecurityUtils.isAdmin(auth)) {
             spec = spec
                     .and(optionalEq("patientId", patientId))
                     .and(optionalEq("doctorId", doctorId))
                     .and(optionalEqIgnoreCase("departmentCode", departmentCode));
-        } else if (JwtClaimUtils.isPatient(auth)) {
-            Long pid = JwtClaimUtils.requireLongClaim(auth, AppConstants.Security.CLAIM_PATIENT_ID);
+        } else if (SecurityUtils.isPatient(auth)) {
+            Long pid = JwtClaimUtils.requireLongClaim(auth, AppConstants.JwtClaims.PATIENT_ID);
             spec = spec.and(optionalEq("patientId", pid));
-        } else if (JwtClaimUtils.isDoctor(auth)) {
-            Long did = JwtClaimUtils.requireLongClaim(auth, AppConstants.Security.CLAIM_DOCTOR_ID);
+        } else if (SecurityUtils.isDoctor(auth)) {
+            Long did = JwtClaimUtils.requireLongClaim(auth, AppConstants.JwtClaims.DOCTOR_ID);
             spec = spec.and(optionalEq("doctorId", did));
         } else {
             // ruolo non gestito
@@ -142,8 +143,8 @@ public class AppointmentService {
                 .orElseThrow(() -> NotFoundException.of("Appointment", appointmentId));
 
         // Autorizzazione: admin oppure patient-owner.
-        if (!JwtClaimUtils.isAdmin(auth)) {
-            Long pid = JwtClaimUtils.requireLongClaim(auth, AppConstants.Security.CLAIM_PATIENT_ID);
+        if (!SecurityUtils.isAdmin(auth)) {
+            Long pid = JwtClaimUtils.requireLongClaim(auth, AppConstants.JwtClaims.PATIENT_ID);
             if (!pid.equals(appt.getPatientId())) {
                 throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_APPOINTMENT_CANCEL_NOT_AUTHORIZED);
             }
@@ -173,15 +174,15 @@ public class AppointmentService {
     }
 
     private static Long resolvePatientId(Long patientIdFromBody, Authentication auth) {
-        if (JwtClaimUtils.isAdmin(auth)) {
+        if (SecurityUtils.isAdmin(auth)) {
             if (patientIdFromBody == null) {
                 throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_PATIENT_ID_REQUIRED_FOR_ADMIN);
             }
             return patientIdFromBody;
         }
 
-        if (JwtClaimUtils.isPatient(auth)) {
-            Long pid = JwtClaimUtils.requireLongClaim(auth, AppConstants.Security.CLAIM_PATIENT_ID);
+        if (SecurityUtils.isPatient(auth)) {
+            Long pid = JwtClaimUtils.requireLongClaim(auth, AppConstants.JwtClaims.PATIENT_ID);
             if (patientIdFromBody != null && !pid.equals(patientIdFromBody)) {
                 throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_PATIENT_ID_MISMATCH);
             }
