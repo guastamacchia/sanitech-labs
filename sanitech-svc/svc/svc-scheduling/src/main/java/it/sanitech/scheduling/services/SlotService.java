@@ -1,18 +1,18 @@
 package it.sanitech.scheduling.services;
 
-import it.sanitech.scheduling.exception.NotFoundException;
-import it.sanitech.scheduling.outbox.DomainEventPublisher;
+import it.sanitech.commons.exception.NotFoundException;
+import it.sanitech.commons.security.DeptGuard;
+import it.sanitech.commons.utilities.PageableUtils;
+import it.sanitech.commons.utilities.SortUtils;
+import it.sanitech.outbox.DomainEventPublisher;
 import it.sanitech.scheduling.repositories.SlotRepository;
 import it.sanitech.scheduling.repositories.entities.Slot;
 import it.sanitech.scheduling.repositories.entities.SlotStatus;
 import it.sanitech.scheduling.repositories.entities.VisitMode;
-import it.sanitech.scheduling.security.DeptGuard;
 import it.sanitech.scheduling.services.dto.SlotDto;
 import it.sanitech.scheduling.services.dto.create.SlotCreateDto;
 import it.sanitech.scheduling.services.mapper.SlotMapper;
 import it.sanitech.scheduling.utilities.AppConstants;
-import it.sanitech.scheduling.utilities.PageableUtils;
-import it.sanitech.scheduling.utilities.SortUtils;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

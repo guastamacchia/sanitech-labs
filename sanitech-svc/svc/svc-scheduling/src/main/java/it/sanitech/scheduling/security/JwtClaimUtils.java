@@ -36,23 +36,6 @@ public final class JwtClaimUtils {
                 .orElseThrow(() -> new IllegalArgumentException(AppConstants.ErrorMessage.MSG_JWT_CLAIM_MISSING_OR_INVALID_PREFIX + claimName));
     }
 
-    public static boolean hasAuthority(Authentication auth, String authority) {
-        if (auth == null) return false;
-        return auth.getAuthorities().stream().anyMatch(a -> authority.equals(a.getAuthority()));
-    }
-
-    public static boolean isAdmin(Authentication auth) {
-        return hasAuthority(auth, AppConstants.Security.ROLE_ADMIN);
-    }
-
-    public static boolean isPatient(Authentication auth) {
-        return hasAuthority(auth, AppConstants.Security.ROLE_PATIENT);
-    }
-
-    public static boolean isDoctor(Authentication auth) {
-        return hasAuthority(auth, AppConstants.Security.ROLE_DOCTOR);
-    }
-
     private static Optional<Long> parseLong(String v) {
         try {
             return Optional.of(Long.parseLong(v));
