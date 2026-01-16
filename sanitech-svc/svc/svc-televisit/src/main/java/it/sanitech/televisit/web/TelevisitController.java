@@ -1,12 +1,12 @@
 package it.sanitech.televisit.web;
 
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.televisit.repositories.entities.TelevisitStatus;
 import it.sanitech.televisit.services.TelevisitService;
 import it.sanitech.televisit.services.dto.LiveKitTokenDto;
 import it.sanitech.televisit.services.dto.TelevisitDto;
 import it.sanitech.televisit.utilities.AppConstants;
-import it.sanitech.televisit.utilities.SortUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
  * API operativa per la gestione delle sessioni di video-visita.
  */
 @RestController
-@RequestMapping("/api/televisits")
+@RequestMapping(AppConstants.ApiPath.TELEVISITS)
 @RequiredArgsConstructor
 public class TelevisitController {
 
@@ -38,7 +38,7 @@ public class TelevisitController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String[] sort
     ) {
-        Sort safeSort = SortUtils.safeSort(sort, AppConstants.Sort.TELEVISIT_SESSION_FIELDS, AppConstants.Sort.DEFAULT_FIELD);
+        Sort safeSort = SortUtils.safeSort(sort, AppConstants.SortField.TELEVISIT_SESSION_ALLOWED, AppConstants.SortField.DEFAULT_FIELD);
         Pageable pageable = PageRequest.of(page, size, safeSort);
         return service.search(department, status, doctorSubject, patientSubject, pageable);
     }

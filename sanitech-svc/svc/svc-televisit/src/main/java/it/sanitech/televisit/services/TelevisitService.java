@@ -1,13 +1,13 @@
 package it.sanitech.televisit.services;
 
-import it.sanitech.televisit.exception.NotFoundException;
-import it.sanitech.televisit.exception.ForbiddenException;
-import it.sanitech.televisit.outbox.DomainEventPublisher;
+import it.sanitech.commons.exception.NotFoundException;
+import it.sanitech.commons.security.DeptGuard;
+import it.sanitech.commons.security.SecurityUtils;
+import it.sanitech.outbox.DomainEventPublisher;
 import it.sanitech.televisit.repositories.TelevisitSessionRepository;
 import it.sanitech.televisit.repositories.entities.TelevisitSession;
 import it.sanitech.televisit.repositories.entities.TelevisitStatus;
 import it.sanitech.televisit.repositories.spec.TelevisitSpecifications;
-import it.sanitech.televisit.security.DeptGuard;
 import it.sanitech.televisit.services.dto.LiveKitTokenDto;
 import it.sanitech.televisit.services.dto.TelevisitDto;
 import it.sanitech.televisit.services.dto.create.TelevisitCreateDto;
@@ -18,6 +18,7 @@ import it.sanitech.televisit.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,8 +32,6 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class TelevisitService {
-
-    private static final String AGGREGATE_TYPE = "TELEVISIT_SESSION";
 
     private final TelevisitSessionRepository repo;
     private final TelevisitMapper mapper;
@@ -60,9 +59,9 @@ public class TelevisitService {
         roomService.ensureRoomExists(roomName);
 
         events.add(
-                AGGREGATE_TYPE,
+                AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION,
                 String.valueOf(entity.getId()),
-                "CREATED",
+                AppConstants.Outbox.EventType.CREATED,
                 Map.of(
                         "id", entity.getId(),
                         "roomName", entity.getRoomName(),
@@ -104,8 +103,8 @@ public class TelevisitService {
 
         deptGuard.checkCanManage(s.getDepartment(), auth);
 
-        if (!isAdmin(auth) && (auth == null || !s.getDoctorSubject().equals(auth.getName()))) {
-            throw ForbiddenException.of("Token medico non consentito: utente non associato alla sessione.");
+        if (!SecurityUtils.isAdmin(auth) && (auth == null || !s.getDoctorSubject().equals(auth.getName()))) {
+            throw new AccessDeniedException("Token medico non consentito: utente non associato alla sessione.");
         }
 
         return tokenService.createRoomJoinToken(s.getRoomName(), auth.getName(), "doctor");
@@ -131,7 +130,7 @@ public class TelevisitService {
 
         s.markActive();
 
-        events.add(AGGREGATE_TYPE, String.valueOf(s.getId()), "STARTED", Map.of(
+        events.add(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.STARTED, Map.of(
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
@@ -151,7 +150,7 @@ public class TelevisitService {
 
         s.markEnded();
 
-        events.add(AGGREGATE_TYPE, String.valueOf(s.getId()), "ENDED", Map.of(
+        events.add(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.ENDED, Map.of(
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
@@ -171,18 +170,13 @@ public class TelevisitService {
 
         s.markCanceled();
 
-        events.add(AGGREGATE_TYPE, String.valueOf(s.getId()), "CANCELED", Map.of(
+        events.add(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.CANCELED, Map.of(
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
         ));
 
         return mapper.toDto(s);
-    }
-
-    private boolean isAdmin(Authentication auth) {
-        if (auth == null) return false;
-        return auth.getAuthorities().stream().anyMatch(a -> AppConstants.Security.ROLE_ADMIN.equals(a.getAuthority()));
     }
 
     private String generateRoomName() {
