@@ -8,6 +8,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import it.sanitech.outbox.persistence.OutboxEvent;
+import it.sanitech.outbox.persistence.OutboxRepository;
 
 import java.util.List;
 
@@ -56,7 +58,7 @@ class OutboxRepositoryTest {
 
         repository.saveAll(List.of(e1, e2));
 
-        List<OutboxEvent> batch = repository.lockBatch();
+        List<OutboxEvent> batch = repository.lockBatch(10);
 
         assertThat(batch).hasSize(2);
         assertThat(batch.get(0).getAggregateId()).isEqualTo("1");

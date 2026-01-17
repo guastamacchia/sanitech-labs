@@ -41,12 +41,23 @@ public class AppConstants {
             /**
              * Nome dell'attributo dell'annotation che abilita/disabilita l'outbox.
              * È un contratto tra {@link EnableSanitechPlatform} e questo selector.
+             *
+             * <p>
+             * Per chi è alle prime armi: il valore di questo attributo viene letto dal
+             * {@code SanitechPlatformImportSelector} per decidere se importare (o meno)
+             * i componenti outbox nel contesto Spring dell'applicazione.
+             * </p>
              */
             public static final String ATTR_ENABLE_OUTBOX = "enableOutbox";
 
             /**
              * Fully Qualified Class Name della configurazione di scan Outbox.
              * Usata come marker per verificare la presenza della libreria outbox nel classpath.
+             *
+             * <p>
+             * In pratica: se questa classe è presente, sappiamo che la libreria outbox
+             * è disponibile e possiamo abilitarla senza rompere l'applicazione.
+             * </p>
              */
             public static final String OUTBOX_SCAN_CONFIGURATION_FQCN =
                     "it.sanitech.outbox.boot.SanitechOutboxComponentScanConfiguration";
@@ -165,6 +176,11 @@ public class AppConstants {
         public static final String OUTBOX_EVENTS_SAVED_COUNT = "outbox.events.saved.count";
         public static final String OUTBOX_EVENTS_PUBLISHED = "outbox.events.published";
 
+        /**
+         * Tag metriche: usati per differenziare aggregateType/eventType.
+         * Un junior può pensare ai tag come "etichette" che permettono di filtrare
+         * le metriche (es. per vedere solo gli eventi di un certo aggregate).
+         */
         public static final String TAG_AGGREGATE_TYPE = "aggregateType";
         public static final String TAG_EVENT_TYPE = "eventType";
     }

@@ -130,7 +130,8 @@ sanitech:
     topic: ${OUTBOX_TOPIC:televisit.events}
     publisher:
       # Delay tra un batch e il successivo (millisecondi).
-      delay-ms: 1000
+      enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
+      fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
   openapi:
     enabled: true

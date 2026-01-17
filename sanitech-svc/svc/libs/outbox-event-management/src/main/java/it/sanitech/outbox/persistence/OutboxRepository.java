@@ -7,26 +7,25 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Repository Outbox.
  *
  * Nota fondamentale: lockBatch usa FOR UPDATE SKIP LOCKED e deve essere invocato DENTRO transazione.
  */
-public interface OutboxRepository extends JpaRepository<OutboxEvent, UUID> {
+public interface OutboxRepository extends JpaRepository<OutboxEvent, Long> {
 
     @Query(value = "SELECT * " +
             "FROM outbox_events " +
-            "WHERE published_at IS NULL " +
-            "ORDER BY created_at " +
+            "WHERE published = false " +
+            "ORDER BY occurred_at " +
             "LIMIT :batchSize " +
             "FOR UPDATE SKIP LOCKED", nativeQuery = true)
     List<OutboxEvent> lockBatch(@Param("batchSize") int batchSize);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "UPDATE outbox_events " +
-            "SET published_at = :publishedAt " +
+            "SET published = true, published_at = :publishedAt " +
             "WHERE id IN (:ids)", nativeQuery = true)
-    void markPublished(@Param("ids") List<UUID> ids, @Param("publishedAt") Instant publishedAt);
+    void markPublished(@Param("ids") List<Long> ids, @Param("publishedAt") Instant publishedAt);
 }
