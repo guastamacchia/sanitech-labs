@@ -5,10 +5,12 @@ import it.sanitech.commons.utilities.AppConstants;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -34,7 +36,8 @@ import java.util.Optional;
  * </p>
  */
 @Slf4j
-@Configuration
+@AutoConfiguration
+@ConditionalOnClass(CorsFilter.class)
 @RequiredArgsConstructor
 @EnableConfigurationProperties(CorsProperties.class)
 @ConditionalOnProperty(prefix = AppConstants.ConfigKeys.Cors.PREFIX, name = "enabled", havingValue = "true")
@@ -79,6 +82,7 @@ public class CorsAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(CorsFilter.class)
     public CorsFilter corsFilter() {
         log.debug("CORS: creazione CorsFilter e registrazione configurazioni per i path.");
 

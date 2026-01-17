@@ -11,7 +11,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -37,7 +38,7 @@ import java.util.Optional;
  * </ul>
  */
 @Slf4j
-@Configuration
+@AutoConfiguration
 @EnableMethodSecurity
 @RequiredArgsConstructor
 @EnableConfigurationProperties(SecurityProperties.class)
@@ -96,6 +97,7 @@ public class SecurityAutoConfiguration {
      * </ul>
      */
     @Bean
+    @ConditionalOnMissingBean(SecurityFilterChain.class)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         log.debug("Sicurezza: costruzione SecurityFilterChain.");
 

@@ -1,5 +1,6 @@
 package it.sanitech.commons.utilities;
 
+import it.sanitech.commons.boot.EnableSanitechPlatform;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -36,7 +37,19 @@ public class AppConstants {
         @UtilityClass
         public static class Outbox {
             public static final String PREFIX = "sanitech.outbox";
-            public static final String PUBLISHER_DELAY_MS = PREFIX + ".publisher.delay-ms";
+            public static final String PUBLISHER_PREFIX = PREFIX + ".publisher";
+            /**
+             * Nome dell'attributo dell'annotation che abilita/disabilita l'outbox.
+             * È un contratto tra {@link EnableSanitechPlatform} e questo selector.
+             */
+            public static final String ATTR_ENABLE_OUTBOX = "enableOutbox";
+
+            /**
+             * Fully Qualified Class Name della configurazione di scan Outbox.
+             * Usata come marker per verificare la presenza della libreria outbox nel classpath.
+             */
+            public static final String OUTBOX_SCAN_CONFIGURATION_FQCN =
+                    "it.sanitech.outbox.boot.SanitechOutboxComponentScanConfiguration";
         }
     }
 

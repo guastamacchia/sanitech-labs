@@ -12,10 +12,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -35,7 +36,7 @@ import java.util.Optional;
  * </ul>
  */
 @Slf4j
-@Configuration
+@AutoConfiguration
 @RequiredArgsConstructor
 @EnableConfigurationProperties(OpenApiProperties.class)
 @ConditionalOnClass(GroupedOpenApi.class)
@@ -78,6 +79,7 @@ public class OpenApiAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(name = "serviceApi")
     public GroupedOpenApi serviceApi() {
         log.debug("OpenAPI: creazione GroupedOpenApi per il gruppo '{}'.", props.getGroup());
 

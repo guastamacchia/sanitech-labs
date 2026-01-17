@@ -1,43 +1,64 @@
 package it.sanitech.outbox.autoconfigure;
 
-import it.sanitech.commons.utilities.AppConstants;
-import jakarta.annotation.PostConstruct;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.util.StringUtils;
-
-import java.util.Optional;
+import org.springframework.validation.annotation.Validated;
 
 /**
- * Proprietà Outbox (namespace {@code sanitech.outbox}).
+ * Properties della libreria Outbox.
+ *
+ * Nota: le annotazioni di validazione sono attive se nel classpath è presente Bean Validation
+ * (spring-boot-starter-validation).
  */
-@Slf4j
 @Getter
 @Setter
-@ConfigurationProperties(prefix = AppConstants.ConfigKeys.Outbox.PREFIX)
+@Validated
+@ConfigurationProperties(prefix = "sanitech.outbox")
 public class OutboxProperties {
 
     /**
-     * Topic Kafka su cui pubblicare gli eventi outbox del microservizio.
+     * Abilitazione globale della libreria.
      */
-    private String topic;
+    private boolean enabled = true;
 
-    @PostConstruct
-    void normalize() {
-        log.debug("Outbox properties: avvio normalizzazione valori letti da configurazione.");
+    @Valid
+    private Publisher publisher = new Publisher();
 
-        topic = normalizeScalar(topic);
+    @Getter
+    @Setter
+    public static class Publisher {
 
-        log.debug("Outbox properties: normalizzazione completata.");
-        log.debug("Outbox properties: topic={}", topic);
-    }
+        /**
+         * Abilita il job schedulato che pubblica su Kafka.
+         */
+        private boolean enabled = false;
 
-    private static String normalizeScalar(String value) {
-        return Optional.ofNullable(value)
-                .map(String::trim)
-                .filter(StringUtils::hasText)
-                .orElse(null);
+        /**
+         * Topic Kafka di destinazione.
+         */
+        @NotBlank
+        private String topic = "domain-events";
+
+        /**
+         * Numero massimo di eventi per ciclo.
+         */
+        @Min(1)
+        private int batchSize = 100;
+
+        /**
+         * Ritardo fisso tra un ciclo e l'altro (ms).
+         */
+        @Min(100)
+        private long fixedDelayMs = 2000;
+
+        /**
+         * Timeout massimo per attesa ACK Kafka (ms).
+         */
+        @Min(100)
+        private long sendTimeoutMs = 5000;
     }
 }
