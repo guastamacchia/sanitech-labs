@@ -4,7 +4,7 @@ import it.sanitech.notifications.NotificationsProperties;
 import it.sanitech.notifications.repositories.NotificationRepository;
 import it.sanitech.notifications.repositories.entities.Notification;
 import it.sanitech.notifications.repositories.entities.NotificationStatus;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

@@ -6,7 +6,7 @@ import it.sanitech.notifications.repositories.entities.*;
 import it.sanitech.notifications.services.dto.NotificationDto;
 import it.sanitech.notifications.services.dto.create.NotificationCreateDto;
 import it.sanitech.notifications.services.mapper.NotificationMapper;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

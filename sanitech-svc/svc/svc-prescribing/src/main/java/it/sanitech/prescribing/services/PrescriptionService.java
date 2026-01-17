@@ -2,7 +2,7 @@ package it.sanitech.prescribing.services;
 
 import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import it.sanitech.prescribing.integrations.consents.ConsentClient;
 import it.sanitech.prescribing.repositories.PrescriptionRepository;
 import it.sanitech.prescribing.repositories.entities.Prescription;

@@ -13,7 +13,7 @@ import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.commons.security.SecurityUtils;
 import it.sanitech.commons.utilities.AppConstants;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

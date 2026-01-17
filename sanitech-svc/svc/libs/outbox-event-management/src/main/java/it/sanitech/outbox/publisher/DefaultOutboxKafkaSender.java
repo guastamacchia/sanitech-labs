@@ -23,9 +23,10 @@ public class DefaultOutboxKafkaSender implements OutboxKafkaSender {
     public void sendSync(String topic, OutboxEvent event, long timeoutMs) {
         Objects.requireNonNull(event, "OutboxEvent obbligatorio");
         String key = event.getId() != null ? event.getId().toString() : null;
+        String payload = event.getPayload() != null ? event.getPayload().toString() : "{}";
 
         try {
-            kafkaTemplate.send(topic, key, event.getPayload()).get(timeoutMs, TimeUnit.MILLISECONDS);
+            kafkaTemplate.send(topic, key, payload).get(timeoutMs, TimeUnit.MILLISECONDS);
             log.debug("Outbox: evento {} inviato su topic='{}' (key='{}').", event.getId(), topic, key);
         } catch (Exception ex) {
             throw new IllegalStateException("Outbox: invio Kafka fallito per evento " + event.getId()

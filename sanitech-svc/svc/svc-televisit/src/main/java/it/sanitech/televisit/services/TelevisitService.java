@@ -3,7 +3,7 @@ package it.sanitech.televisit.services;
 import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.commons.security.SecurityUtils;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import it.sanitech.televisit.repositories.TelevisitSessionRepository;
 import it.sanitech.televisit.repositories.entities.TelevisitSession;
 import it.sanitech.televisit.repositories.entities.TelevisitStatus;
