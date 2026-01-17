@@ -69,7 +69,7 @@ public class PrescriptionService {
 
         Prescription saved = prescriptions.save(entity);
 
-        events.add(
+        events.publish(
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_PRESCRIPTION_CREATED,
@@ -160,7 +160,7 @@ public class PrescriptionService {
 
         Prescription saved = prescriptions.save(p);
 
-        events.add(
+        events.publish(
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_PRESCRIPTION_UPDATED,
@@ -186,7 +186,7 @@ public class PrescriptionService {
 
         Prescription saved = prescriptions.save(p);
 
-        events.add(
+        events.publish(
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_PRESCRIPTION_UPDATED,
@@ -210,7 +210,7 @@ public class PrescriptionService {
 
         p.markCancelled();
 
-        events.add(
+        events.publish(
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(prescriptionId),
                 AppConstants.Outbox.EVT_PRESCRIPTION_CANCELLED,

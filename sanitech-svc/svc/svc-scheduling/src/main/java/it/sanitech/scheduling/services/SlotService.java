@@ -53,7 +53,7 @@ public class SlotService {
         Slot entity = slotMapper.fromCreateDto(dto);
         Slot saved = slots.save(entity);
 
-        events.add(
+        events.publish(
                 "SLOT",
                 String.valueOf(saved.getId()),
                 "SLOT_CREATED",
@@ -123,7 +123,7 @@ public class SlotService {
         slot.markCancelled();
         slots.save(slot);
 
-        events.add(
+        events.publish(
                 "SLOT",
                 String.valueOf(slot.getId()),
                 "SLOT_CANCELLED",

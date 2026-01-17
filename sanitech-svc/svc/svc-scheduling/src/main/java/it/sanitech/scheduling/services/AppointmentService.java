@@ -72,7 +72,7 @@ public class AppointmentService {
 
         Appointment saved = appointments.save(appt);
 
-        events.add(
+        events.publish(
                 "APPOINTMENT",
                 String.valueOf(saved.getId()),
                 "APPOINTMENT_BOOKED",
@@ -165,7 +165,7 @@ public class AppointmentService {
             slots.save(slot);
         }
 
-        events.add(
+        events.publish(
                 "APPOINTMENT",
                 String.valueOf(appt.getId()),
                 "APPOINTMENT_CANCELLED",

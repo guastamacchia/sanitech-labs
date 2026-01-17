@@ -59,7 +59,7 @@ public class CapacityService {
 
         DepartmentCapacity saved = capacityRepository.save(cap);
 
-        domainEvents.add(
+        domainEvents.publish(
                 AGGREGATE_TYPE,
                 saved.getDeptCode(),
                 EVT_CAPACITY_SET,

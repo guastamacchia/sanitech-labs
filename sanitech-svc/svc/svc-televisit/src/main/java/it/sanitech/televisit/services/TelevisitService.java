@@ -58,7 +58,7 @@ public class TelevisitService {
         // Best-effort: crea la room su LiveKit (in alcuni setup la room nasce al primo join).
         roomService.ensureRoomExists(roomName);
 
-        events.add(
+        events.publish(
                 AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION,
                 String.valueOf(entity.getId()),
                 AppConstants.Outbox.EventType.CREATED,
@@ -130,7 +130,7 @@ public class TelevisitService {
 
         s.markActive();
 
-        events.add(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.STARTED, Map.of(
+        events.publish(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.STARTED, Map.of(
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
@@ -150,7 +150,7 @@ public class TelevisitService {
 
         s.markEnded();
 
-        events.add(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.ENDED, Map.of(
+        events.publish(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.ENDED, Map.of(
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
@@ -170,7 +170,7 @@ public class TelevisitService {
 
         s.markCanceled();
 
-        events.add(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.CANCELED, Map.of(
+        events.publish(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.CANCELED, Map.of(
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()

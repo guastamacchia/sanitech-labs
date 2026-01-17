@@ -65,7 +65,7 @@ public class AdmissionService {
 
         Admission saved = admissions.save(admission);
 
-        domainEvents.add(
+        domainEvents.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(saved.getId()),
                 EVT_CREATED,
@@ -100,7 +100,7 @@ public class AdmissionService {
 
         Admission saved = admissions.save(admission);
 
-        domainEvents.add(
+        domainEvents.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(saved.getId()),
                 EVT_DISCHARGED,
