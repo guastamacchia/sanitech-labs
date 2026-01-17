@@ -136,8 +136,9 @@ sanitech:
   outbox:
     topic: ${OUTBOX_TOPIC:admissions.events}
     publisher:
+      enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       # Flush periodico degli eventi non pubblicati.
-      delay-ms: 1000
+      fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
 springdoc:
   api-docs:

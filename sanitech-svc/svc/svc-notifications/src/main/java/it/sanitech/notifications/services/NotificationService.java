@@ -6,7 +6,7 @@ import it.sanitech.notifications.repositories.entities.*;
 import it.sanitech.notifications.services.dto.NotificationDto;
 import it.sanitech.notifications.services.dto.create.NotificationCreateDto;
 import it.sanitech.notifications.services.mapper.NotificationMapper;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -60,7 +60,7 @@ public class NotificationService {
 
         Notification saved = repository.save(entity);
 
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(saved.getId()),
                 "NOTIFICATION_CREATED",
@@ -101,7 +101,7 @@ public class NotificationService {
         Notification entity = repository.findById(id).orElseThrow(() -> NotFoundException.of("Notifica", id));
         repository.delete(entity);
 
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(id),
                 "NOTIFICATION_DELETED",

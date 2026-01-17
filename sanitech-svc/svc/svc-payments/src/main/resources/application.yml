@@ -100,7 +100,8 @@ sanitech:
     topic: ${OUTBOX_TOPIC:payments.events}
     publisher:
       # Delay dello scheduler per flush outbox (ms).
-      delay-ms: 1000
+      enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
+      fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
   cors:
     enabled: true

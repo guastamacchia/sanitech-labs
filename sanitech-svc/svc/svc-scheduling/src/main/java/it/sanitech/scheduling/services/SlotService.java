@@ -4,7 +4,7 @@ import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.commons.utilities.PageableUtils;
 import it.sanitech.commons.utilities.SortUtils;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import it.sanitech.scheduling.repositories.SlotRepository;
 import it.sanitech.scheduling.repositories.entities.Slot;
 import it.sanitech.scheduling.repositories.entities.SlotStatus;
@@ -53,7 +53,7 @@ public class SlotService {
         Slot entity = slotMapper.fromCreateDto(dto);
         Slot saved = slots.save(entity);
 
-        events.add(
+        events.publish(
                 "SLOT",
                 String.valueOf(saved.getId()),
                 "SLOT_CREATED",
@@ -123,7 +123,7 @@ public class SlotService {
         slot.markCancelled();
         slots.save(slot);
 
-        events.add(
+        events.publish(
                 "SLOT",
                 String.valueOf(slot.getId()),
                 "SLOT_CANCELLED",
