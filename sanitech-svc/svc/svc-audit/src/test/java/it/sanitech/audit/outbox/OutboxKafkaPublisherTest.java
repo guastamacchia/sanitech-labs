@@ -16,6 +16,9 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import it.sanitech.outbox.persistence.OutboxEvent;
+import it.sanitech.outbox.persistence.OutboxRepository;
+import it.sanitech.outbox.publisher.OutboxKafkaPublisher;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -27,7 +30,9 @@ import static org.mockito.Mockito.when;
  * Kafka è mockato, DB è reale (Postgres Testcontainers).
  */
 @Testcontainers
-@SpringBootTest
+@SpringBootTest(properties = {
+        "sanitech.outbox.publisher.enabled=true"
+})
 class OutboxKafkaPublisherTest {
 
     @Container
