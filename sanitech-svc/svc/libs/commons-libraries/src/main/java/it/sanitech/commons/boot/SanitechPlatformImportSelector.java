@@ -50,6 +50,8 @@ public class SanitechPlatformImportSelector implements ImportSelector, Environme
 
         // Outbox (opzionale)
         if (enableOutbox) {
+            // Nota per junior: abilitiamo l'outbox solo se la libreria è presente nel classpath.
+            // Questo evita errori di startup quando un microservizio NON dipende dal modulo outbox.
             if (isClassPresent()) {
                 imports.add(AppConstants.ConfigKeys.Outbox.OUTBOX_SCAN_CONFIGURATION_FQCN);
                 log.debug("Piattaforma Sanitech: abilitato component-scan per outbox (config trovata nel classpath).");
@@ -73,6 +75,8 @@ public class SanitechPlatformImportSelector implements ImportSelector, Environme
      */
     private boolean isClassPresent() {
         try {
+            // Usiamo Class.forName con initialize=false per un check "leggero":
+            // non vogliamo eseguire blocchi statici o side-effect durante la sola verifica.
             Class.forName(AppConstants.ConfigKeys.Outbox.OUTBOX_SCAN_CONFIGURATION_FQCN, false, getClass().getClassLoader());
             return true;
         } catch (ClassNotFoundException ex) {
