@@ -8,7 +8,7 @@ import it.sanitech.consents.services.dto.ConsentCheckResponse;
 import it.sanitech.consents.services.dto.ConsentCreateDto;
 import it.sanitech.consents.services.dto.ConsentDto;
 import it.sanitech.consents.services.mapper.ConsentMapper;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;

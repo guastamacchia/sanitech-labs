@@ -13,7 +13,7 @@ import it.sanitech.payments.services.dto.create.PaymentCreateDto;
 import it.sanitech.payments.services.dto.update.PaymentUpdateDto;
 import it.sanitech.payments.services.mapper.PaymentOrderMapper;
 import it.sanitech.payments.utilities.AppConstants;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

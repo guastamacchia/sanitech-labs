@@ -4,7 +4,7 @@ import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.commons.security.SecurityUtils;
 import it.sanitech.docs.integrations.consents.ConsentClient;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import it.sanitech.docs.repositories.DocumentRepository;
 import it.sanitech.docs.repositories.entities.Document;
 import it.sanitech.docs.services.dto.DocumentDto;
