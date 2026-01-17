@@ -137,7 +137,8 @@ sanitech:
     topic: ${OUTBOX_TOPIC:scheduling.events}
     publisher:
       # Esegue periodicamente il flush degli eventi non pubblicati.
-      delay-ms: 1000
+      enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
+      fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
 springdoc:
   api-docs:

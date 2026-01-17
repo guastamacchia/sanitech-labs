@@ -4,7 +4,7 @@ import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.SecurityUtils;
 import it.sanitech.commons.utilities.PageableUtils;
 import it.sanitech.commons.utilities.SortUtils;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import it.sanitech.scheduling.repositories.AppointmentRepository;
 import it.sanitech.scheduling.repositories.SlotRepository;
 import it.sanitech.scheduling.repositories.entities.*;
@@ -72,7 +72,7 @@ public class AppointmentService {
 
         Appointment saved = appointments.save(appt);
 
-        events.add(
+        events.publish(
                 "APPOINTMENT",
                 String.valueOf(saved.getId()),
                 "APPOINTMENT_BOOKED",
@@ -165,7 +165,7 @@ public class AppointmentService {
             slots.save(slot);
         }
 
-        events.add(
+        events.publish(
                 "APPOINTMENT",
                 String.valueOf(appt.getId()),
                 "APPOINTMENT_CANCELLED",

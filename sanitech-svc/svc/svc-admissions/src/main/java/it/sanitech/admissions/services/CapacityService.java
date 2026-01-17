@@ -6,7 +6,7 @@ import it.sanitech.admissions.repositories.entities.AdmissionStatus;
 import it.sanitech.admissions.repositories.entities.DepartmentCapacity;
 import it.sanitech.admissions.services.dto.CapacityDto;
 import it.sanitech.commons.exception.ConflictException;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,7 +59,7 @@ public class CapacityService {
 
         DepartmentCapacity saved = capacityRepository.save(cap);
 
-        domainEvents.add(
+        domainEvents.publish(
                 AGGREGATE_TYPE,
                 saved.getDeptCode(),
                 EVT_CAPACITY_SET,

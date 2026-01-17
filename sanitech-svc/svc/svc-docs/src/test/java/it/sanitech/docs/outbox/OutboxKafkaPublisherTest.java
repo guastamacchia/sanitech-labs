@@ -1,19 +1,23 @@
 package it.sanitech.docs.outbox;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.apache.kafka.clients.producer.RecordMetadata;
-import org.apache.kafka.common.TopicPartition;
+import it.sanitech.outbox.autoconfigure.OutboxProperties;
+import it.sanitech.outbox.persistence.OutboxEvent;
+import it.sanitech.outbox.persistence.OutboxRepository;
+import it.sanitech.outbox.publisher.OutboxKafkaPublisher;
+import it.sanitech.outbox.publisher.OutboxKafkaSender;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -22,37 +26,43 @@ import static org.mockito.Mockito.when;
 class OutboxKafkaPublisherTest {
 
     @Test
-    void publishBatch_marksEventPublished_andIncrementsMetric() throws Exception {
-
-        OutboxRepository repo = Mockito.mock(OutboxRepository.class);
-        KafkaTemplate<String, String> kafka = Mockito.mock(KafkaTemplate.class);
+    void publishBatch_marksEventPublished_andIncrementsMetric() {
+        OutboxRepository repo = mock(OutboxRepository.class);
+        OutboxKafkaSender sender = mock(OutboxKafkaSender.class);
+        TransactionTemplate tx = mock(TransactionTemplate.class);
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
+        OutboxProperties props = new OutboxProperties();
+        props.setEnabled(true);
+        props.getPublisher().setEnabled(true);
+        props.getPublisher().setBatchSize(100);
+        props.getPublisher().setSendTimeoutMs(5000);
+        props.getPublisher().setTopic("docs.events");
+
         OutboxEvent evt = OutboxEvent.builder()
+                .id(1L)
                 .aggregateType("DOCUMENT")
                 .aggregateId("123")
                 .eventType("DOCUMENT_UPLOADED")
-                .payload("{\"k\":\"v\"}")
+                .payload(new ObjectMapper().createObjectNode().put("k", "v"))
                 .build();
+
+        doAnswer(invocation -> {
+            TransactionCallbackWithoutResult callback = invocation.getArgument(0);
+            callback.doInTransactionWithoutResult(null);
+            return null;
+        }).when(tx).executeWithoutResult(any());
 
         when(repo.lockBatch(100)).thenReturn(List.of(evt));
 
-        RecordMetadata metadata = Mockito.mock(RecordMetadata.class);
-        when(metadata.timestamp()).thenReturn(Instant.now().toEpochMilli());
-
-        SendResult<String, String> sendResult = new SendResult<>(
-                new org.apache.kafka.clients.producer.ProducerRecord<>("docs.events", "k", "{}"),
-                metadata
-        );
-        when(kafka.send(anyString(), anyString(), anyString()))
-                .thenReturn(CompletableFuture.completedFuture(sendResult));
-
-        OutboxKafkaPublisher publisher = new OutboxKafkaPublisher(repo, kafka, registry);
+        OutboxKafkaPublisher publisher = new OutboxKafkaPublisher(tx, repo, sender, props, registry);
         publisher.publishBatch();
 
-        assertThat(evt.isPublished()).isTrue();
+        verify(sender).sendSync(props.getPublisher().getTopic(), evt, props.getPublisher().getSendTimeoutMs());
+        verify(repo).markPublished(List.of(1L), any());
+        assertThat(evt.isPublished()).isFalse();
 
-        double count = registry.find("outbox.events.published").counter().count();
+        double count = registry.find("sanitech.outbox.published").counter().count();
         assertThat(count).isEqualTo(1.0);
     }
 }

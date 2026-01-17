@@ -10,7 +10,7 @@ import it.sanitech.audit.services.dto.AuditEventDto;
 import it.sanitech.audit.services.mapper.AuditEventMapper;
 import it.sanitech.audit.utilities.AppConstants;
 import it.sanitech.commons.exception.NotFoundException;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;

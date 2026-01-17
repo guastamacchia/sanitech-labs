@@ -4,7 +4,7 @@ import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.commons.security.SecurityUtils;
 import it.sanitech.docs.integrations.consents.ConsentClient;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import it.sanitech.docs.repositories.DocumentRepository;
 import it.sanitech.docs.repositories.entities.Document;
 import it.sanitech.docs.services.dto.DocumentDto;
@@ -127,7 +127,7 @@ public class DocumentService {
                     .description(description)
                     .build());
 
-            events.add(AGG_DOCUMENT, saved.getId().toString(), EVT_UPLOADED, Map.of(
+            events.publish(AGG_DOCUMENT, saved.getId().toString(), EVT_UPLOADED, Map.of(
                     "documentId", saved.getId(),
                     "patientId", saved.getPatientId(),
                     "departmentCode", saved.getDepartmentCode(),
@@ -252,7 +252,7 @@ public class DocumentService {
         storage.delete(doc.getS3Key());
         documents.delete(doc);
 
-        events.add(AGG_DOCUMENT, id.toString(), EVT_DELETED, Map.of(
+        events.publish(AGG_DOCUMENT, id.toString(), EVT_DELETED, Map.of(
                 "documentId", id,
                 "patientId", doc.getPatientId(),
                 "departmentCode", doc.getDepartmentCode(),
