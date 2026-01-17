@@ -64,7 +64,7 @@ public class PaymentOrderService {
 
         PaymentOrder saved = repository.save(entity);
 
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_CREATED,
@@ -101,7 +101,7 @@ public class PaymentOrderService {
 
         PaymentOrder saved = repository.save(entity);
 
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_CREATED,
@@ -235,7 +235,7 @@ public class PaymentOrderService {
     }
 
     private void publishStatusChanged(PaymentOrder order) {
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT,
                 String.valueOf(order.getId()),
                 AppConstants.Outbox.EVT_STATUS_CHANGED,

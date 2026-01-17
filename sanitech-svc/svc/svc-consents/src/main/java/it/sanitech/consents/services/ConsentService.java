@@ -74,7 +74,7 @@ public class ConsentService {
         try {
             Consent saved = repository.save(consent);
 
-            domainEventPublisher.add(
+            domainEventPublisher.publish(
                     AGGREGATE_TYPE,
                     String.valueOf(saved.getId()),
                     "CONSENT_GRANTED",
@@ -105,7 +105,7 @@ public class ConsentService {
         consent.revoke();
         Consent saved = repository.save(consent);
 
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(saved.getId()),
                 "CONSENT_REVOKED",
@@ -131,7 +131,7 @@ public class ConsentService {
                 .orElseThrow(() -> NotFoundException.of("Consenso", id));
         repository.delete(consent);
 
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(consent.getId()),
                 "CONSENT_DELETED",

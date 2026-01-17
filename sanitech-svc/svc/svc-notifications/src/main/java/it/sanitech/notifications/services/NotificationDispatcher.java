@@ -52,7 +52,7 @@ public class NotificationDispatcher {
 
                 n.markSent(Instant.now());
 
-                domainEventPublisher.add(
+                domainEventPublisher.publish(
                         AGGREGATE_TYPE,
                         String.valueOf(n.getId()),
                         "NOTIFICATION_SENT",
@@ -67,7 +67,7 @@ public class NotificationDispatcher {
                 // Dopo i retry configurati, se fallisce marchiamo FAILED (no loop infinito).
                 n.markFailed(ex.getMessage());
 
-                domainEventPublisher.add(
+                domainEventPublisher.publish(
                         AGGREGATE_TYPE,
                         String.valueOf(n.getId()),
                         "NOTIFICATION_FAILED",

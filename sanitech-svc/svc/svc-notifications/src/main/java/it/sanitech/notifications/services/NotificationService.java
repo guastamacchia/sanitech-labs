@@ -60,7 +60,7 @@ public class NotificationService {
 
         Notification saved = repository.save(entity);
 
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(saved.getId()),
                 "NOTIFICATION_CREATED",
@@ -101,7 +101,7 @@ public class NotificationService {
         Notification entity = repository.findById(id).orElseThrow(() -> NotFoundException.of("Notifica", id));
         repository.delete(entity);
 
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(id),
                 "NOTIFICATION_DELETED",

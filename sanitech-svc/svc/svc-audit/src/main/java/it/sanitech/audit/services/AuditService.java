@@ -66,7 +66,7 @@ public class AuditService {
         meterRegistry.counter(AppConstants.Audit.METRIC_AUDIT_EVENTS_SAVED).increment();
 
         // Pubblicazione opzionale verso Kafka via Outbox (per pipeline analytics / SIEM).
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(saved.getId()),
                 "AUDIT_RECORDED",
