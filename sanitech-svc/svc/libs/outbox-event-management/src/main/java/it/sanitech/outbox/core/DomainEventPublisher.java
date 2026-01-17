@@ -1,10 +1,9 @@
 package it.sanitech.outbox.core;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import it.sanitech.outbox.persistence.OutboxEvent;
 import it.sanitech.outbox.persistence.OutboxRepository;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
@@ -34,7 +33,6 @@ public final class DomainEventPublisher {
     /**
      * Registra un evento outbox partendo dai singoli campi.
      */
-    @SneakyThrows({JsonProcessingException.class})
     public void publish(String aggregateType,
                         String aggregateId,
                         String eventType,
@@ -44,7 +42,9 @@ public final class DomainEventPublisher {
         event.setAggregateType(Objects.requireNonNull(aggregateType, "aggregateType obbligatorio"));
         event.setAggregateId(Objects.requireNonNull(aggregateId, "aggregateId obbligatorio"));
         event.setEventType(Objects.requireNonNull(eventType, "eventType obbligatorio"));
-        event.setPayload(Objects.isNull(payload) ? "{}" : objectMapper.writeValueAsString(payload));
+        event.setPayload(Objects.isNull(payload)
+                ? JsonNodeFactory.instance.objectNode()
+                : objectMapper.valueToTree(payload));
 
         publish(event);
     }
@@ -57,7 +57,7 @@ public final class DomainEventPublisher {
 
         if (event.getPayload() == null) {
             // Policy: payload mai nullo
-            event.setPayload("{}");
+            event.setPayload(JsonNodeFactory.instance.objectNode());
         }
 
         OutboxEvent saved = outboxRepository.save(event);

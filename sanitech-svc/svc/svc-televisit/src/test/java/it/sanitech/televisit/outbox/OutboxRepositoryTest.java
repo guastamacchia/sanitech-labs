@@ -9,6 +9,10 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import it.sanitech.outbox.persistence.OutboxEvent;
+import it.sanitech.outbox.persistence.OutboxRepository;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -42,13 +46,15 @@ class OutboxRepositoryTest {
     @Autowired
     private OutboxRepository repo;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @Test
     void lockBatchReturnsOnlyUnpublishedInOrder() {
         repo.save(OutboxEvent.builder()
                 .aggregateType("A")
                 .aggregateId("1")
                 .eventType("E1")
-                .payload("{\"k\":\"v1\"}")
+                .payload(objectMapper.createObjectNode().put("k", "v1"))
                 .occurredAt(Instant.now().minusSeconds(10))
                 .published(false)
                 .build());
@@ -57,7 +63,7 @@ class OutboxRepositoryTest {
                 .aggregateType("A")
                 .aggregateId("2")
                 .eventType("E2")
-                .payload("{\"k\":\"v2\"}")
+                .payload(objectMapper.createObjectNode().put("k", "v2"))
                 .occurredAt(Instant.now().minusSeconds(5))
                 .published(true)
                 .build());
@@ -66,7 +72,7 @@ class OutboxRepositoryTest {
                 .aggregateType("B")
                 .aggregateId("3")
                 .eventType("E3")
-                .payload("{\"k\":\"v3\"}")
+                .payload(objectMapper.createObjectNode().put("k", "v3"))
                 .occurredAt(Instant.now().minusSeconds(1))
                 .published(false)
                 .build());

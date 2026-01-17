@@ -2,14 +2,24 @@ package it.sanitech.admissions.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import it.sanitech.outbox.autoconfigure.OutboxProperties;
+import it.sanitech.outbox.persistence.OutboxEvent;
+import it.sanitech.outbox.persistence.OutboxRepository;
+import it.sanitech.outbox.publisher.OutboxKafkaPublisher;
+import it.sanitech.outbox.publisher.OutboxKafkaSender;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Test unitario del publisher outbox verso Kafka (KafkaTemplate non necessario: usiamo {@link OutboxKafkaSender} mock).
@@ -20,6 +30,14 @@ class OutboxKafkaPublisherTest {
     void publishBatch_marksEventAsPublished() {
         OutboxRepository outboxRepository = mock(OutboxRepository.class);
         OutboxKafkaSender sender = mock(OutboxKafkaSender.class);
+        TransactionTemplate tx = mock(TransactionTemplate.class);
+
+        OutboxProperties props = new OutboxProperties();
+        props.setEnabled(true);
+        props.getPublisher().setEnabled(true);
+        props.getPublisher().setBatchSize(100);
+        props.getPublisher().setSendTimeoutMs(1000);
+        props.getPublisher().setTopic("admissions.events");
 
         OutboxEvent evt = OutboxEvent.builder()
                 .id(1L)
@@ -31,17 +49,19 @@ class OutboxKafkaPublisherTest {
                 .published(false)
                 .build();
 
-        when(outboxRepository.lockBatch(100)).thenReturn(List.of(evt));
-        when(sender.sendWithRetry(anyString(), anyString(), anyString())).thenReturn(null);
+        doAnswer(invocation -> {
+            TransactionCallbackWithoutResult callback = invocation.getArgument(0);
+            callback.doInTransactionWithoutResult(null);
+            return null;
+        }).when(tx).executeWithoutResult(any());
 
-        OutboxKafkaPublisher publisher = new OutboxKafkaPublisher(outboxRepository, sender, new SimpleMeterRegistry());
+        when(outboxRepository.lockBatch(100)).thenReturn(List.of(evt));
+
+        OutboxKafkaPublisher publisher = new OutboxKafkaPublisher(tx, outboxRepository, sender, props, new SimpleMeterRegistry());
         publisher.publishBatch();
 
-        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
-        verify(outboxRepository).save(captor.capture());
-
-        OutboxEvent saved = captor.getValue();
-        assertThat(saved.isPublished()).isTrue();
-        assertThat(saved.getPublishedAt()).isNotNull();
+        verify(sender).sendSync(props.getPublisher().getTopic(), evt, props.getPublisher().getSendTimeoutMs());
+        verify(outboxRepository).markPublished(List.of(1L), any());
+        assertThat(evt.isPublished()).isFalse();
     }
 }
