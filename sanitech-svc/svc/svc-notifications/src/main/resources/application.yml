@@ -123,7 +123,8 @@ sanitech:
   outbox:
     topic: ${OUTBOX_TOPIC:notifications.events}
     publisher:
-      delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
+      enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
+      fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
   notifications:
     mail:

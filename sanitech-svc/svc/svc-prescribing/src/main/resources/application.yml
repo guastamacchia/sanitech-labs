@@ -99,7 +99,8 @@ sanitech:
     topic: ${OUTBOX_TOPIC:prescribing.events}
     publisher:
       # Frequenza (ms) del job che pubblica gli eventi Outbox verso Kafka.
-      delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
+      enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
+      fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
 resilience4j:
   ratelimiter:
