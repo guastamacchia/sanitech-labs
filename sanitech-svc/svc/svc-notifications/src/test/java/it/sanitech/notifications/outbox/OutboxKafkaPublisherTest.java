@@ -2,17 +2,26 @@ package it.sanitech.notifications.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.apache.kafka.clients.producer.RecordMetadata;
+import it.sanitech.outbox.autoconfigure.OutboxProperties;
+import it.sanitech.outbox.persistence.OutboxEvent;
+import it.sanitech.outbox.persistence.OutboxRepository;
+import it.sanitech.outbox.publisher.OutboxKafkaPublisher;
+import it.sanitech.outbox.publisher.OutboxKafkaSender;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
- * Test unitario del publisher outbox: marca published e incrementa metriche.
+ * Test unitario del publisher outbox: incrementa le metriche e marca su DB.
  */
 class OutboxKafkaPublisherTest {
 
@@ -20,11 +29,18 @@ class OutboxKafkaPublisherTest {
     void publishBatch_marks_event_published_on_success() {
         OutboxRepository repo = mock(OutboxRepository.class);
         OutboxKafkaSender sender = mock(OutboxKafkaSender.class);
+        TransactionTemplate tx = mock(TransactionTemplate.class);
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
-        OutboxKafkaPublisher publisher = new OutboxKafkaPublisher(repo, sender, meterRegistry);
+        OutboxProperties props = new OutboxProperties();
+        props.setEnabled(true);
+        props.getPublisher().setEnabled(true);
+        props.getPublisher().setBatchSize(100);
+        props.getPublisher().setSendTimeoutMs(1000);
+        props.getPublisher().setTopic("notifications.events");
 
         OutboxEvent evt = OutboxEvent.builder()
+                .id(1L)
                 .aggregateType("NOTIFICATION")
                 .aggregateId("1")
                 .eventType("NOTIFICATION_CREATED")
@@ -32,21 +48,22 @@ class OutboxKafkaPublisherTest {
                 .published(false)
                 .build();
 
-        when(repo.lockBatch()).thenReturn(List.of(evt));
+        doAnswer(invocation -> {
+            TransactionCallbackWithoutResult callback = invocation.getArgument(0);
+            callback.doInTransactionWithoutResult(null);
+            return null;
+        }).when(tx).executeWithoutResult(any());
 
-        RecordMetadata md = mock(RecordMetadata.class);
-        when(md.timestamp()).thenReturn(Instant.now().toEpochMilli());
+        when(repo.lockBatch(100)).thenReturn(List.of(evt));
 
-        when(sender.sendWithRetry(anyString(), anyString(), anyString())).thenReturn(md);
-
+        OutboxKafkaPublisher publisher = new OutboxKafkaPublisher(tx, repo, sender, props, meterRegistry);
         publisher.publishBatch();
 
-        assertThat(evt.isPublished()).isTrue();
-        assertThat(evt.getPublishedAt()).isNotNull();
+        verify(sender).sendSync(props.getPublisher().getTopic(), evt, props.getPublisher().getSendTimeoutMs());
+        verify(repo).markPublished(List.of(1L), any());
+        assertThat(evt.isPublished()).isFalse();
 
-        assertThat(meterRegistry.find("outbox.events.published.count").counter()).isNotNull();
-        assertThat(meterRegistry.find("outbox.events.published.count").counter().count()).isEqualTo(1.0);
-
-        verify(sender, times(1)).sendWithRetry(anyString(), anyString(), anyString());
+        assertThat(meterRegistry.find("sanitech.outbox.published").counter()).isNotNull();
+        assertThat(meterRegistry.find("sanitech.outbox.published").counter().count()).isEqualTo(1.0);
     }
 }
