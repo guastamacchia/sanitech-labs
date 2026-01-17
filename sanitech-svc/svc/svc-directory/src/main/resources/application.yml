@@ -235,4 +235,4 @@ resilience4j:
 logging:
   level:
     root: INFO
-    it.sanitech.directory: DEBUG
+    it.sanitech: DEBUG
