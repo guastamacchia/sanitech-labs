@@ -154,8 +154,9 @@ sanitech:
   outbox:
     topic: ${OUTBOX_TOPIC:directory.events}
     publisher:
+      enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       # Frequenza del job di pubblicazione (ms).
-      delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
+      fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
 # =========================
 # Management / Actuator
