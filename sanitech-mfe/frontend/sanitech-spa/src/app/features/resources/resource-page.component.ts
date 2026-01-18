@@ -52,6 +52,7 @@ interface PaymentItem {
   patientId: number;
   amount: number;
   currency: string;
+  service: string;
   status: string;
   paidAt: string;
 }
@@ -176,7 +177,8 @@ export class ResourcePageComponent {
   paymentForm = {
     patientId: 1,
     amount: 120,
-    currency: 'EUR'
+    currency: 'EUR',
+    service: 'Visita medica con Dr. Marco Bianchi'
   };
   admissionForm = {
     patientId: 1,
@@ -490,6 +492,24 @@ export class ResourcePageComponent {
     return this.slots.filter((slot) => slot.status === 'AVAILABLE');
   }
 
+  get visibleConsents(): ConsentItem[] {
+    if (this.isDoctor) {
+      const patientIds = new Set(this.patients.map((patient) => patient.id));
+      return this.consents.filter((consent) => patientIds.has(consent.patientId));
+    }
+    if (this.isPatient) {
+      return this.consents.filter((consent) => consent.patientId === 1);
+    }
+    return this.consents;
+  }
+
+  get visiblePrescriptions(): PrescriptionItem[] {
+    if (this.isPatient) {
+      return this.prescriptions.filter((prescription) => prescription.patientId === 1);
+    }
+    return this.prescriptions;
+  }
+
   get doctorSlotsByDate(): Array<{ date: string; slots: SchedulingSlot[] }> {
     if (!this.isDoctor) {
       return [];
@@ -700,15 +720,21 @@ export class ResourcePageComponent {
       this.paymentsError = 'Inserisci l’importo del pagamento.';
       return;
     }
+    if (!this.paymentForm.service.trim()) {
+      this.paymentsError = 'Indica la tipologia di prestazione.';
+      return;
+    }
     this.isLoading = true;
     this.paymentsError = '';
     this.api.request<PaymentItem>('POST', '/api/payments', {
       patientId: this.paymentForm.patientId,
       amount: this.paymentForm.amount,
-      currency: this.paymentForm.currency
+      currency: this.paymentForm.currency,
+      service: this.paymentForm.service
     }).subscribe({
       next: (payment) => {
         this.payments = [...this.payments, payment];
+        this.paymentForm.service = 'Visita medica con Dr. Marco Bianchi';
         this.isLoading = false;
       },
       error: () => {
@@ -847,6 +873,25 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  viewDocument(doc: DocumentItem): void {
+    this.docsError = '';
+    const previewWindow = window.open('', '_blank', 'noopener');
+    if (!previewWindow) {
+      this.docsError = 'Impossibile aprire l’anteprima del documento.';
+      return;
+    }
+    previewWindow.document.write(`<pre>${JSON.stringify(doc, null, 2)}</pre>`);
+    previewWindow.document.close();
+  }
+
+  deleteDocument(doc: DocumentItem): void {
+    this.documents = this.documents.filter((item) => item.id !== doc.id);
+  }
+
+  deleteConsent(consent: ConsentItem): void {
+    this.consents = this.consents.filter((item) => item.id !== consent.id);
   }
 
   loadPatients(): void {

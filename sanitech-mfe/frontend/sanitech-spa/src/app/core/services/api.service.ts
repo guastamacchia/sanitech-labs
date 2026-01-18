@@ -70,7 +70,15 @@ export class ApiService {
       }
     ],
     payments: [
-      { id: 40, patientId: 1, amount: 120, currency: 'EUR', status: 'PAID', paidAt: '2024-03-15' }
+      {
+        id: 40,
+        patientId: 1,
+        amount: 120,
+        currency: 'EUR',
+        service: 'Visita medica con Dr. Marco Bianchi',
+        status: 'PAID',
+        paidAt: '2024-03-15'
+      }
     ],
     admissions: [
       { id: 50, patientId: 1, department: 'CARD', bedId: 4, status: 'ACTIVE', admittedAt: '2024-03-10' }
@@ -236,6 +244,7 @@ export class ApiService {
             patientId: this.getNumber(payload.patientId, 1),
             amount: this.getNumber(payload.amount, 100),
             currency: this.getString(payload.currency, 'EUR'),
+            service: this.getString(payload.service, 'Prestazione sanitaria'),
             status: this.getString(payload.status, 'PAID'),
             paidAt: this.today()
           };

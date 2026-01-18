@@ -178,6 +178,7 @@
                         <th>Tipo</th>
                         <th>Nome</th>
                         <th>Data</th>
+                        <th>Azioni</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -186,9 +187,25 @@
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
                         <td>{{ formatDate(doc.uploadedAt) }}</td>
+                        <td>
+                          <button
+                            class="btn btn-outline-secondary btn-sm me-2"
+                            type="button"
+                            aria-label="Visualizza documento"
+                            (click)="viewDocument(doc)">
+                            👁️
+                          </button>
+                          <button
+                            class="btn btn-outline-danger btn-sm"
+                            type="button"
+                            aria-label="Elimina documento"
+                            (click)="deleteDocument(doc)">
+                            🗑️
+                          </button>
+                        </td>
                       </tr>
                       <tr *ngIf="!documents.length">
-                        <td [attr.colspan]="isDoctor ? 4 : 3" class="text-center text-muted">Nessun documento presente.</td>
+                        <td [attr.colspan]="isDoctor ? 5 : 4" class="text-center text-muted">Nessun documento presente.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -207,10 +224,11 @@
                         <th>Tipo</th>
                         <th>Accettato</th>
                         <th>Data firma</th>
+                        <th>Azioni</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let consent of consents">
+                      <tr *ngFor="let consent of visibleConsents">
                         <td *ngIf="isDoctor">{{ getPatientLabel(consent.patientId) }}</td>
                         <td>{{ consent.consentType }}</td>
                         <td>
@@ -219,9 +237,18 @@
                           </span>
                         </td>
                         <td>{{ formatDate(consent.signedAt) }}</td>
+                        <td>
+                          <button
+                            class="btn btn-outline-danger btn-sm"
+                            type="button"
+                            aria-label="Elimina consenso"
+                            (click)="deleteConsent(consent)">
+                            🗑️
+                          </button>
+                        </td>
                       </tr>
-                      <tr *ngIf="!consents.length">
-                        <td [attr.colspan]="isDoctor ? 4 : 3" class="text-center text-muted">Nessun consenso registrato.</td>
+                      <tr *ngIf="!visibleConsents.length">
+                        <td [attr.colspan]="isDoctor ? 5 : 4" class="text-center text-muted">Nessun consenso registrato.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -263,7 +290,7 @@
               </div>
             </div>
 
-            <div class="card card-glass">
+            <div class="card card-glass" *ngIf="!isDoctor">
               <div class="card-body">
                 <h5 class="fw-semibold mb-3">Registra consenso</h5>
                 <form (ngSubmit)="submitConsent()" #consentFormRef="ngForm">
@@ -307,6 +334,7 @@
                         <tr>
                           <th>ID</th>
                           <th *ngIf="!isPatient">Paziente</th>
+                          <th>Prestazione</th>
                           <th>Importo</th>
                           <th>Valuta</th>
                           <th>Stato</th>
@@ -317,13 +345,14 @@
                         <tr *ngFor="let payment of payments">
                           <td>{{ payment.id }}</td>
                           <td *ngIf="!isPatient">{{ payment.patientId }}</td>
+                          <td>{{ payment.service }}</td>
                           <td>{{ payment.amount }}</td>
                           <td>{{ payment.currency }}</td>
                           <td>{{ payment.status }}</td>
-                          <td>{{ payment.paidAt }}</td>
+                          <td>{{ formatDate(payment.paidAt) }}</td>
                         </tr>
                         <tr *ngIf="!payments.length">
-                          <td [attr.colspan]="isPatient ? 5 : 6" class="text-center text-muted">Nessun pagamento registrato.</td>
+                          <td [attr.colspan]="isPatient ? 6 : 7" class="text-center text-muted">Nessun pagamento registrato.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -383,6 +412,10 @@
                     <div class="mb-3" *ngIf="!isPatient">
                       <label class="form-label">ID Paziente</label>
                       <input class="form-control" type="number" name="paymentPatientId" [(ngModel)]="paymentForm.patientId" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Prestazione</label>
+                      <input class="form-control" type="text" name="paymentService" [(ngModel)]="paymentForm.service" required />
                     </div>
                     <div class="mb-3">
                       <label class="form-label">Importo</label>
@@ -594,21 +627,21 @@
                     <table class="table align-middle">
                       <thead>
                         <tr>
-                          <th>Paziente</th>
+                          <th *ngIf="!isPatient">Paziente</th>
                           <th>Farmaco</th>
                           <th>Posologia</th>
                           <th>Stato</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let prescription of prescriptions">
-                          <td>{{ getPatientLabel(prescription.patientId) }}</td>
+                        <tr *ngFor="let prescription of visiblePrescriptions">
+                          <td *ngIf="!isPatient">{{ getPatientLabel(prescription.patientId) }}</td>
                           <td>{{ prescription.drug }}</td>
                           <td>{{ prescription.dosage }}</td>
                           <td>{{ getPrescriptionStatusLabel(prescription.status) }}</td>
                         </tr>
-                        <tr *ngIf="!prescriptions.length">
-                          <td colspan="4" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
+                        <tr *ngIf="!visiblePrescriptions.length">
+                          <td [attr.colspan]="isPatient ? 3 : 4" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -618,7 +651,7 @@
             </div>
 
             <div class="col-lg-4">
-              <div class="card card-glass">
+              <div class="card card-glass" *ngIf="isDoctor">
                 <div class="card-body">
                   <h5 class="fw-semibold mb-3">Nuova prescrizione</h5>
                   <form (ngSubmit)="submitPrescription()" #prescriptionFormRef="ngForm">
