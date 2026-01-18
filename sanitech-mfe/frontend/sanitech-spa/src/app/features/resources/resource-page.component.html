@@ -11,24 +11,24 @@
       </button>
     </div>
 
-    <ng-template #paginationFooter>
+    <ng-template #paginationFooter let-key="key" let-total="total">
       <div class="d-flex flex-wrap align-items-center justify-content-between mt-3">
         <div class="d-flex align-items-center gap-2">
           <small class="text-muted">Elementi per pagina</small>
-          <select class="form-select form-select-sm w-auto" [(ngModel)]="pageSize">
+          <select class="form-select form-select-sm w-auto" [(ngModel)]="pageSize" (ngModelChange)="resetPagination()">
             <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
           </select>
         </div>
         <nav aria-label="Paginazione">
           <ul class="pagination pagination-sm mb-0">
-            <li class="page-item disabled">
-              <span class="page-link" aria-hidden="true">«</span>
+            <li class="page-item" [class.disabled]="getPage(key) <= 1">
+              <button class="page-link" type="button" (click)="setPage(key, getPage(key) - 1, total)">«</button>
             </li>
             <li class="page-item active">
-              <span class="page-link">1</span>
+              <span class="page-link">{{ getPage(key) }} / {{ getTotalPages(total) }}</span>
             </li>
-            <li class="page-item disabled">
-              <span class="page-link" aria-hidden="true">»</span>
+            <li class="page-item" [class.disabled]="getPage(key) >= getTotalPages(total)">
+              <button class="page-link" type="button" (click)="setPage(key, getPage(key) + 1, total)">»</button>
             </li>
           </ul>
         </nav>
@@ -59,7 +59,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let slot of visibleSlots | slice:0:pageSize">
+                    <tr *ngFor="let slot of visibleSlots | slice:getPageSliceStart('slots'):getPageSliceEnd('slots')">
                       <td *ngIf="!isDoctor">{{ getDoctorLabel(slot.doctorId) }}</td>
                       <td *ngIf="!isDoctor">{{ getSpecialityLabel(getDoctorById(slot.doctorId)?.speciality || '-') }}</td>
                       <td>{{ formatDate(slot.date) }}</td>
@@ -72,7 +72,7 @@
                     </tr>
                   </tbody>
                 </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'slots', total: visibleSlots.length }"></ng-container>
               </div>
             </div>
           </div>
@@ -95,7 +95,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let appointment of appointments | slice:0:pageSize">
+                      <tr *ngFor="let appointment of appointments | slice:getPageSliceStart('appointments'):getPageSliceEnd('appointments')">
                         <td>{{ getDoctorLabel(appointment.doctorId) }}</td>
                         <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
                         <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
@@ -117,7 +117,7 @@
                       </tr>
                     </tbody>
                   </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'appointments', total: appointments.length }"></ng-container>
                 </div>
               </div>
             </div>
@@ -184,7 +184,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let appointment of appointments | slice:0:pageSize">
+                      <tr *ngFor="let appointment of appointments | slice:getPageSliceStart('appointments'):getPageSliceEnd('appointments')">
                         <td>{{ getPatientLabel(appointment.patientId) }}</td>
                         <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
                         <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
@@ -205,7 +205,7 @@
                       </tr>
                     </tbody>
                   </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'appointmentsDoctor', total: appointments.length }"></ng-container>
                 </div>
               </div>
             </div>
@@ -271,7 +271,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let doc of documents | slice:0:pageSize">
+                      <tr *ngFor="let doc of documents | slice:getPageSliceStart('documents'):getPageSliceEnd('documents')">
                         <td *ngIf="isDoctor">{{ getPatientLabel(doc.patientId) }}</td>
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
@@ -298,7 +298,7 @@
                       </tr>
                     </tbody>
                   </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'documents', total: documents.length }"></ng-container>
                 </div>
               </div>
             </div>
@@ -318,7 +318,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let consent of visibleConsents | slice:0:pageSize">
+                      <tr *ngFor="let consent of visibleConsents | slice:getPageSliceStart('consents'):getPageSliceEnd('consents')">
                         <td *ngIf="isDoctor">{{ getPatientLabel(consent.patientId) }}</td>
                         <td>{{ consent.consentType }}</td>
                         <td>
@@ -342,7 +342,7 @@
                       </tr>
                     </tbody>
                   </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'consents', total: visibleConsents.length }"></ng-container>
                 </div>
               </div>
             </div>
@@ -438,7 +438,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let payment of payments | slice:0:pageSize">
+                        <tr *ngFor="let payment of payments | slice:getPageSliceStart('payments'):getPageSliceEnd('payments')">
                           <td>{{ payment.id }}</td>
                           <td *ngIf="!isPatient">{{ payment.patientId }}</td>
                           <td>{{ payment.service }}</td>
@@ -452,7 +452,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'payments', total: payments.length }"></ng-container>
                   </div>
                 </div>
               </div>
@@ -474,7 +474,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let admission of visibleAdmissions | slice:0:pageSize">
+                        <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissions'):getPageSliceEnd('admissions')">
                           <td>{{ admission.id }}</td>
                           <td *ngIf="!isPatient">{{ admission.patientId }}</td>
                           <td>{{ admission.department }}</td>
@@ -496,7 +496,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'admissions', total: visibleAdmissions.length }"></ng-container>
                   </div>
                 </div>
               </div>
@@ -586,7 +586,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let notification of notifications | slice:0:pageSize">
+                        <tr *ngFor="let notification of notifications | slice:getPageSliceStart('notifications'):getPageSliceEnd('notifications')">
                           <td>{{ notification.channel }}</td>
                           <td>{{ notification.message }}</td>
                           <td>{{ getNotificationStatusLabel(notification.status) }}</td>
@@ -596,7 +596,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'notifications', total: notifications.length }"></ng-container>
                     <ng-template #staffNotificationsTable>
                       <table class="table align-middle">
                         <thead>
@@ -609,7 +609,7 @@
                           </tr>
                         </thead>
                         <tbody>
-                          <tr *ngFor="let notification of notifications | slice:0:pageSize">
+                          <tr *ngFor="let notification of notifications | slice:getPageSliceStart('notifications'):getPageSliceEnd('notifications')">
                             <td>{{ notification.id }}</td>
                             <td>{{ notification.recipient }}</td>
                             <td>{{ notification.channel }}</td>
@@ -621,7 +621,7 @@
                           </tr>
                         </tbody>
                       </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'notificationsStaff', total: notifications.length }"></ng-container>
                     </ng-template>
                   </div>
                 </div>
@@ -734,7 +734,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let prescription of visiblePrescriptions | slice:0:pageSize">
+                        <tr *ngFor="let prescription of visiblePrescriptions | slice:getPageSliceStart('prescriptions'):getPageSliceEnd('prescriptions')">
                           <td>{{ getDoctorLabel(prescription.doctorId) }}</td>
                           <td>{{ prescription.drug }}</td>
                           <td>{{ prescription.dosage }}</td>
@@ -745,7 +745,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'prescriptions', total: visiblePrescriptions.length }"></ng-container>
                   </div>
                 </div>
               </div>
@@ -772,7 +772,7 @@
                           </tr>
                         </thead>
                         <tbody>
-                          <tr *ngFor="let prescription of visiblePrescriptions | slice:0:pageSize">
+                          <tr *ngFor="let prescription of visiblePrescriptions | slice:getPageSliceStart('prescriptions'):getPageSliceEnd('prescriptions')">
                             <td>{{ getPatientLabel(prescription.patientId) }}</td>
                             <td>{{ prescription.drug }}</td>
                             <td>{{ prescription.dosage }}</td>
@@ -783,7 +783,7 @@
                           </tr>
                         </tbody>
                       </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'prescriptionsStaff', total: visiblePrescriptions.length }"></ng-container>
                     </div>
                   </div>
                 </div>
@@ -850,7 +850,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let televisit of televisits | slice:0:pageSize">
+                        <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('televisits'):getPageSliceEnd('televisits')">
                           <td *ngIf="!isDoctor">{{ televisit.id }}</td>
                           <td *ngIf="isDoctor">{{ getPatientLabel(televisit.appointmentId) }}</td>
                           <td *ngIf="!isDoctor">{{ televisit.appointmentId }}</td>
@@ -868,7 +868,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'televisits', total: televisits.length }"></ng-container>
                   </div>
                 </div>
               </div>
@@ -936,7 +936,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let doctor of doctors | slice:0:pageSize">
+                        <tr *ngFor="let doctor of doctors | slice:getPageSliceStart('doctors'):getPageSliceEnd('doctors')">
                           <td>{{ doctor.id }}</td>
                           <td>{{ doctor.firstName }}</td>
                           <td>{{ doctor.lastName }}</td>
@@ -947,7 +947,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'doctors', total: doctors.length }"></ng-container>
                   </div>
                 </div>
               </div>
@@ -966,7 +966,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let patient of patients | slice:0:pageSize">
+                        <tr *ngFor="let patient of patients | slice:getPageSliceStart('patients'):getPageSliceEnd('patients')">
                           <td>{{ patient.id }}</td>
                           <td>{{ patient.firstName }}</td>
                           <td>{{ patient.lastName }}</td>
@@ -977,7 +977,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'patients', total: patients.length }"></ng-container>
                   </div>
                 </div>
               </div>
@@ -1084,7 +1084,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let event of auditEvents | slice:0:pageSize">
+                    <tr *ngFor="let event of auditEvents | slice:getPageSliceStart('audit'):getPageSliceEnd('audit')">
                       <td>{{ event.id }}</td>
                       <td>{{ event.action }}</td>
                       <td>{{ event.actor }}</td>
@@ -1095,7 +1095,7 @@
                     </tr>
                   </tbody>
                 </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'audit', total: auditEvents.length }"></ng-container>
               </div>
             </div>
           </div>
@@ -1126,7 +1126,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let televisit of televisits | slice:0:pageSize">
+                        <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('televisits'):getPageSliceEnd('televisits')">
                           <td>{{ televisit.id }}</td>
                           <td>{{ televisit.appointmentId }}</td>
                           <td>{{ televisit.provider }}</td>
@@ -1138,7 +1138,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminTelevisits', total: televisits.length }"></ng-container>
                   </div>
                 </div>
               </div>
@@ -1159,7 +1159,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let admission of admissions | slice:0:pageSize">
+                        <tr *ngFor="let admission of admissions | slice:getPageSliceStart('adminAdmissions'):getPageSliceEnd('adminAdmissions')">
                           <td>{{ admission.id }}</td>
                           <td>{{ admission.patientId }}</td>
                           <td>{{ admission.department }}</td>
@@ -1172,7 +1172,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminAdmissions', total: admissions.length }"></ng-container>
                   </div>
                 </div>
               </div>

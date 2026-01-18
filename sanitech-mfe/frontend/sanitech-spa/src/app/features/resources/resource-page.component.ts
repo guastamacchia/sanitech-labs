@@ -138,6 +138,7 @@ export class ResourcePageComponent {
   isLoading = false;
   pageSize = 10;
   pageSizeOptions = [5, 10, 20, 50];
+  private pageState: Record<string, number> = {};
   mode:
     | 'api'
     | 'scheduling'
@@ -306,6 +307,32 @@ export class ResourcePageComponent {
     this.selectedEndpoint = endpoint;
     this.payload = endpoint.payload ?? '';
     this.responseBody = '';
+  }
+
+  getPage(key: string): number {
+    return this.pageState[key] ?? 1;
+  }
+
+  getTotalPages(total: number): number {
+    return Math.max(1, Math.ceil(total / this.pageSize));
+  }
+
+  setPage(key: string, page: number, total: number): void {
+    const totalPages = this.getTotalPages(total);
+    const nextPage = Math.min(Math.max(1, page), totalPages);
+    this.pageState[key] = nextPage;
+  }
+
+  getPageSliceStart(key: string): number {
+    return (this.getPage(key) - 1) * this.pageSize;
+  }
+
+  getPageSliceEnd(key: string): number {
+    return this.getPage(key) * this.pageSize;
+  }
+
+  resetPagination(): void {
+    this.pageState = {};
   }
 
   execute(): void {
