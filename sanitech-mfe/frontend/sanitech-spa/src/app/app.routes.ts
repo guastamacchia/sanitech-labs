@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { PublicPageComponent } from './features/public/public-page.component';
 import { PortalComponent } from './features/portal/portal.component';
-import { PortalOverviewComponent } from './features/portal/portal-overview.component';
 import { PatientHomeComponent } from './features/portal/patient-home.component';
 import { DoctorHomeComponent } from './features/portal/doctor-home.component';
 import { AdminHomeComponent } from './features/portal/admin-home.component';
@@ -199,10 +198,6 @@ export const routes: Routes = [
     component: PortalComponent,
     canActivate: [authGuard],
     children: [
-      {
-        path: '',
-        component: PortalOverviewComponent
-      },
       {
         path: 'patient',
         component: PatientHomeComponent,

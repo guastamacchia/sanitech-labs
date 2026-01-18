@@ -7,18 +7,6 @@
 
 <section class="py-4">
   <div class="container">
-    <div class="row g-4">
-      <div class="col-lg-3">
-        <div class="list-group">
-          <a class="list-group-item list-group-item-action" routerLink="/portal" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Panoramica</a>
-          <a class="list-group-item list-group-item-action" routerLink="/portal/patient" routerLinkActive="active">Area Paziente</a>
-          <a class="list-group-item list-group-item-action" routerLink="/portal/doctor" routerLinkActive="active">Area Medico</a>
-          <a class="list-group-item list-group-item-action" routerLink="/portal/admin" routerLinkActive="active">Area Admin</a>
-        </div>
-      </div>
-      <div class="col-lg-9">
-        <router-outlet></router-outlet>
-      </div>
-    </div>
+    <router-outlet></router-outlet>
   </div>
 </section>
