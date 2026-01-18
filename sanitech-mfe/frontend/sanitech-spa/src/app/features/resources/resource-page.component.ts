@@ -465,6 +465,11 @@ export class ResourcePageComponent {
     return labels[type] ?? type;
   }
 
+  getSpecialityLabel(code: string): string {
+    const speciality = this.specialities.find((item) => item.code === code);
+    return speciality ? speciality.name : code;
+  }
+
   get portalHomeLabel(): string {
     if (this.auth.hasRole('ROLE_ADMIN')) {
       return 'Area riservata admin';
