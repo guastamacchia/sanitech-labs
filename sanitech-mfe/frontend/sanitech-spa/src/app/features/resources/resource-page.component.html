@@ -532,7 +532,7 @@
       </ng-template>
 
       <ng-template #televisitLayout>
-        <ng-container *ngIf="mode === 'televisit'; else apiLayout">
+        <ng-container *ngIf="mode === 'televisit'; else adminDirectoryLayout">
           <div class="row g-4">
             <div class="col-lg-8">
               <div class="card card-glass">
@@ -591,6 +591,320 @@
                     <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
                     <button class="btn btn-primary w-100" type="submit" [disabled]="televisitFormRef.invalid || isLoading">
                       {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </ng-template>
+
+      <ng-template #adminDirectoryLayout>
+        <ng-container *ngIf="mode === 'admin-directory'; else adminAuditLayout">
+          <div class="row g-4">
+            <div class="col-lg-8">
+              <div class="card card-glass mb-4">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">Medici</h5>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="loadDirectory()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Nome</th>
+                          <th>Cognome</th>
+                          <th>Specialità</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let doctor of doctors">
+                          <td>{{ doctor.id }}</td>
+                          <td>{{ doctor.firstName }}</td>
+                          <td>{{ doctor.lastName }}</td>
+                          <td>{{ doctor.speciality }}</td>
+                        </tr>
+                        <tr *ngIf="!doctors.length">
+                          <td colspan="4" class="text-center text-muted">Nessun medico registrato.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card card-glass">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Pazienti</h5>
+                  <div class="table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Nome</th>
+                          <th>Cognome</th>
+                          <th>Email</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let patient of patients">
+                          <td>{{ patient.id }}</td>
+                          <td>{{ patient.firstName }}</td>
+                          <td>{{ patient.lastName }}</td>
+                          <td>{{ patient.email }}</td>
+                        </tr>
+                        <tr *ngIf="!patients.length">
+                          <td colspan="4" class="text-center text-muted">Nessun paziente registrato.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="card card-glass mb-4">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Registra medico</h5>
+                  <form (ngSubmit)="submitDoctor()" #doctorFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Nome</label>
+                      <input class="form-control" type="text" name="doctorFirstName" [(ngModel)]="doctorForm.firstName" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Cognome</label>
+                      <input class="form-control" type="text" name="doctorLastName" [(ngModel)]="doctorForm.lastName" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Specialità</label>
+                      <select class="form-select" name="doctorSpeciality" [(ngModel)]="doctorForm.speciality" required>
+                        <option value="CARD">Cardiologia</option>
+                        <option value="NEURO">Neurologia</option>
+                      </select>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="directoryError">{{ directoryError }}</div>
+                    <button class="btn btn-primary w-100" type="submit" [disabled]="doctorFormRef.invalid || isLoading">
+                      {{ isLoading ? 'Salvataggio...' : 'Registra medico' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="card card-glass mb-4">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Registra paziente</h5>
+                  <form (ngSubmit)="submitPatient()" #patientFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Nome</label>
+                      <input class="form-control" type="text" name="patientFirstName" [(ngModel)]="patientForm.firstName" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Cognome</label>
+                      <input class="form-control" type="text" name="patientLastName" [(ngModel)]="patientForm.lastName" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Email</label>
+                      <input class="form-control" type="email" name="patientEmail" [(ngModel)]="patientForm.email" required />
+                    </div>
+                    <button class="btn btn-outline-primary w-100" type="submit" [disabled]="patientFormRef.invalid || isLoading">
+                      {{ isLoading ? 'Salvataggio...' : 'Registra paziente' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="card card-glass">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Reparti & specialità</h5>
+                  <div class="mb-3">
+                    <p class="small text-muted mb-2">Reparti attivi</p>
+                    <ul class="list-group list-group-flush">
+                      <li class="list-group-item px-0" *ngFor="let department of departments">
+                        {{ department.name }} ({{ department.code }})
+                      </li>
+                      <li class="list-group-item px-0 text-muted" *ngIf="!departments.length">Nessun reparto.</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p class="small text-muted mb-2">Specialità</p>
+                    <ul class="list-group list-group-flush">
+                      <li class="list-group-item px-0" *ngFor="let speciality of specialities">
+                        {{ speciality.name }} ({{ speciality.code }})
+                      </li>
+                      <li class="list-group-item px-0 text-muted" *ngIf="!specialities.length">Nessuna specialità.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </ng-template>
+
+      <ng-template #adminAuditLayout>
+        <ng-container *ngIf="mode === 'admin-audit'; else adminTelevisitLayout">
+          <div class="card card-glass">
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-semibold mb-0">Audit trail</h5>
+                <button class="btn btn-outline-secondary btn-sm" (click)="loadAudit()" [disabled]="isLoading">
+                  Aggiorna
+                </button>
+              </div>
+              <div class="alert alert-danger py-2" *ngIf="auditError">{{ auditError }}</div>
+              <div class="table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Azione</th>
+                      <th>Attore</th>
+                      <th>Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let event of auditEvents">
+                      <td>{{ event.id }}</td>
+                      <td>{{ event.action }}</td>
+                      <td>{{ event.actor }}</td>
+                      <td>{{ event.timestamp }}</td>
+                    </tr>
+                    <tr *ngIf="!auditEvents.length">
+                      <td colspan="4" class="text-center text-muted">Nessun evento disponibile.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </ng-template>
+
+      <ng-template #adminTelevisitLayout>
+        <ng-container *ngIf="mode === 'admin-televisit'; else apiLayout">
+          <div class="row g-4">
+            <div class="col-lg-8">
+              <div class="card card-glass mb-4">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">Sessioni di televisita</h5>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="loadAdminTelevisit()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Appuntamento</th>
+                          <th>Provider</th>
+                          <th>Stato</th>
+                          <th>Token</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let televisit of televisits">
+                          <td>{{ televisit.id }}</td>
+                          <td>{{ televisit.appointmentId }}</td>
+                          <td>{{ televisit.provider }}</td>
+                          <td>{{ televisit.status }}</td>
+                          <td>{{ televisit.token }}</td>
+                        </tr>
+                        <tr *ngIf="!televisits.length">
+                          <td colspan="5" class="text-center text-muted">Nessuna sessione presente.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card card-glass">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Ricoveri</h5>
+                  <div class="table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Paziente</th>
+                          <th>Reparto</th>
+                          <th>Letto</th>
+                          <th>Stato</th>
+                          <th>Data</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let admission of admissions">
+                          <td>{{ admission.id }}</td>
+                          <td>{{ admission.patientId }}</td>
+                          <td>{{ admission.department }}</td>
+                          <td>{{ admission.bedId }}</td>
+                          <td>{{ admission.status }}</td>
+                          <td>{{ admission.admittedAt }}</td>
+                        </tr>
+                        <tr *ngIf="!admissions.length">
+                          <td colspan="6" class="text-center text-muted">Nessun ricovero registrato.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="card card-glass mb-4">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Avvia sessione</h5>
+                  <form (ngSubmit)="submitTelevisit()" #adminTelevisitFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">ID Appuntamento</label>
+                      <input class="form-control" type="number" name="adminTelevisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Provider</label>
+                      <select class="form-select" name="adminTelevisitProvider" [(ngModel)]="televisitForm.provider" required>
+                        <option value="LIVEKIT">LiveKit</option>
+                        <option value="WEBRTC">WebRTC</option>
+                      </select>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
+                    <button class="btn btn-primary w-100" type="submit" [disabled]="adminTelevisitFormRef.invalid || isLoading">
+                      {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="card card-glass">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Registra ricovero</h5>
+                  <form (ngSubmit)="submitAdmission()" #adminAdmissionFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">ID Paziente</label>
+                      <input class="form-control" type="number" name="adminAdmissionPatientId" [(ngModel)]="admissionForm.patientId" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Reparto</label>
+                      <select class="form-select" name="adminAdmissionDepartment" [(ngModel)]="admissionForm.department" required>
+                        <option value="CARD">Cardiologia</option>
+                        <option value="NEURO">Neurologia</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Letto</label>
+                      <input class="form-control" type="number" name="adminAdmissionBedId" [(ngModel)]="admissionForm.bedId" required />
+                    </div>
+                    <button class="btn btn-outline-primary w-100" type="submit" [disabled]="adminAdmissionFormRef.invalid || isLoading">
+                      {{ isLoading ? 'Salvataggio...' : 'Registra ricovero' }}
                     </button>
                   </form>
                 </div>

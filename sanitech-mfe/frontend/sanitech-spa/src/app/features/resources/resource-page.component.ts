@@ -86,6 +86,37 @@ interface TelevisitItem {
   token: string;
 }
 
+interface DoctorItem {
+  id: number;
+  firstName: string;
+  lastName: string;
+  speciality: string;
+}
+
+interface PatientItem {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface DepartmentItem {
+  code: string;
+  name: string;
+}
+
+interface SpecialityItem {
+  code: string;
+  name: string;
+}
+
+interface AuditItem {
+  id: number;
+  action: string;
+  actor: string;
+  timestamp: string;
+}
+
 @Component({
   selector: 'app-resource-page',
   standalone: true,
@@ -100,7 +131,17 @@ export class ResourcePageComponent {
   payload = '';
   responseBody = '';
   isLoading = false;
-  mode: 'api' | 'scheduling' | 'docs' | 'payments' | 'notifications' | 'prescribing' | 'televisit' = 'api';
+  mode:
+    | 'api'
+    | 'scheduling'
+    | 'docs'
+    | 'payments'
+    | 'notifications'
+    | 'prescribing'
+    | 'televisit'
+    | 'admin-directory'
+    | 'admin-audit'
+    | 'admin-televisit' = 'api';
   slots: SchedulingSlot[] = [];
   appointments: SchedulingAppointment[] = [];
   schedulingError = '';
@@ -156,13 +197,40 @@ export class ResourcePageComponent {
     appointmentId: 1,
     provider: 'LIVEKIT'
   };
+  doctors: DoctorItem[] = [];
+  patients: PatientItem[] = [];
+  departments: DepartmentItem[] = [];
+  specialities: SpecialityItem[] = [];
+  directoryError = '';
+  doctorForm = {
+    firstName: '',
+    lastName: '',
+    speciality: 'CARD'
+  };
+  patientForm = {
+    firstName: '',
+    lastName: '',
+    email: ''
+  };
+  auditEvents: AuditItem[] = [];
+  auditError = '';
 
   constructor(private route: ActivatedRoute, private api: ApiService) {
     const data = this.route.snapshot.data;
     this.title = data['title'] as string;
     this.description = data['description'] as string;
     this.mode =
-      (data['view'] as 'api' | 'scheduling' | 'docs' | 'payments' | 'notifications' | 'prescribing' | 'televisit') ??
+      (data['view'] as
+        | 'api'
+        | 'scheduling'
+        | 'docs'
+        | 'payments'
+        | 'notifications'
+        | 'prescribing'
+        | 'televisit'
+        | 'admin-directory'
+        | 'admin-audit'
+        | 'admin-televisit') ??
       'api';
     this.endpoints = (data['endpoints'] as ResourceEndpoint[]) ?? [];
     this.selectedEndpoint = this.endpoints[0];
@@ -184,6 +252,15 @@ export class ResourcePageComponent {
     }
     if (this.mode === 'televisit') {
       this.loadTelevisits();
+    }
+    if (this.mode === 'admin-directory') {
+      this.loadDirectory();
+    }
+    if (this.mode === 'admin-audit') {
+      this.loadAudit();
+    }
+    if (this.mode === 'admin-televisit') {
+      this.loadAdminTelevisit();
     }
   }
 
@@ -358,6 +435,17 @@ export class ResourcePageComponent {
     });
   }
 
+  loadAdmissions(): void {
+    this.api.request<AdmissionItem[]>('GET', '/api/admissions').subscribe({
+      next: (admissions) => {
+        this.admissions = admissions;
+      },
+      error: () => {
+        this.paymentsError = 'Impossibile caricare i ricoveri.';
+      }
+    });
+  }
+
   submitPayment(): void {
     if (!this.paymentForm.amount) {
       this.paymentsError = 'Inserisci l’importo del pagamento.';
@@ -510,5 +598,116 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  loadDirectory(): void {
+    this.isLoading = true;
+    this.directoryError = '';
+    this.api.request<DoctorItem[]>('GET', '/api/admin/doctors').subscribe({
+      next: (doctors) => {
+        this.doctors = doctors;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare i medici.';
+        this.isLoading = false;
+      }
+    });
+    this.api.request<PatientItem[]>('GET', '/api/admin/patients').subscribe({
+      next: (patients) => {
+        this.patients = patients;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare i pazienti.';
+      }
+    });
+    this.api.request<DepartmentItem[]>('GET', '/api/departments').subscribe({
+      next: (departments) => {
+        this.departments = departments;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare i reparti.';
+      }
+    });
+    this.api.request<SpecialityItem[]>('GET', '/api/specialities').subscribe({
+      next: (specialities) => {
+        this.specialities = specialities;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare le specialità.';
+      }
+    });
+  }
+
+  submitDoctor(): void {
+    if (!this.doctorForm.firstName.trim() || !this.doctorForm.lastName.trim()) {
+      this.directoryError = 'Inserisci nome e cognome del medico.';
+      return;
+    }
+    this.isLoading = true;
+    this.directoryError = '';
+    this.api.request<DoctorItem>('POST', '/api/admin/doctors', {
+      firstName: this.doctorForm.firstName,
+      lastName: this.doctorForm.lastName,
+      speciality: this.doctorForm.speciality
+    }).subscribe({
+      next: (doctor) => {
+        this.doctors = [...this.doctors, doctor];
+        this.doctorForm.firstName = '';
+        this.doctorForm.lastName = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile creare il medico.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  submitPatient(): void {
+    if (!this.patientForm.firstName.trim() || !this.patientForm.lastName.trim() || !this.patientForm.email.trim()) {
+      this.directoryError = 'Inserisci nome, cognome ed email del paziente.';
+      return;
+    }
+    this.isLoading = true;
+    this.directoryError = '';
+    this.api.request<PatientItem>('POST', '/api/admin/patients', {
+      firstName: this.patientForm.firstName,
+      lastName: this.patientForm.lastName,
+      email: this.patientForm.email
+    }).subscribe({
+      next: (patient) => {
+        this.patients = [...this.patients, patient];
+        this.patientForm.firstName = '';
+        this.patientForm.lastName = '';
+        this.patientForm.email = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile creare il paziente.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadAudit(): void {
+    this.isLoading = true;
+    this.auditError = '';
+    this.api.request<AuditItem[]>('GET', '/api/audit').subscribe({
+      next: (events) => {
+        this.auditEvents = events;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.auditError = 'Impossibile caricare l’audit trail.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadAdminTelevisit(): void {
+    this.televisitError = '';
+    this.loadTelevisits();
+    this.loadAdmissions();
   }
 }

@@ -313,7 +313,8 @@ export const routes: Routes = [
         data: {
           title: 'Directory & anagrafiche',
           description: 'Gestione medici, pazienti, reparti e specialità.',
-          endpoints: directoryEndpoints
+          endpoints: directoryEndpoints,
+          view: 'admin-directory'
         }
       },
       {
@@ -323,7 +324,8 @@ export const routes: Routes = [
         data: {
           title: 'Audit & compliance',
           description: 'Eventi di audit e tracciamento accessi.',
-          endpoints: auditEndpoints
+          endpoints: auditEndpoints,
+          view: 'admin-audit'
         }
       },
       {
@@ -333,7 +335,8 @@ export const routes: Routes = [
         data: {
           title: 'Notifiche',
           description: 'Monitoraggio e invio notifiche per tutta la piattaforma.',
-          endpoints: notificationsEndpoints
+          endpoints: notificationsEndpoints,
+          view: 'notifications'
         }
       },
       {
@@ -343,7 +346,8 @@ export const routes: Routes = [
         data: {
           title: 'Televisite & ricoveri',
           description: 'Supervisione sessioni di telemedicina e admissions.',
-          endpoints: [...televisitEndpoints, ...paymentsEndpoints]
+          endpoints: [...televisitEndpoints, ...paymentsEndpoints],
+          view: 'admin-televisit'
         }
       }
     ]
