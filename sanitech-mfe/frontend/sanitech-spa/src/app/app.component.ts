@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth/auth.service';
 import { NgIf } from '@angular/common';
 
@@ -10,7 +10,7 @@ import { NgIf } from '@angular/common';
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
-  constructor(public auth: AuthService) {}
+  constructor(public auth: AuthService, private router: Router) {}
 
   async ngOnInit(): Promise<void> {
     await this.auth.loadDiscovery();
@@ -18,5 +18,10 @@ export class AppComponent implements OnInit {
 
   logout(): void {
     this.auth.logout();
+    this.router.navigate(['/']);
+  }
+
+  get isInReservedArea(): boolean {
+    return this.router.url.startsWith('/portal');
   }
 }

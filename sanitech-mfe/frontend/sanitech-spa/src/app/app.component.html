@@ -30,7 +30,9 @@
           <a class="nav-link" routerLink="/" fragment="contatti">📞 Contatti</a>
         </li>
         <li class="nav-item" *ngIf="auth.isAuthenticated">
-          <a class="nav-link" routerLink="/portal">🔒 Area riservata</a>
+          <a class="nav-link" [routerLink]="isInReservedArea ? '/' : '/portal'">
+            {{ isInReservedArea ? '🏠 Portale pubblico' : '🔒 Area riservata' }}
+          </a>
         </li>
       </ul>
       <div class="d-flex align-items-center gap-2 ms-lg-3">
