@@ -176,10 +176,25 @@ export class ResourcePageComponent {
   };
   notifications: NotificationItem[] = [];
   notificationsError = '';
+  notificationsSuccess = '';
   notificationForm = {
     recipient: '',
     channel: 'EMAIL',
     message: ''
+  };
+  notificationPreferences = {
+    email: '',
+    phone: '',
+    channels: {
+      email: true,
+      sms: false,
+      app: true
+    },
+    types: {
+      appointments: true,
+      documents: true,
+      payments: false
+    }
   };
   prescriptions: PrescriptionItem[] = [];
   prescribingError = '';
@@ -429,6 +444,10 @@ export class ResourcePageComponent {
     this.router.navigateByUrl(this.portalHomeRoute);
   }
 
+  get isPatient(): boolean {
+    return this.auth.hasRole('ROLE_PATIENT');
+  }
+
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       AVAILABLE: 'Disponibile',
@@ -625,6 +644,39 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  saveNotificationPreferences(): void {
+    this.notificationsError = '';
+    this.notificationsSuccess = '';
+    if (!this.notificationPreferences.email.trim()) {
+      this.notificationsError = 'Inserisci una email valida per ricevere le notifiche.';
+      return;
+    }
+    if (!this.notificationPreferences.phone.trim()) {
+      this.notificationsError = 'Inserisci un numero di telefono valido per ricevere le notifiche.';
+      return;
+    }
+    const hasChannel = Object.values(this.notificationPreferences.channels).some((value) => value);
+    if (!hasChannel) {
+      this.notificationsError = 'Seleziona almeno un canale di notifica.';
+      return;
+    }
+    const hasType = Object.values(this.notificationPreferences.types).some((value) => value);
+    if (!hasType) {
+      this.notificationsError = 'Seleziona almeno un tipo di notifica.';
+      return;
+    }
+    this.notificationsSuccess = 'Preferenze notifiche aggiornate.';
+  }
+
+  confirmAdmission(admission: AdmissionItem): void {
+    if (admission.status === 'CONFIRMED') {
+      return;
+    }
+    this.admissions = this.admissions.map((item) =>
+      item.id === admission.id ? { ...item, status: 'CONFIRMED' } : item
+    );
   }
 
   loadPrescriptions(): void {
