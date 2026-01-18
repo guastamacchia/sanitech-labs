@@ -26,29 +26,23 @@
                 <table class="table align-middle">
                   <thead>
                     <tr>
-                      <th>ID</th>
                       <th *ngIf="!isDoctor">Medico</th>
                       <th>Data</th>
                       <th>Ora</th>
+                      <th>Modalità</th>
                       <th>Note</th>
-                      <th>Stato</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr *ngFor="let slot of visibleSlots">
-                      <td>{{ slot.id }}</td>
                       <td *ngIf="!isDoctor">{{ getDoctorLabel(slot.doctorId) }}</td>
                       <td>{{ formatDate(slot.date) }}</td>
                       <td>{{ slot.time }}</td>
+                      <td>{{ getModalityLabel(slot.modality) }}</td>
                       <td>{{ slot.notes || '-' }}</td>
-                      <td>
-                        <span class="badge" [class.bg-success]="slot.status === 'AVAILABLE'" [class.bg-secondary]="slot.status !== 'AVAILABLE'">
-                          {{ getStatusLabel(slot.status) }}
-                        </span>
-                      </td>
                     </tr>
                     <tr *ngIf="!visibleSlots.length">
-                      <td [attr.colspan]="isDoctor ? 5 : 6" class="text-center text-muted">Nessuno slot disponibile.</td>
+                      <td [attr.colspan]="isDoctor ? 4 : 5" class="text-center text-muted">Nessuno slot disponibile.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -140,6 +134,13 @@
                   <div class="mb-3">
                     <label class="form-label">Ora</label>
                     <input class="form-control" type="time" name="slotTime" [(ngModel)]="slotForm.time" required />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Modalità</label>
+                    <select class="form-select" name="slotModality" [(ngModel)]="slotForm.modality" required>
+                      <option [ngValue]="'IN_PERSON'">In presenza</option>
+                      <option [ngValue]="'REMOTE'">Da remoto (televisita)</option>
+                    </select>
                   </div>
                   <div class="mb-3">
                     <label class="form-label">Note</label>

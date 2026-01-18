@@ -9,9 +9,33 @@ import { Observable, of, throwError } from 'rxjs';
 export class ApiService {
   private mockStore = {
     slots: [
-      { id: 1, doctorId: 2, date: '2024-05-01', time: '09:30', status: 'AVAILABLE', notes: 'Visite cardiologiche di controllo.' },
-      { id: 2, doctorId: 2, date: '2024-05-01', time: '10:30', status: 'AVAILABLE', notes: 'Preferenza mattina.' },
-      { id: 3, doctorId: 3, date: '2024-05-02', time: '11:00', status: 'BOOKED', notes: 'Slot riservato urgenze.' }
+      {
+        id: 1,
+        doctorId: 2,
+        date: '2024-05-01',
+        time: '09:30',
+        status: 'AVAILABLE',
+        modality: 'IN_PERSON',
+        notes: 'Visite cardiologiche di controllo.'
+      },
+      {
+        id: 2,
+        doctorId: 2,
+        date: '2024-05-01',
+        time: '10:30',
+        status: 'AVAILABLE',
+        modality: 'REMOTE',
+        notes: 'Disponibile anche per consulto da remoto.'
+      },
+      {
+        id: 3,
+        doctorId: 3,
+        date: '2024-05-02',
+        time: '11:00',
+        status: 'AVAILABLE',
+        modality: 'IN_PERSON',
+        notes: 'Slot riservato visite neurologiche.'
+      }
     ],
     appointments: [
       { id: 10, patientId: 1, doctorId: 2, slotId: 3, reason: 'Controllo cardiologico', status: 'CONFIRMED' }
@@ -109,6 +133,7 @@ export class ApiService {
             date: this.getString(payload.date, this.today()),
             time: this.getString(payload.time, '09:00'),
             status: this.getString(payload.status, 'AVAILABLE'),
+            modality: this.getString(payload.modality, 'IN_PERSON'),
             notes: this.getString(payload.notes, '')
           };
           this.mockStore.slots.push(newSlot);

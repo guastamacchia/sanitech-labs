@@ -18,6 +18,7 @@ interface SchedulingSlot {
   date: string;
   time: string;
   status: string;
+  modality: 'IN_PERSON' | 'REMOTE';
   notes?: string;
 }
 
@@ -154,6 +155,7 @@ export class ResourcePageComponent {
   slotForm = {
     date: '',
     time: '',
+    modality: 'IN_PERSON' as 'IN_PERSON' | 'REMOTE',
     notes: ''
   };
   documents: DocumentItem[] = [];
@@ -480,9 +482,9 @@ export class ResourcePageComponent {
 
   get visibleSlots(): SchedulingSlot[] {
     if (this.isDoctor) {
-      return this.slots.filter((slot) => slot.doctorId === this.currentDoctorId);
+      return this.slots.filter((slot) => slot.doctorId === this.currentDoctorId && slot.status === 'AVAILABLE');
     }
-    return this.slots;
+    return this.slots.filter((slot) => slot.status === 'AVAILABLE');
   }
 
   get doctorSlotsByDate(): Array<{ date: string; slots: SchedulingSlot[] }> {
@@ -540,7 +542,52 @@ export class ResourcePageComponent {
   }
 
   getSlotLabel(slot: SchedulingSlot): string {
-    return `${this.formatDate(slot.date)} • ${slot.time} • ${this.getDoctorLabel(slot.doctorId)}`;
+    return `${this.formatDate(slot.date)} • ${slot.time} • ${this.getDoctorLabel(slot.doctorId)} • ${this.getModalityLabel(
+      slot.modality
+    )}`;
+  }
+
+  getModalityLabel(modality: SchedulingSlot['modality']): string {
+    return modality === 'REMOTE' ? 'Da remoto' : 'In presenza';
+  }
+
+  submitSlot(): void {
+    if (!this.slotForm.date || !this.slotForm.time) {
+      this.schedulingError = 'Inserisci data e ora dello slot.';
+      return;
+    }
+    this.isLoading = true;
+    this.schedulingError = '';
+    this.api.request<SchedulingSlot>('POST', '/api/slots', {
+      doctorId: this.currentDoctorId,
+      date: this.slotForm.date,
+      time: this.slotForm.time,
+      modality: this.slotForm.modality,
+      notes: this.slotForm.notes,
+      status: 'AVAILABLE'
+    }).subscribe({
+      next: (slot) => {
+        this.slots = [...this.slots, slot];
+        this.slotForm.date = '';
+        this.slotForm.time = '';
+        this.slotForm.modality = 'IN_PERSON';
+        this.slotForm.notes = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile creare lo slot.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  confirmAppointment(appointment: SchedulingAppointment): void {
+    if (appointment.status === 'CONFIRMED') {
+      return;
+    }
+    this.appointments = this.appointments.map((item) =>
+      item.id === appointment.id ? { ...item, status: 'CONFIRMED' } : item
+    );
   }
 
   submitSlot(): void {
