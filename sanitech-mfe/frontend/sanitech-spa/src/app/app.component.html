@@ -14,6 +14,18 @@
         </li>
       </ul>
       <div class="d-flex align-items-center gap-2 ms-lg-3">
+        <span class="badge bg-warning text-dark" *ngIf="auth.isMockEnabled">Mock attivo</span>
+        <ng-container *ngIf="auth.isMockEnabled">
+          <label class="small text-muted mb-0">Profilo</label>
+          <select
+            class="form-select form-select-sm w-auto"
+            [(ngModel)]="mockRole"
+            (ngModelChange)="updateMockRole($event)">
+            <option *ngFor="let profile of auth.mockProfiles" [ngValue]="profile.role">
+              {{ profile.label }}
+            </option>
+          </select>
+        </ng-container>
         <span class="small text-muted" *ngIf="auth.isAuthenticated">👋 {{ auth.displayName }}</span>
         <button class="btn btn-outline-primary" *ngIf="!auth.isAuthenticated" (click)="login()">
           Accedi
@@ -35,7 +47,9 @@
     <span>© 2024 Sanitech Labs — Portale SPA</span>
     <div class="d-flex gap-3 small">
       <a class="link-light text-decoration-none" href="/api-docs" target="_blank" rel="noreferrer">API Gateway</a>
-      <span class="text-white-50">Ambiente: {{ auth.isAuthenticated ? 'Autenticato' : 'Pubblico' }}</span>
+      <span class="text-white-50">
+        Ambiente: {{ auth.isAuthenticated ? 'Autenticato' : 'Pubblico' }}{{ auth.isMockEnabled ? ' (mock)' : '' }}
+      </span>
     </div>
   </div>
 </footer>
