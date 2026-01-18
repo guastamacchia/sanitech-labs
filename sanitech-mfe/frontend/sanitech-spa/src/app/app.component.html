@@ -1,35 +1,45 @@
-<nav class="navbar navbar-expand-lg bg-white shadow-sm border-bottom">
+<nav class="navbar navbar-expand-lg bg-white shadow-sm border-bottom fixed-top">
   <div class="container">
-    <a class="navbar-brand fw-bold text-primary" routerLink="/">Sanitech</a>
+    <a class="navbar-brand fw-bold text-primary d-flex align-items-center gap-2" routerLink="/">
+      <img src="assets/sanitech-logo.svg" alt="Logo Sanitech" width="32" height="32" />
+      Sanitech
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navLinks">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link" routerLink="/" routerLinkActive="active">Portale pubblico</a>
+          <a class="nav-link" routerLink="/" fragment="chi-siamo">ℹ️ Chi siamo</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" routerLink="/portal" routerLinkActive="active">Area privata</a>
+          <a class="nav-link" routerLink="/" fragment="struttura">🏥 Struttura</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            🩺 Servizi
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">📅 Prenotazioni digitali</a></li>
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">💻 Televisita e follow-up</a></li>
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">🧪 Diagnostica avanzata</a></li>
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">🧘 Riabilitazione personalizzata</a></li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/" fragment="contatti">📞 Contatti</a>
+        </li>
+        <li class="nav-item" *ngIf="auth.isAuthenticated">
+          <a class="nav-link" [routerLink]="isInReservedArea ? '/' : '/portal'">
+            {{ isInReservedArea ? '🏠 Portale pubblico' : '🔒 Area riservata' }}
+          </a>
         </li>
       </ul>
       <div class="d-flex align-items-center gap-2 ms-lg-3">
-        <span class="badge bg-warning text-dark" *ngIf="auth.isMockEnabled">Mock attivo</span>
-        <ng-container *ngIf="auth.isMockEnabled">
-          <label class="small text-muted mb-0">Profilo</label>
-          <select
-            class="form-select form-select-sm w-auto"
-            [(ngModel)]="mockRole"
-            (ngModelChange)="updateMockRole($event)">
-            <option *ngFor="let profile of auth.mockProfiles" [ngValue]="profile.role">
-              {{ profile.label }}
-            </option>
-          </select>
+        <ng-container *ngIf="auth.isAuthenticated">
+          <span class="badge bg-primary">{{ auth.roleLabel }}</span>
+          <span class="small text-muted">👋 {{ auth.displayName }}</span>
         </ng-container>
-        <span class="small text-muted" *ngIf="auth.isAuthenticated">👋 {{ auth.displayName }}</span>
-        <button class="btn btn-outline-primary" *ngIf="!auth.isAuthenticated" (click)="login()">
-          Accedi
-        </button>
         <button class="btn btn-outline-secondary" *ngIf="auth.isAuthenticated" (click)="logout()">
           Esci
         </button>
@@ -48,7 +58,7 @@
     <div class="d-flex gap-3 small">
       <a class="link-light text-decoration-none" href="/api-docs" target="_blank" rel="noreferrer">API Gateway</a>
       <span class="text-white-50">
-        Ambiente: {{ auth.isAuthenticated ? 'Autenticato' : 'Pubblico' }}{{ auth.isMockEnabled ? ' (mock)' : '' }}
+        Ambiente: {{ auth.isAuthenticated ? 'Autenticato' : 'Pubblico' }}
       </span>
     </div>
   </div>
