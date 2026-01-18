@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { environment } from '../../../environments/environment';
 
 interface ResourceEndpoint {
   label: string;
@@ -25,6 +26,7 @@ export class ResourcePageComponent {
   payload = '';
   responseBody = '';
   isLoading = false;
+  isMock = environment.mockApi;
 
   constructor(private route: ActivatedRoute, private api: ApiService) {
     const data = this.route.snapshot.data;
