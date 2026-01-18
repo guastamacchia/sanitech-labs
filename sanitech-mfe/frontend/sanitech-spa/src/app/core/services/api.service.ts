@@ -83,7 +83,13 @@ export class ApiService {
         }
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
-          const newSlot = { id: this.nextId(this.mockStore.slots), status: 'AVAILABLE', ...payload };
+          const newSlot = {
+            id: this.nextId(this.mockStore.slots),
+            doctorId: this.getNumber(payload.doctorId, 1),
+            date: this.getString(payload.date, this.today()),
+            time: this.getString(payload.time, '09:00'),
+            status: this.getString(payload.status, 'AVAILABLE')
+          };
           this.mockStore.slots.push(newSlot);
           return of(newSlot as T);
         }
@@ -94,7 +100,14 @@ export class ApiService {
         }
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
-          const newAppointment = { id: this.nextId(this.mockStore.appointments), status: 'PENDING', ...payload };
+          const newAppointment = {
+            id: this.nextId(this.mockStore.appointments),
+            patientId: this.getNumber(payload.patientId, 1),
+            doctorId: this.getNumber(payload.doctorId, 2),
+            slotId: this.getNumber(payload.slotId, 1),
+            reason: this.getString(payload.reason, 'Visita di controllo'),
+            status: this.getString(payload.status, 'PENDING')
+          };
           this.mockStore.appointments.push(newAppointment);
           return of(newAppointment as T);
         }
@@ -117,7 +130,13 @@ export class ApiService {
         }
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
-          const newDoc = { id: this.nextId(this.mockStore.docs), uploadedAt: this.today(), ...payload };
+          const newDoc = {
+            id: this.nextId(this.mockStore.docs),
+            patientId: this.getNumber(payload.patientId, 1),
+            type: this.getString(payload.type, 'REFERT'),
+            name: this.getString(payload.name, 'Documento clinico'),
+            uploadedAt: this.today()
+          };
           this.mockStore.docs.push(newDoc);
           return of(newDoc as T);
         }
@@ -128,7 +147,13 @@ export class ApiService {
         }
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
-          const newConsent = { id: this.nextId(this.mockStore.consents), signedAt: this.today(), ...payload };
+          const newConsent = {
+            id: this.nextId(this.mockStore.consents),
+            patientId: this.getNumber(payload.patientId, 1),
+            consentType: this.getString(payload.consentType, 'GDPR'),
+            accepted: this.getBoolean(payload.accepted, true),
+            signedAt: this.today()
+          };
           this.mockStore.consents.push(newConsent);
           return of(newConsent as T);
         }
@@ -139,7 +164,13 @@ export class ApiService {
         }
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
-          const newNotification = { id: this.nextId(this.mockStore.notifications), status: 'SENT', ...payload };
+          const newNotification = {
+            id: this.nextId(this.mockStore.notifications),
+            recipient: this.getString(payload.recipient, 'utente@example.com'),
+            channel: this.getString(payload.channel, 'EMAIL'),
+            message: this.getString(payload.message, 'Notifica demo'),
+            status: this.getString(payload.status, 'SENT')
+          };
           this.mockStore.notifications.push(newNotification);
           return of(newNotification as T);
         }
@@ -150,7 +181,14 @@ export class ApiService {
         }
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
-          const newPayment = { id: this.nextId(this.mockStore.payments), status: 'PAID', paidAt: this.today(), ...payload };
+          const newPayment = {
+            id: this.nextId(this.mockStore.payments),
+            patientId: this.getNumber(payload.patientId, 1),
+            amount: this.getNumber(payload.amount, 100),
+            currency: this.getString(payload.currency, 'EUR'),
+            status: this.getString(payload.status, 'PAID'),
+            paidAt: this.today()
+          };
           this.mockStore.payments.push(newPayment);
           return of(newPayment as T);
         }
@@ -161,7 +199,14 @@ export class ApiService {
         }
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
-          const newAdmission = { id: this.nextId(this.mockStore.admissions), status: 'ACTIVE', admittedAt: this.today(), ...payload };
+          const newAdmission = {
+            id: this.nextId(this.mockStore.admissions),
+            patientId: this.getNumber(payload.patientId, 1),
+            department: this.getString(payload.department, 'CARD'),
+            bedId: this.getNumber(payload.bedId, 1),
+            status: this.getString(payload.status, 'ACTIVE'),
+            admittedAt: this.today()
+          };
           this.mockStore.admissions.push(newAdmission);
           return of(newAdmission as T);
         }
@@ -179,7 +224,13 @@ export class ApiService {
       case '/api/prescribing/prescriptions':
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
-          const newPrescription = { id: this.nextId(this.mockStore.prescriptions), status: 'ACTIVE', ...payload };
+          const newPrescription = {
+            id: this.nextId(this.mockStore.prescriptions),
+            patientId: this.getNumber(payload.patientId, 1),
+            drug: this.getString(payload.drug, 'Farmaco demo'),
+            dosage: this.getString(payload.dosage, '10mg'),
+            status: this.getString(payload.status, 'ACTIVE')
+          };
           this.mockStore.prescriptions.push(newPrescription);
           return of(newPrescription as T);
         }
@@ -192,9 +243,10 @@ export class ApiService {
           const payload = this.ensureBody(body);
           const newTelevisit = {
             id: this.nextId(this.mockStore.televisits),
+            appointmentId: this.getNumber(payload.appointmentId, 1),
+            provider: this.getString(payload.provider, 'LIVEKIT'),
             status: 'READY',
             token: `tv-${Math.random().toString(36).slice(2, 8)}`,
-            ...payload
           };
           this.mockStore.televisits.push(newTelevisit);
           return of(newTelevisit as T);
@@ -207,7 +259,12 @@ export class ApiService {
         }
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
-          const newDoctor = { id: this.nextId(this.mockStore.doctors), ...payload };
+          const newDoctor = {
+            id: this.nextId(this.mockStore.doctors),
+            firstName: this.getString(payload.firstName, 'Mario'),
+            lastName: this.getString(payload.lastName, 'Rossi'),
+            speciality: this.getString(payload.speciality, 'CARD')
+          };
           this.mockStore.doctors.push(newDoctor);
           return of(newDoctor as T);
         }
@@ -219,7 +276,12 @@ export class ApiService {
         }
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
-          const newPatient = { id: this.nextId(this.mockStore.patients), ...payload };
+          const newPatient = {
+            id: this.nextId(this.mockStore.patients),
+            firstName: this.getString(payload.firstName, 'Anna'),
+            lastName: this.getString(payload.lastName, 'Conti'),
+            email: this.getString(payload.email, 'anna.conti@sanitech.example')
+          };
           this.mockStore.patients.push(newPatient);
           return of(newPatient as T);
         }
@@ -250,6 +312,18 @@ export class ApiService {
       return {};
     }
     return body as Record<string, unknown>;
+  }
+
+  private getString(value: unknown, fallback: string): string {
+    return typeof value === 'string' && value.trim() ? value : fallback;
+  }
+
+  private getNumber(value: unknown, fallback: number): number {
+    return typeof value === 'number' && !Number.isNaN(value) ? value : fallback;
+  }
+
+  private getBoolean(value: unknown, fallback: boolean): boolean {
+    return typeof value === 'boolean' ? value : fallback;
   }
 
   private nextId<T extends { id: number }>(collection: T[]): number {
