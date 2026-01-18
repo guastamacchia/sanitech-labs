@@ -21,29 +21,16 @@ import java.util.Optional;
 
 /**
  * Configurazione CORS condivisa tra i microservizi Sanitech.
- *
- * <p>
- * Questa classe si occupa di:
- * </p>
- * <ul>
- *   <li>validare la coerenza della configurazione CORS a startup</li>
- *   <li>creare e registrare un {@link CorsFilter} sui path configurati</li>
- * </ul>
- *
- * <p>
- * La normalizzazione dei valori (trim, rimozione null/vuoti, deduplica, normalizzazione path)
- * è demandata a {@link CorsProperties}.
- * </p>
  */
 @Slf4j
 @AutoConfiguration
-@ConditionalOnClass(CorsFilter.class)
 @RequiredArgsConstructor
+@ConditionalOnClass(CorsFilter.class)
 @EnableConfigurationProperties(CorsProperties.class)
 @ConditionalOnProperty(prefix = AppConstants.ConfigKeys.Cors.PREFIX, name = "enabled", havingValue = "true")
 public class CorsAutoConfiguration {
 
-    private final CorsProperties props;
+    private final CorsProperties properties;
 
     /**
      * Validazione della configurazione CORS.
@@ -52,14 +39,14 @@ public class CorsAutoConfiguration {
     public void validateConfiguration() {
         log.debug("CORS: avvio validazione configurazione (properties già normalizzate).");
 
-        List<String> origins = Optional.ofNullable(props.getAllowedOrigins()).orElse(List.of());
-        List<String> methods = Optional.ofNullable(props.getAllowedMethods()).orElse(List.of());
-        List<String> headers = Optional.ofNullable(props.getAllowedHeaders()).orElse(List.of());
-        List<String> paths = Optional.ofNullable(props.getPathPatterns()).orElse(List.of());
+        List<String> origins = Optional.ofNullable(properties.getAllowedOrigins()).orElse(List.of());
+        List<String> methods = Optional.ofNullable(properties.getAllowedMethods()).orElse(List.of());
+        List<String> headers = Optional.ofNullable(properties.getAllowedHeaders()).orElse(List.of());
+        List<String> paths = Optional.ofNullable(properties.getPathPatterns()).orElse(List.of());
 
         boolean hasWildcardOrigin = origins.contains("*");
 
-        if (props.isAllowCredentials() && hasWildcardOrigin) {
+        if (properties.isAllowCredentials() && hasWildcardOrigin) {
             log.error("CORS: configurazione non valida. allowCredentials=true non è compatibile con allowedOrigins=['*'].");
             log.error("CORS: correzione richiesta: impostare origini esplicite oppure usare allowedOriginPatterns (supporto nativo Spring CORS).");
             throw new IllegalStateException("Configurazione CORS non valida: allowCredentials=true con allowedOrigins='*'.");
@@ -90,7 +77,7 @@ public class CorsAutoConfiguration {
 
         UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
 
-        List<String> paths = props.getPathPatterns();
+        List<String> paths = properties.getPathPatterns();
         if (Objects.isNull(paths) || paths.isEmpty()) {
             log.debug("CORS: nessun path da registrare. CorsFilter creato senza configurazioni associate.");
             return new CorsFilter(src);
@@ -112,12 +99,12 @@ public class CorsAutoConfiguration {
     private CorsConfiguration buildCorsConfiguration() {
         CorsConfiguration cfg = new CorsConfiguration();
 
-        cfg.setAllowedOrigins(props.getAllowedOrigins());
-        cfg.setAllowedMethods(props.getAllowedMethods());
-        cfg.setAllowedHeaders(props.getAllowedHeaders());
-        cfg.setExposedHeaders(props.getExposedHeaders());
-        cfg.setAllowCredentials(props.isAllowCredentials());
-        cfg.setMaxAge(props.getMaxAge());
+        cfg.setAllowedOrigins(properties.getAllowedOrigins());
+        cfg.setAllowedMethods(properties.getAllowedMethods());
+        cfg.setAllowedHeaders(properties.getAllowedHeaders());
+        cfg.setExposedHeaders(properties.getExposedHeaders());
+        cfg.setAllowCredentials(properties.isAllowCredentials());
+        cfg.setMaxAge(properties.getMaxAge());
 
         log.debug("CORS: CorsConfiguration costruita.");
 
