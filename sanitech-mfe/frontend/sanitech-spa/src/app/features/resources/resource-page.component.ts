@@ -483,6 +483,23 @@ export class ResourcePageComponent {
     return this.slots;
   }
 
+  get doctorSlotsByDate(): Array<{ date: string; slots: SchedulingSlot[] }> {
+    if (!this.isDoctor) {
+      return [];
+    }
+    const grouped = this.visibleSlots.reduce<Record<string, SchedulingSlot[]>>((acc, slot) => {
+      acc[slot.date] = acc[slot.date] ?? [];
+      acc[slot.date].push(slot);
+      return acc;
+    }, {});
+    return Object.entries(grouped)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, slots]) => ({
+        date,
+        slots: slots.sort((first, second) => first.time.localeCompare(second.time))
+      }));
+  }
+
   getNotificationStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       SENT: 'Inviata',
