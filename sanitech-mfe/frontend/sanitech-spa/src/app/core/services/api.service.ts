@@ -23,7 +23,27 @@ export class ApiService {
       { id: 21, patientId: 1, consentType: 'GDPR', accepted: true, signedAt: '2024-03-20' }
     ],
     notifications: [
-      { id: 30, recipient: 'anna.conti@sanitech.example', channel: 'EMAIL', message: 'Promemoria visita', status: 'SENT' }
+      {
+        id: 30,
+        recipient: 'anna.conti@sanitech.example',
+        channel: 'EMAIL',
+        message: 'Promemoria visita cardiologica del 12/05/2024 alle 09:30.',
+        status: 'DELIVERED'
+      },
+      {
+        id: 31,
+        recipient: 'anna.conti@sanitech.example',
+        channel: 'SMS',
+        message: 'È disponibile un nuovo referto nella tua area documenti.',
+        status: 'SENT'
+      },
+      {
+        id: 32,
+        recipient: 'anna.conti@sanitech.example',
+        channel: 'APP',
+        message: 'Pagamento registrato con successo. Grazie!',
+        status: 'FAILED'
+      }
     ],
     payments: [
       { id: 40, patientId: 1, amount: 120, currency: 'EUR', status: 'PAID', paidAt: '2024-03-15' }
