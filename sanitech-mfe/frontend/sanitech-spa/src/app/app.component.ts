@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
-  mockRole = this.auth.mockRole;
+  mockRole = '';
 
   constructor(public auth: AuthService) {}
 
