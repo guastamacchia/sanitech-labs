@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Optional } from '@angular/core';
 import { AuthConfig, OAuthService } from 'angular-oauth2-oidc';
 import { environment } from '../../../environments/environment';
 
@@ -26,20 +26,20 @@ interface MockAuthState {
 export class AuthService {
   private mockState: MockAuthState | null = null;
 
-  constructor(private oauthService: OAuthService) {
+  constructor(@Optional() private oauthService?: OAuthService) {
     if (environment.mockAuth) {
       this.mockState = this.loadMockState();
       return;
     }
-    this.oauthService.configure(authConfig);
-    this.oauthService.setupAutomaticSilentRefresh();
+    this.oauth.configure(authConfig);
+    this.oauth.setupAutomaticSilentRefresh();
   }
 
   async loadDiscovery(): Promise<void> {
     if (environment.mockAuth) {
       return;
     }
-    await this.oauthService.loadDiscoveryDocumentAndTryLogin();
+    await this.oauth.loadDiscoveryDocumentAndTryLogin();
   }
 
   login(): void {
@@ -47,7 +47,7 @@ export class AuthService {
       this.updateMockState({ isAuthenticated: true });
       return;
     }
-    this.oauthService.initCodeFlow();
+    this.oauth.initCodeFlow();
   }
 
   logout(): void {
@@ -55,21 +55,21 @@ export class AuthService {
       this.updateMockState({ isAuthenticated: false });
       return;
     }
-    this.oauthService.logOut();
+    this.oauth.logOut();
   }
 
   get accessToken(): string {
     if (environment.mockAuth) {
       return '';
     }
-    return this.oauthService.getAccessToken();
+    return this.oauth.getAccessToken();
   }
 
   get isAuthenticated(): boolean {
     if (environment.mockAuth) {
       return this.mockState?.isAuthenticated ?? false;
     }
-    return this.oauthService.hasValidAccessToken();
+    return this.oauth.hasValidAccessToken();
   }
 
   get identityClaims(): Record<string, unknown> {
@@ -81,7 +81,7 @@ export class AuthService {
         }
       };
     }
-    return (this.oauthService.getIdentityClaims() as Record<string, unknown>) ?? {};
+    return (this.oauth.getIdentityClaims() as Record<string, unknown>) ?? {};
   }
 
   get displayName(): string {
@@ -146,5 +146,12 @@ export class AuthService {
     }
     this.mockState = { ...this.mockState, ...partial };
     localStorage.setItem(mockStorageKey, JSON.stringify(this.mockState));
+  }
+
+  private get oauth(): OAuthService {
+    if (!this.oauthService) {
+      throw new Error('OAuthService non configurato');
+    }
+    return this.oauthService;
   }
 }
