@@ -27,16 +27,16 @@
                   <thead>
                     <tr>
                       <th>ID</th>
-                      <th>Medico</th>
+                      <th *ngIf="!isDoctor">Medico</th>
                       <th>Data</th>
                       <th>Ora</th>
                       <th>Stato</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let slot of slots">
+                    <tr *ngFor="let slot of visibleSlots">
                       <td>{{ slot.id }}</td>
-                      <td>{{ getDoctorLabel(slot.doctorId) }}</td>
+                      <td *ngIf="!isDoctor">{{ getDoctorLabel(slot.doctorId) }}</td>
                       <td>{{ formatDate(slot.date) }}</td>
                       <td>{{ slot.time }}</td>
                       <td>
@@ -45,8 +45,8 @@
                         </span>
                       </td>
                     </tr>
-                    <tr *ngIf="!slots.length">
-                      <td colspan="5" class="text-center text-muted">Nessuno slot disponibile.</td>
+                    <tr *ngIf="!visibleSlots.length">
+                      <td [attr.colspan]="isDoctor ? 4 : 5" class="text-center text-muted">Nessuno slot disponibile.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -61,7 +61,8 @@
                 <table class="table align-middle">
                   <thead>
                     <tr>
-                      <th>Medico</th>
+                      <th *ngIf="isDoctor">Paziente</th>
+                      <th *ngIf="!isDoctor">Medico</th>
                       <th>Data</th>
                       <th>Ora</th>
                       <th>Motivo</th>
@@ -71,7 +72,8 @@
                   </thead>
                   <tbody>
                     <tr *ngFor="let appointment of appointments">
-                      <td>{{ getDoctorLabel(appointment.doctorId) }}</td>
+                      <td *ngIf="isDoctor">{{ getPatientLabel(appointment.patientId) }}</td>
+                      <td *ngIf="!isDoctor">{{ getDoctorLabel(appointment.doctorId) }}</td>
                       <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
                       <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
                       <td>{{ appointment.reason }}</td>

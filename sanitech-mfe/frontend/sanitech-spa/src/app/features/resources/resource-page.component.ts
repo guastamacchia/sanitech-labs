@@ -476,6 +476,13 @@ export class ResourcePageComponent {
     return this.slots.filter((slot) => slot.status === 'AVAILABLE');
   }
 
+  get visibleSlots(): SchedulingSlot[] {
+    if (this.isDoctor) {
+      return this.slots.filter((slot) => slot.doctorId === this.currentDoctorId);
+    }
+    return this.slots;
+  }
+
   getNotificationStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       SENT: 'Inviata',
