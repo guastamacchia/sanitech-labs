@@ -12,8 +12,13 @@
     </div>
 
     <ng-template #paginationFooter>
-      <div class="d-flex align-items-center justify-content-between mt-3">
-        <small class="text-muted">Elementi per pagina: 10</small>
+      <div class="d-flex flex-wrap align-items-center justify-content-between mt-3">
+        <div class="d-flex align-items-center gap-2">
+          <small class="text-muted">Elementi per pagina</small>
+          <select class="form-select form-select-sm w-auto" [(ngModel)]="pageSize">
+            <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+          </select>
+        </div>
         <nav aria-label="Paginazione">
           <ul class="pagination pagination-sm mb-0">
             <li class="page-item disabled">
@@ -54,7 +59,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let slot of visibleSlots">
+                    <tr *ngFor="let slot of visibleSlots | slice:0:pageSize">
                       <td *ngIf="!isDoctor">{{ getDoctorLabel(slot.doctorId) }}</td>
                       <td *ngIf="!isDoctor">{{ getSpecialityLabel(getDoctorById(slot.doctorId)?.speciality || '-') }}</td>
                       <td>{{ formatDate(slot.date) }}</td>
@@ -90,7 +95,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let appointment of appointments">
+                      <tr *ngFor="let appointment of appointments | slice:0:pageSize">
                         <td>{{ getDoctorLabel(appointment.doctorId) }}</td>
                         <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
                         <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
@@ -179,7 +184,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let appointment of appointments">
+                      <tr *ngFor="let appointment of appointments | slice:0:pageSize">
                         <td>{{ getPatientLabel(appointment.patientId) }}</td>
                         <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
                         <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
@@ -266,7 +271,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let doc of documents">
+                      <tr *ngFor="let doc of documents | slice:0:pageSize">
                         <td *ngIf="isDoctor">{{ getPatientLabel(doc.patientId) }}</td>
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
@@ -313,7 +318,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let consent of visibleConsents">
+                      <tr *ngFor="let consent of visibleConsents | slice:0:pageSize">
                         <td *ngIf="isDoctor">{{ getPatientLabel(consent.patientId) }}</td>
                         <td>{{ consent.consentType }}</td>
                         <td>
@@ -433,7 +438,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let payment of payments">
+                        <tr *ngFor="let payment of payments | slice:0:pageSize">
                           <td>{{ payment.id }}</td>
                           <td *ngIf="!isPatient">{{ payment.patientId }}</td>
                           <td>{{ payment.service }}</td>
@@ -469,7 +474,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let admission of visibleAdmissions">
+                        <tr *ngFor="let admission of visibleAdmissions | slice:0:pageSize">
                           <td>{{ admission.id }}</td>
                           <td *ngIf="!isPatient">{{ admission.patientId }}</td>
                           <td>{{ admission.department }}</td>
@@ -581,7 +586,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let notification of notifications">
+                        <tr *ngFor="let notification of notifications | slice:0:pageSize">
                           <td>{{ notification.channel }}</td>
                           <td>{{ notification.message }}</td>
                           <td>{{ getNotificationStatusLabel(notification.status) }}</td>
@@ -604,7 +609,7 @@
                           </tr>
                         </thead>
                         <tbody>
-                          <tr *ngFor="let notification of notifications">
+                          <tr *ngFor="let notification of notifications | slice:0:pageSize">
                             <td>{{ notification.id }}</td>
                             <td>{{ notification.recipient }}</td>
                             <td>{{ notification.channel }}</td>
@@ -729,7 +734,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let prescription of visiblePrescriptions">
+                        <tr *ngFor="let prescription of visiblePrescriptions | slice:0:pageSize">
                           <td>{{ getDoctorLabel(prescription.doctorId) }}</td>
                           <td>{{ prescription.drug }}</td>
                           <td>{{ prescription.dosage }}</td>
@@ -767,7 +772,7 @@
                           </tr>
                         </thead>
                         <tbody>
-                          <tr *ngFor="let prescription of visiblePrescriptions">
+                          <tr *ngFor="let prescription of visiblePrescriptions | slice:0:pageSize">
                             <td>{{ getPatientLabel(prescription.patientId) }}</td>
                             <td>{{ prescription.drug }}</td>
                             <td>{{ prescription.dosage }}</td>
@@ -845,7 +850,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let televisit of televisits">
+                        <tr *ngFor="let televisit of televisits | slice:0:pageSize">
                           <td *ngIf="!isDoctor">{{ televisit.id }}</td>
                           <td *ngIf="isDoctor">{{ getPatientLabel(televisit.appointmentId) }}</td>
                           <td *ngIf="!isDoctor">{{ televisit.appointmentId }}</td>
@@ -931,7 +936,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let doctor of doctors">
+                        <tr *ngFor="let doctor of doctors | slice:0:pageSize">
                           <td>{{ doctor.id }}</td>
                           <td>{{ doctor.firstName }}</td>
                           <td>{{ doctor.lastName }}</td>
@@ -961,7 +966,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let patient of patients">
+                        <tr *ngFor="let patient of patients | slice:0:pageSize">
                           <td>{{ patient.id }}</td>
                           <td>{{ patient.firstName }}</td>
                           <td>{{ patient.lastName }}</td>
@@ -1079,7 +1084,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let event of auditEvents">
+                    <tr *ngFor="let event of auditEvents | slice:0:pageSize">
                       <td>{{ event.id }}</td>
                       <td>{{ event.action }}</td>
                       <td>{{ event.actor }}</td>
@@ -1121,7 +1126,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let televisit of televisits">
+                        <tr *ngFor="let televisit of televisits | slice:0:pageSize">
                           <td>{{ televisit.id }}</td>
                           <td>{{ televisit.appointmentId }}</td>
                           <td>{{ televisit.provider }}</td>
@@ -1154,7 +1159,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let admission of admissions">
+                        <tr *ngFor="let admission of admissions | slice:0:pageSize">
                           <td>{{ admission.id }}</td>
                           <td>{{ admission.patientId }}</td>
                           <td>{{ admission.department }}</td>
