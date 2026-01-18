@@ -11,6 +11,25 @@
       </button>
     </div>
 
+    <ng-template #paginationFooter>
+      <div class="d-flex align-items-center justify-content-between mt-3">
+        <small class="text-muted">Elementi per pagina: 10</small>
+        <nav aria-label="Paginazione">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item disabled">
+              <span class="page-link" aria-hidden="true">«</span>
+            </li>
+            <li class="page-item active">
+              <span class="page-link">1</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link" aria-hidden="true">»</span>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </ng-template>
+
     <ng-container *ngIf="mode === 'scheduling'; else otherLayouts">
       <div class="row g-4">
         <div class="col-lg-12">
@@ -48,6 +67,7 @@
                     </tr>
                   </tbody>
                 </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
               </div>
             </div>
           </div>
@@ -92,6 +112,7 @@
                       </tr>
                     </tbody>
                   </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                 </div>
               </div>
             </div>
@@ -179,6 +200,7 @@
                       </tr>
                     </tbody>
                   </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                 </div>
               </div>
             </div>
@@ -271,6 +293,7 @@
                       </tr>
                     </tbody>
                   </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                 </div>
               </div>
             </div>
@@ -314,6 +337,7 @@
                       </tr>
                     </tbody>
                   </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                 </div>
               </div>
             </div>
@@ -423,6 +447,7 @@
                         </tr>
                       </tbody>
                     </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                   </div>
                 </div>
               </div>
@@ -466,6 +491,7 @@
                         </tr>
                       </tbody>
                     </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                   </div>
                 </div>
               </div>
@@ -565,6 +591,7 @@
                         </tr>
                       </tbody>
                     </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                     <ng-template #staffNotificationsTable>
                       <table class="table align-middle">
                         <thead>
@@ -589,6 +616,7 @@
                           </tr>
                         </tbody>
                       </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                     </ng-template>
                   </div>
                 </div>
@@ -712,6 +740,7 @@
                         </tr>
                       </tbody>
                     </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                   </div>
                 </div>
               </div>
@@ -749,6 +778,7 @@
                           </tr>
                         </tbody>
                       </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                     </div>
                   </div>
                 </div>
@@ -833,6 +863,7 @@
                         </tr>
                       </tbody>
                     </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                   </div>
                 </div>
               </div>
@@ -911,6 +942,7 @@
                         </tr>
                       </tbody>
                     </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                   </div>
                 </div>
               </div>
@@ -940,6 +972,7 @@
                         </tr>
                       </tbody>
                     </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                   </div>
                 </div>
               </div>
@@ -1057,6 +1090,7 @@
                     </tr>
                   </tbody>
                 </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
               </div>
             </div>
           </div>
@@ -1099,6 +1133,7 @@
                         </tr>
                       </tbody>
                     </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                   </div>
                 </div>
               </div>
@@ -1132,6 +1167,7 @@
                         </tr>
                       </tbody>
                     </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter"></ng-container>
                   </div>
                 </div>
               </div>
