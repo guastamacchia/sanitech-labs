@@ -1,7 +1,7 @@
 <section id="accesso" class="py-5 bg-white">
   <div class="container">
     <div class="row align-items-center g-4">
-      <div class="col-lg-7">
+      <div class="col-lg-7" [class.col-lg-8]="auth.isAuthenticated" [class.col-lg-7]="!auth.isAuthenticated">
         <span class="badge badge-soft rounded-pill mb-3 px-3 py-2">Sanità digitale, ovunque</span>
         <h1 class="display-5 fw-bold mb-3">Clinica Sanitech: cura integrata, accesso semplice.</h1>
         <p class="lead text-muted">Prenotazioni smart, telemedicina, cartella clinica e notifiche in un’unica piattaforma sicura.</p>
@@ -10,7 +10,7 @@
           <a href="#servizi" class="btn btn-outline-secondary btn-lg">Scopri i servizi</a>
         </div>
       </div>
-      <div class="col-lg-5">
+      <div class="col-lg-5" *ngIf="!auth.isAuthenticated">
         <div class="card card-glass p-4">
           <h5 class="fw-semibold">Accesso riservato</h5>
           <p class="text-muted">Inserisci le credenziali Sanitech ID per entrare nell’area privata.</p>
@@ -58,26 +58,74 @@
     <p class="section-title">Sanitech in breve</p>
     <div class="row g-4">
       <div class="col-md-4">
-        <div class="card card-glass h-100">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1580281657527-47f249e8f8f9?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Prenotazioni digitali" />
           <div class="card-body">
-            <h5 class="fw-semibold">Prenotazioni & Televisita</h5>
-            <p class="text-muted">Agenda smart, videoconsulti, reminder automatici, check-in digitale.</p>
+            <h5 class="fw-semibold">Prenotazioni digitali</h5>
+            <p class="text-muted">Agenda smart, gestione slot in tempo reale e reminder automatici.</p>
           </div>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card card-glass h-100">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Telemedicina" />
           <div class="card-body">
-            <h5 class="fw-semibold">Cartella clinica & Documenti</h5>
-            <p class="text-muted">Referti, prescrizioni, consensi informati e archiviazione sicura.</p>
+            <h5 class="fw-semibold">Telemedicina</h5>
+            <p class="text-muted">Televisite sicure, follow-up clinici e monitoraggio continuo.</p>
           </div>
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card card-glass h-100">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1504439468489-c8920d796a29?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Diagnostica" />
           <div class="card-body">
-            <h5 class="fw-semibold">Sicurezza & identità</h5>
-            <p class="text-muted">Keycloak, JWT e audit trail per la massima conformità.</p>
+            <h5 class="fw-semibold">Diagnostica avanzata</h5>
+            <p class="text-muted">Referti digitali, imaging e laboratorio sempre disponibili.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Riabilitazione" />
+          <div class="card-body">
+            <h5 class="fw-semibold">Riabilitazione personalizzata</h5>
+            <p class="text-muted">Percorsi su misura con fisioterapisti e team multidisciplinari.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1512678080530-7760d81faba6?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Assistenza domiciliare" />
+          <div class="card-body">
+            <h5 class="fw-semibold">Assistenza domiciliare</h5>
+            <p class="text-muted">Visite a domicilio e piani di cura coordinati con la famiglia.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Farmacia clinica" />
+          <div class="card-body">
+            <h5 class="fw-semibold">Farmacia clinica</h5>
+            <p class="text-muted">Prescrizioni digitali, monitoraggio terapie e supporto al paziente.</p>
           </div>
         </div>
       </div>
@@ -88,12 +136,191 @@
 <section class="py-5 bg-white">
   <div class="container">
     <div class="row align-items-center g-4">
-      <div class="col-lg-8">
-        <h4 class="fw-bold mb-2">Vuoi accedere alla piattaforma?</h4>
-        <p class="text-muted mb-0">L’area privata centralizza prenotazioni, consensi, documenti, notifiche, audit e pagamenti in un unico flusso operativo.</p>
+      <div class="col-lg-6">
+        <p class="section-title">Esperienza dei pazienti</p>
+        <h3 class="fw-bold mb-3">Recensioni che raccontano la qualità del nostro servizio.</h3>
+        <p class="text-muted mb-0">
+          Ci prendiamo cura delle persone con percorsi assistenziali completi, tecnologia all’avanguardia e un team
+          medico multidisciplinare.
+        </p>
       </div>
-      <div class="col-lg-4 text-lg-end">
-        <a routerLink="/portal" class="btn btn-primary btn-lg">Accedi</a>
+      <div class="col-lg-6">
+        <div id="testimonianzeCarousel" class="carousel slide" data-bs-ride="carousel">
+          <div class="carousel-inner">
+            <div class="carousel-item active">
+              <div class="card card-glass p-4">
+                <p class="fs-5">“Prenotazione rapidissima e televisita puntuale. Ho avuto tutte le risposte in giornata.”</p>
+                <div class="d-flex align-items-center gap-3 mt-3">
+                  <div class="avatar-circle">LC</div>
+                  <div>
+                    <h6 class="mb-0">Laura C.</h6>
+                    <small class="text-muted">Cardiologia</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="carousel-item">
+              <div class="card card-glass p-4">
+                <p class="fs-5">“Referti digitali immediati e staff sempre disponibile. Consigliatissimo.”</p>
+                <div class="d-flex align-items-center gap-3 mt-3">
+                  <div class="avatar-circle">MG</div>
+                  <div>
+                    <h6 class="mb-0">Marco G.</h6>
+                    <small class="text-muted">Diagnostica</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="carousel-item">
+              <div class="card card-glass p-4">
+                <p class="fs-5">“Percorso di riabilitazione personalizzato e follow-up costante. Mi sono sentita seguita.”</p>
+                <div class="d-flex align-items-center gap-3 mt-3">
+                  <div class="avatar-circle">AF</div>
+                  <div>
+                    <h6 class="mb-0">Anna F.</h6>
+                    <small class="text-muted">Riabilitazione</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="carousel-control-prev" type="button" data-bs-target="#testimonianzeCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Precedente</span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#testimonianzeCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Successivo</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="struttura" class="py-5">
+  <div class="container">
+    <p class="section-title">La nostra struttura</p>
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-6">
+        <h3 class="fw-bold">Un campus sanitario con reparti specializzati e percorsi dedicati.</h3>
+        <p class="text-muted">
+          La Clinica Sanitech integra reparti di cardiologia, neurologia, medicina interna, riabilitazione e diagnostica
+          avanzata, con accessi dedicati e supporto continuo.
+        </p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card card-glass p-3 h-100">
+              <h6 class="fw-semibold mb-1">Reparti principali</h6>
+              <p class="text-muted mb-0">Cardiologia, Neurologia, Medicina interna, Riabilitazione.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card card-glass p-3 h-100">
+              <h6 class="fw-semibold mb-1">Come raggiungerci</h6>
+              <p class="text-muted mb-0">Navette dedicate, parcheggio coperto, accessi facilitati per disabili.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card card-glass p-3 h-100">
+              <h6 class="fw-semibold mb-1">Orari</h6>
+              <p class="text-muted mb-0">Ambulatori 7:30-19:30, pronto intervento h24.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card card-glass p-3 h-100">
+              <h6 class="fw-semibold mb-1">Accoglienza</h6>
+              <p class="text-muted mb-0">Infopoint dedicato, supporto multilingua, concierge sanitario.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <img
+          src="https://images.unsplash.com/photo-1504814532849-927cc6a9ab61?auto=format&fit=crop&w=900&q=80"
+          class="img-fluid rounded-4 shadow-sm"
+          alt="Struttura Sanitech" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="chi-siamo" class="py-5 bg-white">
+  <div class="container">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-5">
+        <img
+          src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=800&q=80"
+          class="img-fluid rounded-4 shadow-sm"
+          alt="Team Sanitech" />
+      </div>
+      <div class="col-lg-7">
+        <p class="section-title">Chi siamo</p>
+        <h3 class="fw-bold">Una rete di professionisti per la salute delle persone.</h3>
+        <p class="text-muted">
+          Sanitech Labs nasce per integrare tecnologia e competenze cliniche. Offriamo un’esperienza digitale completa,
+          ma con un team medico sempre vicino al paziente.
+        </p>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="stat-card text-center">
+              <h4 class="fw-bold mb-1">120+</h4>
+              <p class="text-muted mb-0">Specialisti</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card text-center">
+              <h4 class="fw-bold mb-1">35k</h4>
+              <p class="text-muted mb-0">Pazienti seguiti</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card text-center">
+              <h4 class="fw-bold mb-1">15</h4>
+              <p class="text-muted mb-0">Reparti attivi</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contatti" class="py-5">
+  <div class="container">
+    <p class="section-title">Contatti</p>
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="card card-glass p-4 h-100">
+          <h5 class="fw-semibold">Clinica Sanitech</h5>
+          <p class="text-muted mb-2">Via della Salute 24, Milano</p>
+          <p class="text-muted mb-2">+39 02 1234 5678</p>
+          <p class="text-muted mb-0">assistenza@sanitech.it</p>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div class="card card-glass p-4 h-100">
+          <h5 class="fw-semibold mb-3">Scrivici per informazioni</h5>
+          <form>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <input class="form-control" type="text" placeholder="Nome e cognome" />
+              </div>
+              <div class="col-md-6">
+                <input class="form-control" type="email" placeholder="Email" />
+              </div>
+              <div class="col-12">
+                <input class="form-control" type="text" placeholder="Oggetto" />
+              </div>
+              <div class="col-12">
+                <textarea class="form-control" rows="4" placeholder="Messaggio"></textarea>
+              </div>
+              <div class="col-12 text-end">
+                <button class="btn btn-primary" type="button">Invia richiesta</button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>

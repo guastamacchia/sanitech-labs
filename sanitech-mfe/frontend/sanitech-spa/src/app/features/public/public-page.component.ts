@@ -19,7 +19,7 @@ export class PublicPageComponent {
   loginError = '';
   profiles = this.auth.mockProfiles;
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(public auth: AuthService, private router: Router) {}
 
   submitLogin(): void {
     this.loginError = '';

@@ -1,22 +1,40 @@
-<nav class="navbar navbar-expand-lg bg-white shadow-sm border-bottom">
+<nav class="navbar navbar-expand-lg bg-white shadow-sm border-bottom fixed-top">
   <div class="container">
-    <a class="navbar-brand fw-bold text-primary" routerLink="/">Sanitech</a>
+    <a class="navbar-brand fw-bold text-primary d-flex align-items-center gap-2" routerLink="/">
+      <img src="assets/sanitech-logo.svg" alt="Logo Sanitech" width="32" height="32" />
+      Sanitech
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navLinks">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navLinks">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link" routerLink="/" routerLinkActive="active">Portale pubblico</a>
+          <a class="nav-link" routerLink="/" fragment="chi-siamo">Chi siamo</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" routerLink="/portal" routerLinkActive="active">Area privata</a>
+          <a class="nav-link" routerLink="/" fragment="struttura">Struttura</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Servizi
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">Prenotazioni digitali</a></li>
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">Televisita e follow-up</a></li>
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">Diagnostica avanzata</a></li>
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">Riabilitazione personalizzata</a></li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/" fragment="contatti">Contatti</a>
         </li>
       </ul>
       <div class="d-flex align-items-center gap-2 ms-lg-3">
-        <span class="badge bg-primary" *ngIf="auth.isAuthenticated">{{ auth.roleLabel }}</span>
-        <span class="small text-muted" *ngIf="auth.isAuthenticated">👋 {{ auth.displayName }}</span>
-        <a class="btn btn-outline-primary" *ngIf="!auth.isAuthenticated" routerLink="/" fragment="accesso">Accedi</a>
+        <ng-container *ngIf="auth.isAuthenticated">
+          <span class="badge bg-primary">{{ auth.roleLabel }}</span>
+          <span class="small text-muted">👋 {{ auth.displayName }}</span>
+        </ng-container>
         <button class="btn btn-outline-secondary" *ngIf="auth.isAuthenticated" (click)="logout()">
           Esci
         </button>
