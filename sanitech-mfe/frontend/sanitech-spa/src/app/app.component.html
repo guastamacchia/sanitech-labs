@@ -10,24 +10,27 @@
     <div class="collapse navbar-collapse" id="navLinks">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link" routerLink="/" fragment="chi-siamo">Chi siamo</a>
+          <a class="nav-link" routerLink="/" fragment="chi-siamo">ℹ️ Chi siamo</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" routerLink="/" fragment="struttura">Struttura</a>
+          <a class="nav-link" routerLink="/" fragment="struttura">🏥 Struttura</a>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Servizi
+            🩺 Servizi
           </a>
           <ul class="dropdown-menu">
-            <li><a class="dropdown-item" routerLink="/" fragment="servizi">Prenotazioni digitali</a></li>
-            <li><a class="dropdown-item" routerLink="/" fragment="servizi">Televisita e follow-up</a></li>
-            <li><a class="dropdown-item" routerLink="/" fragment="servizi">Diagnostica avanzata</a></li>
-            <li><a class="dropdown-item" routerLink="/" fragment="servizi">Riabilitazione personalizzata</a></li>
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">📅 Prenotazioni digitali</a></li>
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">💻 Televisita e follow-up</a></li>
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">🧪 Diagnostica avanzata</a></li>
+            <li><a class="dropdown-item" routerLink="/" fragment="servizi">🧘 Riabilitazione personalizzata</a></li>
           </ul>
         </li>
         <li class="nav-item">
-          <a class="nav-link" routerLink="/" fragment="contatti">Contatti</a>
+          <a class="nav-link" routerLink="/" fragment="contatti">📞 Contatti</a>
+        </li>
+        <li class="nav-item" *ngIf="auth.isAuthenticated">
+          <a class="nav-link" routerLink="/portal">🔒 Area riservata</a>
         </li>
       </ul>
       <div class="d-flex align-items-center gap-2 ms-lg-3">
