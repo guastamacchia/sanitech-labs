@@ -77,6 +77,7 @@ interface NotificationItem {
 interface PrescriptionItem {
   id: number;
   patientId: number;
+  doctorId: number;
   drug: string;
   dosage: string;
   status: string;
@@ -151,6 +152,7 @@ export class ResourcePageComponent {
   schedulingError = '';
   bookingForm = {
     slotId: null as number | null,
+    speciality: '',
     reason: ''
   };
   slotForm = {
@@ -165,7 +167,8 @@ export class ResourcePageComponent {
   docForm = {
     patientId: null as number | null,
     type: 'REFERT',
-    name: ''
+    name: '',
+    fileName: ''
   };
   consentForm = {
     consentType: 'GDPR',
@@ -280,6 +283,7 @@ export class ResourcePageComponent {
     if (this.mode === 'prescribing') {
       this.loadPrescriptions();
       this.loadPatients();
+      this.loadDoctors();
     }
     if (this.mode === 'televisit') {
       this.loadTelevisits();
@@ -358,9 +362,32 @@ export class ResourcePageComponent {
         this.schedulingError = 'Impossibile caricare i medici.';
       }
     });
+    this.api.request<SpecialityItem[]>('GET', '/api/specialities').subscribe({
+      next: (specialities) => {
+        this.specialities = specialities;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile caricare le specializzazioni.';
+      }
+    });
+  }
+
+  loadDoctors(): void {
+    this.api.request<DoctorItem[]>('GET', '/api/doctors').subscribe({
+      next: (doctors) => {
+        this.doctors = doctors;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare i medici.';
+      }
+    });
   }
 
   submitBooking(): void {
+    if (this.isPatient && !this.bookingForm.speciality) {
+      this.schedulingError = 'Seleziona una specializzazione.';
+      return;
+    }
     if (!this.bookingForm.slotId) {
       this.schedulingError = 'Seleziona uno slot disponibile.';
       return;
@@ -400,7 +427,7 @@ export class ResourcePageComponent {
   }
 
   getDoctorLabel(doctorId: number): string {
-    const doctor = this.doctors.find((item) => item.id === doctorId);
+    const doctor = this.getDoctorById(doctorId);
     return doctor ? `${doctor.firstName} ${doctor.lastName}` : `Medico ${doctorId}`;
   }
 
@@ -482,6 +509,16 @@ export class ResourcePageComponent {
   }
 
   get availableSlots(): SchedulingSlot[] {
+    if (this.isPatient) {
+      if (!this.bookingForm.speciality) {
+        return [];
+      }
+      return this.slots.filter(
+        (slot) =>
+          slot.status === 'AVAILABLE' &&
+          this.getDoctorById(slot.doctorId)?.speciality === this.bookingForm.speciality
+      );
+    }
     return this.slots.filter((slot) => slot.status === 'AVAILABLE');
   }
 
@@ -508,6 +545,20 @@ export class ResourcePageComponent {
       return this.prescriptions.filter((prescription) => prescription.patientId === 1);
     }
     return this.prescriptions;
+  }
+
+  get visibleAdmissions(): AdmissionItem[] {
+    if (this.isDoctor) {
+      const department = this.currentDoctorDepartment;
+      if (!department) {
+        return [];
+      }
+      return this.admissions.filter((admission) => admission.department === department);
+    }
+    if (this.isPatient) {
+      return this.admissions.filter((admission) => admission.patientId === 1);
+    }
+    return this.admissions;
   }
 
   get doctorSlotsByDate(): Array<{ date: string; slots: SchedulingSlot[] }> {
@@ -564,6 +615,14 @@ export class ResourcePageComponent {
     return this.doctors[0]?.id ?? 1;
   }
 
+  get currentDoctorDepartment(): string {
+    return this.doctors[0]?.speciality ?? '';
+  }
+
+  getDoctorById(doctorId: number): DoctorItem | undefined {
+    return this.doctors.find((item) => item.id === doctorId);
+  }
+
   getSlotLabel(slot: SchedulingSlot): string {
     return `${this.formatDate(slot.date)} • ${slot.time} • ${this.getDoctorLabel(slot.doctorId)} • ${this.getModalityLabel(
       slot.modality
@@ -613,6 +672,16 @@ export class ResourcePageComponent {
     );
   }
 
+  cancelAppointment(appointment: SchedulingAppointment): void {
+    if (appointment.status !== 'PENDING') {
+      return;
+    }
+    this.appointments = this.appointments.filter((item) => item.id !== appointment.id);
+    this.slots = this.slots.map((slot) =>
+      slot.id === appointment.slotId ? { ...slot, status: 'AVAILABLE' } : slot
+    );
+  }
+
   loadDocs(): void {
     this.isLoading = true;
     this.docsError = '';
@@ -637,12 +706,15 @@ export class ResourcePageComponent {
   }
 
   submitDocument(): void {
-    if (!this.docForm.name.trim()) {
-      this.docsError = 'Inserisci il nome del documento.';
+    if (!this.docForm.fileName.trim()) {
+      this.docsError = 'Seleziona un documento dal tuo dispositivo.';
       return;
     }
     this.isLoading = true;
     this.docsError = '';
+    if (!this.docForm.name.trim()) {
+      this.docForm.name = this.docForm.fileName;
+    }
     const payload: Record<string, unknown> = {
       type: this.docForm.type,
       name: this.docForm.name
@@ -654,6 +726,7 @@ export class ResourcePageComponent {
       next: (doc) => {
         this.documents = [...this.documents, doc];
         this.docForm.name = '';
+        this.docForm.fileName = '';
         this.isLoading = false;
       },
       error: () => {
@@ -859,6 +932,7 @@ export class ResourcePageComponent {
     this.prescribingError = '';
     this.api.request<PrescriptionItem>('POST', '/api/prescribing/prescriptions', {
       patientId: this.prescriptionForm.patientId,
+      doctorId: this.currentDoctorId,
       drug: this.prescriptionForm.drug,
       dosage: this.prescriptionForm.dosage
     }).subscribe({
@@ -892,6 +966,18 @@ export class ResourcePageComponent {
 
   deleteConsent(consent: ConsentItem): void {
     this.consents = this.consents.filter((item) => item.id !== consent.id);
+  }
+
+  handleDocumentFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) {
+      return;
+    }
+    this.docForm.fileName = file.name;
+    if (!this.docForm.name.trim()) {
+      this.docForm.name = file.name;
+    }
   }
 
   loadPatients(): void {

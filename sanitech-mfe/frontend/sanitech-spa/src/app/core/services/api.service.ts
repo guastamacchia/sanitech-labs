@@ -88,7 +88,7 @@ export class ApiService {
       { id: 7, department: 'NEURO', status: 'AVAILABLE' }
     ],
     prescriptions: [
-      { id: 60, patientId: 1, drug: 'Atorvastatina', dosage: '10mg', status: 'ACTIVE' }
+      { id: 60, patientId: 1, doctorId: 2, drug: 'Atorvastatina', dosage: '10mg', status: 'ACTIVE' }
     ],
     televisits: [
       { id: 70, appointmentId: 22, provider: 'LIVEKIT', status: 'READY', token: 'tv-abc-123' }
@@ -286,6 +286,7 @@ export class ApiService {
           const newPrescription = {
             id: this.nextId(this.mockStore.prescriptions),
             patientId: this.getNumber(payload.patientId, 1),
+            doctorId: this.getNumber(payload.doctorId, 2),
             drug: this.getString(payload.drug, 'Farmaco prescritto'),
             dosage: this.getString(payload.dosage, '10mg'),
             status: this.getString(payload.status, 'ACTIVE')

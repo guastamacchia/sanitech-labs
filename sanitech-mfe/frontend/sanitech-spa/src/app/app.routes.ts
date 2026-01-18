@@ -297,6 +297,17 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'doctor/payments',
+        component: ResourcePageComponent,
+        canActivate: [roleGuard('ROLE_DOCTOR')],
+        data: {
+          title: 'Ricoveri reparto',
+          description: 'Ricoveri in corso per il reparto del medico.',
+          endpoints: paymentsEndpoints,
+          view: 'payments'
+        }
+      },
+      {
         path: 'doctor/docs',
         component: ResourcePageComponent,
         canActivate: [roleGuard('ROLE_DOCTOR')],

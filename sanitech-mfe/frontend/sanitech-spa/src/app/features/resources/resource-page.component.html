@@ -73,7 +73,17 @@
                       <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
                       <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
                       <td>{{ appointment.reason }}</td>
-                      <td>{{ getStatusLabel(appointment.status) }}</td>
+                      <td>
+                        <span>{{ getStatusLabel(appointment.status) }}</span>
+                        <button
+                          *ngIf="isPatient && appointment.status === 'PENDING'"
+                          class="btn btn-outline-danger btn-sm ms-2"
+                          type="button"
+                          aria-label="Annulla appuntamento"
+                          (click)="cancelAppointment(appointment)">
+                          🗑️
+                        </button>
+                      </td>
                       <td *ngIf="isDoctor">
                         <button
                           class="btn btn-outline-primary btn-sm"
@@ -100,6 +110,20 @@
               <div class="card-body">
                 <h5 class="fw-semibold mb-3">Nuova prenotazione</h5>
                 <form (ngSubmit)="submitBooking()" #bookingFormRef="ngForm">
+                  <div class="mb-3">
+                    <label class="form-label">Specializzazione</label>
+                    <select
+                      class="form-select"
+                      name="bookingSpeciality"
+                      [(ngModel)]="bookingForm.speciality"
+                      (ngModelChange)="bookingForm.slotId = null"
+                      required>
+                      <option value="" disabled>Seleziona una specializzazione</option>
+                      <option *ngFor="let speciality of specialities" [value]="speciality.code">
+                        {{ speciality.name }}
+                      </option>
+                    </select>
+                  </div>
                   <div class="mb-3">
                     <label class="form-label">Slot disponibile</label>
                     <select class="form-select" name="slotId" [(ngModel)]="bookingForm.slotId" required>
@@ -213,7 +237,7 @@
               </div>
             </div>
 
-            <div class="card card-glass">
+            <div class="card card-glass" *ngIf="!isDoctor">
               <div class="card-body">
                 <h5 class="fw-semibold mb-3">Consensi informati</h5>
                 <div class="table-responsive">
@@ -279,6 +303,11 @@
                     </select>
                   </div>
                   <div class="mb-3">
+                    <label class="form-label">Documento</label>
+                    <input class="form-control" type="file" name="docFile" (change)="handleDocumentFileSelected($event)" />
+                    <div class="form-text" *ngIf="docForm.fileName">Selezionato: {{ docForm.fileName }}</div>
+                  </div>
+                  <div class="mb-3">
                     <label class="form-label">Nome documento</label>
                     <input class="form-control" type="text" name="docName" [(ngModel)]="docForm.name" required />
                   </div>
@@ -320,10 +349,10 @@
         <ng-container *ngIf="mode === 'payments'; else notificationsLayout">
           <div class="row g-4">
             <div class="col-lg-8">
-              <div class="card card-glass mb-4">
-                <div class="card-body">
-                  <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">Pagamenti</h5>
+            <div class="card card-glass mb-4" *ngIf="!isDoctor">
+              <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                  <h5 class="fw-semibold mb-0">Pagamenti</h5>
                     <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
                       Aggiorna
                     </button>
@@ -362,7 +391,7 @@
 
               <div class="card card-glass">
                 <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Ricoveri</h5>
+                  <h5 class="fw-semibold mb-3">{{ isDoctor ? 'Ricoveri del reparto' : 'Ricoveri' }}</h5>
                   <div class="table-responsive">
                     <table class="table align-middle">
                       <thead>
@@ -377,7 +406,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let admission of admissions">
+                        <tr *ngFor="let admission of visibleAdmissions">
                           <td>{{ admission.id }}</td>
                           <td *ngIf="!isPatient">{{ admission.patientId }}</td>
                           <td>{{ admission.department }}</td>
@@ -394,8 +423,8 @@
                             </button>
                           </td>
                         </tr>
-                        <tr *ngIf="!admissions.length">
-                          <td colspan="6" class="text-center text-muted">Nessun ricovero registrato.</td>
+                        <tr *ngIf="!visibleAdmissions.length">
+                          <td [attr.colspan]="isPatient ? 6 : 6" class="text-center text-muted">Nessun ricovero registrato.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -614,7 +643,7 @@
       <ng-template #prescribingLayout>
         <ng-container *ngIf="mode === 'prescribing'; else televisitLayout">
           <div class="row g-4">
-            <div class="col-lg-8">
+            <div class="col-lg-12" *ngIf="isPatient; else prescribingStaff">
               <div class="card card-glass">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
@@ -627,7 +656,7 @@
                     <table class="table align-middle">
                       <thead>
                         <tr>
-                          <th *ngIf="!isPatient">Paziente</th>
+                          <th>Medico</th>
                           <th>Farmaco</th>
                           <th>Posologia</th>
                           <th>Stato</th>
@@ -635,13 +664,13 @@
                       </thead>
                       <tbody>
                         <tr *ngFor="let prescription of visiblePrescriptions">
-                          <td *ngIf="!isPatient">{{ getPatientLabel(prescription.patientId) }}</td>
+                          <td>{{ getDoctorLabel(prescription.doctorId) }}</td>
                           <td>{{ prescription.drug }}</td>
                           <td>{{ prescription.dosage }}</td>
                           <td>{{ getPrescriptionStatusLabel(prescription.status) }}</td>
                         </tr>
                         <tr *ngIf="!visiblePrescriptions.length">
-                          <td [attr.colspan]="isPatient ? 3 : 4" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
+                          <td colspan="4" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -650,36 +679,74 @@
               </div>
             </div>
 
-            <div class="col-lg-4">
-              <div class="card card-glass" *ngIf="isDoctor">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Nuova prescrizione</h5>
-                  <form (ngSubmit)="submitPrescription()" #prescriptionFormRef="ngForm">
-                    <div class="mb-3">
-                      <label class="form-label">Paziente</label>
-                      <select class="form-select" name="prescriptionPatientId" [(ngModel)]="prescriptionForm.patientId" required>
-                        <option [ngValue]="null" disabled>Seleziona un paziente</option>
-                        <option *ngFor="let patient of patients" [ngValue]="patient.id">
-                          {{ patient.firstName }} {{ patient.lastName }}
-                        </option>
-                      </select>
+            <ng-template #prescribingStaff>
+              <div class="col-lg-8">
+                <div class="card card-glass">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                      <h5 class="fw-semibold mb-0">Prescrizioni attive</h5>
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadPrescriptions()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
                     </div>
-                    <div class="mb-3">
-                      <label class="form-label">Farmaco</label>
-                      <input class="form-control" type="text" name="prescriptionDrug" [(ngModel)]="prescriptionForm.drug" required />
+                    <div class="table-responsive">
+                      <table class="table align-middle">
+                        <thead>
+                          <tr>
+                            <th>Paziente</th>
+                            <th>Farmaco</th>
+                            <th>Posologia</th>
+                            <th>Stato</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let prescription of visiblePrescriptions">
+                            <td>{{ getPatientLabel(prescription.patientId) }}</td>
+                            <td>{{ prescription.drug }}</td>
+                            <td>{{ prescription.dosage }}</td>
+                            <td>{{ getPrescriptionStatusLabel(prescription.status) }}</td>
+                          </tr>
+                          <tr *ngIf="!visiblePrescriptions.length">
+                            <td colspan="4" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </div>
-                    <div class="mb-3">
-                      <label class="form-label">Posologia</label>
-                      <input class="form-control" type="text" name="prescriptionDosage" [(ngModel)]="prescriptionForm.dosage" required />
-                    </div>
-                    <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
-                    <button class="btn btn-primary w-100" type="submit" [disabled]="prescriptionFormRef.invalid || isLoading">
-                      {{ isLoading ? 'Salvataggio...' : 'Registra prescrizione' }}
-                    </button>
-                  </form>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              <div class="col-lg-4">
+                <div class="card card-glass">
+                  <div class="card-body">
+                    <h5 class="fw-semibold mb-3">Nuova prescrizione</h5>
+                    <form (ngSubmit)="submitPrescription()" #prescriptionFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Paziente</label>
+                        <select class="form-select" name="prescriptionPatientId" [(ngModel)]="prescriptionForm.patientId" required>
+                          <option [ngValue]="null" disabled>Seleziona un paziente</option>
+                          <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                            {{ patient.firstName }} {{ patient.lastName }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Farmaco</label>
+                        <input class="form-control" type="text" name="prescriptionDrug" [(ngModel)]="prescriptionForm.drug" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Posologia</label>
+                        <input class="form-control" type="text" name="prescriptionDosage" [(ngModel)]="prescriptionForm.dosage" required />
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
+                      <button class="btn btn-primary w-100" type="submit" [disabled]="prescriptionFormRef.invalid || isLoading">
+                        {{ isLoading ? 'Salvataggio...' : 'Registra prescrizione' }}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </ng-template>
           </div>
         </ng-container>
       </ng-template>
