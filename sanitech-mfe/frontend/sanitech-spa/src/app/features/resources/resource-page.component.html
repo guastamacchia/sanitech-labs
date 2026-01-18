@@ -6,7 +6,9 @@
         <h2 class="fw-bold mb-2">{{ title }}</h2>
         <p class="text-muted mb-0">{{ description }}</p>
       </div>
-      <span class="badge badge-soft" *ngIf="selectedEndpoint">Gateway: {{ selectedEndpoint?.path }}</span>
+      <button class="btn btn-outline-primary btn-sm" type="button" (click)="goToPortalHome()">
+        Torna a {{ portalHomeLabel }}
+      </button>
     </div>
 
     <ng-container *ngIf="mode === 'scheduling'; else otherLayouts">
@@ -130,8 +132,6 @@
                   <table class="table align-middle">
                     <thead>
                       <tr>
-                        <th>ID</th>
-                        <th>Paziente</th>
                         <th>Tipo</th>
                         <th>Nome</th>
                         <th>Data</th>
@@ -139,14 +139,12 @@
                     </thead>
                     <tbody>
                       <tr *ngFor="let doc of documents">
-                        <td>{{ doc.id }}</td>
-                        <td>{{ doc.patientId }}</td>
-                        <td>{{ doc.type }}</td>
+                        <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
-                        <td>{{ doc.uploadedAt }}</td>
+                        <td>{{ formatDate(doc.uploadedAt) }}</td>
                       </tr>
                       <tr *ngIf="!documents.length">
-                        <td colspan="5" class="text-center text-muted">Nessun documento presente.</td>
+                        <td colspan="3" class="text-center text-muted">Nessun documento presente.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -161,8 +159,6 @@
                   <table class="table align-middle">
                     <thead>
                       <tr>
-                        <th>ID</th>
-                        <th>Paziente</th>
                         <th>Tipo</th>
                         <th>Accettato</th>
                         <th>Data firma</th>
@@ -170,18 +166,16 @@
                     </thead>
                     <tbody>
                       <tr *ngFor="let consent of consents">
-                        <td>{{ consent.id }}</td>
-                        <td>{{ consent.patientId }}</td>
                         <td>{{ consent.consentType }}</td>
                         <td>
                           <span class="badge" [class.bg-success]="consent.accepted" [class.bg-secondary]="!consent.accepted">
                             {{ consent.accepted ? 'Si' : 'No' }}
                           </span>
                         </td>
-                        <td>{{ consent.signedAt }}</td>
+                        <td>{{ formatDate(consent.signedAt) }}</td>
                       </tr>
                       <tr *ngIf="!consents.length">
-                        <td colspan="5" class="text-center text-muted">Nessun consenso registrato.</td>
+                        <td colspan="3" class="text-center text-muted">Nessun consenso registrato.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -196,14 +190,9 @@
                 <h5 class="fw-semibold mb-3">Carica documento</h5>
                 <form (ngSubmit)="submitDocument()" #docFormRef="ngForm">
                   <div class="mb-3">
-                    <label class="form-label">ID Paziente</label>
-                    <input class="form-control" type="number" name="docPatientId" [(ngModel)]="docForm.patientId" required />
-                  </div>
-                  <div class="mb-3">
                     <label class="form-label">Tipo documento</label>
                     <select class="form-select" name="docType" [(ngModel)]="docForm.type" required>
                       <option value="REFERT">Referto</option>
-                      <option value="REPORT">Report</option>
                       <option value="CERTIFICATE">Certificato</option>
                     </select>
                   </div>
@@ -223,10 +212,6 @@
               <div class="card-body">
                 <h5 class="fw-semibold mb-3">Registra consenso</h5>
                 <form (ngSubmit)="submitConsent()" #consentFormRef="ngForm">
-                  <div class="mb-3">
-                    <label class="form-label">ID Paziente</label>
-                    <input class="form-control" type="number" name="consentPatientId" [(ngModel)]="consentForm.patientId" required />
-                  </div>
                   <div class="mb-3">
                     <label class="form-label">Tipo consenso</label>
                     <select class="form-select" name="consentType" [(ngModel)]="consentForm.consentType" required>
@@ -266,7 +251,7 @@
                       <thead>
                         <tr>
                           <th>ID</th>
-                          <th>Paziente</th>
+                          <th *ngIf="!isPatient">Paziente</th>
                           <th>Importo</th>
                           <th>Valuta</th>
                           <th>Stato</th>
@@ -276,14 +261,14 @@
                       <tbody>
                         <tr *ngFor="let payment of payments">
                           <td>{{ payment.id }}</td>
-                          <td>{{ payment.patientId }}</td>
+                          <td *ngIf="!isPatient">{{ payment.patientId }}</td>
                           <td>{{ payment.amount }}</td>
                           <td>{{ payment.currency }}</td>
                           <td>{{ payment.status }}</td>
                           <td>{{ payment.paidAt }}</td>
                         </tr>
                         <tr *ngIf="!payments.length">
-                          <td colspan="6" class="text-center text-muted">Nessun pagamento registrato.</td>
+                          <td [attr.colspan]="isPatient ? 5 : 6" class="text-center text-muted">Nessun pagamento registrato.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -299,21 +284,31 @@
                       <thead>
                         <tr>
                           <th>ID</th>
-                          <th>Paziente</th>
+                          <th *ngIf="!isPatient">Paziente</th>
                           <th>Reparto</th>
                           <th>Letto</th>
                           <th>Stato</th>
                           <th>Data</th>
+                          <th *ngIf="isPatient">Azione</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr *ngFor="let admission of admissions">
                           <td>{{ admission.id }}</td>
-                          <td>{{ admission.patientId }}</td>
+                          <td *ngIf="!isPatient">{{ admission.patientId }}</td>
                           <td>{{ admission.department }}</td>
                           <td>{{ admission.bedId }}</td>
                           <td>{{ admission.status }}</td>
                           <td>{{ admission.admittedAt }}</td>
+                          <td *ngIf="isPatient">
+                            <button
+                              class="btn btn-outline-primary btn-sm"
+                              type="button"
+                              (click)="confirmAdmission(admission)"
+                              [disabled]="admission.status === 'CONFIRMED'">
+                              {{ admission.status === 'CONFIRMED' ? 'Confermato' : 'Conferma ricovero' }}
+                            </button>
+                          </td>
                         </tr>
                         <tr *ngIf="!admissions.length">
                           <td colspan="6" class="text-center text-muted">Nessun ricovero registrato.</td>
@@ -330,7 +325,7 @@
                 <div class="card-body">
                   <h5 class="fw-semibold mb-3">Registra pagamento</h5>
                   <form (ngSubmit)="submitPayment()" #paymentFormRef="ngForm">
-                    <div class="mb-3">
+                    <div class="mb-3" *ngIf="!isPatient">
                       <label class="form-label">ID Paziente</label>
                       <input class="form-control" type="number" name="paymentPatientId" [(ngModel)]="paymentForm.patientId" required />
                     </div>
@@ -353,7 +348,7 @@
                 </div>
               </div>
 
-              <div class="card card-glass">
+              <div class="card card-glass" *ngIf="!isPatient">
                 <div class="card-body">
                   <h5 class="fw-semibold mb-3">Registra ricovero</h5>
                   <form (ngSubmit)="submitAdmission()" #admissionFormRef="ngForm">
@@ -390,17 +385,15 @@
               <div class="card card-glass">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">Notifiche inviate</h5>
+                    <h5 class="fw-semibold mb-0">{{ isPatient ? 'Notifiche ricevute' : 'Notifiche inviate' }}</h5>
                     <button class="btn btn-outline-secondary btn-sm" (click)="loadNotifications()" [disabled]="isLoading">
                       Aggiorna
                     </button>
                   </div>
                   <div class="table-responsive">
-                    <table class="table align-middle">
+                    <table class="table align-middle" *ngIf="isPatient; else staffNotificationsTable">
                       <thead>
                         <tr>
-                          <th>ID</th>
-                          <th>Destinatario</th>
                           <th>Canale</th>
                           <th>Messaggio</th>
                           <th>Stato</th>
@@ -408,17 +401,40 @@
                       </thead>
                       <tbody>
                         <tr *ngFor="let notification of notifications">
-                          <td>{{ notification.id }}</td>
-                          <td>{{ notification.recipient }}</td>
                           <td>{{ notification.channel }}</td>
                           <td>{{ notification.message }}</td>
                           <td>{{ notification.status }}</td>
                         </tr>
                         <tr *ngIf="!notifications.length">
-                          <td colspan="5" class="text-center text-muted">Nessuna notifica presente.</td>
+                          <td colspan="3" class="text-center text-muted">Nessuna notifica presente.</td>
                         </tr>
                       </tbody>
                     </table>
+                    <ng-template #staffNotificationsTable>
+                      <table class="table align-middle">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Destinatario</th>
+                            <th>Canale</th>
+                            <th>Messaggio</th>
+                            <th>Stato</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let notification of notifications">
+                            <td>{{ notification.id }}</td>
+                            <td>{{ notification.recipient }}</td>
+                            <td>{{ notification.channel }}</td>
+                            <td>{{ notification.message }}</td>
+                            <td>{{ notification.status }}</td>
+                          </tr>
+                          <tr *ngIf="!notifications.length">
+                            <td colspan="5" class="text-center text-muted">Nessuna notifica presente.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </ng-template>
                   </div>
                 </div>
               </div>
@@ -427,29 +443,79 @@
             <div class="col-lg-4">
               <div class="card card-glass">
                 <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Invia notifica</h5>
-                  <form (ngSubmit)="submitNotification()" #notificationFormRef="ngForm">
-                    <div class="mb-3">
-                      <label class="form-label">Destinatario</label>
-                      <input class="form-control" type="email" name="notificationRecipient" [(ngModel)]="notificationForm.recipient" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Canale</label>
-                      <select class="form-select" name="notificationChannel" [(ngModel)]="notificationForm.channel" required>
-                        <option value="EMAIL">Email</option>
-                        <option value="SMS">SMS</option>
-                        <option value="APP">App</option>
-                      </select>
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Messaggio</label>
-                      <textarea class="form-control" rows="4" name="notificationMessage" [(ngModel)]="notificationForm.message" required></textarea>
-                    </div>
-                    <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
-                    <button class="btn btn-primary w-100" type="submit" [disabled]="notificationFormRef.invalid || isLoading">
-                      {{ isLoading ? 'Invio...' : 'Invia notifica' }}
-                    </button>
-                  </form>
+                  <ng-container *ngIf="isPatient; else staffNotificationForm">
+                    <h5 class="fw-semibold mb-3">Preferenze notifiche</h5>
+                    <form (ngSubmit)="saveNotificationPreferences()" #notificationPrefsRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input class="form-control" type="email" name="notificationEmail" [(ngModel)]="notificationPreferences.email" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Numero di telefono</label>
+                        <input class="form-control" type="tel" name="notificationPhone" [(ngModel)]="notificationPreferences.phone" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Canali preferiti</label>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="prefChannelEmail" name="prefChannelEmail" [(ngModel)]="notificationPreferences.channels.email" />
+                          <label class="form-check-label" for="prefChannelEmail">Email</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="prefChannelSms" name="prefChannelSms" [(ngModel)]="notificationPreferences.channels.sms" />
+                          <label class="form-check-label" for="prefChannelSms">SMS</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="prefChannelApp" name="prefChannelApp" [(ngModel)]="notificationPreferences.channels.app" />
+                          <label class="form-check-label" for="prefChannelApp">App</label>
+                        </div>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Tipologie di notifica</label>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="prefTypeAppointments" name="prefTypeAppointments" [(ngModel)]="notificationPreferences.types.appointments" />
+                          <label class="form-check-label" for="prefTypeAppointments">Appuntamenti</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="prefTypeDocuments" name="prefTypeDocuments" [(ngModel)]="notificationPreferences.types.documents" />
+                          <label class="form-check-label" for="prefTypeDocuments">Referti e documenti</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="prefTypePayments" name="prefTypePayments" [(ngModel)]="notificationPreferences.types.payments" />
+                          <label class="form-check-label" for="prefTypePayments">Pagamenti e ricoveri</label>
+                        </div>
+                      </div>
+                      <div class="alert alert-success py-2" *ngIf="notificationsSuccess">{{ notificationsSuccess }}</div>
+                      <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
+                      <button class="btn btn-primary w-100" type="submit" [disabled]="notificationPrefsRef.invalid || isLoading">
+                        Salva preferenze
+                      </button>
+                    </form>
+                  </ng-container>
+                  <ng-template #staffNotificationForm>
+                    <h5 class="fw-semibold mb-3">Invia notifica</h5>
+                    <form (ngSubmit)="submitNotification()" #notificationFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Destinatario</label>
+                        <input class="form-control" type="email" name="notificationRecipient" [(ngModel)]="notificationForm.recipient" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Canale</label>
+                        <select class="form-select" name="notificationChannel" [(ngModel)]="notificationForm.channel" required>
+                          <option value="EMAIL">Email</option>
+                          <option value="SMS">SMS</option>
+                          <option value="APP">App</option>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Messaggio</label>
+                        <textarea class="form-control" rows="4" name="notificationMessage" [(ngModel)]="notificationForm.message" required></textarea>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
+                      <button class="btn btn-primary w-100" type="submit" [disabled]="notificationFormRef.invalid || isLoading">
+                        {{ isLoading ? 'Invio...' : 'Invia notifica' }}
+                      </button>
+                    </form>
+                  </ng-template>
                 </div>
               </div>
             </div>
