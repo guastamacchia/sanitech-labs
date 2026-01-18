@@ -6,7 +6,9 @@
         <h2 class="fw-bold mb-2">{{ title }}</h2>
         <p class="text-muted mb-0">{{ description }}</p>
       </div>
-      <span class="badge badge-soft" *ngIf="selectedEndpoint">Gateway: {{ selectedEndpoint?.path }}</span>
+      <button class="btn btn-outline-primary btn-sm" type="button" (click)="goToPortalHome()">
+        Torna a {{ portalHomeLabel }}
+      </button>
     </div>
 
     <ng-container *ngIf="mode === 'scheduling'; else otherLayouts">
@@ -130,8 +132,6 @@
                   <table class="table align-middle">
                     <thead>
                       <tr>
-                        <th>ID</th>
-                        <th>Paziente</th>
                         <th>Tipo</th>
                         <th>Nome</th>
                         <th>Data</th>
@@ -139,14 +139,12 @@
                     </thead>
                     <tbody>
                       <tr *ngFor="let doc of documents">
-                        <td>{{ doc.id }}</td>
-                        <td>{{ doc.patientId }}</td>
-                        <td>{{ doc.type }}</td>
+                        <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
-                        <td>{{ doc.uploadedAt }}</td>
+                        <td>{{ formatDate(doc.uploadedAt) }}</td>
                       </tr>
                       <tr *ngIf="!documents.length">
-                        <td colspan="5" class="text-center text-muted">Nessun documento presente.</td>
+                        <td colspan="3" class="text-center text-muted">Nessun documento presente.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -161,8 +159,6 @@
                   <table class="table align-middle">
                     <thead>
                       <tr>
-                        <th>ID</th>
-                        <th>Paziente</th>
                         <th>Tipo</th>
                         <th>Accettato</th>
                         <th>Data firma</th>
@@ -170,18 +166,16 @@
                     </thead>
                     <tbody>
                       <tr *ngFor="let consent of consents">
-                        <td>{{ consent.id }}</td>
-                        <td>{{ consent.patientId }}</td>
                         <td>{{ consent.consentType }}</td>
                         <td>
                           <span class="badge" [class.bg-success]="consent.accepted" [class.bg-secondary]="!consent.accepted">
                             {{ consent.accepted ? 'Si' : 'No' }}
                           </span>
                         </td>
-                        <td>{{ consent.signedAt }}</td>
+                        <td>{{ formatDate(consent.signedAt) }}</td>
                       </tr>
                       <tr *ngIf="!consents.length">
-                        <td colspan="5" class="text-center text-muted">Nessun consenso registrato.</td>
+                        <td colspan="3" class="text-center text-muted">Nessun consenso registrato.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -196,14 +190,9 @@
                 <h5 class="fw-semibold mb-3">Carica documento</h5>
                 <form (ngSubmit)="submitDocument()" #docFormRef="ngForm">
                   <div class="mb-3">
-                    <label class="form-label">ID Paziente</label>
-                    <input class="form-control" type="number" name="docPatientId" [(ngModel)]="docForm.patientId" required />
-                  </div>
-                  <div class="mb-3">
                     <label class="form-label">Tipo documento</label>
                     <select class="form-select" name="docType" [(ngModel)]="docForm.type" required>
                       <option value="REFERT">Referto</option>
-                      <option value="REPORT">Report</option>
                       <option value="CERTIFICATE">Certificato</option>
                     </select>
                   </div>
@@ -223,10 +212,6 @@
               <div class="card-body">
                 <h5 class="fw-semibold mb-3">Registra consenso</h5>
                 <form (ngSubmit)="submitConsent()" #consentFormRef="ngForm">
-                  <div class="mb-3">
-                    <label class="form-label">ID Paziente</label>
-                    <input class="form-control" type="number" name="consentPatientId" [(ngModel)]="consentForm.patientId" required />
-                  </div>
                   <div class="mb-3">
                     <label class="form-label">Tipo consenso</label>
                     <select class="form-select" name="consentType" [(ngModel)]="consentForm.consentType" required>
