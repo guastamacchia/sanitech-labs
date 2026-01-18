@@ -146,9 +146,7 @@ export class ResourcePageComponent {
   appointments: SchedulingAppointment[] = [];
   schedulingError = '';
   bookingForm = {
-    patientId: 1,
-    doctorId: 2,
-    slotId: 1,
+    slotId: null as number | null,
     reason: ''
   };
   documents: DocumentItem[] = [];
@@ -318,25 +316,43 @@ export class ResourcePageComponent {
         this.schedulingError = 'Impossibile caricare gli appuntamenti.';
       }
     });
+    this.api.request<DoctorItem[]>('GET', '/api/doctors').subscribe({
+      next: (doctors) => {
+        this.doctors = doctors;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile caricare i medici.';
+      }
+    });
   }
 
   submitBooking(): void {
+    if (!this.bookingForm.slotId) {
+      this.schedulingError = 'Seleziona uno slot disponibile.';
+      return;
+    }
     if (!this.bookingForm.reason.trim()) {
       this.schedulingError = 'Inserisci il motivo della visita.';
+      return;
+    }
+    const slot = this.slots.find((item) => item.id === this.bookingForm.slotId);
+    if (!slot) {
+      this.schedulingError = 'Slot selezionato non valido.';
       return;
     }
     this.isLoading = true;
     this.schedulingError = '';
     this.api.request<SchedulingAppointment>('POST', '/api/appointments', {
-      patientId: this.bookingForm.patientId,
-      doctorId: this.bookingForm.doctorId,
-      slotId: this.bookingForm.slotId,
+      patientId: 1,
+      doctorId: slot.doctorId,
+      slotId: slot.id,
       reason: this.bookingForm.reason,
       status: 'PENDING'
     }).subscribe({
       next: (appointment) => {
         this.appointments = [...this.appointments, appointment];
         this.bookingForm.reason = '';
+        this.bookingForm.slotId = null;
         this.isLoading = false;
       },
       error: () => {
@@ -344,6 +360,45 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  getDoctorLabel(doctorId: number): string {
+    const doctor = this.doctors.find((item) => item.id === doctorId);
+    return doctor ? `${doctor.firstName} ${doctor.lastName}` : `Medico ${doctorId}`;
+  }
+
+  getSlotById(slotId: number): SchedulingSlot | undefined {
+    return this.slots.find((slot) => slot.id === slotId);
+  }
+
+  formatDate(value: string): string {
+    if (!value) {
+      return '-';
+    }
+    const [year, month, day] = value.split('-');
+    if (!year || !month || !day) {
+      return '-';
+    }
+    return `${day}/${month}/${year}`;
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      AVAILABLE: 'Disponibile',
+      BOOKED: 'Occupato',
+      CONFIRMED: 'Confermato',
+      PENDING: 'In attesa',
+      ACTIVE: 'Attivo'
+    };
+    return labels[status] ?? status;
+  }
+
+  get availableSlots(): SchedulingSlot[] {
+    return this.slots.filter((slot) => slot.status === 'AVAILABLE');
+  }
+
+  getSlotLabel(slot: SchedulingSlot): string {
+    return `${this.formatDate(slot.date)} • ${slot.time} • ${this.getDoctorLabel(slot.doctorId)}`;
   }
 
   loadDocs(): void {

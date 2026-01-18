@@ -34,12 +34,12 @@
                   <tbody>
                     <tr *ngFor="let slot of slots">
                       <td>{{ slot.id }}</td>
-                      <td>{{ slot.doctorId }}</td>
-                      <td>{{ slot.date }}</td>
+                      <td>{{ getDoctorLabel(slot.doctorId) }}</td>
+                      <td>{{ formatDate(slot.date) }}</td>
                       <td>{{ slot.time }}</td>
                       <td>
                         <span class="badge" [class.bg-success]="slot.status === 'AVAILABLE'" [class.bg-secondary]="slot.status !== 'AVAILABLE'">
-                          {{ slot.status }}
+                          {{ getStatusLabel(slot.status) }}
                         </span>
                       </td>
                     </tr>
@@ -59,25 +59,23 @@
                 <table class="table align-middle">
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Paziente</th>
                       <th>Medico</th>
-                      <th>Slot</th>
+                      <th>Data</th>
+                      <th>Ora</th>
                       <th>Motivo</th>
                       <th>Stato</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr *ngFor="let appointment of appointments">
-                      <td>{{ appointment.id }}</td>
-                      <td>{{ appointment.patientId }}</td>
-                      <td>{{ appointment.doctorId }}</td>
-                      <td>{{ appointment.slotId }}</td>
+                      <td>{{ getDoctorLabel(appointment.doctorId) }}</td>
+                      <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
+                      <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
                       <td>{{ appointment.reason }}</td>
-                      <td>{{ appointment.status }}</td>
+                      <td>{{ getStatusLabel(appointment.status) }}</td>
                     </tr>
                     <tr *ngIf="!appointments.length">
-                      <td colspan="6" class="text-center text-muted">Nessun appuntamento registrato.</td>
+                      <td colspan="5" class="text-center text-muted">Nessun appuntamento registrato.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -92,16 +90,14 @@
               <h5 class="fw-semibold mb-3">Nuova prenotazione</h5>
               <form (ngSubmit)="submitBooking()" #bookingFormRef="ngForm">
                 <div class="mb-3">
-                  <label class="form-label">ID Paziente</label>
-                  <input class="form-control" type="number" name="patientId" [(ngModel)]="bookingForm.patientId" required />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">ID Medico</label>
-                  <input class="form-control" type="number" name="doctorId" [(ngModel)]="bookingForm.doctorId" required />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">ID Slot</label>
-                  <input class="form-control" type="number" name="slotId" [(ngModel)]="bookingForm.slotId" required />
+                  <label class="form-label">Slot disponibile</label>
+                  <select class="form-select" name="slotId" [(ngModel)]="bookingForm.slotId" required>
+                    <option [ngValue]="null" disabled>Seleziona uno slot</option>
+                    <option *ngFor="let slot of availableSlots" [ngValue]="slot.id">
+                      {{ getSlotLabel(slot) }}
+                    </option>
+                  </select>
+                  <div class="form-text">Lo slot selezionato include medico, data e ora.</div>
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Motivo visita</label>
