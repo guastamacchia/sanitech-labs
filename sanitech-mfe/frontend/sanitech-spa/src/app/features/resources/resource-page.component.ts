@@ -184,7 +184,8 @@ export class ResourcePageComponent {
   paymentsError = '';
   paymentForm = {
     paymentId: null as number | null,
-    receiptName: ''
+    receiptName: '',
+    service: ''
   };
   admissionForm = {
     patientId: 1,
@@ -895,10 +896,6 @@ export class ResourcePageComponent {
       this.paymentsError = 'Pagamento selezionato non valido.';
       return;
     }
-    if (!this.paymentForm.service.trim()) {
-      this.paymentsError = 'Indica la tipologia di prestazione.';
-      return;
-    }
     this.isLoading = true;
     this.paymentsError = '';
     this.api.request<PaymentItem>('POST', '/api/payments', {
@@ -910,6 +907,7 @@ export class ResourcePageComponent {
         this.payments = this.payments.map((item) => (item.id === payment.id ? payment : item));
         this.paymentForm.paymentId = null;
         this.paymentForm.receiptName = '';
+        this.paymentForm.service = '';
         this.isLoading = false;
       },
       error: () => {
