@@ -2,55 +2,165 @@
   <div class="container">
     <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
       <div>
-        <p class="section-title mb-1">Operazioni backend</p>
+        <p class="section-title mb-1">Operazioni</p>
         <h2 class="fw-bold mb-2">{{ title }}</h2>
         <p class="text-muted mb-0">{{ description }}</p>
-        <span class="badge bg-warning text-dark mt-2" *ngIf="isMock">Demo con dati mockati (nessuna chiamata al backend)</span>
       </div>
-      <span class="badge badge-soft">Gateway: {{ selectedEndpoint?.path }}</span>
+      <span class="badge badge-soft" *ngIf="selectedEndpoint">Gateway: {{ selectedEndpoint?.path }}</span>
     </div>
 
-    <div class="row g-4">
-      <div class="col-lg-4">
-        <div class="card card-glass h-100">
-          <div class="card-body">
-            <h5 class="fw-semibold">Endpoint disponibili</h5>
-            <div class="list-group">
-              <button
-                class="list-group-item list-group-item-action"
-                *ngFor="let endpoint of endpoints"
-                [class.active]="endpoint === selectedEndpoint"
-                (click)="selectEndpoint(endpoint)">
-                <strong>{{ endpoint.method }}</strong>
-                <span class="d-block small text-muted">{{ endpoint.label }}</span>
-                <span class="small text-muted">{{ endpoint.path }}</span>
+    <ng-container *ngIf="mode === 'scheduling'; else apiLayout">
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <div class="card card-glass mb-4">
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-semibold mb-0">Slot disponibili</h5>
+                <button class="btn btn-outline-secondary btn-sm" (click)="loadScheduling()" [disabled]="isLoading">
+                  Aggiorna
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Medico</th>
+                      <th>Data</th>
+                      <th>Ora</th>
+                      <th>Stato</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let slot of slots">
+                      <td>{{ slot.id }}</td>
+                      <td>{{ slot.doctorId }}</td>
+                      <td>{{ slot.date }}</td>
+                      <td>{{ slot.time }}</td>
+                      <td>
+                        <span class="badge" [class.bg-success]="slot.status === 'AVAILABLE'" [class.bg-secondary]="slot.status !== 'AVAILABLE'">
+                          {{ slot.status }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr *ngIf="!slots.length">
+                      <td colspan="5" class="text-center text-muted">Nessuno slot disponibile.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-glass">
+            <div class="card-body">
+              <h5 class="fw-semibold mb-3">Appuntamenti attivi</h5>
+              <div class="table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Paziente</th>
+                      <th>Medico</th>
+                      <th>Slot</th>
+                      <th>Motivo</th>
+                      <th>Stato</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let appointment of appointments">
+                      <td>{{ appointment.id }}</td>
+                      <td>{{ appointment.patientId }}</td>
+                      <td>{{ appointment.doctorId }}</td>
+                      <td>{{ appointment.slotId }}</td>
+                      <td>{{ appointment.reason }}</td>
+                      <td>{{ appointment.status }}</td>
+                    </tr>
+                    <tr *ngIf="!appointments.length">
+                      <td colspan="6" class="text-center text-muted">Nessun appuntamento registrato.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="card card-glass">
+            <div class="card-body">
+              <h5 class="fw-semibold mb-3">Nuova prenotazione</h5>
+              <form (ngSubmit)="submitBooking()" #bookingFormRef="ngForm">
+                <div class="mb-3">
+                  <label class="form-label">ID Paziente</label>
+                  <input class="form-control" type="number" name="patientId" [(ngModel)]="bookingForm.patientId" required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">ID Medico</label>
+                  <input class="form-control" type="number" name="doctorId" [(ngModel)]="bookingForm.doctorId" required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">ID Slot</label>
+                  <input class="form-control" type="number" name="slotId" [(ngModel)]="bookingForm.slotId" required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Motivo visita</label>
+                  <textarea class="form-control" rows="3" name="reason" [(ngModel)]="bookingForm.reason" required></textarea>
+                </div>
+                <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>
+                <button class="btn btn-primary w-100" type="submit" [disabled]="bookingFormRef.invalid || isLoading">
+                  {{ isLoading ? 'Salvataggio...' : 'Prenota appuntamento' }}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #apiLayout>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card card-glass h-100">
+            <div class="card-body">
+              <h5 class="fw-semibold">Servizi disponibili</h5>
+              <div class="list-group">
+                <button
+                  class="list-group-item list-group-item-action"
+                  *ngFor="let endpoint of endpoints"
+                  [class.active]="endpoint === selectedEndpoint"
+                  (click)="selectEndpoint(endpoint)">
+                  <strong>{{ endpoint.method }}</strong>
+                  <span class="d-block small text-muted">{{ endpoint.label }}</span>
+                  <span class="small text-muted">{{ endpoint.path }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-8">
+          <div class="card card-glass mb-4">
+            <div class="card-body">
+              <h5 class="fw-semibold">Richiesta</h5>
+              <div class="mb-3">
+                <label class="form-label">Payload JSON (opzionale)</label>
+                <textarea class="form-control" rows="6" [(ngModel)]="payload"></textarea>
+              </div>
+              <button class="btn btn-primary" (click)="execute()" [disabled]="isLoading">
+                {{ isLoading ? 'Invio...' : 'Esegui chiamata' }}
               </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div class="col-lg-8">
-        <div class="card card-glass mb-4">
-          <div class="card-body">
-            <h5 class="fw-semibold">Richiesta</h5>
-            <div class="mb-3">
-              <label class="form-label">Payload JSON (opzionale)</label>
-              <textarea class="form-control" rows="6" [(ngModel)]="payload"></textarea>
+          <div class="card card-glass">
+            <div class="card-body">
+              <h5 class="fw-semibold">Risposta</h5>
+              <pre class="bg-light p-3 rounded" style="min-height: 200px;">{{ responseBody || 'Nessuna risposta ancora.' }}</pre>
             </div>
-            <button class="btn btn-primary" (click)="execute()" [disabled]="isLoading">
-              {{ isLoading ? 'Invio...' : 'Esegui chiamata' }}
-            </button>
-          </div>
-        </div>
-
-        <div class="card card-glass">
-          <div class="card-body">
-            <h5 class="fw-semibold">Risposta</h5>
-            <pre class="bg-light p-3 rounded" style="min-height: 200px;">{{ responseBody || 'Nessuna risposta ancora.' }}</pre>
           </div>
         </div>
       </div>
-    </div>
+    </ng-template>
   </div>
 </section>

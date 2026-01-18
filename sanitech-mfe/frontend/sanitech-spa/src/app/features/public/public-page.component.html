@@ -1,4 +1,4 @@
-<section class="py-5 bg-white">
+<section id="accesso" class="py-5 bg-white">
   <div class="container">
     <div class="row align-items-center g-4">
       <div class="col-lg-7">
@@ -12,8 +12,41 @@
       </div>
       <div class="col-lg-5">
         <div class="card card-glass p-4">
-          <h5 class="fw-semibold">Accesso unificato</h5>
-          <p class="text-muted mb-0">Demo frontend completa con dati mockati per cittadini, medici e amministratori.</p>
+          <h5 class="fw-semibold">Accesso riservato</h5>
+          <p class="text-muted">Inserisci le credenziali Sanitech ID per entrare nell’area privata.</p>
+          <form (ngSubmit)="submitLogin()" #loginForm="ngForm">
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input
+                type="email"
+                class="form-control"
+                name="email"
+                [(ngModel)]="credentials.email"
+                placeholder="nome.cognome@sanitech.it"
+                required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Password</label>
+              <input
+                type="password"
+                class="form-control"
+                name="password"
+                [(ngModel)]="credentials.password"
+                placeholder="••••••••"
+                required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Profilo</label>
+              <select class="form-select" name="role" [(ngModel)]="credentials.role" required>
+                <option *ngFor="let profile of profiles" [ngValue]="profile.role">
+                  {{ profile.label }}
+                </option>
+              </select>
+              <div class="form-text">Seleziona il profilo associato al tuo account.</div>
+            </div>
+            <div class="alert alert-danger py-2 mb-3" *ngIf="loginError">{{ loginError }}</div>
+            <button class="btn btn-primary w-100" type="submit" [disabled]="loginForm.invalid">Accedi</button>
+          </form>
         </div>
       </div>
     </div>
@@ -56,8 +89,8 @@
   <div class="container">
     <div class="row align-items-center g-4">
       <div class="col-lg-8">
-        <h4 class="fw-bold mb-2">Vuoi provare la piattaforma?</h4>
-        <p class="text-muted mb-0">L’area privata riproduce tutte le API backend con dati cablati: prenotazioni, consensi, documenti, notifiche, audit e pagamenti.</p>
+        <h4 class="fw-bold mb-2">Vuoi accedere alla piattaforma?</h4>
+        <p class="text-muted mb-0">L’area privata centralizza prenotazioni, consensi, documenti, notifiche, audit e pagamenti in un unico flusso operativo.</p>
       </div>
       <div class="col-lg-4 text-lg-end">
         <a routerLink="/portal" class="btn btn-primary btn-lg">Accedi</a>
