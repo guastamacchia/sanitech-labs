@@ -87,7 +87,7 @@ const paymentsEndpoints = [
     label: 'Crea pagamento',
     method: 'POST',
     path: '/api/payments',
-    payload: '{"patientId": 1, "amount": 120.0, "currency": "EUR"}'
+    payload: '{"patientId": 1, "amount": 120.0, "currency": "EUR", "service": "Visita medica con Dr. Marco Bianchi"}'
   },
   {
     label: 'Ricoveri',
@@ -208,7 +208,7 @@ export const routes: Routes = [
         component: ResourcePageComponent,
         canActivate: [roleGuard('ROLE_PATIENT')],
         data: {
-          title: 'Scheduling paziente',
+          title: 'Prenotazioni paziente',
           description: 'Prenotazioni, slot e appuntamenti disponibili per i cittadini.',
           endpoints: schedulingEndpoints,
           view: 'scheduling'
@@ -248,6 +248,17 @@ export const routes: Routes = [
         }
       },
       {
+        path: 'patient/prescriptions',
+        component: ResourcePageComponent,
+        canActivate: [roleGuard('ROLE_PATIENT')],
+        data: {
+          title: 'Prescrizioni paziente',
+          description: 'Consulta le prescrizioni e le terapie attive.',
+          endpoints: prescribingEndpoints,
+          view: 'prescribing'
+        }
+      },
+      {
         path: 'doctor',
         component: DoctorHomeComponent,
         canActivate: [roleGuard('ROLE_DOCTOR')]
@@ -283,6 +294,17 @@ export const routes: Routes = [
           description: 'Gestione slot e appuntamenti dei medici.',
           endpoints: schedulingEndpoints,
           view: 'scheduling'
+        }
+      },
+      {
+        path: 'doctor/payments',
+        component: ResourcePageComponent,
+        canActivate: [roleGuard('ROLE_DOCTOR')],
+        data: {
+          title: 'Ricoveri reparto',
+          description: 'Ricoveri in corso per il reparto del medico.',
+          endpoints: paymentsEndpoints,
+          view: 'payments'
         }
       },
       {
