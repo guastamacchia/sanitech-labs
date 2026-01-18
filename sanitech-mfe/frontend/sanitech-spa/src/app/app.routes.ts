@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { PublicPageComponent } from './features/public/public-page.component';
 import { PortalComponent } from './features/portal/portal.component';
-import { PortalOverviewComponent } from './features/portal/portal-overview.component';
 import { PatientHomeComponent } from './features/portal/patient-home.component';
 import { DoctorHomeComponent } from './features/portal/doctor-home.component';
 import { AdminHomeComponent } from './features/portal/admin-home.component';
@@ -200,10 +199,6 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {
-        path: '',
-        component: PortalOverviewComponent
-      },
-      {
         path: 'patient',
         component: PatientHomeComponent,
         canActivate: [roleGuard('ROLE_PATIENT')]
@@ -215,7 +210,8 @@ export const routes: Routes = [
         data: {
           title: 'Scheduling paziente',
           description: 'Prenotazioni, slot e appuntamenti disponibili per i cittadini.',
-          endpoints: schedulingEndpoints
+          endpoints: schedulingEndpoints,
+          view: 'scheduling'
         }
       },
       {
@@ -225,7 +221,8 @@ export const routes: Routes = [
         data: {
           title: 'Documenti & consensi',
           description: 'Cartella clinica, referti e consensi informati.',
-          endpoints: docsEndpoints
+          endpoints: docsEndpoints,
+          view: 'docs'
         }
       },
       {
@@ -235,7 +232,8 @@ export const routes: Routes = [
         data: {
           title: 'Notifiche paziente',
           description: 'Gestione notifiche multicanale e reminder.',
-          endpoints: notificationsEndpoints
+          endpoints: notificationsEndpoints,
+          view: 'notifications'
         }
       },
       {
@@ -245,7 +243,8 @@ export const routes: Routes = [
         data: {
           title: 'Pagamenti e ricoveri',
           description: 'Pagamenti digitali e gestione ricoveri.',
-          endpoints: paymentsEndpoints
+          endpoints: paymentsEndpoints,
+          view: 'payments'
         }
       },
       {
@@ -260,7 +259,8 @@ export const routes: Routes = [
         data: {
           title: 'Prescrizioni',
           description: 'Gestione prescrizioni e terapie.',
-          endpoints: prescribingEndpoints
+          endpoints: prescribingEndpoints,
+          view: 'prescribing'
         }
       },
       {
@@ -270,7 +270,8 @@ export const routes: Routes = [
         data: {
           title: 'Televisite',
           description: 'Sessioni di telemedicina e token di accesso.',
-          endpoints: televisitEndpoints
+          endpoints: televisitEndpoints,
+          view: 'televisit'
         }
       },
       {
@@ -280,7 +281,8 @@ export const routes: Routes = [
         data: {
           title: 'Agenda medico',
           description: 'Gestione slot e appuntamenti dei medici.',
-          endpoints: schedulingEndpoints
+          endpoints: schedulingEndpoints,
+          view: 'scheduling'
         }
       },
       {
@@ -290,7 +292,8 @@ export const routes: Routes = [
         data: {
           title: 'Documenti clinici',
           description: 'Documentazione clinica e consensi dei pazienti.',
-          endpoints: docsEndpoints
+          endpoints: docsEndpoints,
+          view: 'docs'
         }
       },
       {
@@ -305,7 +308,8 @@ export const routes: Routes = [
         data: {
           title: 'Directory & anagrafiche',
           description: 'Gestione medici, pazienti, reparti e specialità.',
-          endpoints: directoryEndpoints
+          endpoints: directoryEndpoints,
+          view: 'admin-directory'
         }
       },
       {
@@ -315,7 +319,8 @@ export const routes: Routes = [
         data: {
           title: 'Audit & compliance',
           description: 'Eventi di audit e tracciamento accessi.',
-          endpoints: auditEndpoints
+          endpoints: auditEndpoints,
+          view: 'admin-audit'
         }
       },
       {
@@ -325,7 +330,8 @@ export const routes: Routes = [
         data: {
           title: 'Notifiche',
           description: 'Monitoraggio e invio notifiche per tutta la piattaforma.',
-          endpoints: notificationsEndpoints
+          endpoints: notificationsEndpoints,
+          view: 'notifications'
         }
       },
       {
@@ -335,7 +341,8 @@ export const routes: Routes = [
         data: {
           title: 'Televisite & ricoveri',
           description: 'Supervisione sessioni di telemedicina e admissions.',
-          endpoints: [...televisitEndpoints, ...paymentsEndpoints]
+          endpoints: [...televisitEndpoints, ...paymentsEndpoints],
+          view: 'admin-televisit'
         }
       }
     ]

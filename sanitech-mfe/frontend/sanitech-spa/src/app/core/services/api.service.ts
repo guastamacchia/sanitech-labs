@@ -168,7 +168,7 @@ export class ApiService {
             id: this.nextId(this.mockStore.notifications),
             recipient: this.getString(payload.recipient, 'utente@example.com'),
             channel: this.getString(payload.channel, 'EMAIL'),
-            message: this.getString(payload.message, 'Notifica demo'),
+            message: this.getString(payload.message, 'Notifica di sistema'),
             status: this.getString(payload.status, 'SENT')
           };
           this.mockStore.notifications.push(newNotification);
@@ -227,7 +227,7 @@ export class ApiService {
           const newPrescription = {
             id: this.nextId(this.mockStore.prescriptions),
             patientId: this.getNumber(payload.patientId, 1),
-            drug: this.getString(payload.drug, 'Farmaco demo'),
+            drug: this.getString(payload.drug, 'Farmaco prescritto'),
             dosage: this.getString(payload.dosage, '10mg'),
             status: this.getString(payload.status, 'ACTIVE')
           };
