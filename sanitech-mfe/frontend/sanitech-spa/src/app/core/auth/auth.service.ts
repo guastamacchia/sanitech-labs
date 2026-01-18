@@ -74,8 +74,11 @@ export class AuthService {
 
   get identityClaims(): Record<string, unknown> {
     if (environment.mockAuth) {
+      if (!this.isAuthenticated) {
+        return {};
+      }
       return {
-        name: this.mockState?.displayName ?? 'Utente demo',
+        name: this.mockState?.displayName ?? 'Utente Sanitech',
         realm_access: {
           roles: this.mockState?.role ? [this.mockState.role] : []
         }
@@ -98,6 +101,32 @@ export class AuthService {
     return environment.mockAuth;
   }
 
+  get roleLabel(): string {
+    if (environment.mockAuth) {
+      const role = this.mockState?.role;
+      if (!role) {
+        return '';
+      }
+      const match = this.mockProfiles.find((item) => item.role === role);
+      return match?.label ?? role;
+    }
+    const realmAccess = this.identityClaims['realm_access'] as { roles?: string[] } | undefined;
+    const role = realmAccess?.roles?.[0];
+    if (!role) {
+      return '';
+    }
+    if (role === 'ROLE_PATIENT') {
+      return 'Paziente';
+    }
+    if (role === 'ROLE_DOCTOR') {
+      return 'Medico';
+    }
+    if (role === 'ROLE_ADMIN') {
+      return 'Amministratore';
+    }
+    return role;
+  }
+
   get mockRole(): string {
     return this.mockState?.role ?? 'ROLE_PATIENT';
   }
@@ -106,8 +135,20 @@ export class AuthService {
     return [
       { role: 'ROLE_PATIENT', label: 'Paziente', displayName: 'Anna Conti' },
       { role: 'ROLE_DOCTOR', label: 'Medico', displayName: 'Dr. Marco Bianchi' },
-      { role: 'ROLE_ADMIN', label: 'Admin', displayName: 'Elena Guidi' }
+      { role: 'ROLE_ADMIN', label: 'Amministratore', displayName: 'Elena Guidi' }
     ];
+  }
+
+  signInWithCredentials(email: string, password: string, role: string): boolean {
+    if (!environment.mockAuth) {
+      this.login();
+      return true;
+    }
+    if (!email.trim() || !password.trim()) {
+      return false;
+    }
+    this.selectMockProfile(role);
+    return true;
   }
 
   selectMockProfile(role: string): void {
@@ -132,7 +173,7 @@ export class AuthService {
       }
     }
     const initial = {
-      isAuthenticated: true,
+      isAuthenticated: false,
       role: 'ROLE_PATIENT',
       displayName: 'Anna Conti'
     };
