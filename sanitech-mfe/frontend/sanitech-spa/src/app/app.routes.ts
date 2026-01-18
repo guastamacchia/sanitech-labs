@@ -215,7 +215,8 @@ export const routes: Routes = [
         data: {
           title: 'Scheduling paziente',
           description: 'Prenotazioni, slot e appuntamenti disponibili per i cittadini.',
-          endpoints: schedulingEndpoints
+          endpoints: schedulingEndpoints,
+          view: 'scheduling'
         }
       },
       {
@@ -225,7 +226,8 @@ export const routes: Routes = [
         data: {
           title: 'Documenti & consensi',
           description: 'Cartella clinica, referti e consensi informati.',
-          endpoints: docsEndpoints
+          endpoints: docsEndpoints,
+          view: 'docs'
         }
       },
       {
@@ -235,7 +237,8 @@ export const routes: Routes = [
         data: {
           title: 'Notifiche paziente',
           description: 'Gestione notifiche multicanale e reminder.',
-          endpoints: notificationsEndpoints
+          endpoints: notificationsEndpoints,
+          view: 'notifications'
         }
       },
       {
@@ -245,7 +248,8 @@ export const routes: Routes = [
         data: {
           title: 'Pagamenti e ricoveri',
           description: 'Pagamenti digitali e gestione ricoveri.',
-          endpoints: paymentsEndpoints
+          endpoints: paymentsEndpoints,
+          view: 'payments'
         }
       },
       {
