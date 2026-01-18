@@ -895,6 +895,10 @@ export class ResourcePageComponent {
       this.paymentsError = 'Pagamento selezionato non valido.';
       return;
     }
+    if (!this.paymentForm.service.trim()) {
+      this.paymentsError = 'Indica la tipologia di prestazione.';
+      return;
+    }
     this.isLoading = true;
     this.paymentsError = '';
     this.api.request<PaymentItem>('POST', '/api/payments', {
