@@ -185,7 +185,8 @@ export class ResourcePageComponent {
   paymentForm = {
     paymentId: null as number | null,
     receiptName: '',
-    service: ''
+    service: '',
+    amount: 0
   };
   admissionForm = {
     patientId: 1,
@@ -559,6 +560,7 @@ export class ResourcePageComponent {
     const labels: Record<string, string> = {
       PAID: 'Pagato',
       PENDING: 'In attesa',
+      IN_ATTESA: 'In attesa',
       FAILED: 'Non riuscito'
     };
     return labels[status] ?? status;
@@ -593,7 +595,9 @@ export class ResourcePageComponent {
   }
 
   get pendingPayments(): PaymentItem[] {
-    const pending = this.payments.filter((payment) => payment.status === 'PENDING');
+    const pending = this.payments.filter(
+      (payment) => payment.status === 'PENDING' || payment.status === 'IN_ATTESA'
+    );
     if (this.isPatient) {
       return pending.filter((payment) => payment.patientId === 1);
     }
@@ -884,7 +888,11 @@ export class ResourcePageComponent {
 
   submitPayment(): void {
     if (!this.paymentForm.paymentId) {
-      this.paymentsError = 'Seleziona un pagamento in sospeso.';
+      this.paymentsError = 'Seleziona un pagamento in attesa.';
+      return;
+    }
+    if (!this.paymentForm.amount || this.paymentForm.amount <= 0) {
+      this.paymentsError = 'Inserisci l’importo del pagamento.';
       return;
     }
     if (!this.paymentForm.receiptName.trim()) {
@@ -901,13 +909,15 @@ export class ResourcePageComponent {
     this.api.request<PaymentItem>('POST', '/api/payments', {
       paymentId: this.paymentForm.paymentId,
       status: 'PAID',
-      receiptName: this.paymentForm.receiptName
+      receiptName: this.paymentForm.receiptName,
+      amount: this.paymentForm.amount
     }).subscribe({
       next: (payment) => {
         this.payments = this.payments.map((item) => (item.id === payment.id ? payment : item));
         this.paymentForm.paymentId = null;
         this.paymentForm.receiptName = '';
         this.paymentForm.service = '';
+        this.paymentForm.amount = 0;
         this.isLoading = false;
       },
       error: () => {
@@ -1112,6 +1122,22 @@ export class ResourcePageComponent {
       return;
     }
     this.paymentForm.receiptName = file.name;
+  }
+
+  handlePaymentSelectionChange(paymentId: number | null): void {
+    if (!paymentId) {
+      this.paymentForm.amount = 0;
+      this.paymentForm.service = '';
+      return;
+    }
+    const pendingPayment = this.payments.find((payment) => payment.id === paymentId);
+    if (!pendingPayment) {
+      this.paymentForm.amount = 0;
+      this.paymentForm.service = '';
+      return;
+    }
+    this.paymentForm.amount = pendingPayment.amount;
+    this.paymentForm.service = pendingPayment.service;
   }
 
   loadPatients(): void {

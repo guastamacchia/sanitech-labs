@@ -579,14 +579,29 @@
                   <h5 class="fw-semibold mb-3">Registra pagamento</h5>
                   <form (ngSubmit)="submitPayment()" #paymentFormRef="ngForm">
                     <div class="mb-3">
-                      <label class="form-label">Pagamento in sospeso</label>
-                      <select class="form-select" name="paymentPendingId" [(ngModel)]="paymentForm.paymentId" required>
-                        <option [ngValue]="null" disabled>Seleziona un pagamento</option>
+                      <label class="form-label">Pagamento in attesa</label>
+                      <select
+                        class="form-select"
+                        name="paymentPendingId"
+                        [(ngModel)]="paymentForm.paymentId"
+                        (ngModelChange)="handlePaymentSelectionChange($event)"
+                        required>
+                        <option [ngValue]="null" disabled>Seleziona un pagamento in attesa</option>
                         <option *ngFor="let payment of pendingPayments" [ngValue]="payment.id">
                           #{{ payment.id }} • {{ payment.service }} • {{ payment.amount }} {{ getCurrencyLabel(payment.currency) }}
                         </option>
                       </select>
-                      <div class="form-text" *ngIf="!pendingPayments.length">Nessun pagamento in sospeso disponibile.</div>
+                      <div class="form-text" *ngIf="!pendingPayments.length">Nessun pagamento in attesa disponibile.</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Importo</label>
+                      <input
+                        class="form-control"
+                        type="number"
+                        name="paymentAmount"
+                        [(ngModel)]="paymentForm.amount"
+                        min="0"
+                        required />
                     </div>
                     <div class="mb-3">
                       <label class="form-label">Ricevuta pagamento</label>
