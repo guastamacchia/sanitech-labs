@@ -388,7 +388,7 @@
       </ng-template>
 
       <ng-template #notificationsLayout>
-        <ng-container *ngIf="mode === 'notifications'; else apiLayout">
+        <ng-container *ngIf="mode === 'notifications'; else prescribingLayout">
           <div class="row g-4">
             <div class="col-lg-8">
               <div class="card card-glass">
@@ -452,6 +452,145 @@
                     <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
                     <button class="btn btn-primary w-100" type="submit" [disabled]="notificationFormRef.invalid || isLoading">
                       {{ isLoading ? 'Invio...' : 'Invia notifica' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </ng-template>
+
+      <ng-template #prescribingLayout>
+        <ng-container *ngIf="mode === 'prescribing'; else televisitLayout">
+          <div class="row g-4">
+            <div class="col-lg-8">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">Prescrizioni attive</h5>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="loadPrescriptions()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Paziente</th>
+                          <th>Farmaco</th>
+                          <th>Posologia</th>
+                          <th>Stato</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let prescription of prescriptions">
+                          <td>{{ prescription.id }}</td>
+                          <td>{{ prescription.patientId }}</td>
+                          <td>{{ prescription.drug }}</td>
+                          <td>{{ prescription.dosage }}</td>
+                          <td>{{ prescription.status }}</td>
+                        </tr>
+                        <tr *ngIf="!prescriptions.length">
+                          <td colspan="5" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Nuova prescrizione</h5>
+                  <form (ngSubmit)="submitPrescription()" #prescriptionFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">ID Paziente</label>
+                      <input class="form-control" type="number" name="prescriptionPatientId" [(ngModel)]="prescriptionForm.patientId" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Farmaco</label>
+                      <input class="form-control" type="text" name="prescriptionDrug" [(ngModel)]="prescriptionForm.drug" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Posologia</label>
+                      <input class="form-control" type="text" name="prescriptionDosage" [(ngModel)]="prescriptionForm.dosage" required />
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
+                    <button class="btn btn-primary w-100" type="submit" [disabled]="prescriptionFormRef.invalid || isLoading">
+                      {{ isLoading ? 'Salvataggio...' : 'Registra prescrizione' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </ng-template>
+
+      <ng-template #televisitLayout>
+        <ng-container *ngIf="mode === 'televisit'; else apiLayout">
+          <div class="row g-4">
+            <div class="col-lg-8">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">Sessioni di televisita</h5>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="loadTelevisits()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Appuntamento</th>
+                          <th>Provider</th>
+                          <th>Stato</th>
+                          <th>Token</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let televisit of televisits">
+                          <td>{{ televisit.id }}</td>
+                          <td>{{ televisit.appointmentId }}</td>
+                          <td>{{ televisit.provider }}</td>
+                          <td>{{ televisit.status }}</td>
+                          <td>{{ televisit.token }}</td>
+                        </tr>
+                        <tr *ngIf="!televisits.length">
+                          <td colspan="5" class="text-center text-muted">Nessuna sessione presente.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Avvia sessione</h5>
+                  <form (ngSubmit)="submitTelevisit()" #televisitFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">ID Appuntamento</label>
+                      <input class="form-control" type="number" name="televisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Provider</label>
+                      <select class="form-select" name="televisitProvider" [(ngModel)]="televisitForm.provider" required>
+                        <option value="LIVEKIT">LiveKit</option>
+                        <option value="WEBRTC">WebRTC</option>
+                      </select>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
+                    <button class="btn btn-primary w-100" type="submit" [disabled]="televisitFormRef.invalid || isLoading">
+                      {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
                     </button>
                   </form>
                 </div>

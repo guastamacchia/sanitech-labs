@@ -70,6 +70,22 @@ interface NotificationItem {
   status: string;
 }
 
+interface PrescriptionItem {
+  id: number;
+  patientId: number;
+  drug: string;
+  dosage: string;
+  status: string;
+}
+
+interface TelevisitItem {
+  id: number;
+  appointmentId: number;
+  provider: string;
+  status: string;
+  token: string;
+}
+
 @Component({
   selector: 'app-resource-page',
   standalone: true,
@@ -84,7 +100,7 @@ export class ResourcePageComponent {
   payload = '';
   responseBody = '';
   isLoading = false;
-  mode: 'api' | 'scheduling' | 'docs' | 'payments' | 'notifications' = 'api';
+  mode: 'api' | 'scheduling' | 'docs' | 'payments' | 'notifications' | 'prescribing' | 'televisit' = 'api';
   slots: SchedulingSlot[] = [];
   appointments: SchedulingAppointment[] = [];
   schedulingError = '';
@@ -127,12 +143,27 @@ export class ResourcePageComponent {
     channel: 'EMAIL',
     message: ''
   };
+  prescriptions: PrescriptionItem[] = [];
+  prescribingError = '';
+  prescriptionForm = {
+    patientId: 1,
+    drug: '',
+    dosage: ''
+  };
+  televisits: TelevisitItem[] = [];
+  televisitError = '';
+  televisitForm = {
+    appointmentId: 1,
+    provider: 'LIVEKIT'
+  };
 
   constructor(private route: ActivatedRoute, private api: ApiService) {
     const data = this.route.snapshot.data;
     this.title = data['title'] as string;
     this.description = data['description'] as string;
-    this.mode = (data['view'] as 'api' | 'scheduling' | 'docs' | 'payments' | 'notifications') ?? 'api';
+    this.mode =
+      (data['view'] as 'api' | 'scheduling' | 'docs' | 'payments' | 'notifications' | 'prescribing' | 'televisit') ??
+      'api';
     this.endpoints = (data['endpoints'] as ResourceEndpoint[]) ?? [];
     this.selectedEndpoint = this.endpoints[0];
     this.payload = this.selectedEndpoint?.payload ?? '';
@@ -147,6 +178,12 @@ export class ResourcePageComponent {
     }
     if (this.mode === 'notifications') {
       this.loadNotifications();
+    }
+    if (this.mode === 'prescribing') {
+      this.loadPrescriptions();
+    }
+    if (this.mode === 'televisit') {
+      this.loadTelevisits();
     }
   }
 
@@ -397,6 +434,79 @@ export class ResourcePageComponent {
       },
       error: () => {
         this.notificationsError = 'Impossibile inviare la notifica.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadPrescriptions(): void {
+    this.isLoading = true;
+    this.prescribingError = '';
+    this.api.request<PrescriptionItem[]>('GET', '/api/prescriptions').subscribe({
+      next: (prescriptions) => {
+        this.prescriptions = prescriptions;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.prescribingError = 'Impossibile caricare le prescrizioni.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  submitPrescription(): void {
+    if (!this.prescriptionForm.drug.trim() || !this.prescriptionForm.dosage.trim()) {
+      this.prescribingError = 'Inserisci farmaco e posologia.';
+      return;
+    }
+    this.isLoading = true;
+    this.prescribingError = '';
+    this.api.request<PrescriptionItem>('POST', '/api/prescribing/prescriptions', {
+      patientId: this.prescriptionForm.patientId,
+      drug: this.prescriptionForm.drug,
+      dosage: this.prescriptionForm.dosage
+    }).subscribe({
+      next: (prescription) => {
+        this.prescriptions = [...this.prescriptions, prescription];
+        this.prescriptionForm.drug = '';
+        this.prescriptionForm.dosage = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.prescribingError = 'Impossibile registrare la prescrizione.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadTelevisits(): void {
+    this.isLoading = true;
+    this.televisitError = '';
+    this.api.request<TelevisitItem[]>('GET', '/api/televisit').subscribe({
+      next: (televisits) => {
+        this.televisits = televisits;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.televisitError = 'Impossibile caricare le sessioni.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  submitTelevisit(): void {
+    this.isLoading = true;
+    this.televisitError = '';
+    this.api.request<TelevisitItem>('POST', '/api/televisit', {
+      appointmentId: this.televisitForm.appointmentId,
+      provider: this.televisitForm.provider
+    }).subscribe({
+      next: (televisit) => {
+        this.televisits = [...this.televisits, televisit];
+        this.isLoading = false;
+      },
+      error: () => {
+        this.televisitError = 'Impossibile avviare la sessione.';
         this.isLoading = false;
       }
     });

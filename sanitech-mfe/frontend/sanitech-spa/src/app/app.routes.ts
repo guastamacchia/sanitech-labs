@@ -264,7 +264,8 @@ export const routes: Routes = [
         data: {
           title: 'Prescrizioni',
           description: 'Gestione prescrizioni e terapie.',
-          endpoints: prescribingEndpoints
+          endpoints: prescribingEndpoints,
+          view: 'prescribing'
         }
       },
       {
@@ -274,7 +275,8 @@ export const routes: Routes = [
         data: {
           title: 'Televisite',
           description: 'Sessioni di telemedicina e token di accesso.',
-          endpoints: televisitEndpoints
+          endpoints: televisitEndpoints,
+          view: 'televisit'
         }
       },
       {
@@ -284,7 +286,8 @@ export const routes: Routes = [
         data: {
           title: 'Agenda medico',
           description: 'Gestione slot e appuntamenti dei medici.',
-          endpoints: schedulingEndpoints
+          endpoints: schedulingEndpoints,
+          view: 'scheduling'
         }
       },
       {
@@ -294,7 +297,8 @@ export const routes: Routes = [
         data: {
           title: 'Documenti clinici',
           description: 'Documentazione clinica e consensi dei pazienti.',
-          endpoints: docsEndpoints
+          endpoints: docsEndpoints,
+          view: 'docs'
         }
       },
       {
