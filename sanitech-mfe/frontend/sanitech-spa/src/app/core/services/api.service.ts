@@ -154,6 +154,10 @@ export class ApiService {
             reason: this.getString(payload.reason, 'Visita di controllo'),
             status: this.getString(payload.status, 'PENDING')
           };
+          const slot = this.mockStore.slots.find((item) => item.id === newAppointment.slotId);
+          if (slot) {
+            slot.status = 'BOOKED';
+          }
           this.mockStore.appointments.push(newAppointment);
           return of(newAppointment as T);
         }

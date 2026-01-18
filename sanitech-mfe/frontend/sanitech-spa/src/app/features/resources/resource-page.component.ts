@@ -383,6 +383,9 @@ export class ResourcePageComponent {
     }).subscribe({
       next: (appointment) => {
         this.appointments = [...this.appointments, appointment];
+        this.slots = this.slots.map((item) =>
+          item.id === slot.id ? { ...item, status: 'BOOKED' } : item
+        );
         this.bookingForm.reason = '';
         this.bookingForm.slotId = null;
         this.isLoading = false;
@@ -571,43 +574,6 @@ export class ResourcePageComponent {
         this.slotForm.date = '';
         this.slotForm.time = '';
         this.slotForm.modality = 'IN_PERSON';
-        this.slotForm.notes = '';
-        this.isLoading = false;
-      },
-      error: () => {
-        this.schedulingError = 'Impossibile creare lo slot.';
-        this.isLoading = false;
-      }
-    });
-  }
-
-  confirmAppointment(appointment: SchedulingAppointment): void {
-    if (appointment.status === 'CONFIRMED') {
-      return;
-    }
-    this.appointments = this.appointments.map((item) =>
-      item.id === appointment.id ? { ...item, status: 'CONFIRMED' } : item
-    );
-  }
-
-  submitSlot(): void {
-    if (!this.slotForm.date || !this.slotForm.time) {
-      this.schedulingError = 'Inserisci data e ora dello slot.';
-      return;
-    }
-    this.isLoading = true;
-    this.schedulingError = '';
-    this.api.request<SchedulingSlot>('POST', '/api/slots', {
-      doctorId: this.currentDoctorId,
-      date: this.slotForm.date,
-      time: this.slotForm.time,
-      notes: this.slotForm.notes,
-      status: 'AVAILABLE'
-    }).subscribe({
-      next: (slot) => {
-        this.slots = [...this.slots, slot];
-        this.slotForm.date = '';
-        this.slotForm.time = '';
         this.slotForm.notes = '';
         this.isLoading = false;
       },
