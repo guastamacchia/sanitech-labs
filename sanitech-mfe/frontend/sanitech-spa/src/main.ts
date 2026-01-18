@@ -13,10 +13,15 @@ if (environment.production) {
   enableProdMode();
 }
 
+const providers = [
+  provideRouter(routes),
+  provideHttpClient(withInterceptors([authInterceptor]))
+];
+
+if (!environment.mockAuth) {
+  providers.push(importProvidersFrom(OAuthModule.forRoot()));
+}
+
 bootstrapApplication(AppComponent, {
-  providers: [
-    provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
-    importProvidersFrom(OAuthModule.forRoot())
-  ]
+  providers
 }).catch((err) => console.error(err));
