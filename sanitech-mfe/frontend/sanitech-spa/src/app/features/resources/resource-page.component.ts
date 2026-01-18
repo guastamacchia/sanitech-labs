@@ -3,13 +3,118 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
-import { environment } from '../../../environments/environment';
 
 interface ResourceEndpoint {
   label: string;
   method: string;
   path: string;
   payload?: string;
+}
+
+interface SchedulingSlot {
+  id: number;
+  doctorId: number;
+  date: string;
+  time: string;
+  status: string;
+}
+
+interface SchedulingAppointment {
+  id: number;
+  patientId: number;
+  doctorId: number;
+  slotId: number;
+  reason: string;
+  status: string;
+}
+
+interface DocumentItem {
+  id: number;
+  patientId: number;
+  type: string;
+  name: string;
+  uploadedAt: string;
+}
+
+interface ConsentItem {
+  id: number;
+  patientId: number;
+  consentType: string;
+  accepted: boolean;
+  signedAt: string;
+}
+
+interface PaymentItem {
+  id: number;
+  patientId: number;
+  amount: number;
+  currency: string;
+  status: string;
+  paidAt: string;
+}
+
+interface AdmissionItem {
+  id: number;
+  patientId: number;
+  department: string;
+  bedId: number;
+  status: string;
+  admittedAt: string;
+}
+
+interface NotificationItem {
+  id: number;
+  recipient: string;
+  channel: string;
+  message: string;
+  status: string;
+}
+
+interface PrescriptionItem {
+  id: number;
+  patientId: number;
+  drug: string;
+  dosage: string;
+  status: string;
+}
+
+interface TelevisitItem {
+  id: number;
+  appointmentId: number;
+  provider: string;
+  status: string;
+  token: string;
+}
+
+interface DoctorItem {
+  id: number;
+  firstName: string;
+  lastName: string;
+  speciality: string;
+}
+
+interface PatientItem {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface DepartmentItem {
+  code: string;
+  name: string;
+}
+
+interface SpecialityItem {
+  code: string;
+  name: string;
+}
+
+interface AuditItem {
+  id: number;
+  action: string;
+  actor: string;
+  timestamp: string;
 }
 
 @Component({
@@ -26,15 +131,135 @@ export class ResourcePageComponent {
   payload = '';
   responseBody = '';
   isLoading = false;
-  isMock = environment.mockApi;
+  mode:
+    | 'api'
+    | 'scheduling'
+    | 'docs'
+    | 'payments'
+    | 'notifications'
+    | 'prescribing'
+    | 'televisit'
+    | 'admin-directory'
+    | 'admin-audit'
+    | 'admin-televisit' = 'api';
+  slots: SchedulingSlot[] = [];
+  appointments: SchedulingAppointment[] = [];
+  schedulingError = '';
+  bookingForm = {
+    slotId: null as number | null,
+    reason: ''
+  };
+  documents: DocumentItem[] = [];
+  consents: ConsentItem[] = [];
+  docsError = '';
+  docForm = {
+    patientId: 1,
+    type: 'REFERT',
+    name: ''
+  };
+  consentForm = {
+    patientId: 1,
+    consentType: 'GDPR',
+    accepted: true
+  };
+  payments: PaymentItem[] = [];
+  admissions: AdmissionItem[] = [];
+  paymentsError = '';
+  paymentForm = {
+    patientId: 1,
+    amount: 120,
+    currency: 'EUR'
+  };
+  admissionForm = {
+    patientId: 1,
+    department: 'CARD',
+    bedId: 4
+  };
+  notifications: NotificationItem[] = [];
+  notificationsError = '';
+  notificationForm = {
+    recipient: '',
+    channel: 'EMAIL',
+    message: ''
+  };
+  prescriptions: PrescriptionItem[] = [];
+  prescribingError = '';
+  prescriptionForm = {
+    patientId: 1,
+    drug: '',
+    dosage: ''
+  };
+  televisits: TelevisitItem[] = [];
+  televisitError = '';
+  televisitForm = {
+    appointmentId: 1,
+    provider: 'LIVEKIT'
+  };
+  doctors: DoctorItem[] = [];
+  patients: PatientItem[] = [];
+  departments: DepartmentItem[] = [];
+  specialities: SpecialityItem[] = [];
+  directoryError = '';
+  doctorForm = {
+    firstName: '',
+    lastName: '',
+    speciality: 'CARD'
+  };
+  patientForm = {
+    firstName: '',
+    lastName: '',
+    email: ''
+  };
+  auditEvents: AuditItem[] = [];
+  auditError = '';
 
   constructor(private route: ActivatedRoute, private api: ApiService) {
     const data = this.route.snapshot.data;
     this.title = data['title'] as string;
     this.description = data['description'] as string;
-    this.endpoints = data['endpoints'] as ResourceEndpoint[];
+    this.mode =
+      (data['view'] as
+        | 'api'
+        | 'scheduling'
+        | 'docs'
+        | 'payments'
+        | 'notifications'
+        | 'prescribing'
+        | 'televisit'
+        | 'admin-directory'
+        | 'admin-audit'
+        | 'admin-televisit') ??
+      'api';
+    this.endpoints = (data['endpoints'] as ResourceEndpoint[]) ?? [];
     this.selectedEndpoint = this.endpoints[0];
     this.payload = this.selectedEndpoint?.payload ?? '';
+    if (this.mode === 'scheduling') {
+      this.loadScheduling();
+    }
+    if (this.mode === 'docs') {
+      this.loadDocs();
+    }
+    if (this.mode === 'payments') {
+      this.loadPayments();
+    }
+    if (this.mode === 'notifications') {
+      this.loadNotifications();
+    }
+    if (this.mode === 'prescribing') {
+      this.loadPrescriptions();
+    }
+    if (this.mode === 'televisit') {
+      this.loadTelevisits();
+    }
+    if (this.mode === 'admin-directory') {
+      this.loadDirectory();
+    }
+    if (this.mode === 'admin-audit') {
+      this.loadAudit();
+    }
+    if (this.mode === 'admin-televisit') {
+      this.loadAdminTelevisit();
+    }
   }
 
   selectEndpoint(endpoint: ResourceEndpoint): void {
@@ -68,5 +293,476 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  loadScheduling(): void {
+    this.isLoading = true;
+    this.schedulingError = '';
+    this.api.request<SchedulingSlot[]>('GET', '/api/slots').subscribe({
+      next: (slots) => {
+        this.slots = slots;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile caricare gli slot disponibili.';
+        this.isLoading = false;
+      }
+    });
+    this.api.request<SchedulingAppointment[]>('GET', '/api/appointments').subscribe({
+      next: (appointments) => {
+        this.appointments = appointments;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile caricare gli appuntamenti.';
+      }
+    });
+    this.api.request<DoctorItem[]>('GET', '/api/doctors').subscribe({
+      next: (doctors) => {
+        this.doctors = doctors;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile caricare i medici.';
+      }
+    });
+  }
+
+  submitBooking(): void {
+    if (!this.bookingForm.slotId) {
+      this.schedulingError = 'Seleziona uno slot disponibile.';
+      return;
+    }
+    if (!this.bookingForm.reason.trim()) {
+      this.schedulingError = 'Inserisci il motivo della visita.';
+      return;
+    }
+    const slot = this.slots.find((item) => item.id === this.bookingForm.slotId);
+    if (!slot) {
+      this.schedulingError = 'Slot selezionato non valido.';
+      return;
+    }
+    this.isLoading = true;
+    this.schedulingError = '';
+    this.api.request<SchedulingAppointment>('POST', '/api/appointments', {
+      patientId: 1,
+      doctorId: slot.doctorId,
+      slotId: slot.id,
+      reason: this.bookingForm.reason,
+      status: 'PENDING'
+    }).subscribe({
+      next: (appointment) => {
+        this.appointments = [...this.appointments, appointment];
+        this.bookingForm.reason = '';
+        this.bookingForm.slotId = null;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile registrare la prenotazione.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  getDoctorLabel(doctorId: number): string {
+    const doctor = this.doctors.find((item) => item.id === doctorId);
+    return doctor ? `${doctor.firstName} ${doctor.lastName}` : `Medico ${doctorId}`;
+  }
+
+  getSlotById(slotId: number): SchedulingSlot | undefined {
+    return this.slots.find((slot) => slot.id === slotId);
+  }
+
+  formatDate(value: string): string {
+    if (!value) {
+      return '-';
+    }
+    const [year, month, day] = value.split('-');
+    if (!year || !month || !day) {
+      return '-';
+    }
+    return `${day}/${month}/${year}`;
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      AVAILABLE: 'Disponibile',
+      BOOKED: 'Occupato',
+      CONFIRMED: 'Confermato',
+      PENDING: 'In attesa',
+      ACTIVE: 'Attivo'
+    };
+    return labels[status] ?? status;
+  }
+
+  get availableSlots(): SchedulingSlot[] {
+    return this.slots.filter((slot) => slot.status === 'AVAILABLE');
+  }
+
+  getSlotLabel(slot: SchedulingSlot): string {
+    return `${this.formatDate(slot.date)} • ${slot.time} • ${this.getDoctorLabel(slot.doctorId)}`;
+  }
+
+  loadDocs(): void {
+    this.isLoading = true;
+    this.docsError = '';
+    this.api.request<DocumentItem[]>('GET', '/api/docs').subscribe({
+      next: (docs) => {
+        this.documents = docs;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.docsError = 'Impossibile caricare i documenti.';
+        this.isLoading = false;
+      }
+    });
+    this.api.request<ConsentItem[]>('GET', '/api/consents').subscribe({
+      next: (consents) => {
+        this.consents = consents;
+      },
+      error: () => {
+        this.docsError = 'Impossibile caricare i consensi.';
+      }
+    });
+  }
+
+  submitDocument(): void {
+    if (!this.docForm.name.trim()) {
+      this.docsError = 'Inserisci il nome del documento.';
+      return;
+    }
+    this.isLoading = true;
+    this.docsError = '';
+    this.api.request<DocumentItem>('POST', '/api/docs', {
+      patientId: this.docForm.patientId,
+      type: this.docForm.type,
+      name: this.docForm.name
+    }).subscribe({
+      next: (doc) => {
+        this.documents = [...this.documents, doc];
+        this.docForm.name = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.docsError = 'Impossibile caricare il documento.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  submitConsent(): void {
+    this.isLoading = true;
+    this.docsError = '';
+    this.api.request<ConsentItem>('POST', '/api/consents', {
+      patientId: this.consentForm.patientId,
+      consentType: this.consentForm.consentType,
+      accepted: this.consentForm.accepted
+    }).subscribe({
+      next: (consent) => {
+        this.consents = [...this.consents, consent];
+        this.isLoading = false;
+      },
+      error: () => {
+        this.docsError = 'Impossibile registrare il consenso.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadPayments(): void {
+    this.isLoading = true;
+    this.paymentsError = '';
+    this.api.request<PaymentItem[]>('GET', '/api/payments').subscribe({
+      next: (payments) => {
+        this.payments = payments;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.paymentsError = 'Impossibile caricare i pagamenti.';
+        this.isLoading = false;
+      }
+    });
+    this.api.request<AdmissionItem[]>('GET', '/api/admissions').subscribe({
+      next: (admissions) => {
+        this.admissions = admissions;
+      },
+      error: () => {
+        this.paymentsError = 'Impossibile caricare i ricoveri.';
+      }
+    });
+  }
+
+  loadAdmissions(): void {
+    this.api.request<AdmissionItem[]>('GET', '/api/admissions').subscribe({
+      next: (admissions) => {
+        this.admissions = admissions;
+      },
+      error: () => {
+        this.paymentsError = 'Impossibile caricare i ricoveri.';
+      }
+    });
+  }
+
+  submitPayment(): void {
+    if (!this.paymentForm.amount) {
+      this.paymentsError = 'Inserisci l’importo del pagamento.';
+      return;
+    }
+    this.isLoading = true;
+    this.paymentsError = '';
+    this.api.request<PaymentItem>('POST', '/api/payments', {
+      patientId: this.paymentForm.patientId,
+      amount: this.paymentForm.amount,
+      currency: this.paymentForm.currency
+    }).subscribe({
+      next: (payment) => {
+        this.payments = [...this.payments, payment];
+        this.isLoading = false;
+      },
+      error: () => {
+        this.paymentsError = 'Impossibile registrare il pagamento.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  submitAdmission(): void {
+    this.isLoading = true;
+    this.paymentsError = '';
+    this.api.request<AdmissionItem>('POST', '/api/admissions', {
+      patientId: this.admissionForm.patientId,
+      department: this.admissionForm.department,
+      bedId: this.admissionForm.bedId
+    }).subscribe({
+      next: (admission) => {
+        this.admissions = [...this.admissions, admission];
+        this.isLoading = false;
+      },
+      error: () => {
+        this.paymentsError = 'Impossibile registrare il ricovero.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadNotifications(): void {
+    this.isLoading = true;
+    this.notificationsError = '';
+    this.api.request<NotificationItem[]>('GET', '/api/notifications').subscribe({
+      next: (notifications) => {
+        this.notifications = notifications;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.notificationsError = 'Impossibile caricare le notifiche.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  submitNotification(): void {
+    if (!this.notificationForm.recipient.trim() || !this.notificationForm.message.trim()) {
+      this.notificationsError = 'Inserisci destinatario e messaggio.';
+      return;
+    }
+    this.isLoading = true;
+    this.notificationsError = '';
+    this.api.request<NotificationItem>('POST', '/api/notifications', {
+      recipient: this.notificationForm.recipient,
+      channel: this.notificationForm.channel,
+      message: this.notificationForm.message
+    }).subscribe({
+      next: (notification) => {
+        this.notifications = [...this.notifications, notification];
+        this.notificationForm.message = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.notificationsError = 'Impossibile inviare la notifica.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadPrescriptions(): void {
+    this.isLoading = true;
+    this.prescribingError = '';
+    this.api.request<PrescriptionItem[]>('GET', '/api/prescriptions').subscribe({
+      next: (prescriptions) => {
+        this.prescriptions = prescriptions;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.prescribingError = 'Impossibile caricare le prescrizioni.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  submitPrescription(): void {
+    if (!this.prescriptionForm.drug.trim() || !this.prescriptionForm.dosage.trim()) {
+      this.prescribingError = 'Inserisci farmaco e posologia.';
+      return;
+    }
+    this.isLoading = true;
+    this.prescribingError = '';
+    this.api.request<PrescriptionItem>('POST', '/api/prescribing/prescriptions', {
+      patientId: this.prescriptionForm.patientId,
+      drug: this.prescriptionForm.drug,
+      dosage: this.prescriptionForm.dosage
+    }).subscribe({
+      next: (prescription) => {
+        this.prescriptions = [...this.prescriptions, prescription];
+        this.prescriptionForm.drug = '';
+        this.prescriptionForm.dosage = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.prescribingError = 'Impossibile registrare la prescrizione.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadTelevisits(): void {
+    this.isLoading = true;
+    this.televisitError = '';
+    this.api.request<TelevisitItem[]>('GET', '/api/televisit').subscribe({
+      next: (televisits) => {
+        this.televisits = televisits;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.televisitError = 'Impossibile caricare le sessioni.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  submitTelevisit(): void {
+    this.isLoading = true;
+    this.televisitError = '';
+    this.api.request<TelevisitItem>('POST', '/api/televisit', {
+      appointmentId: this.televisitForm.appointmentId,
+      provider: this.televisitForm.provider
+    }).subscribe({
+      next: (televisit) => {
+        this.televisits = [...this.televisits, televisit];
+        this.isLoading = false;
+      },
+      error: () => {
+        this.televisitError = 'Impossibile avviare la sessione.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadDirectory(): void {
+    this.isLoading = true;
+    this.directoryError = '';
+    this.api.request<DoctorItem[]>('GET', '/api/admin/doctors').subscribe({
+      next: (doctors) => {
+        this.doctors = doctors;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare i medici.';
+        this.isLoading = false;
+      }
+    });
+    this.api.request<PatientItem[]>('GET', '/api/admin/patients').subscribe({
+      next: (patients) => {
+        this.patients = patients;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare i pazienti.';
+      }
+    });
+    this.api.request<DepartmentItem[]>('GET', '/api/departments').subscribe({
+      next: (departments) => {
+        this.departments = departments;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare i reparti.';
+      }
+    });
+    this.api.request<SpecialityItem[]>('GET', '/api/specialities').subscribe({
+      next: (specialities) => {
+        this.specialities = specialities;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare le specialità.';
+      }
+    });
+  }
+
+  submitDoctor(): void {
+    if (!this.doctorForm.firstName.trim() || !this.doctorForm.lastName.trim()) {
+      this.directoryError = 'Inserisci nome e cognome del medico.';
+      return;
+    }
+    this.isLoading = true;
+    this.directoryError = '';
+    this.api.request<DoctorItem>('POST', '/api/admin/doctors', {
+      firstName: this.doctorForm.firstName,
+      lastName: this.doctorForm.lastName,
+      speciality: this.doctorForm.speciality
+    }).subscribe({
+      next: (doctor) => {
+        this.doctors = [...this.doctors, doctor];
+        this.doctorForm.firstName = '';
+        this.doctorForm.lastName = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile creare il medico.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  submitPatient(): void {
+    if (!this.patientForm.firstName.trim() || !this.patientForm.lastName.trim() || !this.patientForm.email.trim()) {
+      this.directoryError = 'Inserisci nome, cognome ed email del paziente.';
+      return;
+    }
+    this.isLoading = true;
+    this.directoryError = '';
+    this.api.request<PatientItem>('POST', '/api/admin/patients', {
+      firstName: this.patientForm.firstName,
+      lastName: this.patientForm.lastName,
+      email: this.patientForm.email
+    }).subscribe({
+      next: (patient) => {
+        this.patients = [...this.patients, patient];
+        this.patientForm.firstName = '';
+        this.patientForm.lastName = '';
+        this.patientForm.email = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile creare il paziente.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadAudit(): void {
+    this.isLoading = true;
+    this.auditError = '';
+    this.api.request<AuditItem[]>('GET', '/api/audit').subscribe({
+      next: (events) => {
+        this.auditEvents = events;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.auditError = 'Impossibile caricare l’audit trail.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadAdminTelevisit(): void {
+    this.televisitError = '';
+    this.loadTelevisits();
+    this.loadAdmissions();
   }
 }
