@@ -215,7 +215,8 @@ export const routes: Routes = [
         data: {
           title: 'Scheduling paziente',
           description: 'Prenotazioni, slot e appuntamenti disponibili per i cittadini.',
-          endpoints: schedulingEndpoints
+          endpoints: schedulingEndpoints,
+          view: 'scheduling'
         }
       },
       {
@@ -225,7 +226,8 @@ export const routes: Routes = [
         data: {
           title: 'Documenti & consensi',
           description: 'Cartella clinica, referti e consensi informati.',
-          endpoints: docsEndpoints
+          endpoints: docsEndpoints,
+          view: 'docs'
         }
       },
       {
@@ -235,7 +237,8 @@ export const routes: Routes = [
         data: {
           title: 'Notifiche paziente',
           description: 'Gestione notifiche multicanale e reminder.',
-          endpoints: notificationsEndpoints
+          endpoints: notificationsEndpoints,
+          view: 'notifications'
         }
       },
       {
@@ -245,7 +248,8 @@ export const routes: Routes = [
         data: {
           title: 'Pagamenti e ricoveri',
           description: 'Pagamenti digitali e gestione ricoveri.',
-          endpoints: paymentsEndpoints
+          endpoints: paymentsEndpoints,
+          view: 'payments'
         }
       },
       {
@@ -260,7 +264,8 @@ export const routes: Routes = [
         data: {
           title: 'Prescrizioni',
           description: 'Gestione prescrizioni e terapie.',
-          endpoints: prescribingEndpoints
+          endpoints: prescribingEndpoints,
+          view: 'prescribing'
         }
       },
       {
@@ -270,7 +275,8 @@ export const routes: Routes = [
         data: {
           title: 'Televisite',
           description: 'Sessioni di telemedicina e token di accesso.',
-          endpoints: televisitEndpoints
+          endpoints: televisitEndpoints,
+          view: 'televisit'
         }
       },
       {
@@ -280,7 +286,8 @@ export const routes: Routes = [
         data: {
           title: 'Agenda medico',
           description: 'Gestione slot e appuntamenti dei medici.',
-          endpoints: schedulingEndpoints
+          endpoints: schedulingEndpoints,
+          view: 'scheduling'
         }
       },
       {
@@ -290,7 +297,8 @@ export const routes: Routes = [
         data: {
           title: 'Documenti clinici',
           description: 'Documentazione clinica e consensi dei pazienti.',
-          endpoints: docsEndpoints
+          endpoints: docsEndpoints,
+          view: 'docs'
         }
       },
       {
