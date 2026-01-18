@@ -9,9 +9,9 @@ import { Observable, of, throwError } from 'rxjs';
 export class ApiService {
   private mockStore = {
     slots: [
-      { id: 1, doctorId: 2, date: '2024-05-01', time: '09:30', status: 'AVAILABLE' },
-      { id: 2, doctorId: 2, date: '2024-05-01', time: '10:30', status: 'AVAILABLE' },
-      { id: 3, doctorId: 3, date: '2024-05-02', time: '11:00', status: 'BOOKED' }
+      { id: 1, doctorId: 2, date: '2024-05-01', time: '09:30', status: 'AVAILABLE', notes: 'Visite cardiologiche di controllo.' },
+      { id: 2, doctorId: 2, date: '2024-05-01', time: '10:30', status: 'AVAILABLE', notes: 'Preferenza mattina.' },
+      { id: 3, doctorId: 3, date: '2024-05-02', time: '11:00', status: 'BOOKED', notes: 'Slot riservato urgenze.' }
     ],
     appointments: [
       { id: 10, patientId: 1, doctorId: 2, slotId: 3, reason: 'Controllo cardiologico', status: 'CONFIRMED' }
@@ -108,7 +108,8 @@ export class ApiService {
             doctorId: this.getNumber(payload.doctorId, 1),
             date: this.getString(payload.date, this.today()),
             time: this.getString(payload.time, '09:00'),
-            status: this.getString(payload.status, 'AVAILABLE')
+            status: this.getString(payload.status, 'AVAILABLE'),
+            notes: this.getString(payload.notes, '')
           };
           this.mockStore.slots.push(newSlot);
           return of(newSlot as T);

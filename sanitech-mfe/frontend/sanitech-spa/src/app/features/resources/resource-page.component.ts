@@ -18,6 +18,7 @@ interface SchedulingSlot {
   date: string;
   time: string;
   status: string;
+  notes?: string;
 }
 
 interface SchedulingAppointment {
@@ -152,7 +153,8 @@ export class ResourcePageComponent {
   };
   slotForm = {
     date: '',
-    time: ''
+    time: '',
+    notes: ''
   };
   documents: DocumentItem[] = [];
   consents: ConsentItem[] = [];
@@ -552,12 +554,14 @@ export class ResourcePageComponent {
       doctorId: this.currentDoctorId,
       date: this.slotForm.date,
       time: this.slotForm.time,
+      notes: this.slotForm.notes,
       status: 'AVAILABLE'
     }).subscribe({
       next: (slot) => {
         this.slots = [...this.slots, slot];
         this.slotForm.date = '';
         this.slotForm.time = '';
+        this.slotForm.notes = '';
         this.isLoading = false;
       },
       error: () => {

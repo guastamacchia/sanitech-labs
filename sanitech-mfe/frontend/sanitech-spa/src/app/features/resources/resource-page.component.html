@@ -22,59 +22,37 @@
                   Aggiorna
                 </button>
               </div>
-              <ng-container *ngIf="isDoctor; else patientSlotsTable">
-                <div class="row g-3">
-                  <div class="col-md-6 col-xl-4" *ngFor="let day of doctorSlotsByDate">
-                    <div class="border rounded-3 p-3 h-100">
-                      <div class="fw-semibold mb-2">{{ formatDate(day.date) }}</div>
-                      <div class="d-flex flex-wrap gap-2">
-                        <span
-                          class="badge rounded-pill"
-                          *ngFor="let slot of day.slots"
-                          [class.bg-success]="slot.status === 'AVAILABLE'"
-                          [class.bg-secondary]="slot.status !== 'AVAILABLE'">
-                          {{ slot.time }} • {{ getStatusLabel(slot.status) }}
+              <div class="table-responsive">
+                <table class="table align-middle">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th *ngIf="!isDoctor">Medico</th>
+                      <th>Data</th>
+                      <th>Ora</th>
+                      <th>Note</th>
+                      <th>Stato</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let slot of visibleSlots">
+                      <td>{{ slot.id }}</td>
+                      <td *ngIf="!isDoctor">{{ getDoctorLabel(slot.doctorId) }}</td>
+                      <td>{{ formatDate(slot.date) }}</td>
+                      <td>{{ slot.time }}</td>
+                      <td>{{ slot.notes || '-' }}</td>
+                      <td>
+                        <span class="badge" [class.bg-success]="slot.status === 'AVAILABLE'" [class.bg-secondary]="slot.status !== 'AVAILABLE'">
+                          {{ getStatusLabel(slot.status) }}
                         </span>
-                      </div>
-                      <div *ngIf="!day.slots.length" class="text-muted small">Nessuno slot disponibile.</div>
-                    </div>
-                  </div>
-                  <div class="col-12" *ngIf="!doctorSlotsByDate.length">
-                    <div class="text-center text-muted">Nessuno slot disponibile.</div>
-                  </div>
-                </div>
-              </ng-container>
-              <ng-template #patientSlotsTable>
-                <div class="table-responsive">
-                  <table class="table align-middle">
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Medico</th>
-                        <th>Data</th>
-                        <th>Ora</th>
-                        <th>Stato</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let slot of visibleSlots">
-                        <td>{{ slot.id }}</td>
-                        <td>{{ getDoctorLabel(slot.doctorId) }}</td>
-                        <td>{{ formatDate(slot.date) }}</td>
-                        <td>{{ slot.time }}</td>
-                        <td>
-                          <span class="badge" [class.bg-success]="slot.status === 'AVAILABLE'" [class.bg-secondary]="slot.status !== 'AVAILABLE'">
-                            {{ getStatusLabel(slot.status) }}
-                          </span>
-                        </td>
-                      </tr>
-                      <tr *ngIf="!visibleSlots.length">
-                        <td colspan="5" class="text-center text-muted">Nessuno slot disponibile.</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </ng-template>
+                      </td>
+                    </tr>
+                    <tr *ngIf="!visibleSlots.length">
+                      <td [attr.colspan]="isDoctor ? 5 : 6" class="text-center text-muted">Nessuno slot disponibile.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -162,6 +140,10 @@
                   <div class="mb-3">
                     <label class="form-label">Ora</label>
                     <input class="form-control" type="time" name="slotTime" [(ngModel)]="slotForm.time" required />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Note</label>
+                    <textarea class="form-control" rows="3" name="slotNotes" [(ngModel)]="slotForm.notes" placeholder="Inserisci note per il paziente"></textarea>
                   </div>
                   <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>
                   <button class="btn btn-primary w-100" type="submit" [disabled]="slotFormRef.invalid || isLoading">
