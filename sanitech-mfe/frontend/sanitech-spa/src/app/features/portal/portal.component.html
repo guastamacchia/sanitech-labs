@@ -1,24 +1,12 @@
 <section class="py-4 bg-white border-bottom">
   <div class="container">
-    <h2 class="fw-bold">Area privata</h2>
-    <p class="text-muted mb-0">Accesso protetto per pazienti, medici e amministratori. Tutte le funzionalità sono simulate con dati mockati.</p>
+    <h2 class="fw-bold">{{ headerTitle }}</h2>
+    <p class="text-muted mb-0">{{ headerDescription }}</p>
   </div>
 </section>
 
 <section class="py-4">
   <div class="container">
-    <div class="row g-4">
-      <div class="col-lg-3">
-        <div class="list-group">
-          <a class="list-group-item list-group-item-action" routerLink="/portal" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Panoramica</a>
-          <a class="list-group-item list-group-item-action" routerLink="/portal/patient" routerLinkActive="active">Area Paziente</a>
-          <a class="list-group-item list-group-item-action" routerLink="/portal/doctor" routerLinkActive="active">Area Medico</a>
-          <a class="list-group-item list-group-item-action" routerLink="/portal/admin" routerLinkActive="active">Area Admin</a>
-        </div>
-      </div>
-      <div class="col-lg-9">
-        <router-outlet></router-outlet>
-      </div>
-    </div>
+    <router-outlet></router-outlet>
   </div>
 </section>
