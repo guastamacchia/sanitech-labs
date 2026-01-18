@@ -660,25 +660,31 @@
                     <table class="table align-middle">
                       <thead>
                         <tr>
-                          <th>ID</th>
+                          <th *ngIf="!isDoctor">ID</th>
                           <th *ngIf="isDoctor">Paziente</th>
-                          <th>Appuntamento</th>
+                          <th *ngIf="!isDoctor">Appuntamento</th>
                           <th>Provider</th>
                           <th>Stato</th>
-                          <th>Token</th>
+                          <th *ngIf="!isDoctor">Token</th>
+                          <th *ngIf="isDoctor">Azione</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr *ngFor="let televisit of televisits">
-                          <td>{{ televisit.id }}</td>
+                          <td *ngIf="!isDoctor">{{ televisit.id }}</td>
                           <td *ngIf="isDoctor">{{ getPatientLabel(televisit.appointmentId) }}</td>
-                          <td>{{ televisit.appointmentId }}</td>
+                          <td *ngIf="!isDoctor">{{ televisit.appointmentId }}</td>
                           <td>{{ televisit.provider }}</td>
-                          <td>{{ televisit.status }}</td>
-                          <td>{{ televisit.token }}</td>
+                          <td>{{ getTelevisitStatusLabel(televisit.status) }}</td>
+                          <td *ngIf="!isDoctor">{{ televisit.token }}</td>
+                          <td *ngIf="isDoctor">
+                            <button class="btn btn-outline-primary btn-sm" type="button" (click)="joinTelevisit(televisit)">
+                              Partecipa alla call
+                            </button>
+                          </td>
                         </tr>
                         <tr *ngIf="!televisits.length">
-                          <td [attr.colspan]="isDoctor ? 6 : 5" class="text-center text-muted">Nessuna sessione presente.</td>
+                          <td [attr.colspan]="isDoctor ? 4 : 5" class="text-center text-muted">Nessuna sessione presente.</td>
                         </tr>
                       </tbody>
                     </table>

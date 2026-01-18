@@ -502,6 +502,15 @@ export class ResourcePageComponent {
     return labels[status] ?? status;
   }
 
+  getTelevisitStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      READY: 'Pronta',
+      ACTIVE: 'In corso',
+      COMPLETED: 'Conclusa'
+    };
+    return labels[status] ?? status;
+  }
+
   getPatientLabel(patientId: number): string {
     const patient = this.patients.find((item) => item.id === patientId);
     return patient ? `${patient.firstName} ${patient.lastName}` : `Paziente ${patientId}`;
@@ -867,6 +876,15 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  joinTelevisit(televisit: TelevisitItem): void {
+    if (!televisit.token) {
+      this.televisitError = 'Token televisita non disponibile.';
+      return;
+    }
+    this.televisitError = '';
+    window.open(`/televisit/${televisit.token}`, '_blank');
   }
 
   loadDirectory(): void {
