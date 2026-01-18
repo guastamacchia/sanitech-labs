@@ -9,9 +9,33 @@ import { Observable, of, throwError } from 'rxjs';
 export class ApiService {
   private mockStore = {
     slots: [
-      { id: 1, doctorId: 2, date: '2024-05-01', time: '09:30', status: 'AVAILABLE' },
-      { id: 2, doctorId: 2, date: '2024-05-01', time: '10:30', status: 'AVAILABLE' },
-      { id: 3, doctorId: 3, date: '2024-05-02', time: '11:00', status: 'BOOKED' }
+      {
+        id: 1,
+        doctorId: 2,
+        date: '2024-05-01',
+        time: '09:30',
+        status: 'AVAILABLE',
+        modality: 'IN_PERSON',
+        notes: 'Visite cardiologiche di controllo.'
+      },
+      {
+        id: 2,
+        doctorId: 2,
+        date: '2024-05-01',
+        time: '10:30',
+        status: 'AVAILABLE',
+        modality: 'REMOTE',
+        notes: 'Disponibile anche per consulto da remoto.'
+      },
+      {
+        id: 3,
+        doctorId: 3,
+        date: '2024-05-02',
+        time: '11:00',
+        status: 'AVAILABLE',
+        modality: 'IN_PERSON',
+        notes: 'Slot riservato visite neurologiche.'
+      }
     ],
     appointments: [
       { id: 10, patientId: 1, doctorId: 2, slotId: 3, reason: 'Controllo cardiologico', status: 'CONFIRMED' }
@@ -23,10 +47,38 @@ export class ApiService {
       { id: 21, patientId: 1, consentType: 'GDPR', accepted: true, signedAt: '2024-03-20' }
     ],
     notifications: [
-      { id: 30, recipient: 'anna.conti@sanitech.example', channel: 'EMAIL', message: 'Promemoria visita', status: 'SENT' }
+      {
+        id: 30,
+        recipient: 'anna.conti@sanitech.example',
+        channel: 'EMAIL',
+        message: 'Promemoria visita cardiologica del 12/05/2024 alle 09:30.',
+        status: 'DELIVERED'
+      },
+      {
+        id: 31,
+        recipient: 'anna.conti@sanitech.example',
+        channel: 'SMS',
+        message: 'È disponibile un nuovo referto nella tua area documenti.',
+        status: 'SENT'
+      },
+      {
+        id: 32,
+        recipient: 'anna.conti@sanitech.example',
+        channel: 'APP',
+        message: 'Pagamento registrato con successo. Grazie!',
+        status: 'FAILED'
+      }
     ],
     payments: [
-      { id: 40, patientId: 1, amount: 120, currency: 'EUR', status: 'PAID', paidAt: '2024-03-15' }
+      {
+        id: 40,
+        patientId: 1,
+        amount: 120,
+        currency: 'EUR',
+        service: 'Visita medica con Dr. Marco Bianchi',
+        status: 'PAID',
+        paidAt: '2024-03-15'
+      }
     ],
     admissions: [
       { id: 50, patientId: 1, department: 'CARD', bedId: 4, status: 'ACTIVE', admittedAt: '2024-03-10' }
@@ -36,7 +88,7 @@ export class ApiService {
       { id: 7, department: 'NEURO', status: 'AVAILABLE' }
     ],
     prescriptions: [
-      { id: 60, patientId: 1, drug: 'Atorvastatina', dosage: '10mg', status: 'ACTIVE' }
+      { id: 60, patientId: 1, doctorId: 2, drug: 'Atorvastatina', dosage: '10mg', status: 'ACTIVE' }
     ],
     televisits: [
       { id: 70, appointmentId: 22, provider: 'LIVEKIT', status: 'READY', token: 'tv-abc-123' }
@@ -88,7 +140,9 @@ export class ApiService {
             doctorId: this.getNumber(payload.doctorId, 1),
             date: this.getString(payload.date, this.today()),
             time: this.getString(payload.time, '09:00'),
-            status: this.getString(payload.status, 'AVAILABLE')
+            status: this.getString(payload.status, 'AVAILABLE'),
+            modality: this.getString(payload.modality, 'IN_PERSON'),
+            notes: this.getString(payload.notes, '')
           };
           this.mockStore.slots.push(newSlot);
           return of(newSlot as T);
@@ -108,6 +162,10 @@ export class ApiService {
             reason: this.getString(payload.reason, 'Visita di controllo'),
             status: this.getString(payload.status, 'PENDING')
           };
+          const slot = this.mockStore.slots.find((item) => item.id === newAppointment.slotId);
+          if (slot) {
+            slot.status = 'BOOKED';
+          }
           this.mockStore.appointments.push(newAppointment);
           return of(newAppointment as T);
         }
@@ -186,6 +244,7 @@ export class ApiService {
             patientId: this.getNumber(payload.patientId, 1),
             amount: this.getNumber(payload.amount, 100),
             currency: this.getString(payload.currency, 'EUR'),
+            service: this.getString(payload.service, 'Prestazione sanitaria'),
             status: this.getString(payload.status, 'PAID'),
             paidAt: this.today()
           };
@@ -227,6 +286,7 @@ export class ApiService {
           const newPrescription = {
             id: this.nextId(this.mockStore.prescriptions),
             patientId: this.getNumber(payload.patientId, 1),
+            doctorId: this.getNumber(payload.doctorId, 2),
             drug: this.getString(payload.drug, 'Farmaco prescritto'),
             dosage: this.getString(payload.dosage, '10mg'),
             status: this.getString(payload.status, 'ACTIVE')
