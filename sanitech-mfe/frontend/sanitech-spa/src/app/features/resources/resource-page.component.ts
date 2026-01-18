@@ -55,6 +55,7 @@ interface PaymentItem {
   service: string;
   status: string;
   paidAt: string;
+  receiptName?: string;
 }
 
 interface AdmissionItem {
@@ -80,6 +81,7 @@ interface PrescriptionItem {
   doctorId: number;
   drug: string;
   dosage: string;
+  durationDays: number;
   status: string;
 }
 
@@ -181,10 +183,8 @@ export class ResourcePageComponent {
   admissions: AdmissionItem[] = [];
   paymentsError = '';
   paymentForm = {
-    patientId: 1,
-    amount: 120,
-    currency: 'EUR',
-    service: 'Visita medica con Dr. Marco Bianchi'
+    paymentId: null as number | null,
+    receiptName: ''
   };
   admissionForm = {
     patientId: 1,
@@ -210,7 +210,8 @@ export class ResourcePageComponent {
     types: {
       appointments: true,
       documents: true,
-      payments: false
+      payments: false,
+      prescriptions: false
     }
   };
   prescriptions: PrescriptionItem[] = [];
@@ -218,7 +219,8 @@ export class ResourcePageComponent {
   prescriptionForm = {
     patientId: 1,
     drug: '',
-    dosage: ''
+    dosage: '',
+    durationDays: 10
   };
   televisits: TelevisitItem[] = [];
   televisitError = '';
@@ -279,6 +281,7 @@ export class ResourcePageComponent {
     }
     if (this.mode === 'payments') {
       this.loadPayments();
+      this.loadPatients();
     }
     if (this.mode === 'notifications') {
       this.loadNotifications();
@@ -542,6 +545,60 @@ export class ResourcePageComponent {
     return labels[status] ?? status;
   }
 
+  getAdmissionStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      ACTIVE: 'Attivo',
+      CONFIRMED: 'Confermato',
+      DISCHARGED: 'Dimesso'
+    };
+    return labels[status] ?? status;
+  }
+
+  getPaymentStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      PAID: 'Pagato',
+      PENDING: 'In attesa',
+      FAILED: 'Non riuscito'
+    };
+    return labels[status] ?? status;
+  }
+
+  getConsentTypeLabel(consentType: string): string {
+    const labels: Record<string, string> = {
+      GDPR: 'Consenso GDPR',
+      PRIVACY: 'Consenso privacy',
+      THERAPY: 'Consenso terapia'
+    };
+    return labels[consentType] ?? consentType;
+  }
+
+  getCurrencyLabel(currency: string): string {
+    const labels: Record<string, string> = {
+      EUR: 'Euro',
+      USD: 'Dollaro USA'
+    };
+    return labels[currency] ?? currency;
+  }
+
+  getDepartmentLabel(code: string): string {
+    const labels: Record<string, string> = {
+      CARD: 'Cardiologia',
+      NEURO: 'Neurologia',
+      DERM: 'Dermatologia',
+      ORTHO: 'Ortopedia',
+      PNEUMO: 'Pneumologia'
+    };
+    return labels[code] ?? code;
+  }
+
+  get pendingPayments(): PaymentItem[] {
+    const pending = this.payments.filter((payment) => payment.status === 'PENDING');
+    if (this.isPatient) {
+      return pending.filter((payment) => payment.patientId === 1);
+    }
+    return pending;
+  }
+
   get availableSlots(): SchedulingSlot[] {
     if (this.isPatient) {
       if (!this.bookingForm.speciality) {
@@ -721,7 +778,7 @@ export class ResourcePageComponent {
     this.docsError = '';
     this.api.request<DocumentItem[]>('GET', '/api/docs').subscribe({
       next: (docs) => {
-        this.documents = docs;
+        this.documents = [...docs];
         this.isLoading = false;
       },
       error: () => {
@@ -731,7 +788,7 @@ export class ResourcePageComponent {
     });
     this.api.request<ConsentItem[]>('GET', '/api/consents').subscribe({
       next: (consents) => {
-        this.consents = consents;
+        this.consents = [...consents];
       },
       error: () => {
         this.docsError = 'Impossibile caricare i consensi.';
@@ -778,7 +835,9 @@ export class ResourcePageComponent {
       accepted: this.consentForm.accepted
     }).subscribe({
       next: (consent) => {
-        this.consents = [...this.consents, consent];
+        if (!this.consents.some((item) => item.id === consent.id)) {
+          this.consents = [...this.consents, consent];
+        }
         this.isLoading = false;
       },
       error: () => {
@@ -823,8 +882,17 @@ export class ResourcePageComponent {
   }
 
   submitPayment(): void {
-    if (!this.paymentForm.amount) {
-      this.paymentsError = 'Inserisci l’importo del pagamento.';
+    if (!this.paymentForm.paymentId) {
+      this.paymentsError = 'Seleziona un pagamento in sospeso.';
+      return;
+    }
+    if (!this.paymentForm.receiptName.trim()) {
+      this.paymentsError = 'Carica la ricevuta del pagamento.';
+      return;
+    }
+    const pendingPayment = this.payments.find((payment) => payment.id === this.paymentForm.paymentId);
+    if (!pendingPayment || pendingPayment.status !== 'PENDING') {
+      this.paymentsError = 'Pagamento selezionato non valido.';
       return;
     }
     if (!this.paymentForm.service.trim()) {
@@ -834,14 +902,14 @@ export class ResourcePageComponent {
     this.isLoading = true;
     this.paymentsError = '';
     this.api.request<PaymentItem>('POST', '/api/payments', {
-      patientId: this.paymentForm.patientId,
-      amount: this.paymentForm.amount,
-      currency: this.paymentForm.currency,
-      service: this.paymentForm.service
+      paymentId: this.paymentForm.paymentId,
+      status: 'PAID',
+      receiptName: this.paymentForm.receiptName
     }).subscribe({
       next: (payment) => {
-        this.payments = [...this.payments, payment];
-        this.paymentForm.service = 'Visita medica con Dr. Marco Bianchi';
+        this.payments = this.payments.map((item) => (item.id === payment.id ? payment : item));
+        this.paymentForm.paymentId = null;
+        this.paymentForm.receiptName = '';
         this.isLoading = false;
       },
       error: () => {
@@ -962,18 +1030,24 @@ export class ResourcePageComponent {
       this.prescribingError = 'Inserisci farmaco e posologia.';
       return;
     }
+    if (!this.prescriptionForm.durationDays) {
+      this.prescribingError = 'Inserisci la durata della terapia.';
+      return;
+    }
     this.isLoading = true;
     this.prescribingError = '';
     this.api.request<PrescriptionItem>('POST', '/api/prescribing/prescriptions', {
       patientId: this.prescriptionForm.patientId,
       doctorId: this.currentDoctorId,
       drug: this.prescriptionForm.drug,
-      dosage: this.prescriptionForm.dosage
+      dosage: this.prescriptionForm.dosage,
+      durationDays: this.prescriptionForm.durationDays
     }).subscribe({
       next: (prescription) => {
         this.prescriptions = [...this.prescriptions, prescription];
         this.prescriptionForm.drug = '';
         this.prescriptionForm.dosage = '';
+        this.prescriptionForm.durationDays = 10;
         this.isLoading = false;
       },
       error: () => {
@@ -998,6 +1072,25 @@ export class ResourcePageComponent {
     this.documents = this.documents.filter((item) => item.id !== doc.id);
   }
 
+  viewPaymentReceipt(payment: PaymentItem): void {
+    this.paymentsError = '';
+    if (!payment.receiptName) {
+      this.paymentsError = 'Nessuna ricevuta disponibile per questo pagamento.';
+      return;
+    }
+    const previewWindow = window.open('', '_blank', 'noopener');
+    if (!previewWindow) {
+      this.paymentsError = 'Impossibile aprire la ricevuta di pagamento.';
+      return;
+    }
+    previewWindow.document.write(`<pre>Ricevuta: ${payment.receiptName}</pre>`);
+    previewWindow.document.close();
+  }
+
+  deletePayment(payment: PaymentItem): void {
+    this.payments = this.payments.filter((item) => item.id !== payment.id);
+  }
+
   deleteConsent(consent: ConsentItem): void {
     this.consents = this.consents.filter((item) => item.id !== consent.id);
   }
@@ -1012,6 +1105,15 @@ export class ResourcePageComponent {
     if (!this.docForm.name.trim()) {
       this.docForm.name = file.name;
     }
+  }
+
+  handlePaymentReceiptSelected(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) {
+      return;
+    }
+    this.paymentForm.receiptName = file.name;
   }
 
   loadPatients(): void {

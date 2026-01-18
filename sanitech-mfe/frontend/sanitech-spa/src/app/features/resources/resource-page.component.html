@@ -42,18 +42,18 @@
             <div class="accordion-item card-glass border-0">
               <h2 class="accordion-header">
                 <button
-                  class="accordion-button collapsed"
+                  class="accordion-button"
                   type="button"
                   data-bs-toggle="collapse"
                   data-bs-target="#availableSlotsCollapse"
-                  aria-expanded="false"
+                  aria-expanded="true"
                   aria-controls="availableSlotsCollapse">
                   Consulta gli slot disponibili e poi prenota
                 </button>
               </h2>
               <div
                 id="availableSlotsCollapse"
-                class="accordion-collapse collapse"
+                class="accordion-collapse collapse show"
                 data-bs-parent="#availableSlotsAccordion">
                 <div class="accordion-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
@@ -338,7 +338,7 @@
                     <tbody>
                       <tr *ngFor="let consent of visibleConsents | slice:getPageSliceStart('consents'):getPageSliceEnd('consents')">
                         <td *ngIf="isDoctor">{{ getPatientLabel(consent.patientId) }}</td>
-                        <td>{{ consent.consentType }}</td>
+                        <td>{{ getConsentTypeLabel(consent.consentType) }}</td>
                         <td>
                           <span class="badge" [class.bg-success]="consent.accepted" [class.bg-secondary]="!consent.accepted">
                             {{ consent.accepted ? 'Si' : 'No' }}
@@ -433,51 +433,15 @@
       <ng-template #paymentsLayout>
         <ng-container *ngIf="mode === 'payments'; else notificationsLayout">
           <div class="row g-4">
-            <div class="col-lg-8">
-            <div class="card card-glass mb-4" *ngIf="!isDoctor">
-              <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                  <h5 class="fw-semibold mb-0">Pagamenti</h5>
+            <div class="col-12">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">{{ isDoctor ? 'Ricoveri del reparto' : 'Ricoveri' }}</h5>
                     <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
                       Aggiorna
                     </button>
                   </div>
-                  <div class="table-responsive">
-                    <table class="table align-middle">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th *ngIf="!isPatient">Paziente</th>
-                          <th>Prestazione</th>
-                          <th>Importo</th>
-                          <th>Valuta</th>
-                          <th>Stato</th>
-                          <th>Data</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let payment of payments | slice:getPageSliceStart('payments'):getPageSliceEnd('payments')">
-                          <td>{{ payment.id }}</td>
-                          <td *ngIf="!isPatient">{{ payment.patientId }}</td>
-                          <td>{{ payment.service }}</td>
-                          <td>{{ payment.amount }}</td>
-                          <td>{{ payment.currency }}</td>
-                          <td>{{ payment.status }}</td>
-                          <td>{{ formatDate(payment.paidAt) }}</td>
-                        </tr>
-                        <tr *ngIf="!payments.length">
-                          <td [attr.colspan]="isPatient ? 6 : 7" class="text-center text-muted">Nessun pagamento registrato.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'payments', total: payments.length }"></ng-container>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card card-glass">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">{{ isDoctor ? 'Ricoveri del reparto' : 'Ricoveri' }}</h5>
                   <div class="table-responsive">
                     <table class="table align-middle">
                       <thead>
@@ -494,11 +458,11 @@
                       <tbody>
                         <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissions'):getPageSliceEnd('admissions')">
                           <td>{{ admission.id }}</td>
-                          <td *ngIf="!isPatient">{{ admission.patientId }}</td>
-                          <td>{{ admission.department }}</td>
+                          <td *ngIf="!isPatient">{{ getPatientLabel(admission.patientId) }}</td>
+                          <td>{{ getDepartmentLabel(admission.department) }}</td>
                           <td>{{ admission.bedId }}</td>
-                          <td>{{ admission.status }}</td>
-                          <td>{{ admission.admittedAt }}</td>
+                          <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
+                          <td>{{ formatDate(admission.admittedAt) }}</td>
                           <td *ngIf="isPatient">
                             <button
                               class="btn btn-outline-primary btn-sm"
@@ -519,36 +483,66 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="col-lg-4">
-              <div class="card card-glass mb-4">
+          <div class="row g-4 mt-1">
+            <div class="col-lg-8">
+              <div class="card card-glass mb-4" *ngIf="!isDoctor">
                 <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Registra pagamento</h5>
-                  <form (ngSubmit)="submitPayment()" #paymentFormRef="ngForm">
-                    <div class="mb-3" *ngIf="!isPatient">
-                      <label class="form-label">ID Paziente</label>
-                      <input class="form-control" type="number" name="paymentPatientId" [(ngModel)]="paymentForm.patientId" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Prestazione</label>
-                      <input class="form-control" type="text" name="paymentService" [(ngModel)]="paymentForm.service" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Importo</label>
-                      <input class="form-control" type="number" name="paymentAmount" [(ngModel)]="paymentForm.amount" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Valuta</label>
-                      <select class="form-select" name="paymentCurrency" [(ngModel)]="paymentForm.currency" required>
-                        <option value="EUR">EUR</option>
-                        <option value="USD">USD</option>
-                      </select>
-                    </div>
-                    <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
-                    <button class="btn btn-primary w-100" type="submit" [disabled]="paymentFormRef.invalid || isLoading">
-                      {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">Pagamenti</h5>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
+                      Aggiorna
                     </button>
-                  </form>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th *ngIf="!isPatient">Paziente</th>
+                          <th>Prestazione</th>
+                          <th>Importo</th>
+                          <th>Valuta</th>
+                          <th>Stato</th>
+                          <th>Data</th>
+                          <th>Azioni</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let payment of payments | slice:getPageSliceStart('payments'):getPageSliceEnd('payments')">
+                          <td>{{ payment.id }}</td>
+                          <td *ngIf="!isPatient">{{ getPatientLabel(payment.patientId) }}</td>
+                          <td>{{ payment.service }}</td>
+                          <td>{{ payment.amount }}</td>
+                          <td>{{ getCurrencyLabel(payment.currency) }}</td>
+                          <td>{{ getPaymentStatusLabel(payment.status) }}</td>
+                          <td>{{ formatDate(payment.paidAt) }}</td>
+                          <td>
+                            <button
+                              class="btn btn-outline-secondary btn-sm me-2"
+                              type="button"
+                              aria-label="Visualizza ricevuta"
+                              [disabled]="!payment.receiptName"
+                              (click)="viewPaymentReceipt(payment)">
+                              👁️
+                            </button>
+                            <button
+                              class="btn btn-outline-danger btn-sm"
+                              type="button"
+                              aria-label="Elimina pagamento"
+                              (click)="deletePayment(payment)">
+                              🗑️
+                            </button>
+                          </td>
+                        </tr>
+                        <tr *ngIf="!payments.length">
+                          <td [attr.colspan]="isPatient ? 7 : 8" class="text-center text-muted">Nessun pagamento registrato.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'payments', total: payments.length }"></ng-container>
+                  </div>
                 </div>
               </div>
 
@@ -573,6 +567,35 @@
                     </div>
                     <button class="btn btn-outline-primary w-100" type="submit" [disabled]="admissionFormRef.invalid || isLoading">
                       {{ isLoading ? 'Salvataggio...' : 'Registra ricovero' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="card card-glass mb-4">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Registra pagamento</h5>
+                  <form (ngSubmit)="submitPayment()" #paymentFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Pagamento in sospeso</label>
+                      <select class="form-select" name="paymentPendingId" [(ngModel)]="paymentForm.paymentId" required>
+                        <option [ngValue]="null" disabled>Seleziona un pagamento</option>
+                        <option *ngFor="let payment of pendingPayments" [ngValue]="payment.id">
+                          #{{ payment.id }} • {{ payment.service }} • {{ payment.amount }} {{ getCurrencyLabel(payment.currency) }}
+                        </option>
+                      </select>
+                      <div class="form-text" *ngIf="!pendingPayments.length">Nessun pagamento in sospeso disponibile.</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Ricevuta pagamento</label>
+                      <input class="form-control" type="file" name="paymentReceipt" (change)="handlePaymentReceiptSelected($event)" />
+                      <div class="form-text" *ngIf="paymentForm.receiptName">Selezionato: {{ paymentForm.receiptName }}</div>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
+                    <button class="btn btn-primary w-100" type="submit" [disabled]="paymentFormRef.invalid || isLoading || !pendingPayments.length">
+                      {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
                     </button>
                   </form>
                 </div>
@@ -632,7 +655,7 @@
                             <td>{{ notification.recipient }}</td>
                             <td>{{ notification.channel }}</td>
                             <td>{{ notification.message }}</td>
-                            <td>{{ notification.status }}</td>
+                            <td>{{ getNotificationStatusLabel(notification.status) }}</td>
                           </tr>
                           <tr *ngIf="!notifications.length">
                             <td colspan="5" class="text-center text-muted">Nessuna notifica presente.</td>
@@ -688,6 +711,10 @@
                         <div class="form-check">
                           <input class="form-check-input" type="checkbox" id="prefTypePayments" name="prefTypePayments" [(ngModel)]="notificationPreferences.types.payments" />
                           <label class="form-check-label" for="prefTypePayments">Pagamenti e ricoveri</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPreferences.types.prescriptions" />
+                          <label class="form-check-label" for="prefTypePrescriptions">Prescrizioni</label>
                         </div>
                       </div>
                       <div class="alert alert-success py-2" *ngIf="notificationsSuccess">{{ notificationsSuccess }}</div>
@@ -748,6 +775,7 @@
                           <th>Medico</th>
                           <th>Farmaco</th>
                           <th>Posologia</th>
+                          <th>Durata</th>
                           <th>Stato</th>
                         </tr>
                       </thead>
@@ -756,10 +784,11 @@
                           <td>{{ getDoctorLabel(prescription.doctorId) }}</td>
                           <td>{{ prescription.drug }}</td>
                           <td>{{ prescription.dosage }}</td>
+                          <td>{{ prescription.durationDays }} giorni</td>
                           <td>{{ getPrescriptionStatusLabel(prescription.status) }}</td>
                         </tr>
                         <tr *ngIf="!visiblePrescriptions.length">
-                          <td colspan="4" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
+                          <td colspan="5" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -786,6 +815,7 @@
                             <th>Paziente</th>
                             <th>Farmaco</th>
                             <th>Posologia</th>
+                            <th>Durata</th>
                             <th>Stato</th>
                           </tr>
                         </thead>
@@ -794,10 +824,11 @@
                             <td>{{ getPatientLabel(prescription.patientId) }}</td>
                             <td>{{ prescription.drug }}</td>
                             <td>{{ prescription.dosage }}</td>
+                            <td>{{ prescription.durationDays }} giorni</td>
                             <td>{{ getPrescriptionStatusLabel(prescription.status) }}</td>
                           </tr>
                           <tr *ngIf="!visiblePrescriptions.length">
-                            <td colspan="4" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
+                            <td colspan="5" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
                           </tr>
                         </tbody>
                       </table>
@@ -825,10 +856,14 @@
                         <label class="form-label">Farmaco</label>
                         <input class="form-control" type="text" name="prescriptionDrug" [(ngModel)]="prescriptionForm.drug" required />
                       </div>
-                      <div class="mb-3">
-                        <label class="form-label">Posologia</label>
-                        <input class="form-control" type="text" name="prescriptionDosage" [(ngModel)]="prescriptionForm.dosage" required />
-                      </div>
+                    <div class="mb-3">
+                      <label class="form-label">Posologia</label>
+                      <input class="form-control" type="text" name="prescriptionDosage" [(ngModel)]="prescriptionForm.dosage" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Durata terapia (giorni)</label>
+                      <input class="form-control" type="number" name="prescriptionDuration" [(ngModel)]="prescriptionForm.durationDays" min="1" required />
+                    </div>
                       <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
                       <button class="btn btn-primary w-100" type="submit" [disabled]="prescriptionFormRef.invalid || isLoading">
                         {{ isLoading ? 'Salvataggio...' : 'Registra prescrizione' }}

@@ -164,7 +164,8 @@ export class ApiService {
         currency: 'EUR',
         service: 'Visita medica con Dr. Marco Bianchi',
         status: 'PAID',
-        paidAt: '2024-03-15'
+        paidAt: '2024-03-15',
+        receiptName: 'ricevuta-visita-marco-bianchi.pdf'
       },
       {
         id: 41,
@@ -173,7 +174,8 @@ export class ApiService {
         currency: 'EUR',
         service: 'Televisita neurologica con Dr.ssa Laura Gatti',
         status: 'PAID',
-        paidAt: '2024-03-18'
+        paidAt: '2024-03-18',
+        receiptName: 'ricevuta-televisita-laura-gatti.pdf'
       },
       {
         id: 42,
@@ -191,7 +193,8 @@ export class ApiService {
         currency: 'EUR',
         service: 'Visita ortopedica con Dr. Paolo Serra',
         status: 'PAID',
-        paidAt: '2024-03-22'
+        paidAt: '2024-03-22',
+        receiptName: 'ricevuta-visita-paolo-serra.pdf'
       }
     ],
     admissions: [
@@ -209,11 +212,11 @@ export class ApiService {
       { id: 12, department: 'PNEUMO', status: 'AVAILABLE' }
     ],
     prescriptions: [
-      { id: 60, patientId: 1, doctorId: 2, drug: 'Atorvastatina', dosage: '10mg', status: 'ACTIVE' },
-      { id: 61, patientId: 2, doctorId: 3, drug: 'Levetiracetam', dosage: '500mg', status: 'ACTIVE' },
-      { id: 62, patientId: 3, doctorId: 4, drug: 'Clobetasolo', dosage: 'Crema 2 volte al giorno', status: 'PENDING' },
-      { id: 63, patientId: 4, doctorId: 5, drug: 'Ibuprofene', dosage: '400mg al bisogno', status: 'ACTIVE' },
-      { id: 64, patientId: 5, doctorId: 6, drug: 'Salbutamolo', dosage: '2 puff al bisogno', status: 'ACTIVE' }
+      { id: 60, patientId: 1, doctorId: 2, drug: 'Atorvastatina', dosage: '10mg', durationDays: 30, status: 'ACTIVE' },
+      { id: 61, patientId: 2, doctorId: 3, drug: 'Levetiracetam', dosage: '500mg', durationDays: 14, status: 'ACTIVE' },
+      { id: 62, patientId: 3, doctorId: 4, drug: 'Clobetasolo', dosage: 'Crema 2 volte al giorno', durationDays: 10, status: 'PENDING' },
+      { id: 63, patientId: 4, doctorId: 5, drug: 'Ibuprofene', dosage: '400mg al bisogno', durationDays: 7, status: 'ACTIVE' },
+      { id: 64, patientId: 5, doctorId: 6, drug: 'Salbutamolo', dosage: '2 puff al bisogno', durationDays: 15, status: 'ACTIVE' }
     ],
     televisits: [
       { id: 70, appointmentId: 22, provider: 'LIVEKIT', status: 'READY', token: 'tv-abc-123' },
@@ -382,6 +385,14 @@ export class ApiService {
         }
         if (normalizedMethod === 'POST') {
           const payload = this.ensureBody(body);
+          const paymentId = this.getNumber(payload.paymentId ?? payload.id, 0);
+          const existingPayment = this.mockStore.payments.find((payment) => payment.id === paymentId);
+          if (existingPayment) {
+            existingPayment.status = this.getString(payload.status, 'PAID');
+            existingPayment.paidAt = this.today();
+            existingPayment.receiptName = this.getString(payload.receiptName, existingPayment.receiptName ?? '');
+            return of(existingPayment as T);
+          }
           const newPayment = {
             id: this.nextId(this.mockStore.payments),
             patientId: this.getNumber(payload.patientId, 1),
@@ -389,7 +400,8 @@ export class ApiService {
             currency: this.getString(payload.currency, 'EUR'),
             service: this.getString(payload.service, 'Prestazione sanitaria'),
             status: this.getString(payload.status, 'PAID'),
-            paidAt: this.today()
+            paidAt: this.today(),
+            receiptName: this.getString(payload.receiptName, '')
           };
           this.mockStore.payments.push(newPayment);
           return of(newPayment as T);
@@ -432,6 +444,7 @@ export class ApiService {
             doctorId: this.getNumber(payload.doctorId, 2),
             drug: this.getString(payload.drug, 'Farmaco prescritto'),
             dosage: this.getString(payload.dosage, '10mg'),
+            durationDays: this.getNumber(payload.durationDays, 10),
             status: this.getString(payload.status, 'ACTIVE')
           };
           this.mockStore.prescriptions.push(newPrescription);
