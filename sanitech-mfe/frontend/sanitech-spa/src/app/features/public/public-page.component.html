@@ -6,7 +6,7 @@
         <h1 class="display-5 fw-bold mb-3">Clinica Sanitech: cura integrata, accesso semplice.</h1>
         <p class="lead text-muted">Prenotazioni smart, telemedicina, cartella clinica e notifiche in un’unica piattaforma sicura.</p>
         <div class="d-flex flex-wrap gap-3 mt-4">
-          <a routerLink="/portal" class="btn btn-primary btn-lg">Area privata</a>
+          <a routerLink="/portal" class="btn btn-primary btn-lg" *ngIf="auth.isAuthenticated">Area privata</a>
           <a href="#servizi" class="btn btn-outline-secondary btn-lg">Scopri i servizi</a>
         </div>
       </div>
@@ -49,6 +49,12 @@
           </form>
         </div>
       </div>
+      <div class="col-lg-5" *ngIf="auth.isAuthenticated">
+        <img
+          src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=900&q=80"
+          class="img-fluid rounded-4 shadow-sm"
+          alt="Equipe Sanitech" />
+      </div>
     </div>
   </div>
 </section>
@@ -60,7 +66,7 @@
       <div class="col-md-4">
         <div class="card card-glass h-100 service-card">
           <img
-            src="https://images.unsplash.com/photo-1580281657527-47f249e8f8f9?auto=format&fit=crop&w=800&q=80"
+            src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=800&q=80"
             class="card-img-top"
             alt="Prenotazioni digitali" />
           <div class="card-body">
@@ -237,7 +243,7 @@
       </div>
       <div class="col-lg-6">
         <img
-          src="https://images.unsplash.com/photo-1504814532849-927cc6a9ab61?auto=format&fit=crop&w=900&q=80"
+          src="https://images.unsplash.com/photo-1504439468489-c8920d796a29?auto=format&fit=crop&w=900&q=80"
           class="img-fluid rounded-4 shadow-sm"
           alt="Struttura Sanitech" />
       </div>
