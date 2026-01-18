@@ -9,9 +9,33 @@ import { Observable, of, throwError } from 'rxjs';
 export class ApiService {
   private mockStore = {
     slots: [
-      { id: 1, doctorId: 2, date: '2024-05-01', time: '09:30', status: 'AVAILABLE' },
-      { id: 2, doctorId: 2, date: '2024-05-01', time: '10:30', status: 'AVAILABLE' },
-      { id: 3, doctorId: 3, date: '2024-05-02', time: '11:00', status: 'BOOKED' }
+      {
+        id: 1,
+        doctorId: 2,
+        date: '2024-05-01',
+        time: '09:30',
+        status: 'AVAILABLE',
+        modality: 'IN_PERSON',
+        notes: 'Visite cardiologiche di controllo.'
+      },
+      {
+        id: 2,
+        doctorId: 2,
+        date: '2024-05-01',
+        time: '10:30',
+        status: 'AVAILABLE',
+        modality: 'REMOTE',
+        notes: 'Disponibile anche per consulto da remoto.'
+      },
+      {
+        id: 3,
+        doctorId: 3,
+        date: '2024-05-02',
+        time: '11:00',
+        status: 'AVAILABLE',
+        modality: 'IN_PERSON',
+        notes: 'Slot riservato visite neurologiche.'
+      }
     ],
     appointments: [
       { id: 10, patientId: 1, doctorId: 2, slotId: 3, reason: 'Controllo cardiologico', status: 'CONFIRMED' }
@@ -23,7 +47,27 @@ export class ApiService {
       { id: 21, patientId: 1, consentType: 'GDPR', accepted: true, signedAt: '2024-03-20' }
     ],
     notifications: [
-      { id: 30, recipient: 'anna.conti@sanitech.example', channel: 'EMAIL', message: 'Promemoria visita', status: 'SENT' }
+      {
+        id: 30,
+        recipient: 'anna.conti@sanitech.example',
+        channel: 'EMAIL',
+        message: 'Promemoria visita cardiologica del 12/05/2024 alle 09:30.',
+        status: 'DELIVERED'
+      },
+      {
+        id: 31,
+        recipient: 'anna.conti@sanitech.example',
+        channel: 'SMS',
+        message: 'È disponibile un nuovo referto nella tua area documenti.',
+        status: 'SENT'
+      },
+      {
+        id: 32,
+        recipient: 'anna.conti@sanitech.example',
+        channel: 'APP',
+        message: 'Pagamento registrato con successo. Grazie!',
+        status: 'FAILED'
+      }
     ],
     payments: [
       { id: 40, patientId: 1, amount: 120, currency: 'EUR', status: 'PAID', paidAt: '2024-03-15' }
@@ -88,7 +132,9 @@ export class ApiService {
             doctorId: this.getNumber(payload.doctorId, 1),
             date: this.getString(payload.date, this.today()),
             time: this.getString(payload.time, '09:00'),
-            status: this.getString(payload.status, 'AVAILABLE')
+            status: this.getString(payload.status, 'AVAILABLE'),
+            modality: this.getString(payload.modality, 'IN_PERSON'),
+            notes: this.getString(payload.notes, '')
           };
           this.mockStore.slots.push(newSlot);
           return of(newSlot as T);
