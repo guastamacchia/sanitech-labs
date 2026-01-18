@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 
 interface ResourceEndpoint {
   label: string;
@@ -153,12 +154,10 @@ export class ResourcePageComponent {
   consents: ConsentItem[] = [];
   docsError = '';
   docForm = {
-    patientId: 1,
     type: 'REFERT',
     name: ''
   };
   consentForm = {
-    patientId: 1,
     consentType: 'GDPR',
     accepted: true
   };
@@ -213,7 +212,12 @@ export class ResourcePageComponent {
   auditEvents: AuditItem[] = [];
   auditError = '';
 
-  constructor(private route: ActivatedRoute, private api: ApiService) {
+  constructor(
+    private route: ActivatedRoute,
+    private api: ApiService,
+    private auth: AuthService,
+    private router: Router
+  ) {
     const data = this.route.snapshot.data;
     this.title = data['title'] as string;
     this.description = data['description'] as string;
@@ -375,11 +379,54 @@ export class ResourcePageComponent {
     if (!value) {
       return '-';
     }
-    const [year, month, day] = value.split('-');
-    if (!year || !month || !day) {
-      return '-';
+    const normalizedValue = value.trim();
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(normalizedValue)) {
+      return normalizedValue;
     }
-    return `${day}/${month}/${year}`;
+    const isoMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+    }
+    const parsed = new Date(normalizedValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return normalizedValue;
+    }
+    const day = String(parsed.getDate()).padStart(2, '0');
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}/${parsed.getFullYear()}`;
+  }
+
+  getDocumentTypeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      REFERT: 'Referto',
+      REPORT: 'Referto',
+      CERTIFICATE: 'Certificato'
+    };
+    return labels[type] ?? type;
+  }
+
+  get portalHomeLabel(): string {
+    if (this.auth.hasRole('ROLE_ADMIN')) {
+      return 'Area riservata admin';
+    }
+    if (this.auth.hasRole('ROLE_DOCTOR')) {
+      return 'Area riservata medico';
+    }
+    return 'Area riservata paziente';
+  }
+
+  get portalHomeRoute(): string {
+    if (this.auth.hasRole('ROLE_ADMIN')) {
+      return '/portal/admin';
+    }
+    if (this.auth.hasRole('ROLE_DOCTOR')) {
+      return '/portal/doctor';
+    }
+    return '/portal/patient';
+  }
+
+  goToPortalHome(): void {
+    this.router.navigateByUrl(this.portalHomeRoute);
   }
 
   getStatusLabel(status: string): string {
@@ -432,7 +479,6 @@ export class ResourcePageComponent {
     this.isLoading = true;
     this.docsError = '';
     this.api.request<DocumentItem>('POST', '/api/docs', {
-      patientId: this.docForm.patientId,
       type: this.docForm.type,
       name: this.docForm.name
     }).subscribe({
@@ -452,7 +498,6 @@ export class ResourcePageComponent {
     this.isLoading = true;
     this.docsError = '';
     this.api.request<ConsentItem>('POST', '/api/consents', {
-      patientId: this.consentForm.patientId,
       consentType: this.consentForm.consentType,
       accepted: this.consentForm.accepted
     }).subscribe({
