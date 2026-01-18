@@ -1,6 +1,8 @@
 export const environment = {
   production: true,
   name: 'prod',
+  mockAuth: true,
+  mockApi: true,
   gatewayUrl: 'https://gateway.sanitech.tld',
   keycloakUrl: 'https://auth.sanitech.tld',
   realm: 'sanitech',

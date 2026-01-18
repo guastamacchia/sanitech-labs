@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Optional } from '@angular/core';
 import { AuthConfig, OAuthService } from 'angular-oauth2-oidc';
 import { environment } from '../../../environments/environment';
 
@@ -12,37 +12,76 @@ const authConfig: AuthConfig = {
   requireHttps: environment.production
 };
 
+const mockStorageKey = 'sanitech.mock.auth';
+
+interface MockAuthState {
+  isAuthenticated: boolean;
+  role: string;
+  displayName: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  constructor(private oauthService: OAuthService) {
-    this.oauthService.configure(authConfig);
-    this.oauthService.setupAutomaticSilentRefresh();
+  private mockState: MockAuthState | null = null;
+
+  constructor(@Optional() private oauthService?: OAuthService) {
+    if (environment.mockAuth) {
+      this.mockState = this.loadMockState();
+      return;
+    }
+    this.oauth.configure(authConfig);
+    this.oauth.setupAutomaticSilentRefresh();
   }
 
   async loadDiscovery(): Promise<void> {
-    await this.oauthService.loadDiscoveryDocumentAndTryLogin();
+    if (environment.mockAuth) {
+      return;
+    }
+    await this.oauth.loadDiscoveryDocumentAndTryLogin();
   }
 
   login(): void {
-    this.oauthService.initCodeFlow();
+    if (environment.mockAuth) {
+      this.updateMockState({ isAuthenticated: true });
+      return;
+    }
+    this.oauth.initCodeFlow();
   }
 
   logout(): void {
-    this.oauthService.logOut();
+    if (environment.mockAuth) {
+      this.updateMockState({ isAuthenticated: false });
+      return;
+    }
+    this.oauth.logOut();
   }
 
   get accessToken(): string {
-    return this.oauthService.getAccessToken();
+    if (environment.mockAuth) {
+      return '';
+    }
+    return this.oauth.getAccessToken();
   }
 
   get isAuthenticated(): boolean {
-    return this.oauthService.hasValidAccessToken();
+    if (environment.mockAuth) {
+      return this.mockState?.isAuthenticated ?? false;
+    }
+    return this.oauth.hasValidAccessToken();
   }
 
   get identityClaims(): Record<string, unknown> {
-    return (this.oauthService.getIdentityClaims() as Record<string, unknown>) ?? {};
+    if (environment.mockAuth) {
+      return {
+        name: this.mockState?.displayName ?? 'Utente demo',
+        realm_access: {
+          roles: this.mockState?.role ? [this.mockState.role] : []
+        }
+      };
+    }
+    return (this.oauth.getIdentityClaims() as Record<string, unknown>) ?? {};
   }
 
   get displayName(): string {
@@ -53,5 +92,66 @@ export class AuthService {
     const realmAccess = this.identityClaims['realm_access'] as { roles?: string[] } | undefined;
     const roles = realmAccess?.roles ?? [];
     return roles.includes(role);
+  }
+
+  get isMockEnabled(): boolean {
+    return environment.mockAuth;
+  }
+
+  get mockRole(): string {
+    return this.mockState?.role ?? 'ROLE_PATIENT';
+  }
+
+  get mockProfiles(): Array<{ role: string; label: string; displayName: string }> {
+    return [
+      { role: 'ROLE_PATIENT', label: 'Paziente', displayName: 'Anna Conti' },
+      { role: 'ROLE_DOCTOR', label: 'Medico', displayName: 'Dr. Marco Bianchi' },
+      { role: 'ROLE_ADMIN', label: 'Admin', displayName: 'Elena Guidi' }
+    ];
+  }
+
+  selectMockProfile(role: string): void {
+    if (!environment.mockAuth) {
+      return;
+    }
+    const profile = this.mockProfiles.find((item) => item.role === role) ?? this.mockProfiles[0];
+    this.updateMockState({
+      role: profile.role,
+      displayName: profile.displayName,
+      isAuthenticated: true
+    });
+  }
+
+  private loadMockState(): MockAuthState {
+    const raw = localStorage.getItem(mockStorageKey);
+    if (raw) {
+      try {
+        return JSON.parse(raw) as MockAuthState;
+      } catch {
+        localStorage.removeItem(mockStorageKey);
+      }
+    }
+    const initial = {
+      isAuthenticated: true,
+      role: 'ROLE_PATIENT',
+      displayName: 'Anna Conti'
+    };
+    localStorage.setItem(mockStorageKey, JSON.stringify(initial));
+    return initial;
+  }
+
+  private updateMockState(partial: Partial<MockAuthState>): void {
+    if (!this.mockState) {
+      this.mockState = this.loadMockState();
+    }
+    this.mockState = { ...this.mockState, ...partial };
+    localStorage.setItem(mockStorageKey, JSON.stringify(this.mockState));
+  }
+
+  private get oauth(): OAuthService {
+    if (!this.oauthService) {
+      throw new Error('OAuthService non configurato');
+    }
+    return this.oauthService;
   }
 }

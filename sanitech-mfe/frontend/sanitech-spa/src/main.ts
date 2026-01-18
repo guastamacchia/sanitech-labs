@@ -1,3 +1,4 @@
+import 'zone.js';
 import { enableProdMode, importProvidersFrom } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
@@ -12,10 +13,15 @@ if (environment.production) {
   enableProdMode();
 }
 
+const providers = [
+  provideRouter(routes),
+  provideHttpClient(withInterceptors([authInterceptor]))
+];
+
+if (!environment.mockAuth) {
+  providers.push(importProvidersFrom(OAuthModule.forRoot()));
+}
+
 bootstrapApplication(AppComponent, {
-  providers: [
-    provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
-    importProvidersFrom(OAuthModule.forRoot())
-  ]
+  providers
 }).catch((err) => console.error(err));
