@@ -150,10 +150,15 @@ export class ResourcePageComponent {
     slotId: null as number | null,
     reason: ''
   };
+  slotForm = {
+    date: '',
+    time: ''
+  };
   documents: DocumentItem[] = [];
   consents: ConsentItem[] = [];
   docsError = '';
   docForm = {
+    patientId: null as number | null,
     type: 'REFERT',
     name: ''
   };
@@ -183,8 +188,8 @@ export class ResourcePageComponent {
     message: ''
   };
   notificationPreferences = {
-    email: '',
-    phone: '',
+    email: 'anna.conti@sanitech.example',
+    phone: '+39 347 123 4567',
     channels: {
       email: true,
       sms: false,
@@ -207,6 +212,7 @@ export class ResourcePageComponent {
   televisitError = '';
   televisitForm = {
     appointmentId: 1,
+    patientId: null as number | null,
     provider: 'LIVEKIT'
   };
   doctors: DoctorItem[] = [];
@@ -257,6 +263,7 @@ export class ResourcePageComponent {
     }
     if (this.mode === 'docs') {
       this.loadDocs();
+      this.loadPatients();
     }
     if (this.mode === 'payments') {
       this.loadPayments();
@@ -266,9 +273,11 @@ export class ResourcePageComponent {
     }
     if (this.mode === 'prescribing') {
       this.loadPrescriptions();
+      this.loadPatients();
     }
     if (this.mode === 'televisit') {
       this.loadTelevisits();
+      this.loadPatients();
     }
     if (this.mode === 'admin-directory') {
       this.loadDirectory();
@@ -448,6 +457,10 @@ export class ResourcePageComponent {
     return this.auth.hasRole('ROLE_PATIENT');
   }
 
+  get isDoctor(): boolean {
+    return this.auth.hasRole('ROLE_DOCTOR');
+  }
+
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       AVAILABLE: 'Disponibile',
@@ -463,8 +476,71 @@ export class ResourcePageComponent {
     return this.slots.filter((slot) => slot.status === 'AVAILABLE');
   }
 
+  getNotificationStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      SENT: 'Inviata',
+      DELIVERED: 'Consegnata',
+      FAILED: 'Non consegnata'
+    };
+    return labels[status] ?? status;
+  }
+
+  getPrescriptionStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      ACTIVE: 'Attiva',
+      SUSPENDED: 'Sospesa',
+      COMPLETED: 'Conclusa',
+      PENDING: 'In attesa'
+    };
+    return labels[status] ?? status;
+  }
+
+  getPatientLabel(patientId: number): string {
+    const patient = this.patients.find((item) => item.id === patientId);
+    return patient ? `${patient.firstName} ${patient.lastName}` : `Paziente ${patientId}`;
+  }
+
+  get currentDoctorId(): number {
+    return this.doctors[0]?.id ?? 1;
+  }
+
   getSlotLabel(slot: SchedulingSlot): string {
     return `${this.formatDate(slot.date)} • ${slot.time} • ${this.getDoctorLabel(slot.doctorId)}`;
+  }
+
+  submitSlot(): void {
+    if (!this.slotForm.date || !this.slotForm.time) {
+      this.schedulingError = 'Inserisci data e ora dello slot.';
+      return;
+    }
+    this.isLoading = true;
+    this.schedulingError = '';
+    this.api.request<SchedulingSlot>('POST', '/api/slots', {
+      doctorId: this.currentDoctorId,
+      date: this.slotForm.date,
+      time: this.slotForm.time,
+      status: 'AVAILABLE'
+    }).subscribe({
+      next: (slot) => {
+        this.slots = [...this.slots, slot];
+        this.slotForm.date = '';
+        this.slotForm.time = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile creare lo slot.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  confirmAppointment(appointment: SchedulingAppointment): void {
+    if (appointment.status === 'CONFIRMED') {
+      return;
+    }
+    this.appointments = this.appointments.map((item) =>
+      item.id === appointment.id ? { ...item, status: 'CONFIRMED' } : item
+    );
   }
 
   loadDocs(): void {
@@ -497,10 +573,14 @@ export class ResourcePageComponent {
     }
     this.isLoading = true;
     this.docsError = '';
-    this.api.request<DocumentItem>('POST', '/api/docs', {
+    const payload: Record<string, unknown> = {
       type: this.docForm.type,
       name: this.docForm.name
-    }).subscribe({
+    };
+    if (this.isDoctor) {
+      payload['patientId'] = this.docForm.patientId ?? this.patients[0]?.id ?? 1;
+    }
+    this.api.request<DocumentItem>('POST', '/api/docs', payload).subscribe({
       next: (doc) => {
         this.documents = [...this.documents, doc];
         this.docForm.name = '';
@@ -719,6 +799,26 @@ export class ResourcePageComponent {
     });
   }
 
+  loadPatients(): void {
+    this.api.request<PatientItem[]>('GET', '/api/patients').subscribe({
+      next: (patients) => {
+        this.patients = patients;
+        if (!this.prescriptionForm.patientId && patients.length) {
+          this.prescriptionForm.patientId = patients[0].id;
+        }
+        if (!this.docForm.patientId && patients.length) {
+          this.docForm.patientId = patients[0].id;
+        }
+        if (!this.televisitForm.patientId && patients.length) {
+          this.televisitForm.patientId = patients[0].id;
+        }
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare i pazienti.';
+      }
+    });
+  }
+
   loadTelevisits(): void {
     this.isLoading = true;
     this.televisitError = '';
@@ -737,12 +837,22 @@ export class ResourcePageComponent {
   submitTelevisit(): void {
     this.isLoading = true;
     this.televisitError = '';
+    const appointmentId = this.televisitForm.patientId ?? this.televisitForm.appointmentId;
+    if (!appointmentId) {
+      this.televisitError = this.isDoctor
+        ? 'Seleziona il paziente per la televisita.'
+        : 'Inserisci l’identificativo dell’appuntamento.';
+      this.isLoading = false;
+      return;
+    }
     this.api.request<TelevisitItem>('POST', '/api/televisit', {
-      appointmentId: this.televisitForm.appointmentId,
+      appointmentId,
+      patientId: this.televisitForm.patientId,
       provider: this.televisitForm.provider
     }).subscribe({
       next: (televisit) => {
         this.televisits = [...this.televisits, televisit];
+        this.televisitForm.patientId = this.patients[0]?.id ?? null;
         this.isLoading = false;
       },
       error: () => {
