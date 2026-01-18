@@ -215,7 +215,8 @@ export const routes: Routes = [
         data: {
           title: 'Scheduling paziente',
           description: 'Prenotazioni, slot e appuntamenti disponibili per i cittadini.',
-          endpoints: schedulingEndpoints
+          endpoints: schedulingEndpoints,
+          view: 'scheduling'
         }
       },
       {
