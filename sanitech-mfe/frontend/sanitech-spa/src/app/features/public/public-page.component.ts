@@ -25,6 +25,7 @@ export class PublicPageComponent {
   };
   loginError = '';
   registrationSuccess = '';
+  activeAccessTab: 'login' | 'register' = 'login';
   profiles = this.auth.mockProfiles;
 
   constructor(public auth: AuthService, private router: Router) {}
@@ -41,6 +42,12 @@ export class PublicPageComponent {
       return;
     }
     this.router.navigate(['/portal']);
+  }
+
+  setActiveAccessTab(tab: 'login' | 'register'): void {
+    this.activeAccessTab = tab;
+    this.loginError = '';
+    this.registrationSuccess = '';
   }
 
   submitRegistration(): void {

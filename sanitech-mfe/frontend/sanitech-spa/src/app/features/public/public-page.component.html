@@ -15,7 +15,7 @@
         </div>
       </div>
       <div class="col-lg-5 col-md-5" *ngIf="!auth.isAuthenticated">
-        <div class="card card-glass p-4">
+        <div class="card card-glass p-4" *ngIf="activeAccessTab === 'login'">
           <h5 class="fw-semibold">Accesso riservato</h5>
           <p class="text-muted">Inserisci le credenziali Sanitech ID per entrare nell’area privata.</p>
           <form (ngSubmit)="submitLogin()" #loginForm="ngForm">
@@ -50,6 +50,71 @@
             </div>
             <div class="alert alert-danger py-2 mb-3" *ngIf="loginError">{{ loginError }}</div>
             <button class="btn btn-primary w-100" type="submit" [disabled]="loginForm.invalid">Accedi</button>
+            <button class="btn btn-link w-100 mt-2" type="button" (click)="setActiveAccessTab('register')">
+              Sei nuovo? Registrati
+            </button>
+          </form>
+        </div>
+        <div class="card card-glass p-4" *ngIf="activeAccessTab === 'register'">
+          <h5 class="fw-semibold">Registrazione pazienti</h5>
+          <p class="text-muted">Richiedi l’accesso alla tua area riservata per prenotare una visita.</p>
+          <form (ngSubmit)="submitRegistration()" #registrationFormRef="ngForm">
+            <div class="mb-3">
+              <label class="form-label">Nome</label>
+              <input
+                type="text"
+                class="form-control"
+                name="registrationFirstName"
+                [(ngModel)]="registrationForm.firstName"
+                placeholder="Mario"
+                required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Cognome</label>
+              <input
+                type="text"
+                class="form-control"
+                name="registrationLastName"
+                [(ngModel)]="registrationForm.lastName"
+                placeholder="Rossi"
+                required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input
+                type="email"
+                class="form-control"
+                name="registrationEmail"
+                [(ngModel)]="registrationForm.email"
+                placeholder="nome.cognome@email.it"
+                required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Telefono</label>
+              <input
+                type="tel"
+                class="form-control"
+                name="registrationPhone"
+                [(ngModel)]="registrationForm.phone"
+                placeholder="+39 333 123 4567"
+                required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Note</label>
+              <textarea
+                class="form-control"
+                rows="3"
+                name="registrationNotes"
+                [(ngModel)]="registrationForm.notes"
+                placeholder="Indica la visita che vorresti prenotare (opzionale)."></textarea>
+            </div>
+            <div class="alert alert-success py-2 mb-3" *ngIf="registrationSuccess">{{ registrationSuccess }}</div>
+            <button class="btn btn-outline-primary w-100" type="submit" [disabled]="registrationFormRef.invalid">
+              Invia richiesta
+            </button>
+            <button class="btn btn-link w-100 mt-2" type="button" (click)="setActiveAccessTab('login')">
+              Hai già un account? Accedi con le tue credenziali
+            </button>
           </form>
         </div>
         <div class="card card-glass p-4 mt-4">
