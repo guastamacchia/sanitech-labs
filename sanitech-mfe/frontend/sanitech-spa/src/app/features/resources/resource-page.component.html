@@ -91,7 +91,9 @@
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'slots', total: visibleSlots.length }"></ng-container>
                   </div>
                 </div>
+              </div>
             </div>
+          </div>
         </div>
 
         <ng-container *ngIf="isPatient; else doctorScheduling">
@@ -497,8 +499,6 @@
                 </div>
               </div>
             </div>
-          </div>
-
             <div class="col-lg-4">
               <div class="card card-glass">
                 <div class="card-body">
@@ -614,7 +614,7 @@
                   <div class="row g-4">
                     <div class="col-lg-6">
                       <div class="card card-glass h-100">
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column h-100">
                           <h5 class="fw-semibold mb-3">Contatti per le notifiche</h5>
                           <div class="mb-3">
                             <label class="form-label">Email</label>
@@ -626,16 +626,18 @@
                           </div>
                           <div class="alert alert-success py-2" *ngIf="notificationsSuccess">{{ notificationsSuccess }}</div>
                           <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
-                          <button class="btn btn-primary w-100" type="submit" [disabled]="notificationPrefsRef.invalid || isLoading">
-                            Salva preferenze
-                          </button>
+                          <div class="mt-auto d-flex justify-content-end">
+                            <button class="btn btn-primary btn-sm" type="submit" [disabled]="notificationPrefsRef.invalid || isLoading">
+                              Salva preferenze
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     <div class="col-lg-6">
                       <div class="card card-glass h-100">
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column h-100">
                           <h5 class="fw-semibold mb-3">Preferenze di notifica</h5>
                           <div class="mb-3">
                             <label class="form-label">Canali preferiti</label>
@@ -670,6 +672,11 @@
                               <input class="form-check-input" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPrefs.types.prescriptions" />
                               <label class="form-check-label" for="prefTypePrescriptions">Prescrizioni</label>
                             </div>
+                          </div>
+                          <div class="mt-auto d-flex justify-content-end">
+                            <button class="btn btn-primary btn-sm" type="submit" [disabled]="notificationPrefsRef.invalid || isLoading">
+                              Salva configurazione
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1378,6 +1385,7 @@
           </div>
         </div>
       </div>
+    </ng-template>
     </ng-template>
   </div>
 </section>
