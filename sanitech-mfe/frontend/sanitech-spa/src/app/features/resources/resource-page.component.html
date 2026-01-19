@@ -319,6 +319,7 @@
                     </tbody>
                   </table>
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'documents', total: documents.length }"></ng-container>
+                  </div>
                 </div>
               </div>
             </div>
@@ -363,6 +364,7 @@
                     </tbody>
                   </table>
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'consents', total: visibleConsents.length }"></ng-container>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1200,7 +1202,8 @@
                     </tr>
                   </tbody>
                 </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'audit', total: auditEvents.length }"></ng-container>
+                <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'audit', total: auditEvents.length }"></ng-container>
+              </div>
               </div>
             </div>
           </div>
