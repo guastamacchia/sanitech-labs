@@ -412,16 +412,8 @@
   <div class="container">
     <p class="section-title">Contatti</p>
     <div class="row g-4">
-      <div class="col-lg-4">
-        <div class="card card-glass p-4 h-100">
-          <h5 class="fw-semibold">Clinica Sanitech</h5>
-          <p class="text-muted mb-2">Via della Salute 24, Milano</p>
-          <p class="text-muted mb-2">+39 02 1234 5678</p>
-          <p class="text-muted mb-0">assistenza&#64;sanitech.it</p>
-        </div>
-      </div>
-      <div class="col-lg-8">
-        <div class="card card-glass p-4 h-100">
+      <div class="col-12">
+        <div class="card card-glass bg-info-subtle p-4">
           <h5 class="fw-semibold mb-3">Scrivici per informazioni</h5>
           <form (ngSubmit)="submitContact()" #contactFormRef="ngForm">
             <div class="row g-3">
@@ -471,6 +463,28 @@
               </div>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mt-2">
+      <div class="col-12">
+        <div class="card card-glass p-3 p-md-4">
+          <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between gap-3 mb-3">
+            <h5 class="fw-semibold mb-0">Dove siamo</h5>
+            <div class="text-muted small">
+              <span class="fw-semibold text-body">Clinica Sanitech</span> · Via della Salute 24, Milano · +39 02 1234
+              5678 · assistenza&#64;sanitech.it
+            </div>
+          </div>
+          <div class="ratio ratio-21x9">
+            <iframe
+              title="Mappa Clinica Sanitech"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2795.4597758138667!2d9.18854067617351!3d45.46420337107361!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4779350b8df2c3f7%3A0x3d0049f4d1c4f22a!2sDuomo%20di%20Milano!5e0!3m2!1sit!2sit!4v1723414280000!5m2!1sit!2sit"
+              style="border: 0"
+              allowfullscreen=""
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
         </div>
       </div>
     </div>
