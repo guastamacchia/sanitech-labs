@@ -73,7 +73,7 @@ const notificationsEndpoints = [
     label: 'Invia notifica',
     method: 'POST',
     path: '/api/notifications',
-    payload: '{"recipient": "anna.conti@sanitech.example", "channel": "EMAIL", "message": "Promemoria visita"}'
+    payload: '{"recipient": "anna.conti@sanitech.example", "channel": "EMAIL", "subject": "Promemoria visita", "message": "Promemoria visita", "notes": "Arrivare 10 minuti prima"}'
   }
 ];
 
@@ -87,10 +87,13 @@ const paymentsEndpoints = [
     label: 'Crea pagamento',
     method: 'POST',
     path: '/api/payments',
-    payload: '{"patientId": 1, "amount": 120.0, "currency": "EUR"}'
-  },
+    payload: '{"patientId": 1, "amount": 120.0, "currency": "EUR", "service": "Visita medica con Dott. Marco Bianchi"}'
+  }
+];
+
+const admissionsEndpoints = [
   {
-    label: 'Ricoveri',
+    label: 'Lista ricoveri',
     method: 'GET',
     path: '/api/admissions'
   },
@@ -98,7 +101,7 @@ const paymentsEndpoints = [
     label: 'Registra ricovero',
     method: 'POST',
     path: '/api/admissions',
-    payload: '{"patientId": 1, "department": "CARD", "bedId": 4}'
+    payload: '{"patientId": 1, "department": "CARD", "bedId": 4, "notes": "Monitoraggio ECG"}'
   },
   {
     label: 'Posti letto',
@@ -208,7 +211,7 @@ export const routes: Routes = [
         component: ResourcePageComponent,
         canActivate: [roleGuard('ROLE_PATIENT')],
         data: {
-          title: 'Scheduling paziente',
+          title: 'Prenotazioni paziente',
           description: 'Prenotazioni, slot e appuntamenti disponibili per i cittadini.',
           endpoints: schedulingEndpoints,
           view: 'scheduling'
@@ -241,10 +244,32 @@ export const routes: Routes = [
         component: ResourcePageComponent,
         canActivate: [roleGuard('ROLE_PATIENT')],
         data: {
-          title: 'Pagamenti e ricoveri',
-          description: 'Pagamenti digitali e gestione ricoveri.',
+          title: 'Pagamenti',
+          description: 'Storico pagamenti effettuati e da effettuare.',
           endpoints: paymentsEndpoints,
           view: 'payments'
+        }
+      },
+      {
+        path: 'patient/admissions',
+        component: ResourcePageComponent,
+        canActivate: [roleGuard('ROLE_PATIENT')],
+        data: {
+          title: 'Ricoveri',
+          description: 'Storico ricoveri e conferme ricovero.',
+          endpoints: admissionsEndpoints,
+          view: 'admissions'
+        }
+      },
+      {
+        path: 'patient/prescriptions',
+        component: ResourcePageComponent,
+        canActivate: [roleGuard('ROLE_PATIENT')],
+        data: {
+          title: 'Prescrizioni paziente',
+          description: 'Consulta le prescrizioni e le terapie attive.',
+          endpoints: prescribingEndpoints,
+          view: 'prescribing'
         }
       },
       {
@@ -283,6 +308,28 @@ export const routes: Routes = [
           description: 'Gestione slot e appuntamenti dei medici.',
           endpoints: schedulingEndpoints,
           view: 'scheduling'
+        }
+      },
+      {
+        path: 'doctor/payments',
+        component: ResourcePageComponent,
+        canActivate: [roleGuard('ROLE_DOCTOR')],
+        data: {
+          title: 'Pagamenti',
+          description: 'Storico pagamenti e registrazione incassi.',
+          endpoints: paymentsEndpoints,
+          view: 'payments'
+        }
+      },
+      {
+        path: 'doctor/admissions',
+        component: ResourcePageComponent,
+        canActivate: [roleGuard('ROLE_DOCTOR')],
+        data: {
+          title: 'Ricoveri reparto',
+          description: 'Storico ricoveri del reparto e conferme.',
+          endpoints: admissionsEndpoints,
+          view: 'admissions'
         }
       },
       {
@@ -341,7 +388,7 @@ export const routes: Routes = [
         data: {
           title: 'Televisite & ricoveri',
           description: 'Supervisione sessioni di telemedicina e admissions.',
-          endpoints: [...televisitEndpoints, ...paymentsEndpoints],
+          endpoints: [...televisitEndpoints, ...admissionsEndpoints],
           view: 'admin-televisit'
         }
       }
