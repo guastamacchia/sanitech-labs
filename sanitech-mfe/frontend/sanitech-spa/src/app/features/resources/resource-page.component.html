@@ -91,7 +91,9 @@
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'slots', total: visibleSlots.length }"></ng-container>
                   </div>
                 </div>
+              </div>
             </div>
+          </div>
         </div>
 
         <ng-container *ngIf="isPatient; else doctorScheduling">
@@ -436,113 +438,122 @@
 
       <ng-template #paymentsLayout>
         <ng-container *ngIf="mode === 'payments'; else admissionsLayout">
-          <div class="row g-4">
-            <div class="col-lg-8">
-              <div class="card card-glass">
-                <div class="card-body">
-                  <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">{{ isDoctor ? 'Ricoveri del reparto' : 'Ricoveri' }}</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
-                      Aggiorna
-                    </button>
+          <ng-container *ngIf="!isDoctor; else doctorPaymentsHidden">
+            <div class="row g-4">
+              <div class="col-lg-8">
+                <div class="card card-glass">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                      <h5 class="fw-semibold mb-0">Ricoveri</h5>
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                    </div>
+                    <div class="table-responsive">
+                      <table class="table align-middle">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th *ngIf="!isPatient">Paziente</th>
+                            <th>Prestazione</th>
+                            <th>Importo</th>
+                            <th>Valuta</th>
+                            <th>Stato</th>
+                            <th>Data</th>
+                            <th>Azioni</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let payment of payments | slice:getPageSliceStart('payments'):getPageSliceEnd('payments')">
+                            <td>{{ payment.id }}</td>
+                            <td *ngIf="!isPatient">{{ getPatientLabel(payment.patientId) }}</td>
+                            <td>{{ payment.service }}</td>
+                            <td>{{ payment.amount }}</td>
+                            <td>{{ getCurrencyLabel(payment.currency) }}</td>
+                            <td>{{ getPaymentStatusLabel(payment.status) }}</td>
+                            <td>{{ formatDate(payment.paidAt) }}</td>
+                            <td>
+                              <button
+                                class="btn btn-outline-secondary btn-sm me-2"
+                                type="button"
+                                aria-label="Visualizza ricevuta"
+                                [disabled]="!payment.receiptName"
+                                (click)="viewPaymentReceipt(payment)">
+                                👁️
+                              </button>
+                              <button
+                                class="btn btn-outline-danger btn-sm"
+                                type="button"
+                                aria-label="Elimina pagamento"
+                                (click)="deletePayment(payment)">
+                                🗑️
+                              </button>
+                            </td>
+                          </tr>
+                          <tr *ngIf="!payments.length">
+                            <td [attr.colspan]="isPatient ? 7 : 8" class="text-center text-muted">Nessun pagamento registrato.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'payments', total: payments.length }"></ng-container>
+                    </div>
                   </div>
-                  <div class="table-responsive">
-                    <table class="table align-middle">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th *ngIf="!isPatient">Paziente</th>
-                          <th>Prestazione</th>
-                          <th>Importo</th>
-                          <th>Valuta</th>
-                          <th>Stato</th>
-                          <th>Data</th>
-                          <th>Azioni</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let payment of payments | slice:getPageSliceStart('payments'):getPageSliceEnd('payments')">
-                          <td>{{ payment.id }}</td>
-                          <td *ngIf="!isPatient">{{ getPatientLabel(payment.patientId) }}</td>
-                          <td>{{ payment.service }}</td>
-                          <td>{{ payment.amount }}</td>
-                          <td>{{ getCurrencyLabel(payment.currency) }}</td>
-                          <td>{{ getPaymentStatusLabel(payment.status) }}</td>
-                          <td>{{ formatDate(payment.paidAt) }}</td>
-                          <td>
-                            <button
-                              class="btn btn-outline-secondary btn-sm me-2"
-                              type="button"
-                              aria-label="Visualizza ricevuta"
-                              [disabled]="!payment.receiptName"
-                              (click)="viewPaymentReceipt(payment)">
-                              👁️
-                            </button>
-                            <button
-                              class="btn btn-outline-danger btn-sm"
-                              type="button"
-                              aria-label="Elimina pagamento"
-                              (click)="deletePayment(payment)">
-                              🗑️
-                            </button>
-                          </td>
-                        </tr>
-                        <tr *ngIf="!payments.length">
-                          <td [attr.colspan]="isPatient ? 7 : 8" class="text-center text-muted">Nessun pagamento registrato.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'payments', total: payments.length }"></ng-container>
+                </div>
+              </div>
+              <div class="col-lg-4">
+                <div class="card card-glass">
+                  <div class="card-body">
+                    <h5 class="fw-semibold mb-3">Registra pagamento</h5>
+                    <form (ngSubmit)="submitPayment()" #paymentFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Pagamento in attesa</label>
+                        <select
+                          class="form-select"
+                          name="paymentPendingId"
+                          [(ngModel)]="paymentForm.paymentId"
+                          (ngModelChange)="handlePaymentSelectionChange($event)"
+                          required>
+                          <option [ngValue]="null" disabled>Seleziona un pagamento in attesa</option>
+                          <option *ngFor="let payment of pendingPayments" [ngValue]="payment.id">
+                            #{{ payment.id }} • {{ payment.service }} • {{ payment.amount }} {{ getCurrencyLabel(payment.currency) }}
+                          </option>
+                        </select>
+                        <div class="form-text" *ngIf="!pendingPayments.length">Nessun pagamento in attesa disponibile.</div>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Importo</label>
+                        <input
+                          class="form-control"
+                          type="number"
+                          name="paymentAmount"
+                          [(ngModel)]="paymentForm.amount"
+                          min="0"
+                          required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Ricevuta pagamento</label>
+                        <input class="form-control" type="file" name="paymentReceipt" (change)="handlePaymentReceiptSelected($event)" />
+                        <div class="form-text" *ngIf="paymentForm.receiptName">Selezionato: {{ paymentForm.receiptName }}</div>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
+                      <button class="btn btn-primary w-100" type="submit" [disabled]="paymentFormRef.invalid || isLoading || !pendingPayments.length">
+                        {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
+                      </button>
+                    </form>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-            <div class="col-lg-4">
-              <div class="card card-glass">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Registra pagamento</h5>
-                  <form (ngSubmit)="submitPayment()" #paymentFormRef="ngForm">
-                    <div class="mb-3">
-                      <label class="form-label">Pagamento in attesa</label>
-                      <select
-                        class="form-select"
-                        name="paymentPendingId"
-                        [(ngModel)]="paymentForm.paymentId"
-                        (ngModelChange)="handlePaymentSelectionChange($event)"
-                        required>
-                        <option [ngValue]="null" disabled>Seleziona un pagamento in attesa</option>
-                        <option *ngFor="let payment of pendingPayments" [ngValue]="payment.id">
-                          #{{ payment.id }} • {{ payment.service }} • {{ payment.amount }} {{ getCurrencyLabel(payment.currency) }}
-                        </option>
-                      </select>
-                      <div class="form-text" *ngIf="!pendingPayments.length">Nessun pagamento in attesa disponibile.</div>
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Importo</label>
-                      <input
-                        class="form-control"
-                        type="number"
-                        name="paymentAmount"
-                        [(ngModel)]="paymentForm.amount"
-                        min="0"
-                        required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Ricevuta pagamento</label>
-                      <input class="form-control" type="file" name="paymentReceipt" (change)="handlePaymentReceiptSelected($event)" />
-                      <div class="form-text" *ngIf="paymentForm.receiptName">Selezionato: {{ paymentForm.receiptName }}</div>
-                    </div>
-                    <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
-                    <button class="btn btn-primary w-100" type="submit" [disabled]="paymentFormRef.invalid || isLoading || !pendingPayments.length">
-                      {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
-                    </button>
-                  </form>
+          </ng-container>
+          <ng-template #doctorPaymentsHidden>
+            <div class="card card-glass">
+              <div class="card-body">
+                <div class="alert alert-info mb-0">
+                  I pagamenti non sono disponibili nell'area medico.
                 </div>
               </div>
             </div>
-          </div>
+          </ng-template>
         </ng-container>
       </ng-template>
 
@@ -614,7 +625,7 @@
                   <div class="row g-4">
                     <div class="col-lg-6">
                       <div class="card card-glass h-100">
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column h-100">
                           <h5 class="fw-semibold mb-3">Contatti per le notifiche</h5>
                           <div class="mb-3">
                             <label class="form-label">Email</label>
@@ -626,16 +637,18 @@
                           </div>
                           <div class="alert alert-success py-2" *ngIf="notificationsSuccess">{{ notificationsSuccess }}</div>
                           <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
-                          <button class="btn btn-primary w-100" type="submit" [disabled]="notificationPrefsRef.invalid || isLoading">
-                            Salva preferenze
-                          </button>
+                          <div class="mt-auto d-flex justify-content-end">
+                            <button class="btn btn-primary btn-sm" type="submit" [disabled]="notificationPrefsRef.invalid || isLoading">
+                              Salva preferenze
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     <div class="col-lg-6">
                       <div class="card card-glass h-100">
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column h-100">
                           <h5 class="fw-semibold mb-3">Preferenze di notifica</h5>
                           <div class="mb-3">
                             <label class="form-label">Canali preferiti</label>
@@ -670,6 +683,11 @@
                               <input class="form-check-input" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPrefs.types.prescriptions" />
                               <label class="form-check-label" for="prefTypePrescriptions">Prescrizioni</label>
                             </div>
+                          </div>
+                          <div class="mt-auto d-flex justify-content-end">
+                            <button class="btn btn-primary btn-sm" type="submit" [disabled]="notificationPrefsRef.invalid || isLoading">
+                              Salva configurazione
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1378,6 +1396,7 @@
           </div>
         </div>
       </div>
+    </ng-template>
     </ng-template>
   </div>
 </section>
