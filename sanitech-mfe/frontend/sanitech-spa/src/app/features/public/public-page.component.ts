@@ -16,7 +16,23 @@ export class PublicPageComponent {
     password: '',
     role: 'ROLE_PATIENT'
   };
+  registrationForm = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    notes: ''
+  };
+  contactForm = {
+    fullName: '',
+    email: '',
+    subject: '',
+    message: ''
+  };
   loginError = '';
+  registrationSuccess = '';
+  contactSuccess = '';
+  activeAccessTab: 'login' | 'register' = 'login';
   profiles = this.auth.mockProfiles;
 
   constructor(public auth: AuthService, private router: Router) {}
@@ -33,5 +49,32 @@ export class PublicPageComponent {
       return;
     }
     this.router.navigate(['/portal']);
+  }
+
+  setActiveAccessTab(tab: 'login' | 'register'): void {
+    this.activeAccessTab = tab;
+    this.loginError = '';
+    this.registrationSuccess = '';
+  }
+
+  submitRegistration(): void {
+    this.registrationSuccess = `Grazie ${this.registrationForm.firstName}, la tua richiesta è stata registrata. Ti contatteremo per completare l’accesso.`;
+    this.registrationForm = {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      notes: ''
+    };
+  }
+
+  submitContact(): void {
+    this.contactSuccess = `Grazie ${this.contactForm.fullName}, abbiamo ricevuto la tua richiesta. Un nostro referente ti risponderà al più presto.`;
+    this.contactForm = {
+      fullName: '',
+      email: '',
+      subject: '',
+      message: ''
+    };
   }
 }
