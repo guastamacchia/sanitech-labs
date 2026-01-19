@@ -16,41 +16,148 @@
       </div>
       <div class="col-lg-5 col-md-5" *ngIf="!auth.isAuthenticated">
         <div class="card card-glass p-4">
-          <h5 class="fw-semibold">Accesso riservato</h5>
-          <p class="text-muted">Inserisci le credenziali Sanitech ID per entrare nell’area privata.</p>
-          <form (ngSubmit)="submitLogin()" #loginForm="ngForm">
-            <div class="mb-3">
-              <label class="form-label">Email</label>
-              <input
-                type="email"
-                class="form-control"
-                name="email"
-                [(ngModel)]="credentials.email"
-                placeholder="nome.cognome@sanitech.it"
-                required />
+          <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                [class.active]="activeAccessTab === 'login'"
+                type="button"
+                role="tab"
+                aria-controls="accesso-riservato"
+                [attr.aria-selected]="activeAccessTab === 'login'"
+                (click)="setActiveAccessTab('login')">
+                Accesso riservato
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button
+                class="nav-link"
+                [class.active]="activeAccessTab === 'register'"
+                type="button"
+                role="tab"
+                aria-controls="registrazione-pazienti"
+                [attr.aria-selected]="activeAccessTab === 'register'"
+                (click)="setActiveAccessTab('register')">
+                Registrazione pazienti
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <div
+              class="tab-pane fade"
+              [class.show]="activeAccessTab === 'login'"
+              [class.active]="activeAccessTab === 'login'"
+              id="accesso-riservato"
+              role="tabpanel">
+              <h5 class="fw-semibold">Accesso riservato</h5>
+              <p class="text-muted">Inserisci le credenziali Sanitech ID per entrare nell’area privata.</p>
+              <form (ngSubmit)="submitLogin()" #loginForm="ngForm">
+                <div class="mb-3">
+                  <label class="form-label">Email</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    name="email"
+                    [(ngModel)]="credentials.email"
+                    placeholder="nome.cognome@sanitech.it"
+                    required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Password</label>
+                  <input
+                    type="password"
+                    class="form-control"
+                    name="password"
+                    [(ngModel)]="credentials.password"
+                    placeholder="••••••••"
+                    required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Profilo</label>
+                  <select class="form-select" name="role" [(ngModel)]="credentials.role" required>
+                    <option *ngFor="let profile of profiles" [ngValue]="profile.role">
+                      {{ profile.label }}
+                    </option>
+                  </select>
+                  <div class="form-text">Seleziona il profilo associato al tuo account.</div>
+                </div>
+                <div class="alert alert-danger py-2 mb-3" *ngIf="loginError">{{ loginError }}</div>
+                <button class="btn btn-primary w-100" type="submit" [disabled]="loginForm.invalid">Accedi</button>
+              </form>
+              <button class="btn btn-link w-100 mt-2" type="button" (click)="setActiveAccessTab('register')">
+                Sei nuovo? Registrati
+              </button>
             </div>
-            <div class="mb-3">
-              <label class="form-label">Password</label>
-              <input
-                type="password"
-                class="form-control"
-                name="password"
-                [(ngModel)]="credentials.password"
-                placeholder="••••••••"
-                required />
+
+            <div
+              class="tab-pane fade"
+              [class.show]="activeAccessTab === 'register'"
+              [class.active]="activeAccessTab === 'register'"
+              id="registrazione-pazienti"
+              role="tabpanel">
+              <h5 class="fw-semibold">Registrazione pazienti</h5>
+              <p class="text-muted">Richiedi l’accesso alla tua area riservata per prenotare una visita.</p>
+              <form (ngSubmit)="submitRegistration()" #registrationFormRef="ngForm">
+                <div class="mb-3">
+                  <label class="form-label">Nome</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="registrationFirstName"
+                    [(ngModel)]="registrationForm.firstName"
+                    placeholder="Mario"
+                    required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Cognome</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="registrationLastName"
+                    [(ngModel)]="registrationForm.lastName"
+                    placeholder="Rossi"
+                    required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Email</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    name="registrationEmail"
+                    [(ngModel)]="registrationForm.email"
+                    placeholder="nome.cognome@email.it"
+                    required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Telefono</label>
+                  <input
+                    type="tel"
+                    class="form-control"
+                    name="registrationPhone"
+                    [(ngModel)]="registrationForm.phone"
+                    placeholder="+39 333 123 4567"
+                    required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Note</label>
+                  <textarea
+                    class="form-control"
+                    rows="3"
+                    name="registrationNotes"
+                    [(ngModel)]="registrationForm.notes"
+                    placeholder="Indica la visita che vorresti prenotare (opzionale)."></textarea>
+                </div>
+                <div class="alert alert-success py-2 mb-3" *ngIf="registrationSuccess">{{ registrationSuccess }}</div>
+                <button class="btn btn-outline-primary w-100" type="submit" [disabled]="registrationFormRef.invalid">
+                  Invia richiesta
+                </button>
+              </form>
+              <button class="btn btn-link w-100 mt-2" type="button" (click)="setActiveAccessTab('login')">
+                Hai già un account? Accedi con le tue credenziali
+              </button>
             </div>
-            <div class="mb-3">
-              <label class="form-label">Profilo</label>
-              <select class="form-select" name="role" [(ngModel)]="credentials.role" required>
-                <option *ngFor="let profile of profiles" [ngValue]="profile.role">
-                  {{ profile.label }}
-                </option>
-              </select>
-              <div class="form-text">Seleziona il profilo associato al tuo account.</div>
-            </div>
-            <div class="alert alert-danger py-2 mb-3" *ngIf="loginError">{{ loginError }}</div>
-            <button class="btn btn-primary w-100" type="submit" [disabled]="loginForm.invalid">Accedi</button>
-          </form>
+          </div>
         </div>
       </div>
       <div class="col-lg-5 col-md-5" *ngIf="auth.isAuthenticated">
