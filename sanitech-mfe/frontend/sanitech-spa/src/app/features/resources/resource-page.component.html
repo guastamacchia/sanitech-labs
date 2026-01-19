@@ -36,65 +36,135 @@
     </ng-template>
 
     <ng-container *ngIf="mode === 'scheduling'; else otherLayouts">
+      <ng-template #slotsTable>
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="fw-semibold mb-0">Slot disponibili</h5>
+          <button class="btn btn-outline-secondary btn-sm" (click)="loadScheduling()" [disabled]="isLoading">
+            Aggiorna
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th *ngIf="!isDoctor">Medico</th>
+                <th *ngIf="!isDoctor">Specializzazione</th>
+                <th>Data</th>
+                <th>Ora</th>
+                <th>Modalità</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let slot of visibleSlots | slice:getPageSliceStart('slots'):getPageSliceEnd('slots')">
+                <td *ngIf="!isDoctor">{{ getDoctorLabel(slot.doctorId) }}</td>
+                <td *ngIf="!isDoctor">{{ getSpecialityLabel(getDoctorById(slot.doctorId)?.speciality || '-') }}</td>
+                <td>{{ formatDate(slot.date) }}</td>
+                <td>{{ slot.time }}</td>
+                <td>{{ getModalityLabel(slot.modality) }}</td>
+                <td>{{ slot.notes || '-' }}</td>
+              </tr>
+              <tr *ngIf="!visibleSlots.length">
+                <td [attr.colspan]="isDoctor ? 4 : 6" class="text-center text-muted">Nessuno slot disponibile.</td>
+              </tr>
+            </tbody>
+          </table>
+          <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'slots', total: visibleSlots.length }"></ng-container>
+        </div>
+      </ng-template>
+
       <div class="row g-4">
-        <div class="col-lg-12">
-          <div class="accordion" id="availableSlotsAccordion">
-            <div class="accordion-item card-glass border-0">
-              <h2 class="accordion-header">
-                <button
-                  class="accordion-button"
-                  type="button"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#availableSlotsCollapse"
-                  aria-expanded="true"
-                  aria-controls="availableSlotsCollapse">
-                  Consulta gli slot disponibili
-                </button>
-              </h2>
-              <div
-                id="availableSlotsCollapse"
-                class="accordion-collapse collapse show"
-                data-bs-parent="#availableSlotsAccordion">
-                <div class="accordion-body">
-                  <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">Slot disponibili</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="loadScheduling()" [disabled]="isLoading">
-                      Aggiorna
-                    </button>
-                  </div>
-                  <div class="table-responsive">
-                    <table class="table align-middle">
-                      <thead>
-                        <tr>
-                          <th *ngIf="!isDoctor">Medico</th>
-                          <th *ngIf="!isDoctor">Specializzazione</th>
-                          <th>Data</th>
-                          <th>Ora</th>
-                          <th>Modalità</th>
-                          <th>Note</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let slot of visibleSlots | slice:getPageSliceStart('slots'):getPageSliceEnd('slots')">
-                          <td *ngIf="!isDoctor">{{ getDoctorLabel(slot.doctorId) }}</td>
-                          <td *ngIf="!isDoctor">{{ getSpecialityLabel(getDoctorById(slot.doctorId)?.speciality || '-') }}</td>
-                          <td>{{ formatDate(slot.date) }}</td>
-                          <td>{{ slot.time }}</td>
-                          <td>{{ getModalityLabel(slot.modality) }}</td>
-                          <td>{{ slot.notes || '-' }}</td>
-                        </tr>
-                        <tr *ngIf="!visibleSlots.length">
-                          <td [attr.colspan]="isDoctor ? 4 : 6" class="text-center text-muted">Nessuno slot disponibile.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'slots', total: visibleSlots.length }"></ng-container>
+        <ng-container *ngIf="!isDoctor; else doctorAgenda">
+          <div class="col-lg-12">
+            <div class="accordion" id="availableSlotsAccordion">
+              <div class="accordion-item card-glass border-0">
+                <h2 class="accordion-header">
+                  <button
+                    class="accordion-button"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#availableSlotsCollapse"
+                    aria-expanded="true"
+                    aria-controls="availableSlotsCollapse">
+                    Consulta gli slot disponibili
+                  </button>
+                </h2>
+                <div
+                  id="availableSlotsCollapse"
+                  class="accordion-collapse collapse show"
+                  data-bs-parent="#availableSlotsAccordion">
+                  <div class="accordion-body">
+                    <ng-container *ngTemplateOutlet="slotsTable"></ng-container>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </ng-container>
+
+        <ng-template #doctorAgenda>
+          <div class="col-lg-12">
+            <div class="accordion" id="appointmentsAccordion">
+              <div class="accordion-item card-glass border-0">
+                <h2 class="accordion-header">
+                  <button
+                    class="accordion-button"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#appointmentsCollapse"
+                    aria-expanded="true"
+                    aria-controls="appointmentsCollapse">
+                    Storico appuntamenti
+                  </button>
+                </h2>
+                <div
+                  id="appointmentsCollapse"
+                  class="accordion-collapse collapse show"
+                  data-bs-parent="#appointmentsAccordion">
+                  <div class="accordion-body">
+                    <h5 class="fw-semibold mb-3">Appuntamenti attivi e storicizzati</h5>
+                    <div class="table-responsive">
+                      <table class="table align-middle">
+                        <thead>
+                          <tr>
+                            <th>Paziente</th>
+                            <th>Data</th>
+                            <th>Ora</th>
+                            <th>Motivo</th>
+                            <th>Stato</th>
+                            <th>Azione</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let appointment of appointments | slice:getPageSliceStart('appointments'):getPageSliceEnd('appointments')">
+                            <td>{{ getPatientLabel(appointment.patientId) }}</td>
+                            <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
+                            <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
+                            <td>{{ appointment.reason }}</td>
+                            <td>{{ getStatusLabel(appointment.status) }}</td>
+                            <td>
+                              <button
+                                class="btn btn-outline-primary btn-sm"
+                                type="button"
+                                (click)="confirmAppointment(appointment)"
+                                [disabled]="appointment.status === 'CONFIRMED'">
+                                {{ appointment.status === 'CONFIRMED' ? 'Confermato' : 'Conferma visita' }}
+                              </button>
+                            </td>
+                          </tr>
+                          <tr *ngIf="!appointments.length">
+                            <td colspan="6" class="text-center text-muted">Nessun appuntamento registrato.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'appointmentsDoctor', total: appointments.length }"></ng-container>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-template>
 
         <ng-container *ngIf="isPatient; else doctorScheduling">
           <div class="col-lg-8">
@@ -188,43 +258,7 @@
           <div class="col-lg-8">
             <div class="card card-glass">
               <div class="card-body">
-                <h5 class="fw-semibold mb-3">Appuntamenti attivi</h5>
-                <div class="table-responsive">
-                  <table class="table align-middle">
-                    <thead>
-                      <tr>
-                        <th>Paziente</th>
-                        <th>Data</th>
-                        <th>Ora</th>
-                        <th>Motivo</th>
-                        <th>Stato</th>
-                        <th>Azione</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr *ngFor="let appointment of appointments | slice:getPageSliceStart('appointments'):getPageSliceEnd('appointments')">
-                        <td>{{ getPatientLabel(appointment.patientId) }}</td>
-                        <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
-                        <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
-                        <td>{{ appointment.reason }}</td>
-                        <td>{{ getStatusLabel(appointment.status) }}</td>
-                        <td>
-                          <button
-                            class="btn btn-outline-primary btn-sm"
-                            type="button"
-                            (click)="confirmAppointment(appointment)"
-                            [disabled]="appointment.status === 'CONFIRMED'">
-                            {{ appointment.status === 'CONFIRMED' ? 'Confermato' : 'Conferma visita' }}
-                          </button>
-                        </td>
-                      </tr>
-                      <tr *ngIf="!appointments.length">
-                        <td colspan="6" class="text-center text-muted">Nessun appuntamento registrato.</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'appointmentsDoctor', total: appointments.length }"></ng-container>
-                </div>
+                <ng-container *ngTemplateOutlet="slotsTable"></ng-container>
               </div>
             </div>
           </div>
