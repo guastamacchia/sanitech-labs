@@ -91,7 +91,9 @@
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'slots', total: visibleSlots.length }"></ng-container>
                   </div>
                 </div>
+              </div>
             </div>
+          </div>
         </div>
 
         <ng-container *ngIf="isPatient; else doctorScheduling">
@@ -497,8 +499,6 @@
                 </div>
               </div>
             </div>
-          </div>
-
             <div class="col-lg-4">
               <div class="card card-glass">
                 <div class="card-body">
