@@ -16,7 +16,15 @@ export class PublicPageComponent {
     password: '',
     role: 'ROLE_PATIENT'
   };
+  registrationForm = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    notes: ''
+  };
   loginError = '';
+  registrationSuccess = '';
   profiles = this.auth.mockProfiles;
 
   constructor(public auth: AuthService, private router: Router) {}
@@ -33,5 +41,16 @@ export class PublicPageComponent {
       return;
     }
     this.router.navigate(['/portal']);
+  }
+
+  submitRegistration(): void {
+    this.registrationSuccess = `Grazie ${this.registrationForm.firstName}, la tua richiesta è stata registrata. Ti contatteremo per completare l’accesso.`;
+    this.registrationForm = {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      notes: ''
+    };
   }
 }
