@@ -439,7 +439,7 @@
               <div class="card card-glass">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">Pagamenti</h5>
+                    <h5 class="fw-semibold mb-0">{{ isDoctor ? 'Ricoveri del reparto' : 'Ricoveri' }}</h5>
                     <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
                       Aggiorna
                     </button>
@@ -615,6 +615,50 @@
                     </div>
                     <button class="btn btn-outline-primary w-100" type="submit" [disabled]="admissionFormRef.invalid || isLoading">
                       {{ isLoading ? 'Salvataggio...' : 'Registra ricovero' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="card card-glass mb-4">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Registra pagamento</h5>
+                  <form (ngSubmit)="submitPayment()" #paymentFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Pagamento in attesa</label>
+                      <select
+                        class="form-select"
+                        name="paymentPendingId"
+                        [(ngModel)]="paymentForm.paymentId"
+                        (ngModelChange)="handlePaymentSelectionChange($event)"
+                        required>
+                        <option [ngValue]="null" disabled>Seleziona un pagamento in attesa</option>
+                        <option *ngFor="let payment of pendingPayments" [ngValue]="payment.id">
+                          #{{ payment.id }} • {{ payment.service }} • {{ payment.amount }} {{ getCurrencyLabel(payment.currency) }}
+                        </option>
+                      </select>
+                      <div class="form-text" *ngIf="!pendingPayments.length">Nessun pagamento in attesa disponibile.</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Importo</label>
+                      <input
+                        class="form-control"
+                        type="number"
+                        name="paymentAmount"
+                        [(ngModel)]="paymentForm.amount"
+                        min="0"
+                        required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Ricevuta pagamento</label>
+                      <input class="form-control" type="file" name="paymentReceipt" (change)="handlePaymentReceiptSelected($event)" />
+                      <div class="form-text" *ngIf="paymentForm.receiptName">Selezionato: {{ paymentForm.receiptName }}</div>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
+                    <button class="btn btn-primary w-100" type="submit" [disabled]="paymentFormRef.invalid || isLoading || !pendingPayments.length">
+                      {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
                     </button>
                   </form>
                 </div>

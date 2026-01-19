@@ -224,6 +224,21 @@ export class ResourcePageComponent {
       prescriptions: false
     }
   };
+  notificationPreferences = {
+    email: 'anna.conti@sanitech.example',
+    phone: '+39 347 123 4567',
+    channels: {
+      email: true,
+      sms: false,
+      app: true
+    },
+    types: {
+      appointments: true,
+      documents: true,
+      payments: false,
+      prescriptions: false
+    }
+  };
   prescriptions: PrescriptionItem[] = [];
   prescribingError = '';
   prescriptionForm = {
