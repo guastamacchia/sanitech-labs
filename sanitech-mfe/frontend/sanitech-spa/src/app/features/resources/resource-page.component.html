@@ -91,9 +91,7 @@
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'slots', total: visibleSlots.length }"></ng-container>
                   </div>
                 </div>
-              </div>
             </div>
-          </div>
         </div>
 
         <ng-container *ngIf="isPatient; else doctorScheduling">
@@ -322,7 +320,6 @@
                   </div>
                 </div>
               </div>
-            </div>
 
             <div class="card card-glass" *ngIf="!isDoctor">
               <div class="card-body">
@@ -363,8 +360,7 @@
                       </tr>
                     </tbody>
                   </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'consents', total: visibleConsents.length }"></ng-container>
-                  </div>
+                  <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'consents', total: visibleConsents.length }"></ng-container>
                 </div>
               </div>
             </div>
@@ -1204,7 +1200,6 @@
                 </table>
                 <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'audit', total: auditEvents.length }"></ng-container>
               </div>
-              </div>
             </div>
           </div>
         </ng-container>
@@ -1339,7 +1334,6 @@
           </div>
         </ng-container>
       </ng-template>
-    </ng-template>
 
     <ng-template #apiLayout>
       <div class="row g-4">
