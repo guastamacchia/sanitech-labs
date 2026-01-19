@@ -152,6 +152,7 @@ export class ResourcePageComponent {
     | 'scheduling'
     | 'docs'
     | 'payments'
+    | 'admissions'
     | 'notifications'
     | 'prescribing'
     | 'televisit'
@@ -179,7 +180,8 @@ export class ResourcePageComponent {
     patientId: null as number | null,
     type: 'REFERT',
     name: '',
-    fileName: ''
+    fileName: '',
+    notes: ''
   };
   consentForm = {
     consentType: 'GDPR',
@@ -272,6 +274,7 @@ export class ResourcePageComponent {
         | 'scheduling'
         | 'docs'
         | 'payments'
+        | 'admissions'
         | 'notifications'
         | 'prescribing'
         | 'televisit'
@@ -291,6 +294,10 @@ export class ResourcePageComponent {
     }
     if (this.mode === 'payments') {
       this.loadPayments();
+      this.loadPatients();
+    }
+    if (this.mode === 'admissions') {
+      this.loadAdmissions();
       this.loadPatients();
     }
     if (this.mode === 'notifications') {
@@ -837,7 +844,8 @@ export class ResourcePageComponent {
     }
     const payload: Record<string, unknown> = {
       type: this.docForm.type,
-      name: this.docForm.name
+      name: this.docForm.name,
+      notes: this.docForm.notes
     };
     if (this.isDoctor) {
       payload['patientId'] = this.docForm.patientId ?? this.patients[0]?.id ?? 1;
@@ -847,6 +855,7 @@ export class ResourcePageComponent {
         this.documents = [...this.documents, doc];
         this.docForm.name = '';
         this.docForm.fileName = '';
+        this.docForm.notes = '';
         this.isLoading = false;
       },
       error: () => {

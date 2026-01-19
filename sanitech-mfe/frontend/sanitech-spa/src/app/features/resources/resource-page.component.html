@@ -398,6 +398,10 @@
                     <label class="form-label">Nome documento</label>
                     <input class="form-control" type="text" name="docName" [(ngModel)]="docForm.name" required />
                   </div>
+                  <div class="mb-3">
+                    <label class="form-label">Note</label>
+                    <textarea class="form-control" rows="2" name="docNotes" [(ngModel)]="docForm.notes"></textarea>
+                  </div>
                   <div class="alert alert-danger py-2" *ngIf="docsError">{{ docsError }}</div>
                   <button class="btn btn-primary w-100" type="submit" [disabled]="docFormRef.invalid || isLoading">
                     {{ isLoading ? 'Salvataggio...' : 'Carica documento' }}
@@ -433,9 +437,9 @@
       </ng-container>
 
       <ng-template #paymentsLayout>
-        <ng-container *ngIf="mode === 'payments'; else notificationsLayout">
+        <ng-container *ngIf="mode === 'payments'; else admissionsLayout">
           <div class="row g-4">
-            <div class="col-lg-6" *ngIf="!isDoctor">
+            <div class="col-lg-8">
               <div class="card card-glass">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
@@ -495,61 +499,9 @@
                 </div>
               </div>
             </div>
-
-            <div [class.col-lg-6]="!isDoctor" [class.col-12]="isDoctor">
-              <div class="card card-glass">
-                <div class="card-body">
-                  <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">{{ isDoctor ? 'Ricoveri del reparto' : 'Ricoveri' }}</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
-                      Aggiorna
-                    </button>
-                  </div>
-                  <div class="table-responsive">
-                    <table class="table align-middle">
-                      <thead>
-                        <tr>
-                          <th *ngIf="!isPatient">Paziente</th>
-                          <th>Reparto</th>
-                          <th>Letto</th>
-                          <th>Stato</th>
-                          <th>Note</th>
-                          <th>Data</th>
-                          <th *ngIf="isPatient">Azione</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissions'):getPageSliceEnd('admissions')">
-                          <td *ngIf="!isPatient">{{ getPatientLabel(admission.patientId) }}</td>
-                          <td>{{ getDepartmentLabel(admission.department) }}</td>
-                          <td>{{ admission.bedId }}</td>
-                          <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
-                          <td>{{ admission.notes || '-' }}</td>
-                          <td>{{ formatDate(admission.admittedAt) }}</td>
-                          <td *ngIf="isPatient">
-                            <button
-                              class="btn btn-outline-primary btn-sm"
-                              type="button"
-                              (click)="confirmAdmission(admission)"
-                              [disabled]="admission.status === 'CONFIRMED'">
-                              {{ admission.status === 'CONFIRMED' ? 'Confermato' : 'Conferma ricovero' }}
-                            </button>
-                          </td>
-                        </tr>
-                        <tr *ngIf="!visibleAdmissions.length">
-                          <td [attr.colspan]="isPatient ? 6 : 6" class="text-center text-muted">Nessun ricovero registrato.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'admissions', total: visibleAdmissions.length }"></ng-container>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div class="row g-4 mt-1">
-            <div class="col-lg-6">
+            <div class="col-lg-4">
               <div class="card card-glass">
                 <div class="card-body">
                   <h5 class="fw-semibold mb-3">Registra pagamento</h5>
@@ -587,34 +539,6 @@
                     <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
                     <button class="btn btn-primary w-100" type="submit" [disabled]="paymentFormRef.invalid || isLoading || !pendingPayments.length">
                       {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-lg-6" *ngIf="!isPatient">
-              <div class="card card-glass">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Registra ricovero</h5>
-                  <form (ngSubmit)="submitAdmission()" #admissionFormRef="ngForm">
-                    <div class="mb-3">
-                      <label class="form-label">ID Paziente</label>
-                      <input class="form-control" type="number" name="admissionPatientId" [(ngModel)]="admissionForm.patientId" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Reparto</label>
-                      <select class="form-select" name="admissionDepartment" [(ngModel)]="admissionForm.department" required>
-                        <option value="CARD">Cardiologia</option>
-                        <option value="NEURO">Neurologia</option>
-                      </select>
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Letto</label>
-                      <input class="form-control" type="number" name="admissionBedId" [(ngModel)]="admissionForm.bedId" required />
-                    </div>
-                    <button class="btn btn-outline-primary w-100" type="submit" [disabled]="admissionFormRef.invalid || isLoading">
-                      {{ isLoading ? 'Salvataggio...' : 'Registra ricovero' }}
                     </button>
                   </form>
                 </div>
@@ -668,65 +592,134 @@
         </ng-container>
       </ng-template>
 
+      <ng-template #admissionsLayout>
+        <ng-container *ngIf="mode === 'admissions'; else notificationsLayout">
+          <div class="row g-4">
+            <div class="col-12">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">{{ isDoctor ? 'Ricoveri del reparto' : 'Ricoveri' }}</h5>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="loadAdmissions()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th *ngIf="!isPatient">Paziente</th>
+                          <th>Reparto</th>
+                          <th>Letto</th>
+                          <th>Stato</th>
+                          <th>Note</th>
+                          <th>Data</th>
+                          <th *ngIf="isPatient">Azione</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissions'):getPageSliceEnd('admissions')">
+                          <td *ngIf="!isPatient">{{ getPatientLabel(admission.patientId) }}</td>
+                          <td>{{ getDepartmentLabel(admission.department) }}</td>
+                          <td>{{ admission.bedId }}</td>
+                          <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
+                          <td>{{ admission.notes || '-' }}</td>
+                          <td>{{ formatDate(admission.admittedAt) }}</td>
+                          <td *ngIf="isPatient">
+                            <button
+                              class="btn btn-outline-primary btn-sm"
+                              type="button"
+                              (click)="confirmAdmission(admission)"
+                              [disabled]="admission.status === 'CONFIRMED'">
+                              {{ admission.status === 'CONFIRMED' ? 'Confermato' : 'Conferma ricovero' }}
+                            </button>
+                          </td>
+                        </tr>
+                        <tr *ngIf="!visibleAdmissions.length">
+                          <td [attr.colspan]="isPatient ? 6 : 6" class="text-center text-muted">Nessun ricovero registrato.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'admissions', total: visibleAdmissions.length }"></ng-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </ng-template>
+
       <ng-template #notificationsLayout>
         <ng-container *ngIf="mode === 'notifications'; else prescribingLayout">
           <div class="row g-4">
             <ng-container *ngIf="isPatient; else staffNotifications">
               <div class="col-12">
-                <div class="card card-glass">
-                  <div class="card-body">
-                    <h5 class="fw-semibold mb-3">Preferenze notifiche</h5>
-                    <form (ngSubmit)="saveNotificationPreferences()" #notificationPrefsRef="ngForm">
-                      <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input class="form-control" type="email" name="notificationEmail" [(ngModel)]="notificationPrefs.email" required />
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Numero di telefono</label>
-                        <input class="form-control" type="tel" name="notificationPhone" [(ngModel)]="notificationPrefs.phone" required />
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Canali preferiti</label>
-                        <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefChannelEmail" name="prefChannelEmail" [(ngModel)]="notificationPrefs.channels.email" />
-                          <label class="form-check-label" for="prefChannelEmail">Email</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefChannelSms" name="prefChannelSms" [(ngModel)]="notificationPrefs.channels.sms" />
-                          <label class="form-check-label" for="prefChannelSms">SMS</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefChannelApp" name="prefChannelApp" [(ngModel)]="notificationPrefs.channels.app" />
-                          <label class="form-check-label" for="prefChannelApp">App</label>
+                <form (ngSubmit)="saveNotificationPreferences()" #notificationPrefsRef="ngForm">
+                  <div class="row g-4">
+                    <div class="col-lg-6">
+                      <div class="card card-glass h-100">
+                        <div class="card-body">
+                          <h5 class="fw-semibold mb-3">Contatti per le notifiche</h5>
+                          <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input class="form-control" type="email" name="notificationEmail" [(ngModel)]="notificationPrefs.email" required />
+                          </div>
+                          <div class="mb-3">
+                            <label class="form-label">Numero di telefono</label>
+                            <input class="form-control" type="tel" name="notificationPhone" [(ngModel)]="notificationPrefs.phone" required />
+                          </div>
+                          <div class="alert alert-success py-2" *ngIf="notificationsSuccess">{{ notificationsSuccess }}</div>
+                          <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
+                          <button class="btn btn-primary w-100" type="submit" [disabled]="notificationPrefsRef.invalid || isLoading">
+                            Salva preferenze
+                          </button>
                         </div>
                       </div>
-                      <div class="mb-3">
-                        <label class="form-label">Tipologie di notifica</label>
-                        <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefTypeAppointments" name="prefTypeAppointments" [(ngModel)]="notificationPrefs.types.appointments" />
-                          <label class="form-check-label" for="prefTypeAppointments">Appuntamenti</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefTypeDocuments" name="prefTypeDocuments" [(ngModel)]="notificationPrefs.types.documents" />
-                          <label class="form-check-label" for="prefTypeDocuments">Referti e documenti</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefTypePayments" name="prefTypePayments" [(ngModel)]="notificationPrefs.types.payments" />
-                          <label class="form-check-label" for="prefTypePayments">Pagamenti e ricoveri</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPrefs.types.prescriptions" />
-                          <label class="form-check-label" for="prefTypePrescriptions">Prescrizioni</label>
+                    </div>
+
+                    <div class="col-lg-6">
+                      <div class="card card-glass h-100">
+                        <div class="card-body">
+                          <h5 class="fw-semibold mb-3">Preferenze di notifica</h5>
+                          <div class="mb-3">
+                            <label class="form-label">Canali preferiti</label>
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" id="prefChannelEmail" name="prefChannelEmail" [(ngModel)]="notificationPrefs.channels.email" />
+                              <label class="form-check-label" for="prefChannelEmail">Email</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" id="prefChannelSms" name="prefChannelSms" [(ngModel)]="notificationPrefs.channels.sms" />
+                              <label class="form-check-label" for="prefChannelSms">SMS</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" id="prefChannelApp" name="prefChannelApp" [(ngModel)]="notificationPrefs.channels.app" />
+                              <label class="form-check-label" for="prefChannelApp">App</label>
+                            </div>
+                          </div>
+                          <div class="mb-3">
+                            <label class="form-label">Tipologie di notifica</label>
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" id="prefTypeAppointments" name="prefTypeAppointments" [(ngModel)]="notificationPrefs.types.appointments" />
+                              <label class="form-check-label" for="prefTypeAppointments">Appuntamenti</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" id="prefTypeDocuments" name="prefTypeDocuments" [(ngModel)]="notificationPrefs.types.documents" />
+                              <label class="form-check-label" for="prefTypeDocuments">Referti e documenti</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" id="prefTypePayments" name="prefTypePayments" [(ngModel)]="notificationPrefs.types.payments" />
+                              <label class="form-check-label" for="prefTypePayments">Pagamenti e ricoveri</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPrefs.types.prescriptions" />
+                              <label class="form-check-label" for="prefTypePrescriptions">Prescrizioni</label>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div class="alert alert-success py-2" *ngIf="notificationsSuccess">{{ notificationsSuccess }}</div>
-                      <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
-                      <button class="btn btn-primary w-100" type="submit" [disabled]="notificationPrefsRef.invalid || isLoading">
-                        Salva preferenze
-                      </button>
-                    </form>
+                    </div>
                   </div>
-                </div>
+                </form>
               </div>
 
               <div class="col-12">
