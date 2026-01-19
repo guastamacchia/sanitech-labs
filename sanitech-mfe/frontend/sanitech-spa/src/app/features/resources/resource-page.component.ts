@@ -209,22 +209,7 @@ export class ResourcePageComponent {
     message: '',
     notes: ''
   };
-  notificationPreferences = {
-    email: 'anna.conti@sanitech.example',
-    phone: '+39 347 123 4567',
-    channels: {
-      email: true,
-      sms: false,
-      app: true
-    },
-    types: {
-      appointments: true,
-      documents: true,
-      payments: false,
-      prescriptions: false
-    }
-  };
-  notificationPreferences = {
+  notificationPrefs = {
     email: 'anna.conti@sanitech.example',
     phone: '+39 347 123 4567',
     channels: {
@@ -1038,20 +1023,20 @@ export class ResourcePageComponent {
   saveNotificationPreferences(): void {
     this.notificationsError = '';
     this.notificationsSuccess = '';
-    if (!this.notificationPreferences.email.trim()) {
+    if (!this.notificationPrefs.email.trim()) {
       this.notificationsError = 'Inserisci una email valida per ricevere le notifiche.';
       return;
     }
-    if (!this.notificationPreferences.phone.trim()) {
+    if (!this.notificationPrefs.phone.trim()) {
       this.notificationsError = 'Inserisci un numero di telefono valido per ricevere le notifiche.';
       return;
     }
-    const hasChannel = Object.values(this.notificationPreferences.channels).some((value) => value);
+    const hasChannel = Object.values(this.notificationPrefs.channels).some((value) => value);
     if (!hasChannel) {
       this.notificationsError = 'Seleziona almeno un canale di notifica.';
       return;
     }
-    const hasType = Object.values(this.notificationPreferences.types).some((value) => value);
+    const hasType = Object.values(this.notificationPrefs.types).some((value) => value);
     if (!hasType) {
       this.notificationsError = 'Seleziona almeno un tipo di notifica.';
       return;

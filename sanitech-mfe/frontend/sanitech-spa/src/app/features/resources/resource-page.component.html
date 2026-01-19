@@ -679,43 +679,43 @@
                     <form (ngSubmit)="saveNotificationPreferences()" #notificationPrefsRef="ngForm">
                       <div class="mb-3">
                         <label class="form-label">Email</label>
-                        <input class="form-control" type="email" name="notificationEmail" [(ngModel)]="notificationPreferences.email" required />
+                        <input class="form-control" type="email" name="notificationEmail" [(ngModel)]="notificationPrefs.email" required />
                       </div>
                       <div class="mb-3">
                         <label class="form-label">Numero di telefono</label>
-                        <input class="form-control" type="tel" name="notificationPhone" [(ngModel)]="notificationPreferences.phone" required />
+                        <input class="form-control" type="tel" name="notificationPhone" [(ngModel)]="notificationPrefs.phone" required />
                       </div>
                       <div class="mb-3">
                         <label class="form-label">Canali preferiti</label>
                         <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefChannelEmail" name="prefChannelEmail" [(ngModel)]="notificationPreferences.channels.email" />
+                          <input class="form-check-input" type="checkbox" id="prefChannelEmail" name="prefChannelEmail" [(ngModel)]="notificationPrefs.channels.email" />
                           <label class="form-check-label" for="prefChannelEmail">Email</label>
                         </div>
                         <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefChannelSms" name="prefChannelSms" [(ngModel)]="notificationPreferences.channels.sms" />
+                          <input class="form-check-input" type="checkbox" id="prefChannelSms" name="prefChannelSms" [(ngModel)]="notificationPrefs.channels.sms" />
                           <label class="form-check-label" for="prefChannelSms">SMS</label>
                         </div>
                         <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefChannelApp" name="prefChannelApp" [(ngModel)]="notificationPreferences.channels.app" />
+                          <input class="form-check-input" type="checkbox" id="prefChannelApp" name="prefChannelApp" [(ngModel)]="notificationPrefs.channels.app" />
                           <label class="form-check-label" for="prefChannelApp">App</label>
                         </div>
                       </div>
                       <div class="mb-3">
                         <label class="form-label">Tipologie di notifica</label>
                         <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefTypeAppointments" name="prefTypeAppointments" [(ngModel)]="notificationPreferences.types.appointments" />
+                          <input class="form-check-input" type="checkbox" id="prefTypeAppointments" name="prefTypeAppointments" [(ngModel)]="notificationPrefs.types.appointments" />
                           <label class="form-check-label" for="prefTypeAppointments">Appuntamenti</label>
                         </div>
                         <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefTypeDocuments" name="prefTypeDocuments" [(ngModel)]="notificationPreferences.types.documents" />
+                          <input class="form-check-input" type="checkbox" id="prefTypeDocuments" name="prefTypeDocuments" [(ngModel)]="notificationPrefs.types.documents" />
                           <label class="form-check-label" for="prefTypeDocuments">Referti e documenti</label>
                         </div>
                         <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefTypePayments" name="prefTypePayments" [(ngModel)]="notificationPreferences.types.payments" />
+                          <input class="form-check-input" type="checkbox" id="prefTypePayments" name="prefTypePayments" [(ngModel)]="notificationPrefs.types.payments" />
                           <label class="form-check-label" for="prefTypePayments">Pagamenti e ricoveri</label>
                         </div>
                         <div class="form-check">
-                          <input class="form-check-input" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPreferences.types.prescriptions" />
+                          <input class="form-check-input" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPrefs.types.prescriptions" />
                           <label class="form-check-label" for="prefTypePrescriptions">Prescrizioni</label>
                         </div>
                       </div>
