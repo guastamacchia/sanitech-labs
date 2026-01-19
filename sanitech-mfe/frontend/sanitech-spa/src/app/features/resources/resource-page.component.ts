@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 
 interface ResourceEndpoint {
   label: string;
@@ -17,6 +18,8 @@ interface SchedulingSlot {
   date: string;
   time: string;
   status: string;
+  modality: 'IN_PERSON' | 'REMOTE';
+  notes?: string;
 }
 
 interface SchedulingAppointment {
@@ -33,6 +36,7 @@ interface DocumentItem {
   patientId: number;
   type: string;
   name: string;
+  notes?: string;
   uploadedAt: string;
 }
 
@@ -49,8 +53,10 @@ interface PaymentItem {
   patientId: number;
   amount: number;
   currency: string;
+  service: string;
   status: string;
   paidAt: string;
+  receiptName?: string;
 }
 
 interface AdmissionItem {
@@ -60,22 +66,29 @@ interface AdmissionItem {
   bedId: number;
   status: string;
   admittedAt: string;
+  notes?: string;
 }
 
 interface NotificationItem {
   id: number;
   recipient: string;
   channel: string;
+  subject: string;
   message: string;
+  notes: string;
   status: string;
+  sentAt: string;
 }
 
 interface PrescriptionItem {
   id: number;
   patientId: number;
+  doctorId: number;
   drug: string;
   dosage: string;
+  durationDays: number;
   status: string;
+  notes?: string;
 }
 
 interface TelevisitItem {
@@ -131,6 +144,9 @@ export class ResourcePageComponent {
   payload = '';
   responseBody = '';
   isLoading = false;
+  pageSize = 10;
+  pageSizeOptions = [5, 10, 20, 50];
+  private pageState: Record<string, number> = {};
   mode:
     | 'api'
     | 'scheduling'
@@ -147,18 +163,25 @@ export class ResourcePageComponent {
   schedulingError = '';
   bookingForm = {
     slotId: null as number | null,
+    speciality: '',
     reason: ''
+  };
+  slotForm = {
+    date: '',
+    time: '',
+    modality: 'IN_PERSON' as 'IN_PERSON' | 'REMOTE',
+    notes: ''
   };
   documents: DocumentItem[] = [];
   consents: ConsentItem[] = [];
   docsError = '';
   docForm = {
-    patientId: 1,
+    patientId: null as number | null,
     type: 'REFERT',
-    name: ''
+    name: '',
+    fileName: ''
   };
   consentForm = {
-    patientId: 1,
     consentType: 'GDPR',
     accepted: true
   };
@@ -166,9 +189,10 @@ export class ResourcePageComponent {
   admissions: AdmissionItem[] = [];
   paymentsError = '';
   paymentForm = {
-    patientId: 1,
-    amount: 120,
-    currency: 'EUR'
+    paymentId: null as number | null,
+    receiptName: '',
+    service: '',
+    amount: 0
   };
   admissionForm = {
     patientId: 1,
@@ -177,22 +201,42 @@ export class ResourcePageComponent {
   };
   notifications: NotificationItem[] = [];
   notificationsError = '';
+  notificationsSuccess = '';
   notificationForm = {
     recipient: '',
     channel: 'EMAIL',
-    message: ''
+    subject: '',
+    message: '',
+    notes: ''
+  };
+  notificationPreferences = {
+    email: 'anna.conti@sanitech.example',
+    phone: '+39 347 123 4567',
+    channels: {
+      email: true,
+      sms: false,
+      app: true
+    },
+    types: {
+      appointments: true,
+      documents: true,
+      payments: false,
+      prescriptions: false
+    }
   };
   prescriptions: PrescriptionItem[] = [];
   prescribingError = '';
   prescriptionForm = {
     patientId: 1,
     drug: '',
-    dosage: ''
+    dosage: '',
+    durationDays: 10
   };
   televisits: TelevisitItem[] = [];
   televisitError = '';
   televisitForm = {
     appointmentId: 1,
+    patientId: null as number | null,
     provider: 'LIVEKIT'
   };
   doctors: DoctorItem[] = [];
@@ -213,7 +257,12 @@ export class ResourcePageComponent {
   auditEvents: AuditItem[] = [];
   auditError = '';
 
-  constructor(private route: ActivatedRoute, private api: ApiService) {
+  constructor(
+    private route: ActivatedRoute,
+    private api: ApiService,
+    private auth: AuthService,
+    private router: Router
+  ) {
     const data = this.route.snapshot.data;
     this.title = data['title'] as string;
     this.description = data['description'] as string;
@@ -238,18 +287,23 @@ export class ResourcePageComponent {
     }
     if (this.mode === 'docs') {
       this.loadDocs();
+      this.loadPatients();
     }
     if (this.mode === 'payments') {
       this.loadPayments();
+      this.loadPatients();
     }
     if (this.mode === 'notifications') {
       this.loadNotifications();
     }
     if (this.mode === 'prescribing') {
       this.loadPrescriptions();
+      this.loadPatients();
+      this.loadDoctors();
     }
     if (this.mode === 'televisit') {
       this.loadTelevisits();
+      this.loadPatients();
     }
     if (this.mode === 'admin-directory') {
       this.loadDirectory();
@@ -266,6 +320,32 @@ export class ResourcePageComponent {
     this.selectedEndpoint = endpoint;
     this.payload = endpoint.payload ?? '';
     this.responseBody = '';
+  }
+
+  getPage(key: string): number {
+    return this.pageState[key] ?? 1;
+  }
+
+  getTotalPages(total: number): number {
+    return Math.max(1, Math.ceil(total / this.pageSize));
+  }
+
+  setPage(key: string, page: number, total: number): void {
+    const totalPages = this.getTotalPages(total);
+    const nextPage = Math.min(Math.max(1, page), totalPages);
+    this.pageState[key] = nextPage;
+  }
+
+  getPageSliceStart(key: string): number {
+    return (this.getPage(key) - 1) * this.pageSize;
+  }
+
+  getPageSliceEnd(key: string): number {
+    return this.getPage(key) * this.pageSize;
+  }
+
+  resetPagination(): void {
+    this.pageState = {};
   }
 
   execute(): void {
@@ -324,9 +404,32 @@ export class ResourcePageComponent {
         this.schedulingError = 'Impossibile caricare i medici.';
       }
     });
+    this.api.request<SpecialityItem[]>('GET', '/api/specialities').subscribe({
+      next: (specialities) => {
+        this.specialities = specialities;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile caricare le specializzazioni.';
+      }
+    });
+  }
+
+  loadDoctors(): void {
+    this.api.request<DoctorItem[]>('GET', '/api/doctors').subscribe({
+      next: (doctors) => {
+        this.doctors = doctors;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare i medici.';
+      }
+    });
   }
 
   submitBooking(): void {
+    if (this.isPatient && !this.bookingForm.speciality) {
+      this.schedulingError = 'Seleziona una specializzazione.';
+      return;
+    }
     if (!this.bookingForm.slotId) {
       this.schedulingError = 'Seleziona uno slot disponibile.';
       return;
@@ -351,6 +454,9 @@ export class ResourcePageComponent {
     }).subscribe({
       next: (appointment) => {
         this.appointments = [...this.appointments, appointment];
+        this.slots = this.slots.map((item) =>
+          item.id === slot.id ? { ...item, status: 'BOOKED' } : item
+        );
         this.bookingForm.reason = '';
         this.bookingForm.slotId = null;
         this.isLoading = false;
@@ -363,7 +469,7 @@ export class ResourcePageComponent {
   }
 
   getDoctorLabel(doctorId: number): string {
-    const doctor = this.doctors.find((item) => item.id === doctorId);
+    const doctor = this.getDoctorById(doctorId);
     return doctor ? `${doctor.firstName} ${doctor.lastName}` : `Medico ${doctorId}`;
   }
 
@@ -375,11 +481,83 @@ export class ResourcePageComponent {
     if (!value) {
       return '-';
     }
-    const [year, month, day] = value.split('-');
-    if (!year || !month || !day) {
+    const normalizedValue = value.trim();
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(normalizedValue)) {
+      return normalizedValue;
+    }
+    const isoMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      return `${isoMatch[3]}/${isoMatch[2]}/${isoMatch[1]}`;
+    }
+    const parsed = new Date(normalizedValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return normalizedValue;
+    }
+    const day = String(parsed.getDate()).padStart(2, '0');
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}/${parsed.getFullYear()}`;
+  }
+
+  formatDateTime(value: string): string {
+    if (!value) {
       return '-';
     }
-    return `${day}/${month}/${year}`;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return value;
+    }
+    const day = String(parsed.getDate()).padStart(2, '0');
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const year = parsed.getFullYear();
+    const hours = String(parsed.getHours()).padStart(2, '0');
+    const minutes = String(parsed.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  }
+
+  getDocumentTypeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      REFERT: 'Referto',
+      REPORT: 'Referto',
+      CERTIFICATE: 'Certificato'
+    };
+    return labels[type] ?? type;
+  }
+
+  getSpecialityLabel(code: string): string {
+    const speciality = this.specialities.find((item) => item.code === code);
+    return speciality ? speciality.name : code;
+  }
+
+  get portalHomeLabel(): string {
+    if (this.auth.hasRole('ROLE_ADMIN')) {
+      return 'Area riservata admin';
+    }
+    if (this.auth.hasRole('ROLE_DOCTOR')) {
+      return 'Area riservata medico';
+    }
+    return 'Area riservata paziente';
+  }
+
+  get portalHomeRoute(): string {
+    if (this.auth.hasRole('ROLE_ADMIN')) {
+      return '/portal/admin';
+    }
+    if (this.auth.hasRole('ROLE_DOCTOR')) {
+      return '/portal/doctor';
+    }
+    return '/portal/patient';
+  }
+
+  goToPortalHome(): void {
+    this.router.navigateByUrl(this.portalHomeRoute);
+  }
+
+  get isPatient(): boolean {
+    return this.auth.hasRole('ROLE_PATIENT');
+  }
+
+  get isDoctor(): boolean {
+    return this.auth.hasRole('ROLE_DOCTOR');
   }
 
   getStatusLabel(status: string): string {
@@ -393,12 +571,235 @@ export class ResourcePageComponent {
     return labels[status] ?? status;
   }
 
+  getAdmissionStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      ACTIVE: 'Attivo',
+      CONFIRMED: 'Confermato',
+      DISCHARGED: 'Dimesso'
+    };
+    return labels[status] ?? status;
+  }
+
+  getPaymentStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      PAID: 'Pagato',
+      PENDING: 'In attesa',
+      IN_ATTESA: 'In attesa',
+      FAILED: 'Non riuscito'
+    };
+    return labels[status] ?? status;
+  }
+
+  getConsentTypeLabel(consentType: string): string {
+    const labels: Record<string, string> = {
+      GDPR: 'Consenso GDPR',
+      PRIVACY: 'Consenso privacy',
+      THERAPY: 'Consenso terapia'
+    };
+    return labels[consentType] ?? consentType;
+  }
+
+  getCurrencyLabel(currency: string): string {
+    const labels: Record<string, string> = {
+      EUR: 'Euro',
+      USD: 'Dollaro USA'
+    };
+    return labels[currency] ?? currency;
+  }
+
+  getDepartmentLabel(code: string): string {
+    const labels: Record<string, string> = {
+      CARD: 'Cardiologia',
+      NEURO: 'Neurologia',
+      DERM: 'Dermatologia',
+      ORTHO: 'Ortopedia',
+      PNEUMO: 'Pneumologia'
+    };
+    return labels[code] ?? code;
+  }
+
+  get pendingPayments(): PaymentItem[] {
+    const pending = this.payments.filter(
+      (payment) => payment.status === 'PENDING' || payment.status === 'IN_ATTESA'
+    );
+    if (this.isPatient) {
+      return pending.filter((payment) => payment.patientId === 1);
+    }
+    return pending;
+  }
+
   get availableSlots(): SchedulingSlot[] {
+    if (this.isPatient) {
+      if (!this.bookingForm.speciality) {
+        return [];
+      }
+      return this.slots.filter(
+        (slot) =>
+          slot.status === 'AVAILABLE' &&
+          this.getDoctorById(slot.doctorId)?.speciality === this.bookingForm.speciality
+      );
+    }
     return this.slots.filter((slot) => slot.status === 'AVAILABLE');
   }
 
+  get visibleSlots(): SchedulingSlot[] {
+    if (this.isDoctor) {
+      return this.slots.filter((slot) => slot.doctorId === this.currentDoctorId && slot.status === 'AVAILABLE');
+    }
+    return this.slots.filter((slot) => slot.status === 'AVAILABLE');
+  }
+
+  get visibleConsents(): ConsentItem[] {
+    if (this.isDoctor) {
+      const patientIds = new Set(this.patients.map((patient) => patient.id));
+      return this.consents.filter((consent) => patientIds.has(consent.patientId));
+    }
+    if (this.isPatient) {
+      return this.consents.filter((consent) => consent.patientId === 1);
+    }
+    return this.consents;
+  }
+
+  get visiblePrescriptions(): PrescriptionItem[] {
+    if (this.isPatient) {
+      return this.prescriptions.filter((prescription) => prescription.patientId === 1);
+    }
+    return this.prescriptions;
+  }
+
+  get visibleAdmissions(): AdmissionItem[] {
+    if (this.isDoctor) {
+      const department = this.currentDoctorDepartment;
+      if (!department) {
+        return [];
+      }
+      return this.admissions.filter((admission) => admission.department === department);
+    }
+    if (this.isPatient) {
+      return this.admissions.filter((admission) => admission.patientId === 1);
+    }
+    return this.admissions;
+  }
+
+  get doctorSlotsByDate(): Array<{ date: string; slots: SchedulingSlot[] }> {
+    if (!this.isDoctor) {
+      return [];
+    }
+    const grouped = this.visibleSlots.reduce<Record<string, SchedulingSlot[]>>((acc, slot) => {
+      acc[slot.date] = acc[slot.date] ?? [];
+      acc[slot.date].push(slot);
+      return acc;
+    }, {});
+    return Object.entries(grouped)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, slots]) => ({
+        date,
+        slots: slots.sort((first, second) => first.time.localeCompare(second.time))
+      }));
+  }
+
+  getNotificationStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      SENT: 'Inviata',
+      DELIVERED: 'Consegnata',
+      FAILED: 'Non consegnata'
+    };
+    return labels[status] ?? status;
+  }
+
+  getPrescriptionStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      ACTIVE: 'Attiva',
+      SUSPENDED: 'Sospesa',
+      COMPLETED: 'Conclusa',
+      PENDING: 'In attesa'
+    };
+    return labels[status] ?? status;
+  }
+
+  getTelevisitStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      READY: 'Pronta',
+      ACTIVE: 'In corso',
+      COMPLETED: 'Conclusa'
+    };
+    return labels[status] ?? status;
+  }
+
+  getPatientLabel(patientId: number): string {
+    const patient = this.patients.find((item) => item.id === patientId);
+    return patient ? `${patient.firstName} ${patient.lastName}` : `Paziente ${patientId}`;
+  }
+
+  get currentDoctorId(): number {
+    return this.doctors[0]?.id ?? 1;
+  }
+
+  get currentDoctorDepartment(): string {
+    return this.doctors[0]?.speciality ?? '';
+  }
+
+  getDoctorById(doctorId: number): DoctorItem | undefined {
+    return this.doctors.find((item) => item.id === doctorId);
+  }
+
   getSlotLabel(slot: SchedulingSlot): string {
-    return `${this.formatDate(slot.date)} • ${slot.time} • ${this.getDoctorLabel(slot.doctorId)}`;
+    return `${this.formatDate(slot.date)} • ${slot.time} • ${this.getDoctorLabel(slot.doctorId)} • ${this.getModalityLabel(
+      slot.modality
+    )}`;
+  }
+
+  getModalityLabel(modality: SchedulingSlot['modality']): string {
+    return modality === 'REMOTE' ? 'Da remoto' : 'In presenza';
+  }
+
+  submitSlot(): void {
+    if (!this.slotForm.date || !this.slotForm.time) {
+      this.schedulingError = 'Inserisci data e ora dello slot.';
+      return;
+    }
+    this.isLoading = true;
+    this.schedulingError = '';
+    this.api.request<SchedulingSlot>('POST', '/api/slots', {
+      doctorId: this.currentDoctorId,
+      date: this.slotForm.date,
+      time: this.slotForm.time,
+      modality: this.slotForm.modality,
+      notes: this.slotForm.notes,
+      status: 'AVAILABLE'
+    }).subscribe({
+      next: (slot) => {
+        this.slots = [...this.slots, slot];
+        this.slotForm.date = '';
+        this.slotForm.time = '';
+        this.slotForm.modality = 'IN_PERSON';
+        this.slotForm.notes = '';
+        this.isLoading = false;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile creare lo slot.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  confirmAppointment(appointment: SchedulingAppointment): void {
+    if (appointment.status === 'CONFIRMED') {
+      return;
+    }
+    this.appointments = this.appointments.map((item) =>
+      item.id === appointment.id ? { ...item, status: 'CONFIRMED' } : item
+    );
+  }
+
+  cancelAppointment(appointment: SchedulingAppointment): void {
+    if (appointment.status !== 'PENDING') {
+      return;
+    }
+    this.appointments = this.appointments.filter((item) => item.id !== appointment.id);
+    this.slots = this.slots.map((slot) =>
+      slot.id === appointment.slotId ? { ...slot, status: 'AVAILABLE' } : slot
+    );
   }
 
   loadDocs(): void {
@@ -406,7 +807,7 @@ export class ResourcePageComponent {
     this.docsError = '';
     this.api.request<DocumentItem[]>('GET', '/api/docs').subscribe({
       next: (docs) => {
-        this.documents = docs;
+        this.documents = [...docs];
         this.isLoading = false;
       },
       error: () => {
@@ -416,7 +817,7 @@ export class ResourcePageComponent {
     });
     this.api.request<ConsentItem[]>('GET', '/api/consents').subscribe({
       next: (consents) => {
-        this.consents = consents;
+        this.consents = [...consents];
       },
       error: () => {
         this.docsError = 'Impossibile caricare i consensi.';
@@ -425,20 +826,27 @@ export class ResourcePageComponent {
   }
 
   submitDocument(): void {
-    if (!this.docForm.name.trim()) {
-      this.docsError = 'Inserisci il nome del documento.';
+    if (!this.docForm.fileName.trim()) {
+      this.docsError = 'Seleziona un documento dal tuo dispositivo.';
       return;
     }
     this.isLoading = true;
     this.docsError = '';
-    this.api.request<DocumentItem>('POST', '/api/docs', {
-      patientId: this.docForm.patientId,
+    if (!this.docForm.name.trim()) {
+      this.docForm.name = this.docForm.fileName;
+    }
+    const payload: Record<string, unknown> = {
       type: this.docForm.type,
       name: this.docForm.name
-    }).subscribe({
+    };
+    if (this.isDoctor) {
+      payload['patientId'] = this.docForm.patientId ?? this.patients[0]?.id ?? 1;
+    }
+    this.api.request<DocumentItem>('POST', '/api/docs', payload).subscribe({
       next: (doc) => {
         this.documents = [...this.documents, doc];
         this.docForm.name = '';
+        this.docForm.fileName = '';
         this.isLoading = false;
       },
       error: () => {
@@ -452,12 +860,13 @@ export class ResourcePageComponent {
     this.isLoading = true;
     this.docsError = '';
     this.api.request<ConsentItem>('POST', '/api/consents', {
-      patientId: this.consentForm.patientId,
       consentType: this.consentForm.consentType,
       accepted: this.consentForm.accepted
     }).subscribe({
       next: (consent) => {
-        this.consents = [...this.consents, consent];
+        if (!this.consents.some((item) => item.id === consent.id)) {
+          this.consents = [...this.consents, consent];
+        }
         this.isLoading = false;
       },
       error: () => {
@@ -502,19 +911,40 @@ export class ResourcePageComponent {
   }
 
   submitPayment(): void {
-    if (!this.paymentForm.amount) {
+    if (!this.paymentForm.paymentId) {
+      this.paymentsError = 'Seleziona un pagamento in attesa.';
+      return;
+    }
+    if (!this.paymentForm.amount || this.paymentForm.amount <= 0) {
       this.paymentsError = 'Inserisci l’importo del pagamento.';
+      return;
+    }
+    if (!this.paymentForm.receiptName.trim()) {
+      this.paymentsError = 'Carica la ricevuta del pagamento.';
+      return;
+    }
+    const pendingPayment = this.payments.find((payment) => payment.id === this.paymentForm.paymentId);
+    if (
+      !pendingPayment ||
+      (pendingPayment.status !== 'PENDING' && pendingPayment.status !== 'IN_ATTESA')
+    ) {
+      this.paymentsError = 'Pagamento selezionato non valido.';
       return;
     }
     this.isLoading = true;
     this.paymentsError = '';
     this.api.request<PaymentItem>('POST', '/api/payments', {
-      patientId: this.paymentForm.patientId,
-      amount: this.paymentForm.amount,
-      currency: this.paymentForm.currency
+      paymentId: this.paymentForm.paymentId,
+      status: 'PAID',
+      receiptName: this.paymentForm.receiptName,
+      amount: this.paymentForm.amount
     }).subscribe({
       next: (payment) => {
-        this.payments = [...this.payments, payment];
+        this.payments = this.payments.map((item) => (item.id === payment.id ? payment : item));
+        this.paymentForm.paymentId = null;
+        this.paymentForm.receiptName = '';
+        this.paymentForm.service = '';
+        this.paymentForm.amount = 0;
         this.isLoading = false;
       },
       error: () => {
@@ -559,8 +989,12 @@ export class ResourcePageComponent {
   }
 
   submitNotification(): void {
-    if (!this.notificationForm.recipient.trim() || !this.notificationForm.message.trim()) {
-      this.notificationsError = 'Inserisci destinatario e messaggio.';
+    if (
+      !this.notificationForm.recipient.trim() ||
+      !this.notificationForm.subject.trim() ||
+      !this.notificationForm.message.trim()
+    ) {
+      this.notificationsError = 'Inserisci destinatario, oggetto e messaggio.';
       return;
     }
     this.isLoading = true;
@@ -568,11 +1002,15 @@ export class ResourcePageComponent {
     this.api.request<NotificationItem>('POST', '/api/notifications', {
       recipient: this.notificationForm.recipient,
       channel: this.notificationForm.channel,
-      message: this.notificationForm.message
+      subject: this.notificationForm.subject,
+      message: this.notificationForm.message,
+      notes: this.notificationForm.notes
     }).subscribe({
       next: (notification) => {
         this.notifications = [...this.notifications, notification];
+        this.notificationForm.subject = '';
         this.notificationForm.message = '';
+        this.notificationForm.notes = '';
         this.isLoading = false;
       },
       error: () => {
@@ -580,6 +1018,39 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  saveNotificationPreferences(): void {
+    this.notificationsError = '';
+    this.notificationsSuccess = '';
+    if (!this.notificationPreferences.email.trim()) {
+      this.notificationsError = 'Inserisci una email valida per ricevere le notifiche.';
+      return;
+    }
+    if (!this.notificationPreferences.phone.trim()) {
+      this.notificationsError = 'Inserisci un numero di telefono valido per ricevere le notifiche.';
+      return;
+    }
+    const hasChannel = Object.values(this.notificationPreferences.channels).some((value) => value);
+    if (!hasChannel) {
+      this.notificationsError = 'Seleziona almeno un canale di notifica.';
+      return;
+    }
+    const hasType = Object.values(this.notificationPreferences.types).some((value) => value);
+    if (!hasType) {
+      this.notificationsError = 'Seleziona almeno un tipo di notifica.';
+      return;
+    }
+    this.notificationsSuccess = 'Preferenze notifiche aggiornate.';
+  }
+
+  confirmAdmission(admission: AdmissionItem): void {
+    if (admission.status === 'CONFIRMED') {
+      return;
+    }
+    this.admissions = this.admissions.map((item) =>
+      item.id === admission.id ? { ...item, status: 'CONFIRMED' } : item
+    );
   }
 
   loadPrescriptions(): void {
@@ -602,22 +1073,124 @@ export class ResourcePageComponent {
       this.prescribingError = 'Inserisci farmaco e posologia.';
       return;
     }
+    if (!this.prescriptionForm.durationDays) {
+      this.prescribingError = 'Inserisci la durata della terapia.';
+      return;
+    }
     this.isLoading = true;
     this.prescribingError = '';
     this.api.request<PrescriptionItem>('POST', '/api/prescribing/prescriptions', {
       patientId: this.prescriptionForm.patientId,
+      doctorId: this.currentDoctorId,
       drug: this.prescriptionForm.drug,
-      dosage: this.prescriptionForm.dosage
+      dosage: this.prescriptionForm.dosage,
+      durationDays: this.prescriptionForm.durationDays
     }).subscribe({
       next: (prescription) => {
         this.prescriptions = [...this.prescriptions, prescription];
         this.prescriptionForm.drug = '';
         this.prescriptionForm.dosage = '';
+        this.prescriptionForm.durationDays = 10;
         this.isLoading = false;
       },
       error: () => {
         this.prescribingError = 'Impossibile registrare la prescrizione.';
         this.isLoading = false;
+      }
+    });
+  }
+
+  viewDocument(doc: DocumentItem): void {
+    this.docsError = '';
+    const previewWindow = window.open('', '_blank', 'noopener');
+    if (!previewWindow) {
+      this.docsError = 'Impossibile aprire l’anteprima del documento.';
+      return;
+    }
+    previewWindow.document.write(`<pre>${JSON.stringify(doc, null, 2)}</pre>`);
+    previewWindow.document.close();
+  }
+
+  deleteDocument(doc: DocumentItem): void {
+    this.documents = this.documents.filter((item) => item.id !== doc.id);
+  }
+
+  viewPaymentReceipt(payment: PaymentItem): void {
+    this.paymentsError = '';
+    if (!payment.receiptName) {
+      this.paymentsError = 'Nessuna ricevuta disponibile per questo pagamento.';
+      return;
+    }
+    const previewWindow = window.open('', '_blank', 'noopener');
+    if (!previewWindow) {
+      this.paymentsError = 'Impossibile aprire la ricevuta di pagamento.';
+      return;
+    }
+    previewWindow.document.write(`<pre>Ricevuta: ${payment.receiptName}</pre>`);
+    previewWindow.document.close();
+  }
+
+  deletePayment(payment: PaymentItem): void {
+    this.payments = this.payments.filter((item) => item.id !== payment.id);
+  }
+
+  deleteConsent(consent: ConsentItem): void {
+    this.consents = this.consents.filter((item) => item.id !== consent.id);
+  }
+
+  handleDocumentFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) {
+      return;
+    }
+    this.docForm.fileName = file.name;
+    if (!this.docForm.name.trim()) {
+      this.docForm.name = file.name;
+    }
+  }
+
+  handlePaymentReceiptSelected(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) {
+      return;
+    }
+    this.paymentForm.receiptName = file.name;
+  }
+
+  handlePaymentSelectionChange(paymentId: number | null): void {
+    if (!paymentId) {
+      this.paymentForm.amount = 0;
+      this.paymentForm.service = '';
+      return;
+    }
+    const pendingPayment = this.payments.find((payment) => payment.id === paymentId);
+    if (!pendingPayment) {
+      this.paymentForm.amount = 0;
+      this.paymentForm.service = '';
+      return;
+    }
+    this.paymentForm.amount = pendingPayment.amount;
+    this.paymentForm.service = pendingPayment.service;
+  }
+
+  loadPatients(): void {
+    this.api.request<PatientItem[]>('GET', '/api/patients').subscribe({
+      next: (patients) => {
+        this.patients = patients;
+        if (!this.prescriptionForm.patientId && patients.length) {
+          this.prescriptionForm.patientId = patients[0].id;
+        }
+        if (!this.docForm.patientId && patients.length) {
+          this.docForm.patientId = patients[0].id;
+        }
+        if (!this.televisitForm.patientId && patients.length) {
+          this.televisitForm.patientId = patients[0].id;
+        }
+      },
+      error: () => {
+        this.directoryError = 'Impossibile caricare i pazienti.';
       }
     });
   }
@@ -640,12 +1213,22 @@ export class ResourcePageComponent {
   submitTelevisit(): void {
     this.isLoading = true;
     this.televisitError = '';
+    const appointmentId = this.televisitForm.patientId ?? this.televisitForm.appointmentId;
+    if (!appointmentId) {
+      this.televisitError = this.isDoctor
+        ? 'Seleziona il paziente per la televisita.'
+        : 'Inserisci l’identificativo dell’appuntamento.';
+      this.isLoading = false;
+      return;
+    }
     this.api.request<TelevisitItem>('POST', '/api/televisit', {
-      appointmentId: this.televisitForm.appointmentId,
+      appointmentId,
+      patientId: this.televisitForm.patientId,
       provider: this.televisitForm.provider
     }).subscribe({
       next: (televisit) => {
         this.televisits = [...this.televisits, televisit];
+        this.televisitForm.patientId = this.patients[0]?.id ?? null;
         this.isLoading = false;
       },
       error: () => {
@@ -653,6 +1236,15 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  joinTelevisit(televisit: TelevisitItem): void {
+    if (!televisit.token) {
+      this.televisitError = 'Token televisita non disponibile.';
+      return;
+    }
+    this.televisitError = '';
+    window.open(`/televisit/${televisit.token}`, '_blank');
   }
 
   loadDirectory(): void {
