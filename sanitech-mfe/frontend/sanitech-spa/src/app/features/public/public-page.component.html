@@ -164,10 +164,11 @@
           </div>
         </div>
       </div>
-      <div class="col-lg-5 col-md-5" *ngIf="auth.isAuthenticated">
+      <div class="col-lg-5 col-md-5 d-flex align-items-center" *ngIf="auth.isAuthenticated">
         <img
           src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=900&q=80"
-          class="img-fluid rounded-4 shadow-sm"
+          class="img-fluid rounded-4 shadow-sm w-100"
+          style="min-height: 320px; object-fit: cover;"
           alt="Equipe Sanitech" />
       </div>
     </div>
