@@ -423,22 +423,51 @@
       <div class="col-lg-8">
         <div class="card card-glass p-4 h-100">
           <h5 class="fw-semibold mb-3">Scrivici per informazioni</h5>
-          <form>
+          <form (ngSubmit)="submitContact()" #contactFormRef="ngForm">
             <div class="row g-3">
               <div class="col-md-6">
-                <input class="form-control" type="text" placeholder="Nome e cognome" />
+                <input
+                  class="form-control"
+                  type="text"
+                  name="contactFullName"
+                  [(ngModel)]="contactForm.fullName"
+                  placeholder="Nome e cognome"
+                  required />
               </div>
               <div class="col-md-6">
-                <input class="form-control" type="email" placeholder="Email" />
+                <input
+                  class="form-control"
+                  type="email"
+                  name="contactEmail"
+                  [(ngModel)]="contactForm.email"
+                  placeholder="Email"
+                  required />
               </div>
               <div class="col-12">
-                <input class="form-control" type="text" placeholder="Oggetto" />
+                <input
+                  class="form-control"
+                  type="text"
+                  name="contactSubject"
+                  [(ngModel)]="contactForm.subject"
+                  placeholder="Oggetto"
+                  required />
               </div>
               <div class="col-12">
-                <textarea class="form-control" rows="4" placeholder="Messaggio"></textarea>
+                <textarea
+                  class="form-control"
+                  rows="4"
+                  name="contactMessage"
+                  [(ngModel)]="contactForm.message"
+                  placeholder="Messaggio"
+                  required></textarea>
+              </div>
+              <div class="col-12" *ngIf="contactSuccess">
+                <div class="alert alert-success mb-0">{{ contactSuccess }}</div>
               </div>
               <div class="col-12 text-end">
-                <button class="btn btn-primary" type="button">Invia richiesta</button>
+                <button class="btn btn-primary" type="submit" [disabled]="contactFormRef.invalid">
+                  Invia richiesta
+                </button>
               </div>
             </div>
           </form>

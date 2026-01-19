@@ -23,8 +23,15 @@ export class PublicPageComponent {
     phone: '',
     notes: ''
   };
+  contactForm = {
+    fullName: '',
+    email: '',
+    subject: '',
+    message: ''
+  };
   loginError = '';
   registrationSuccess = '';
+  contactSuccess = '';
   activeAccessTab: 'login' | 'register' = 'login';
   profiles = this.auth.mockProfiles;
 
@@ -58,6 +65,16 @@ export class PublicPageComponent {
       email: '',
       phone: '',
       notes: ''
+    };
+  }
+
+  submitContact(): void {
+    this.contactSuccess = `Grazie ${this.contactForm.fullName}, abbiamo ricevuto la tua richiesta. Un nostro referente ti risponderà al più presto.`;
+    this.contactForm = {
+      fullName: '',
+      email: '',
+      subject: '',
+      message: ''
     };
   }
 }
