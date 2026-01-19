@@ -48,7 +48,7 @@
                   data-bs-target="#availableSlotsCollapse"
                   aria-expanded="true"
                   aria-controls="availableSlotsCollapse">
-                  Consulta gli slot disponibili e poi prenota
+                  Consulta gli slot disponibili
                 </button>
               </h2>
               <div
@@ -284,6 +284,7 @@
                         <th *ngIf="isDoctor">Paziente</th>
                         <th>Tipo</th>
                         <th>Nome</th>
+                        <th>Note</th>
                         <th>Data</th>
                         <th>Azioni</th>
                       </tr>
@@ -293,6 +294,7 @@
                         <td *ngIf="isDoctor">{{ getPatientLabel(doc.patientId) }}</td>
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
+                        <td>{{ doc.notes || '-' }}</td>
                         <td>{{ formatDate(doc.uploadedAt) }}</td>
                         <td>
                           <button
@@ -312,7 +314,7 @@
                         </td>
                       </tr>
                       <tr *ngIf="!documents.length">
-                        <td [attr.colspan]="isDoctor ? 5 : 4" class="text-center text-muted">Nessun documento presente.</td>
+                        <td [attr.colspan]="isDoctor ? 6 : 5" class="text-center text-muted">Nessun documento presente.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -433,64 +435,11 @@
       <ng-template #paymentsLayout>
         <ng-container *ngIf="mode === 'payments'; else notificationsLayout">
           <div class="row g-4">
-            <div class="col-12">
+            <div class="col-lg-6" *ngIf="!isDoctor">
               <div class="card card-glass">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
                     <h5 class="fw-semibold mb-0">{{ isDoctor ? 'Ricoveri del reparto' : 'Ricoveri' }}</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
-                      Aggiorna
-                    </button>
-                  </div>
-                  <div class="table-responsive">
-                    <table class="table align-middle">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th *ngIf="!isPatient">Paziente</th>
-                          <th>Reparto</th>
-                          <th>Letto</th>
-                          <th>Stato</th>
-                          <th>Data</th>
-                          <th *ngIf="isPatient">Azione</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissions'):getPageSliceEnd('admissions')">
-                          <td>{{ admission.id }}</td>
-                          <td *ngIf="!isPatient">{{ getPatientLabel(admission.patientId) }}</td>
-                          <td>{{ getDepartmentLabel(admission.department) }}</td>
-                          <td>{{ admission.bedId }}</td>
-                          <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
-                          <td>{{ formatDate(admission.admittedAt) }}</td>
-                          <td *ngIf="isPatient">
-                            <button
-                              class="btn btn-outline-primary btn-sm"
-                              type="button"
-                              (click)="confirmAdmission(admission)"
-                              [disabled]="admission.status === 'CONFIRMED'">
-                              {{ admission.status === 'CONFIRMED' ? 'Confermato' : 'Conferma ricovero' }}
-                            </button>
-                          </td>
-                        </tr>
-                        <tr *ngIf="!visibleAdmissions.length">
-                          <td [attr.colspan]="isPatient ? 6 : 6" class="text-center text-muted">Nessun ricovero registrato.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'admissions', total: visibleAdmissions.length }"></ng-container>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="row g-4 mt-1">
-            <div class="col-lg-8">
-              <div class="card card-glass mb-4" *ngIf="!isDoctor">
-                <div class="card-body">
-                  <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">Pagamenti</h5>
                     <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
                       Aggiorna
                     </button>
@@ -545,8 +494,107 @@
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div class="card card-glass" *ngIf="!isPatient">
+            <div [class.col-lg-6]="!isDoctor" [class.col-12]="isDoctor">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">{{ isDoctor ? 'Ricoveri del reparto' : 'Ricoveri' }}</h5>
+                    <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table align-middle">
+                      <thead>
+                        <tr>
+                          <th *ngIf="!isPatient">Paziente</th>
+                          <th>Reparto</th>
+                          <th>Letto</th>
+                          <th>Stato</th>
+                          <th>Note</th>
+                          <th>Data</th>
+                          <th *ngIf="isPatient">Azione</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissions'):getPageSliceEnd('admissions')">
+                          <td *ngIf="!isPatient">{{ getPatientLabel(admission.patientId) }}</td>
+                          <td>{{ getDepartmentLabel(admission.department) }}</td>
+                          <td>{{ admission.bedId }}</td>
+                          <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
+                          <td>{{ admission.notes || '-' }}</td>
+                          <td>{{ formatDate(admission.admittedAt) }}</td>
+                          <td *ngIf="isPatient">
+                            <button
+                              class="btn btn-outline-primary btn-sm"
+                              type="button"
+                              (click)="confirmAdmission(admission)"
+                              [disabled]="admission.status === 'CONFIRMED'">
+                              {{ admission.status === 'CONFIRMED' ? 'Confermato' : 'Conferma ricovero' }}
+                            </button>
+                          </td>
+                        </tr>
+                        <tr *ngIf="!visibleAdmissions.length">
+                          <td [attr.colspan]="isPatient ? 6 : 6" class="text-center text-muted">Nessun ricovero registrato.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'admissions', total: visibleAdmissions.length }"></ng-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-4 mt-1">
+            <div class="col-lg-6">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Registra pagamento</h5>
+                  <form (ngSubmit)="submitPayment()" #paymentFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Pagamento in attesa</label>
+                      <select
+                        class="form-select"
+                        name="paymentPendingId"
+                        [(ngModel)]="paymentForm.paymentId"
+                        (ngModelChange)="handlePaymentSelectionChange($event)"
+                        required>
+                        <option [ngValue]="null" disabled>Seleziona un pagamento in attesa</option>
+                        <option *ngFor="let payment of pendingPayments" [ngValue]="payment.id">
+                          #{{ payment.id }} • {{ payment.service }} • {{ payment.amount }} {{ getCurrencyLabel(payment.currency) }}
+                        </option>
+                      </select>
+                      <div class="form-text" *ngIf="!pendingPayments.length">Nessun pagamento in attesa disponibile.</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Importo</label>
+                      <input
+                        class="form-control"
+                        type="number"
+                        name="paymentAmount"
+                        [(ngModel)]="paymentForm.amount"
+                        min="0"
+                        required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Ricevuta pagamento</label>
+                      <input class="form-control" type="file" name="paymentReceipt" (change)="handlePaymentReceiptSelected($event)" />
+                      <div class="form-text" *ngIf="paymentForm.receiptName">Selezionato: {{ paymentForm.receiptName }}</div>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
+                    <button class="btn btn-primary w-100" type="submit" [disabled]="paymentFormRef.invalid || isLoading || !pendingPayments.length">
+                      {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-6" *ngIf="!isPatient">
+              <div class="card card-glass">
                 <div class="card-body">
                   <h5 class="fw-semibold mb-3">Registra ricovero</h5>
                   <form (ngSubmit)="submitAdmission()" #admissionFormRef="ngForm">
@@ -623,71 +671,10 @@
       <ng-template #notificationsLayout>
         <ng-container *ngIf="mode === 'notifications'; else prescribingLayout">
           <div class="row g-4">
-            <div class="col-lg-8">
-              <div class="card card-glass">
-                <div class="card-body">
-                  <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">{{ isPatient ? 'Notifiche ricevute' : 'Notifiche inviate' }}</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="loadNotifications()" [disabled]="isLoading">
-                      Aggiorna
-                    </button>
-                  </div>
-                  <div class="table-responsive">
-                    <table class="table align-middle" *ngIf="isPatient; else staffNotificationsTable">
-                      <thead>
-                        <tr>
-                          <th>Canale</th>
-                          <th>Messaggio</th>
-                          <th>Stato</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let notification of notifications | slice:getPageSliceStart('notifications'):getPageSliceEnd('notifications')">
-                          <td>{{ notification.channel }}</td>
-                          <td>{{ notification.message }}</td>
-                          <td>{{ getNotificationStatusLabel(notification.status) }}</td>
-                        </tr>
-                        <tr *ngIf="!notifications.length">
-                          <td colspan="3" class="text-center text-muted">Nessuna notifica presente.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'notifications', total: notifications.length }"></ng-container>
-                    <ng-template #staffNotificationsTable>
-                      <table class="table align-middle">
-                        <thead>
-                          <tr>
-                            <th>ID</th>
-                            <th>Destinatario</th>
-                            <th>Canale</th>
-                            <th>Messaggio</th>
-                            <th>Stato</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr *ngFor="let notification of notifications | slice:getPageSliceStart('notifications'):getPageSliceEnd('notifications')">
-                            <td>{{ notification.id }}</td>
-                            <td>{{ notification.recipient }}</td>
-                            <td>{{ notification.channel }}</td>
-                            <td>{{ notification.message }}</td>
-                            <td>{{ getNotificationStatusLabel(notification.status) }}</td>
-                          </tr>
-                          <tr *ngIf="!notifications.length">
-                            <td colspan="5" class="text-center text-muted">Nessuna notifica presente.</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'notificationsStaff', total: notifications.length }"></ng-container>
-                    </ng-template>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-lg-4">
-              <div class="card card-glass">
-                <div class="card-body">
-                  <ng-container *ngIf="isPatient; else staffNotificationForm">
+            <ng-container *ngIf="isPatient; else staffNotifications">
+              <div class="col-12">
+                <div class="card card-glass">
+                  <div class="card-body">
                     <h5 class="fw-semibold mb-3">Preferenze notifiche</h5>
                     <form (ngSubmit)="saveNotificationPreferences()" #notificationPrefsRef="ngForm">
                       <div class="mb-3">
@@ -738,8 +725,99 @@
                         Salva preferenze
                       </button>
                     </form>
-                  </ng-container>
-                  <ng-template #staffNotificationForm>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div class="card card-glass">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                      <h5 class="fw-semibold mb-0">Notifiche ricevute</h5>
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadNotifications()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                    </div>
+                    <div class="table-responsive">
+                      <table class="table align-middle">
+                        <thead>
+                          <tr>
+                            <th>Canale</th>
+                            <th>Oggetto</th>
+                            <th>Messaggio</th>
+                            <th>Note</th>
+                            <th>Data e ora</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let notification of notifications | slice:getPageSliceStart('notifications'):getPageSliceEnd('notifications')">
+                            <td>{{ notification.channel }}</td>
+                            <td>{{ notification.subject }}</td>
+                            <td>{{ notification.message }}</td>
+                            <td>{{ notification.notes || '-' }}</td>
+                            <td>{{ formatDateTime(notification.sentAt) }}</td>
+                          </tr>
+                          <tr *ngIf="!notifications.length">
+                            <td colspan="5" class="text-center text-muted">Nessuna notifica presente.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'notifications', total: notifications.length }"></ng-container>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <ng-template #staffNotifications>
+              <div class="col-lg-8">
+                <div class="card card-glass">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                      <h5 class="fw-semibold mb-0">Notifiche inviate</h5>
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadNotifications()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                    </div>
+                    <div class="table-responsive">
+                      <table class="table align-middle">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Destinatario</th>
+                            <th>Canale</th>
+                            <th>Oggetto</th>
+                            <th>Messaggio</th>
+                            <th>Note</th>
+                            <th>Stato</th>
+                            <th>Data e ora</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let notification of notifications | slice:getPageSliceStart('notifications'):getPageSliceEnd('notifications')">
+                            <td>{{ notification.id }}</td>
+                            <td>{{ notification.recipient }}</td>
+                            <td>{{ notification.channel }}</td>
+                            <td>{{ notification.subject }}</td>
+                            <td>{{ notification.message }}</td>
+                            <td>{{ notification.notes || '-' }}</td>
+                            <td>{{ getNotificationStatusLabel(notification.status) }}</td>
+                            <td>{{ formatDateTime(notification.sentAt) }}</td>
+                          </tr>
+                          <tr *ngIf="!notifications.length">
+                            <td colspan="8" class="text-center text-muted">Nessuna notifica presente.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'notificationsStaff', total: notifications.length }"></ng-container>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-4">
+                <div class="card card-glass">
+                  <div class="card-body">
                     <h5 class="fw-semibold mb-3">Invia notifica</h5>
                     <form (ngSubmit)="submitNotification()" #notificationFormRef="ngForm">
                       <div class="mb-3">
@@ -755,18 +833,26 @@
                         </select>
                       </div>
                       <div class="mb-3">
+                        <label class="form-label">Oggetto</label>
+                        <input class="form-control" type="text" name="notificationSubject" [(ngModel)]="notificationForm.subject" required />
+                      </div>
+                      <div class="mb-3">
                         <label class="form-label">Messaggio</label>
                         <textarea class="form-control" rows="4" name="notificationMessage" [(ngModel)]="notificationForm.message" required></textarea>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Note</label>
+                        <textarea class="form-control" rows="2" name="notificationNotes" [(ngModel)]="notificationForm.notes"></textarea>
                       </div>
                       <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
                       <button class="btn btn-primary w-100" type="submit" [disabled]="notificationFormRef.invalid || isLoading">
                         {{ isLoading ? 'Invio...' : 'Invia notifica' }}
                       </button>
                     </form>
-                  </ng-template>
+                  </div>
                 </div>
               </div>
-            </div>
+            </ng-template>
           </div>
         </ng-container>
       </ng-template>
@@ -791,7 +877,7 @@
                           <th>Farmaco</th>
                           <th>Posologia</th>
                           <th>Durata</th>
-                          <th>Stato</th>
+                          <th>Note</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -800,7 +886,7 @@
                           <td>{{ prescription.drug }}</td>
                           <td>{{ prescription.dosage }}</td>
                           <td>{{ prescription.durationDays }} giorni</td>
-                          <td>{{ getPrescriptionStatusLabel(prescription.status) }}</td>
+                          <td>{{ prescription.notes || '-' }}</td>
                         </tr>
                         <tr *ngIf="!visiblePrescriptions.length">
                           <td colspan="5" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
@@ -831,7 +917,7 @@
                             <th>Farmaco</th>
                             <th>Posologia</th>
                             <th>Durata</th>
-                            <th>Stato</th>
+                            <th>Note</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -840,7 +926,7 @@
                             <td>{{ prescription.drug }}</td>
                             <td>{{ prescription.dosage }}</td>
                             <td>{{ prescription.durationDays }} giorni</td>
-                            <td>{{ getPrescriptionStatusLabel(prescription.status) }}</td>
+                            <td>{{ prescription.notes || '-' }}</td>
                           </tr>
                           <tr *ngIf="!visiblePrescriptions.length">
                             <td colspan="5" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
@@ -1218,21 +1304,21 @@
                     <table class="table align-middle">
                       <thead>
                         <tr>
-                          <th>ID</th>
                           <th>Paziente</th>
                           <th>Reparto</th>
                           <th>Letto</th>
                           <th>Stato</th>
+                          <th>Note</th>
                           <th>Data</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr *ngFor="let admission of admissions | slice:getPageSliceStart('adminAdmissions'):getPageSliceEnd('adminAdmissions')">
-                          <td>{{ admission.id }}</td>
                           <td>{{ admission.patientId }}</td>
                           <td>{{ admission.department }}</td>
                           <td>{{ admission.bedId }}</td>
                           <td>{{ admission.status }}</td>
+                          <td>{{ admission.notes || '-' }}</td>
                           <td>{{ admission.admittedAt }}</td>
                         </tr>
                         <tr *ngIf="!admissions.length">

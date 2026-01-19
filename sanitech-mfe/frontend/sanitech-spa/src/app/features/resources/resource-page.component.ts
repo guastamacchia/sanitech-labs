@@ -36,6 +36,7 @@ interface DocumentItem {
   patientId: number;
   type: string;
   name: string;
+  notes?: string;
   uploadedAt: string;
 }
 
@@ -65,14 +66,18 @@ interface AdmissionItem {
   bedId: number;
   status: string;
   admittedAt: string;
+  notes?: string;
 }
 
 interface NotificationItem {
   id: number;
   recipient: string;
   channel: string;
+  subject: string;
   message: string;
+  notes: string;
   status: string;
+  sentAt: string;
 }
 
 interface PrescriptionItem {
@@ -83,6 +88,7 @@ interface PrescriptionItem {
   dosage: string;
   durationDays: number;
   status: string;
+  notes?: string;
 }
 
 interface TelevisitItem {
@@ -199,7 +205,24 @@ export class ResourcePageComponent {
   notificationForm = {
     recipient: '',
     channel: 'EMAIL',
-    message: ''
+    subject: '',
+    message: '',
+    notes: ''
+  };
+  notificationPreferences = {
+    email: 'anna.conti@sanitech.example',
+    phone: '+39 347 123 4567',
+    channels: {
+      email: true,
+      sms: false,
+      app: true
+    },
+    types: {
+      appointments: true,
+      documents: true,
+      payments: false,
+      prescriptions: false
+    }
   };
   notificationPreferences = {
     email: 'anna.conti@sanitech.example',
@@ -488,6 +511,22 @@ export class ResourcePageComponent {
     const day = String(parsed.getDate()).padStart(2, '0');
     const month = String(parsed.getMonth() + 1).padStart(2, '0');
     return `${day}/${month}/${parsed.getFullYear()}`;
+  }
+
+  formatDateTime(value: string): string {
+    if (!value) {
+      return '-';
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return value;
+    }
+    const day = String(parsed.getDate()).padStart(2, '0');
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const year = parsed.getFullYear();
+    const hours = String(parsed.getHours()).padStart(2, '0');
+    const minutes = String(parsed.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
   }
 
   getDocumentTypeLabel(type: string): string {
@@ -900,7 +939,10 @@ export class ResourcePageComponent {
       return;
     }
     const pendingPayment = this.payments.find((payment) => payment.id === this.paymentForm.paymentId);
-    if (!pendingPayment || pendingPayment.status !== 'PENDING') {
+    if (
+      !pendingPayment ||
+      (pendingPayment.status !== 'PENDING' && pendingPayment.status !== 'IN_ATTESA')
+    ) {
       this.paymentsError = 'Pagamento selezionato non valido.';
       return;
     }
@@ -962,8 +1004,12 @@ export class ResourcePageComponent {
   }
 
   submitNotification(): void {
-    if (!this.notificationForm.recipient.trim() || !this.notificationForm.message.trim()) {
-      this.notificationsError = 'Inserisci destinatario e messaggio.';
+    if (
+      !this.notificationForm.recipient.trim() ||
+      !this.notificationForm.subject.trim() ||
+      !this.notificationForm.message.trim()
+    ) {
+      this.notificationsError = 'Inserisci destinatario, oggetto e messaggio.';
       return;
     }
     this.isLoading = true;
@@ -971,11 +1017,15 @@ export class ResourcePageComponent {
     this.api.request<NotificationItem>('POST', '/api/notifications', {
       recipient: this.notificationForm.recipient,
       channel: this.notificationForm.channel,
-      message: this.notificationForm.message
+      subject: this.notificationForm.subject,
+      message: this.notificationForm.message,
+      notes: this.notificationForm.notes
     }).subscribe({
       next: (notification) => {
         this.notifications = [...this.notifications, notification];
+        this.notificationForm.subject = '';
         this.notificationForm.message = '';
+        this.notificationForm.notes = '';
         this.isLoading = false;
       },
       error: () => {
