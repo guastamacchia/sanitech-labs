@@ -256,6 +256,22 @@
                               🗑️
                             </button>
                             <button
+                              class="btn btn-outline-success btn-sm me-2"
+                              type="button"
+                              aria-label="Conferma appuntamento"
+                              (click)="confirmPatientAppointment(appointment)"
+                              [disabled]="appointment.status === 'CONFIRMED' || appointment.status === 'REJECTED'">
+                              ✅
+                            </button>
+                            <button
+                              class="btn btn-outline-danger btn-sm me-2"
+                              type="button"
+                              aria-label="Rifiuta appuntamento"
+                              (click)="openAppointmentRejectModal(appointment)"
+                              [disabled]="appointment.status === 'CONFIRMED' || appointment.status === 'REJECTED'">
+                              ❌
+                            </button>
+                            <button
                               class="btn btn-outline-secondary btn-sm"
                               type="button"
                               aria-label="Riprogramma appuntamento"
@@ -310,6 +326,43 @@
                       <button class="btn btn-outline-secondary" type="button" (click)="closeAppointmentRescheduleModal()">Annulla</button>
                       <button class="btn btn-primary" type="submit" [disabled]="appointmentRescheduleRef.invalid || isLoading">
                         Invia richiesta
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="showAppointmentRejectModal">
+          <div
+            class="modal-backdrop fade show"
+            style="position: fixed; inset: 0; z-index: 1050;"
+            (click)="closeAppointmentRejectModal()"></div>
+          <div
+            class="modal d-flex align-items-center justify-content-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="appointmentRejectModalTitle"
+            style="position: fixed; inset: 0; z-index: 1055;">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="appointmentRejectModalTitle">Rifiuta appuntamento</h5>
+                  <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAppointmentRejectModal()"></button>
+                </div>
+                <div class="modal-body">
+                  <form (ngSubmit)="submitAppointmentRejection()" #appointmentRejectRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Motivazione</label>
+                      <textarea class="form-control" rows="3" name="appointmentRejectReason" [(ngModel)]="rejectAppointmentReason" required></textarea>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>
+                    <div class="d-flex justify-content-end gap-2">
+                      <button class="btn btn-outline-secondary" type="button" (click)="closeAppointmentRejectModal()">Annulla</button>
+                      <button class="btn btn-danger" type="submit" [disabled]="appointmentRejectRef.invalid || isLoading">
+                        Rifiuta appuntamento
                       </button>
                     </div>
                   </form>
@@ -914,6 +967,43 @@
               </div>
             </div>
           </ng-container>
+
+          <ng-container *ngIf="showAdmissionRejectModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeAdmissionRejectModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admissionRejectModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="admissionRejectModalTitle">Rifiuta ricovero</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdmissionRejectModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form (ngSubmit)="submitAdmissionRejection()" #admissionRejectRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Motivazione</label>
+                        <textarea class="form-control" rows="3" name="admissionRejectReason" [(ngModel)]="rejectAdmissionReason" required></textarea>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="rescheduleError">{{ rescheduleError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeAdmissionRejectModal()">Annulla</button>
+                        <button class="btn btn-danger" type="submit" [disabled]="admissionRejectRef.invalid || isLoading">
+                          Rifiuta ricovero
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </ng-container>
       </ng-template>
 
@@ -1192,6 +1282,7 @@
                           <th>Posologia</th>
                           <th>Durata</th>
                           <th>Note</th>
+                          <th>Stato</th>
                           <th>Azioni</th>
                         </tr>
                       </thead>
@@ -1203,12 +1294,14 @@
                             <td>{{ prescription.dosage }}</td>
                             <td>{{ prescription.durationDays }} giorni</td>
                             <td>{{ prescription.notes || '-' }}</td>
+                            <td>{{ getPrescriptionStatusLabel(prescription.status) }}</td>
                             <td>
                               <button
                                 class="btn btn-outline-success btn-sm me-2"
                                 type="button"
                                 aria-label="Conferma presa visione"
-                                (click)="confirmPrescription(prescription)">
+                                (click)="confirmPrescription(prescription)"
+                                [disabled]="prescription.status === 'CONFIRMED'">
                                 ✅
                               </button>
                               <button
@@ -1222,7 +1315,7 @@
                           </tr>
                         </ng-container>
                         <tr *ngIf="!visiblePrescriptions.length">
-                          <td colspan="6" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
+                          <td colspan="7" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
                         </tr>
                       </tbody>
                     </table>

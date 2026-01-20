@@ -172,6 +172,9 @@ export class ResourcePageComponent {
   rescheduleAppointment: SchedulingAppointment | null = null;
   rescheduleAppointmentDate = '';
   rescheduleAppointmentReason = '';
+  showAppointmentRejectModal = false;
+  rejectAppointmentTarget: SchedulingAppointment | null = null;
+  rejectAppointmentReason = '';
   showBookingModal = false;
   showDocumentModal = false;
   showConsentModal = false;
@@ -206,6 +209,9 @@ export class ResourcePageComponent {
   };
   rescheduleError = '';
   rescheduleSuccess = '';
+  showAdmissionRejectModal = false;
+  rejectAdmissionTarget: AdmissionItem | null = null;
+  rejectAdmissionReason = '';
   paymentsError = '';
   paymentsSuccess = '';
   paymentForm = {
@@ -623,7 +629,8 @@ export class ResourcePageComponent {
       BOOKED: 'Occupato',
       CONFIRMED: 'Confermato',
       PENDING: 'In attesa',
-      ACTIVE: 'Attivo'
+      ACTIVE: 'Attivo',
+      REJECTED: 'Rifiutato'
     };
     return labels[status] ?? status;
   }
@@ -704,6 +711,15 @@ export class ResourcePageComponent {
       THERAPY: 'Consenso terapia'
     };
     return labels[consentType] ?? consentType;
+  }
+
+  getPrescriptionStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      ACTIVE: 'Attiva',
+      CONFIRMED: 'Confermata',
+      PENDING: 'In attesa'
+    };
+    return labels[status] ?? status;
   }
 
   getCurrencyLabel(currency: string): string {
@@ -953,6 +969,36 @@ export class ResourcePageComponent {
     );
     this.schedulingError = '';
     this.closeAppointmentRescheduleModal();
+  }
+
+  openAppointmentRejectModal(appointment: SchedulingAppointment): void {
+    this.rejectAppointmentTarget = appointment;
+    this.rejectAppointmentReason = '';
+    this.schedulingError = '';
+    this.showAppointmentRejectModal = true;
+  }
+
+  closeAppointmentRejectModal(): void {
+    this.showAppointmentRejectModal = false;
+    this.rejectAppointmentTarget = null;
+    this.rejectAppointmentReason = '';
+  }
+
+  submitAppointmentRejection(): void {
+    if (!this.rejectAppointmentTarget) {
+      this.schedulingError = 'Seleziona un appuntamento da rifiutare.';
+      return;
+    }
+    if (!this.rejectAppointmentReason.trim()) {
+      this.schedulingError = 'Inserisci una motivazione per il rifiuto.';
+      return;
+    }
+    this.appointments = this.appointments.map((item) =>
+      item.id === this.rejectAppointmentTarget?.id
+        ? { ...item, status: 'REJECTED', reason: this.rejectAppointmentReason }
+        : item
+    );
+    this.closeAppointmentRejectModal();
   }
 
   openBookingModal(): void {
@@ -1276,6 +1322,36 @@ export class ResourcePageComponent {
     this.rescheduleAdmission = null;
   }
 
+  openAdmissionRejectModal(admission: AdmissionItem): void {
+    this.rejectAdmissionTarget = admission;
+    this.rejectAdmissionReason = '';
+    this.rescheduleError = '';
+    this.showAdmissionRejectModal = true;
+  }
+
+  closeAdmissionRejectModal(): void {
+    this.showAdmissionRejectModal = false;
+    this.rejectAdmissionTarget = null;
+    this.rejectAdmissionReason = '';
+  }
+
+  submitAdmissionRejection(): void {
+    if (!this.rejectAdmissionTarget) {
+      this.rescheduleError = 'Seleziona un ricovero da rifiutare.';
+      return;
+    }
+    if (!this.rejectAdmissionReason.trim()) {
+      this.rescheduleError = 'Inserisci una motivazione per il rifiuto.';
+      return;
+    }
+    this.admissions = this.admissions.map((item) =>
+      item.id === this.rejectAdmissionTarget?.id
+        ? { ...item, status: 'REJECTED', notes: this.rejectAdmissionReason }
+        : item
+    );
+    this.closeAdmissionRejectModal();
+  }
+
   submitAdmissionReschedule(): void {
     this.rescheduleError = '';
     if (!this.rescheduleAdmission) {
@@ -1313,9 +1389,7 @@ export class ResourcePageComponent {
     if (admission.status === 'CONFIRMED' || admission.status === 'REJECTED') {
       return;
     }
-    this.admissions = this.admissions.map((item) =>
-      item.id === admission.id ? { ...item, status: 'REJECTED' } : item
-    );
+    this.openAdmissionRejectModal(admission);
   }
 
   markPaymentAsPaid(payment: PaymentItem): void {
