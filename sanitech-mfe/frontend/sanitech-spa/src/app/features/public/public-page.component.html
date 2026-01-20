@@ -77,6 +77,14 @@
                     placeholder="••••••••"
                     required />
                 </div>
+                <div class="mb-3" *ngIf="auth.isMockEnabled">
+                  <label class="form-label">Profilo</label>
+                  <select class="form-select" name="role" [(ngModel)]="credentials.role" required>
+                    <option *ngFor="let profile of profiles" [value]="profile.role">
+                      {{ profile.label }}
+                    </option>
+                  </select>
+                </div>
                 <div class="alert alert-danger py-2 mb-3" *ngIf="loginError">{{ loginError }}</div>
                 <button class="btn btn-primary w-100" type="submit" [disabled]="loginForm.invalid">Accedi</button>
               </form>
