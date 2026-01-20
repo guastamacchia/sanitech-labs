@@ -688,41 +688,6 @@
                   </div>
                 </div>
               </div>
-              <div class="col-12">
-                <div class="card card-glass">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                      <h5 class="fw-semibold mb-0">Ricoveri</h5>
-                    </div>
-                    <div class="table-responsive">
-                      <table class="table align-middle">
-                        <thead>
-                          <tr>
-                            <th>Reparto</th>
-                            <th>Letto</th>
-                            <th>Data ricovero</th>
-                            <th>Stato</th>
-                            <th>Motivo</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissionsPayments'):getPageSliceEnd('admissionsPayments')">
-                            <td>{{ getDepartmentLabel(admission.department) }}</td>
-                            <td>{{ admission.bedId }}</td>
-                            <td>{{ formatDate(admission.admittedAt) }}</td>
-                            <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
-                            <td>{{ admission.notes || '-' }}</td>
-                          </tr>
-                          <tr *ngIf="!visibleAdmissions.length">
-                            <td colspan="5" class="text-center text-muted">Nessun ricovero registrato.</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                      <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'admissionsPayments', total: visibleAdmissions.length }"></ng-container>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </ng-container>
           <ng-template #doctorPaymentsHidden>
