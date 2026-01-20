@@ -725,6 +725,10 @@ export class ResourcePageComponent {
     return labels[code] ?? code;
   }
 
+  get confirmedAppointments(): SchedulingAppointment[] {
+    return this.appointments.filter((appointment) => appointment.status === 'CONFIRMED');
+  }
+
   get pendingPayments(): PaymentItem[] {
     const pending = this.payments.filter(
       (payment) => payment.status === 'PENDING' || payment.status === 'IN_ATTESA'
