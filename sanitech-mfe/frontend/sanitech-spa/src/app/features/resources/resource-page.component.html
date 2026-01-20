@@ -398,7 +398,8 @@
                         <th>Tipo</th>
                         <th>Nome</th>
                         <th>Note</th>
-                        <th>Data</th>
+                        <th>Stato</th>
+                        <th>Data e ora</th>
                         <th>Azioni</th>
                       </tr>
                     </thead>
@@ -408,7 +409,12 @@
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
                         <td>{{ doc.notes || '-' }}</td>
-                        <td>{{ formatDate(doc.uploadedAt) }}</td>
+                        <td>
+                          <span class="badge" [class.bg-success]="isDocumentViewed(doc)" [class.bg-secondary]="!isDocumentViewed(doc)">
+                            {{ getDocumentStatusLabel(doc) }}
+                          </span>
+                        </td>
+                        <td>{{ formatDateTime(doc.uploadedAt) }}</td>
                         <td>
                           <button
                             class="btn btn-outline-secondary btn-sm me-2"
@@ -427,7 +433,7 @@
                         </td>
                       </tr>
                       <tr *ngIf="!documents.length">
-                        <td [attr.colspan]="isDoctor ? 6 : 5" class="text-center text-muted">Nessun documento presente.</td>
+                        <td [attr.colspan]="isDoctor ? 7 : 6" class="text-center text-muted">Nessun documento presente.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -440,9 +446,14 @@
               <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
                   <h5 class="fw-semibold mb-0">Consensi informati</h5>
-                  <button class="btn btn-outline-primary btn-sm" type="button" (click)="openConsentModal()">
-                    Registra consenso
-                  </button>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="loadDocs()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="openConsentModal()">
+                      Registra consenso
+                    </button>
+                  </div>
                 </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
@@ -472,6 +483,13 @@
                             aria-label="Elimina consenso"
                             (click)="deleteConsent(consent)">
                             🗑️
+                          </button>
+                          <button
+                            class="btn btn-outline-secondary btn-sm ms-2"
+                            type="button"
+                            aria-label="Modifica consenso"
+                            (click)="editConsent(consent)">
+                            ✏️
                           </button>
                         </td>
                       </tr>
@@ -521,6 +539,7 @@
                       <select class="form-select" name="docType" [(ngModel)]="docForm.type" required>
                         <option value="REFERT">Referto</option>
                         <option value="CERTIFICATE">Certificato</option>
+                        <option value="GENERIC">Documento generico</option>
                       </select>
                     </div>
                     <div class="mb-3">

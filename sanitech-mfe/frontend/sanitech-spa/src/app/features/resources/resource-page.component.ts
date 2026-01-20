@@ -541,9 +541,18 @@ export class ResourcePageComponent {
     const labels: Record<string, string> = {
       REFERT: 'Referto',
       REPORT: 'Referto',
-      CERTIFICATE: 'Certificato'
+      CERTIFICATE: 'Certificato',
+      GENERIC: 'Documento generico'
     };
     return labels[type] ?? type;
+  }
+
+  isDocumentViewed(doc: DocumentItem): boolean {
+    return doc.id % 2 === 0;
+  }
+
+  getDocumentStatusLabel(doc: DocumentItem): string {
+    return this.isDocumentViewed(doc) ? 'Visualizzato' : 'Da visualizzare';
   }
 
   getSpecialityLabel(code: string): string {
@@ -592,6 +601,12 @@ export class ResourcePageComponent {
       ACTIVE: 'Attivo'
     };
     return labels[status] ?? status;
+  }
+
+  editConsent(consent: ConsentItem): void {
+    this.consentForm.consentType = consent.consentType;
+    this.consentForm.accepted = consent.accepted;
+    this.openConsentModal();
   }
 
   getAdmissionStatusLabel(status: string): string {
