@@ -167,6 +167,7 @@ export class ResourcePageComponent {
     department: '',
     reason: ''
   };
+  rescheduleDates: Record<number, string> = {};
   slotForm = {
     date: '',
     time: '',
@@ -812,13 +813,35 @@ export class ResourcePageComponent {
   }
 
   cancelAppointment(appointment: SchedulingAppointment): void {
-    if (appointment.status !== 'PENDING') {
-      return;
-    }
     this.appointments = this.appointments.filter((item) => item.id !== appointment.id);
     this.slots = this.slots.map((slot) =>
       slot.id === appointment.slotId ? { ...slot, status: 'AVAILABLE' } : slot
     );
+  }
+
+  confirmPatientAppointment(appointment: SchedulingAppointment): void {
+    if (appointment.status === 'CONFIRMED') {
+      return;
+    }
+    this.appointments = this.appointments.map((item) =>
+      item.id === appointment.id ? { ...item, status: 'CONFIRMED' } : item
+    );
+  }
+
+  submitReschedule(appointment: SchedulingAppointment): void {
+    const newDate = this.rescheduleDates[appointment.id];
+    if (!newDate) {
+      this.schedulingError = 'Seleziona una nuova data per la riprogrammazione.';
+      return;
+    }
+    this.slots = this.slots.map((slot) =>
+      slot.id === appointment.slotId ? { ...slot, date: newDate } : slot
+    );
+    this.appointments = this.appointments.map((item) =>
+      item.id === appointment.id ? { ...item, status: 'PENDING' } : item
+    );
+    delete this.rescheduleDates[appointment.id];
+    this.schedulingError = '';
   }
 
   loadDocs(): void {

@@ -167,10 +167,19 @@
         </ng-template>
 
         <ng-container *ngIf="isPatient; else doctorScheduling">
-          <div class="col-lg-9">
+          <div class="col-12">
             <div class="card card-glass">
               <div class="card-body">
-                <h5 class="fw-semibold mb-3">Appuntamenti attivi</h5>
+                <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+                  <h5 class="fw-semibold mb-0">Appuntamenti attivi</h5>
+                  <button
+                    class="btn btn-outline-primary btn-sm"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#newBookingModal">
+                    Nuova prenotazione
+                  </button>
+                </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
                     <thead>
@@ -180,81 +189,81 @@
                         <th>Data e ora</th>
                         <th>Motivo</th>
                         <th>Stato</th>
+                        <th>Azioni</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let appointment of appointments | slice:getPageSliceStart('appointments'):getPageSliceEnd('appointments')">
-                        <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
-                        <td>{{ getDoctorLabel(appointment.doctorId) }}</td>
-                        <td>
-                          {{ formatDate(getSlotById(appointment.slotId)?.date || '') }} •
-                          {{ getSlotById(appointment.slotId)?.time || '-' }}
-                        </td>
-                        <td>{{ appointment.reason }}</td>
-                        <td>
-                          <span class="me-2">
-                            {{ appointment.status === 'CONFIRMED' ? '✅' : appointment.status === 'PENDING' ? '⏳' : '⚠️' }}
-                          </span>
-                          <span>{{ getStatusLabel(appointment.status) }}</span>
-                          <button
-                            *ngIf="appointment.status === 'PENDING'"
-                            class="btn btn-outline-danger btn-sm ms-2"
-                            type="button"
-                            aria-label="Annulla appuntamento"
-                            (click)="cancelAppointment(appointment)">
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
+                      <ng-container *ngFor="let appointment of appointments | slice:getPageSliceStart('appointments'):getPageSliceEnd('appointments')">
+                        <tr>
+                          <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
+                          <td>{{ getDoctorLabel(appointment.doctorId) }}</td>
+                          <td>
+                            {{ formatDate(getSlotById(appointment.slotId)?.date || '') }} •
+                            {{ getSlotById(appointment.slotId)?.time || '-' }}
+                          </td>
+                          <td>{{ appointment.reason }}</td>
+                          <td>
+                            <span class="me-2">
+                              {{ appointment.status === 'CONFIRMED' ? '✅' : appointment.status === 'PENDING' ? '⏳' : '⚠️' }}
+                            </span>
+                            <span>{{ getStatusLabel(appointment.status) }}</span>
+                          </td>
+                          <td>
+                            <button
+                              class="btn btn-outline-success btn-sm me-2"
+                              type="button"
+                              aria-label="Conferma appuntamento"
+                              [disabled]="appointment.status === 'CONFIRMED'"
+                              (click)="confirmPatientAppointment(appointment)">
+                              ✅
+                            </button>
+                            <button
+                              class="btn btn-outline-danger btn-sm me-2"
+                              type="button"
+                              aria-label="Elimina appuntamento"
+                              (click)="cancelAppointment(appointment)">
+                              🗑️
+                            </button>
+                            <button
+                              class="btn btn-outline-secondary btn-sm"
+                              type="button"
+                              aria-label="Richiedi riprogrammazione"
+                              data-bs-toggle="collapse"
+                              [attr.data-bs-target]="'#reschedule-' + appointment.id"
+                              aria-expanded="false">
+                              📅
+                            </button>
+                          </td>
+                        </tr>
+                        <tr class="table-light collapse" [id]="'reschedule-' + appointment.id">
+                          <td colspan="6">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                              <label class="form-label mb-0" [for]="'rescheduleDate-' + appointment.id">
+                                Nuova data
+                              </label>
+                              <input
+                                class="form-control form-control-sm w-auto"
+                                type="date"
+                                [id]="'rescheduleDate-' + appointment.id"
+                                [name]="'rescheduleDate-' + appointment.id"
+                                [(ngModel)]="rescheduleDates[appointment.id]" />
+                              <button
+                                class="btn btn-outline-primary btn-sm"
+                                type="button"
+                                (click)="submitReschedule(appointment)">
+                                Invia richiesta
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </ng-container>
                       <tr *ngIf="!appointments.length">
-                        <td colspan="5" class="text-center text-muted">Nessun appuntamento registrato.</td>
+                        <td colspan="6" class="text-center text-muted">Nessun appuntamento registrato.</td>
                       </tr>
                     </tbody>
                   </table>
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'appointments', total: appointments.length }"></ng-container>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-lg-3">
-            <div class="card card-glass">
-              <div class="card-body">
-                <h5 class="fw-semibold mb-3">Nuova prenotazione</h5>
-                <form (ngSubmit)="submitBooking()" #bookingFormRef="ngForm">
-                  <div class="mb-3">
-                    <label class="form-label">Reparto</label>
-                    <select
-                      class="form-select"
-                      name="bookingDepartment"
-                      [(ngModel)]="bookingForm.department"
-                      (ngModelChange)="bookingForm.slotId = null"
-                      required>
-                      <option value="" disabled>Seleziona un reparto</option>
-                      <option *ngFor="let department of departments" [value]="department.code">
-                        {{ department.name }}
-                      </option>
-                    </select>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Slot disponibili</label>
-                    <select class="form-select" name="slotId" [(ngModel)]="bookingForm.slotId" required>
-                      <option [ngValue]="null" disabled>Seleziona uno slot</option>
-                      <option *ngFor="let slot of availableSlots" [ngValue]="slot.id">
-                        {{ getSlotLabel(slot) }}
-                      </option>
-                    </select>
-                    <div class="form-text">La disponibilità selezionata include medico, data e ora.</div>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Motivo prenotazione</label>
-                    <textarea class="form-control" rows="3" name="reason" [(ngModel)]="bookingForm.reason" required></textarea>
-                  </div>
-                  <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>
-                  <button class="btn btn-primary w-100" type="submit" [disabled]="bookingFormRef.invalid || isLoading">
-                    {{ isLoading ? 'Salvataggio...' : 'Prenota appuntamento' }}
-                  </button>
-                </form>
               </div>
             </div>
           </div>
@@ -562,6 +571,56 @@
           </ng-template>
         </ng-container>
       </ng-template>
+
+      <div class="modal fade" id="newBookingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Nuova prenotazione</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body">
+              <form (ngSubmit)="submitBooking()" #bookingFormRef="ngForm">
+                <div class="mb-3">
+                  <label class="form-label">Reparto</label>
+                  <select
+                    class="form-select"
+                    name="bookingDepartment"
+                    [(ngModel)]="bookingForm.department"
+                    (ngModelChange)="bookingForm.slotId = null"
+                    required>
+                    <option value="" disabled>Seleziona un reparto</option>
+                    <option *ngFor="let department of departments" [value]="department.code">
+                      {{ department.name }}
+                    </option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Slot disponibili</label>
+                  <select class="form-select" name="slotId" [(ngModel)]="bookingForm.slotId" required>
+                    <option [ngValue]="null" disabled>Seleziona uno slot</option>
+                    <option *ngFor="let slot of availableSlots" [ngValue]="slot.id">
+                      {{ getSlotLabel(slot) }}
+                    </option>
+                  </select>
+                  <div class="form-text">La disponibilità selezionata include medico, data e ora.</div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Motivo prenotazione</label>
+                  <textarea class="form-control" rows="3" name="reason" [(ngModel)]="bookingForm.reason" required></textarea>
+                </div>
+                <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>
+                <div class="d-flex justify-content-end gap-2">
+                  <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Annulla</button>
+                  <button class="btn btn-primary" type="submit" [disabled]="bookingFormRef.invalid || isLoading">
+                    {{ isLoading ? 'Salvataggio...' : 'Prenota appuntamento' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <ng-template #admissionsLayout>
         <ng-container *ngIf="mode === 'admissions'; else notificationsLayout">
