@@ -47,25 +47,25 @@
           <table class="table align-middle">
             <thead>
               <tr>
-                <th *ngIf="!isDoctor">Medico</th>
-                <th *ngIf="!isDoctor">Specializzazione</th>
-                <th>Data</th>
-                <th>Ora</th>
+                <th>Reparto</th>
+                <th>Medico</th>
+                <th>Specializzazione</th>
+                <th>Data e ora</th>
                 <th>Modalità</th>
                 <th>Note</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let slot of visibleSlots | slice:getPageSliceStart('slots'):getPageSliceEnd('slots')">
-                <td *ngIf="!isDoctor">{{ getDoctorLabel(slot.doctorId) }}</td>
-                <td *ngIf="!isDoctor">{{ getSpecialityLabel(getDoctorById(slot.doctorId)?.speciality || '-') }}</td>
-                <td>{{ formatDate(slot.date) }}</td>
-                <td>{{ slot.time }}</td>
+                <td>{{ getDepartmentLabel(getDoctorById(slot.doctorId)?.speciality || '-') }}</td>
+                <td>{{ getDoctorLabel(slot.doctorId) }}</td>
+                <td>{{ getSpecialityLabel(getDoctorById(slot.doctorId)?.speciality || '-') }}</td>
+                <td>{{ formatDate(slot.date) }} • {{ slot.time }}</td>
                 <td>{{ getModalityLabel(slot.modality) }}</td>
                 <td>{{ slot.notes || '-' }}</td>
               </tr>
               <tr *ngIf="!visibleSlots.length">
-                <td [attr.colspan]="isDoctor ? 4 : 6" class="text-center text-muted">Nessuno slot disponibile.</td>
+                <td colspan="6" class="text-center text-muted">Nessuna disponibilità attiva.</td>
               </tr>
             </tbody>
           </table>
@@ -80,18 +80,18 @@
               <div class="accordion-item card-glass border-0">
                 <h2 class="accordion-header">
                   <button
-                    class="accordion-button"
+                    class="accordion-button collapsed"
                     type="button"
                     data-bs-toggle="collapse"
                     data-bs-target="#availableSlotsCollapse"
-                    aria-expanded="true"
+                    aria-expanded="false"
                     aria-controls="availableSlotsCollapse">
-                    Consulta gli slot disponibili
+                    Consulta le disponibilità attualmente offerte dalla struttura
                   </button>
                 </h2>
                 <div
                   id="availableSlotsCollapse"
-                  class="accordion-collapse collapse show"
+                  class="accordion-collapse collapse"
                   data-bs-parent="#availableSlotsAccordion">
                   <div class="accordion-body">
                     <ng-container *ngTemplateOutlet="slotsTable"></ng-container>
@@ -100,6 +100,66 @@
               </div>
             </div>
           </div>
+          <ng-container *ngIf="showBookingModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeBookingModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="newBookingModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="newBookingModalTitle">Nuova prenotazione</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeBookingModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form (ngSubmit)="submitBooking()" #bookingFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Reparto</label>
+                        <select
+                          class="form-select"
+                          name="bookingDepartment"
+                          [(ngModel)]="bookingForm.department"
+                          (ngModelChange)="bookingForm.slotId = null"
+                          required>
+                          <option value="" disabled>Seleziona un reparto</option>
+                          <option *ngFor="let department of departments" [value]="department.code">
+                            {{ department.name }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Slot disponibili</label>
+                        <select class="form-select" name="slotId" [(ngModel)]="bookingForm.slotId" required>
+                          <option [ngValue]="null" disabled>Seleziona uno slot</option>
+                          <option *ngFor="let slot of availableSlots" [ngValue]="slot.id">
+                            {{ getSlotLabel(slot) }}
+                          </option>
+                        </select>
+                        <div class="form-text">La disponibilità selezionata include medico, data e ora.</div>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Motivo prenotazione</label>
+                        <textarea class="form-control" rows="3" name="reason" [(ngModel)]="bookingForm.reason" required></textarea>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeBookingModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="bookingFormRef.invalid || isLoading">
+                          {{ isLoading ? 'Salvataggio...' : 'Prenota appuntamento' }}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </ng-container>
 
         <ng-template #doctorAgenda>
@@ -167,88 +227,99 @@
         </ng-template>
 
         <ng-container *ngIf="isPatient; else doctorScheduling">
-          <div class="col-lg-8">
+          <div class="col-12">
             <div class="card card-glass">
               <div class="card-body">
-                <h5 class="fw-semibold mb-3">Appuntamenti attivi</h5>
+                <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+                  <h5 class="fw-semibold mb-0">Appuntamenti attivi</h5>
+                  <button
+                    class="btn btn-outline-primary btn-sm"
+                    type="button"
+                    (click)="openBookingModal()">
+                    Nuova prenotazione
+                  </button>
+                </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
                     <thead>
                       <tr>
-                        <th>Medico</th>
-                        <th>Data</th>
-                        <th>Ora</th>
+                        <th>Reparto</th>
+                        <th>Nome del medico</th>
+                        <th>Data e ora</th>
                         <th>Motivo</th>
                         <th>Stato</th>
+                        <th>Azioni</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let appointment of appointments | slice:getPageSliceStart('appointments'):getPageSliceEnd('appointments')">
-                        <td>{{ getDoctorLabel(appointment.doctorId) }}</td>
-                        <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
-                        <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
-                        <td>{{ appointment.reason }}</td>
-                        <td>
-                          <span>{{ getStatusLabel(appointment.status) }}</span>
-                          <button
-                            *ngIf="appointment.status === 'PENDING'"
-                            class="btn btn-outline-danger btn-sm ms-2"
-                            type="button"
-                            aria-label="Annulla appuntamento"
-                            (click)="cancelAppointment(appointment)">
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
+                      <ng-container *ngFor="let appointment of appointments | slice:getPageSliceStart('appointments'):getPageSliceEnd('appointments')">
+                        <tr>
+                          <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
+                          <td>{{ getDoctorLabel(appointment.doctorId) }}</td>
+                          <td>
+                            {{ formatDate(getSlotById(appointment.slotId)?.date || '') }} •
+                            {{ getSlotById(appointment.slotId)?.time || '-' }}
+                          </td>
+                          <td>{{ appointment.reason }}</td>
+                          <td>
+                            <span>{{ getStatusLabel(appointment.status) }}</span>
+                          </td>
+                          <td>
+                            <button
+                              class="btn btn-outline-success btn-sm me-2"
+                              type="button"
+                              aria-label="Conferma appuntamento"
+                              [disabled]="appointment.status === 'CONFIRMED'"
+                              (click)="confirmPatientAppointment(appointment)">
+                              ✅
+                            </button>
+                            <button
+                              class="btn btn-outline-danger btn-sm me-2"
+                              type="button"
+                              aria-label="Elimina appuntamento"
+                              (click)="cancelAppointment(appointment)">
+                              🗑️
+                            </button>
+                            <button
+                              class="btn btn-outline-secondary btn-sm"
+                              type="button"
+                              aria-label="Richiedi riprogrammazione"
+                              data-bs-toggle="collapse"
+                              [attr.data-bs-target]="'#reschedule-' + appointment.id"
+                              aria-expanded="false">
+                              📅
+                            </button>
+                          </td>
+                        </tr>
+                        <tr class="table-light collapse" [id]="'reschedule-' + appointment.id">
+                          <td colspan="6">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                              <label class="form-label mb-0" [for]="'rescheduleDate-' + appointment.id">
+                                Nuova data
+                              </label>
+                              <input
+                                class="form-control form-control-sm w-auto"
+                                type="date"
+                                [id]="'rescheduleDate-' + appointment.id"
+                                [name]="'rescheduleDate-' + appointment.id"
+                                [(ngModel)]="rescheduleDates[appointment.id]" />
+                              <button
+                                class="btn btn-outline-primary btn-sm"
+                                type="button"
+                                (click)="submitReschedule(appointment)">
+                                Invia richiesta
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </ng-container>
                       <tr *ngIf="!appointments.length">
-                        <td colspan="5" class="text-center text-muted">Nessun appuntamento registrato.</td>
+                        <td colspan="6" class="text-center text-muted">Nessun appuntamento registrato.</td>
                       </tr>
                     </tbody>
                   </table>
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'appointments', total: appointments.length }"></ng-container>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-lg-4">
-            <div class="card card-glass">
-              <div class="card-body">
-                <h5 class="fw-semibold mb-3">Nuova prenotazione</h5>
-                <form (ngSubmit)="submitBooking()" #bookingFormRef="ngForm">
-                  <div class="mb-3">
-                    <label class="form-label">Specializzazione</label>
-                    <select
-                      class="form-select"
-                      name="bookingSpeciality"
-                      [(ngModel)]="bookingForm.speciality"
-                      (ngModelChange)="bookingForm.slotId = null"
-                      required>
-                      <option value="" disabled>Seleziona una specializzazione</option>
-                      <option *ngFor="let speciality of specialities" [value]="speciality.code">
-                        {{ speciality.name }}
-                      </option>
-                    </select>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Slot disponibile</label>
-                    <select class="form-select" name="slotId" [(ngModel)]="bookingForm.slotId" required>
-                      <option [ngValue]="null" disabled>Seleziona uno slot</option>
-                      <option *ngFor="let slot of availableSlots" [ngValue]="slot.id">
-                        {{ getSlotLabel(slot) }}
-                      </option>
-                    </select>
-                    <div class="form-text">Lo slot selezionato include medico, data e ora.</div>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Motivo visita</label>
-                    <textarea class="form-control" rows="3" name="reason" [(ngModel)]="bookingForm.reason" required></textarea>
-                  </div>
-                  <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>
-                  <button class="btn btn-primary w-100" type="submit" [disabled]="bookingFormRef.invalid || isLoading">
-                    {{ isLoading ? 'Salvataggio...' : 'Prenota appuntamento' }}
-                  </button>
-                </form>
               </div>
             </div>
           </div>
@@ -474,11 +545,11 @@
         <ng-container *ngIf="mode === 'payments'; else admissionsLayout">
           <ng-container *ngIf="!isDoctor; else doctorPaymentsHidden">
             <div class="row g-4">
-              <div class="col-lg-8">
+              <div class="col-12">
                 <div class="card card-glass">
                   <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                      <h5 class="fw-semibold mb-0">Ricoveri</h5>
+                      <h5 class="fw-semibold mb-0">Pagamenti</h5>
                       <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
                         Aggiorna
                       </button>
@@ -487,11 +558,11 @@
                       <table class="table align-middle">
                         <thead>
                           <tr>
-                            <th>ID</th>
                             <th *ngIf="!isPatient">Paziente</th>
                             <th>Prestazione</th>
                             <th>Importo</th>
                             <th>Valuta</th>
+                            <th>Ricevuta</th>
                             <th>Stato</th>
                             <th>Data</th>
                             <th>Azioni</th>
@@ -499,28 +570,37 @@
                         </thead>
                         <tbody>
                           <tr *ngFor="let payment of payments | slice:getPageSliceStart('payments'):getPageSliceEnd('payments')">
-                            <td>{{ payment.id }}</td>
                             <td *ngIf="!isPatient">{{ getPatientLabel(payment.patientId) }}</td>
                             <td>{{ payment.service }}</td>
                             <td>{{ payment.amount }}</td>
                             <td>{{ getCurrencyLabel(payment.currency) }}</td>
+                            <td>{{ payment.receiptName ? 'Caricata' : '-' }}</td>
                             <td>{{ getPaymentStatusLabel(payment.status) }}</td>
                             <td>{{ formatDate(payment.paidAt) }}</td>
                             <td>
                               <button
-                                class="btn btn-outline-secondary btn-sm me-2"
+                                class="btn btn-outline-primary btn-sm me-2"
                                 type="button"
-                                aria-label="Visualizza ricevuta"
-                                [disabled]="!payment.receiptName"
-                                (click)="viewPaymentReceipt(payment)">
-                                👁️
+                                aria-label="Registra pagamento"
+                                [disabled]="payment.status !== 'PENDING' && payment.status !== 'IN_ATTESA'"
+                                (click)="markPaymentAsPaid(payment)">
+                                💳
                               </button>
                               <button
-                                class="btn btn-outline-danger btn-sm"
+                                class="btn btn-outline-secondary btn-sm me-2"
                                 type="button"
-                                aria-label="Elimina pagamento"
-                                (click)="deletePayment(payment)">
-                                🗑️
+                                aria-label="Allega ricevuta"
+                                [disabled]="payment.status !== 'PAID' || payment.receiptName"
+                                (click)="attachPaymentReceipt(payment)">
+                                📎
+                              </button>
+                              <button
+                                class="btn btn-outline-success btn-sm"
+                                type="button"
+                                aria-label="Conferma pagamento ricevuto"
+                                [disabled]="payment.status !== 'RECEIPT_UPLOADED'"
+                                (click)="confirmPayment(payment)">
+                                ✅
                               </button>
                             </td>
                           </tr>
@@ -531,49 +611,6 @@
                       </table>
                       <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'payments', total: payments.length }"></ng-container>
                     </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-4">
-                <div class="card card-glass">
-                  <div class="card-body">
-                    <h5 class="fw-semibold mb-3">Registra pagamento</h5>
-                    <form (ngSubmit)="submitPayment()" #paymentFormRef="ngForm">
-                      <div class="mb-3">
-                        <label class="form-label">Pagamento in attesa</label>
-                        <select
-                          class="form-select"
-                          name="paymentPendingId"
-                          [(ngModel)]="paymentForm.paymentId"
-                          (ngModelChange)="handlePaymentSelectionChange($event)"
-                          required>
-                          <option [ngValue]="null" disabled>Seleziona un pagamento in attesa</option>
-                          <option *ngFor="let payment of pendingPayments" [ngValue]="payment.id">
-                            #{{ payment.id }} • {{ payment.service }} • {{ payment.amount }} {{ getCurrencyLabel(payment.currency) }}
-                          </option>
-                        </select>
-                        <div class="form-text" *ngIf="!pendingPayments.length">Nessun pagamento in attesa disponibile.</div>
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Importo</label>
-                        <input
-                          class="form-control"
-                          type="number"
-                          name="paymentAmount"
-                          [(ngModel)]="paymentForm.amount"
-                          min="0"
-                          required />
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Ricevuta pagamento</label>
-                        <input class="form-control" type="file" name="paymentReceipt" (change)="handlePaymentReceiptSelected($event)" />
-                        <div class="form-text" *ngIf="paymentForm.receiptName">Selezionato: {{ paymentForm.receiptName }}</div>
-                      </div>
-                      <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
-                      <button class="btn btn-primary w-100" type="submit" [disabled]="paymentFormRef.invalid || isLoading || !pendingPayments.length">
-                        {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
-                      </button>
-                    </form>
                   </div>
                 </div>
               </div>
@@ -610,10 +647,10 @@
                           <th *ngIf="!isPatient">Paziente</th>
                           <th>Reparto</th>
                           <th>Letto</th>
+                          <th>Data ricovero</th>
                           <th>Stato</th>
-                          <th>Note</th>
-                          <th>Data</th>
-                          <th *ngIf="isPatient">Azione</th>
+                          <th>Motivo</th>
+                          <th>Azioni</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -621,21 +658,30 @@
                           <td *ngIf="!isPatient">{{ getPatientLabel(admission.patientId) }}</td>
                           <td>{{ getDepartmentLabel(admission.department) }}</td>
                           <td>{{ admission.bedId }}</td>
+                          <td>{{ formatDate(admission.admittedAt) }}</td>
                           <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
                           <td>{{ admission.notes || '-' }}</td>
-                          <td>{{ formatDate(admission.admittedAt) }}</td>
-                          <td *ngIf="isPatient">
+                          <td>
                             <button
-                              class="btn btn-outline-primary btn-sm"
+                              class="btn btn-outline-success btn-sm me-2"
                               type="button"
+                              aria-label="Conferma ricovero"
                               (click)="confirmAdmission(admission)"
-                              [disabled]="admission.status === 'CONFIRMED'">
-                              {{ admission.status === 'CONFIRMED' ? 'Confermato' : 'Conferma ricovero' }}
+                              [disabled]="admission.status === 'CONFIRMED' || admission.status === 'REJECTED'">
+                              ✅
+                            </button>
+                            <button
+                              class="btn btn-outline-danger btn-sm"
+                              type="button"
+                              aria-label="Rifiuta ricovero"
+                              (click)="rejectAdmission(admission)"
+                              [disabled]="admission.status === 'CONFIRMED' || admission.status === 'REJECTED'">
+                              ❌
                             </button>
                           </td>
                         </tr>
                         <tr *ngIf="!visibleAdmissions.length">
-                          <td [attr.colspan]="isPatient ? 6 : 6" class="text-center text-muted">Nessun ricovero registrato.</td>
+                          <td [attr.colspan]="isPatient ? 6 : 7" class="text-center text-muted">Nessun ricovero registrato.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -685,7 +731,17 @@
                         <div class="card-body d-flex flex-column h-100">
                           <h5 class="fw-semibold mb-3">Preferenze di notifica</h5>
                           <div class="mb-3">
-                            <label class="form-label">Canali preferiti</label>
+                            <div class="d-flex align-items-center justify-content-between">
+                              <label class="form-label mb-0">Canali preferiti</label>
+                              <div class="btn-group btn-group-sm" role="group" aria-label="Seleziona canali">
+                                <button class="btn btn-outline-secondary" type="button" (click)="setAllNotificationChannels(true)">
+                                  Seleziona tutti
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" (click)="setAllNotificationChannels(false)">
+                                  Deseleziona
+                                </button>
+                              </div>
+                            </div>
                             <div class="form-check">
                               <input class="form-check-input" type="checkbox" id="prefChannelEmail" name="prefChannelEmail" [(ngModel)]="notificationPrefs.channels.email" />
                               <label class="form-check-label" for="prefChannelEmail">Email</label>
@@ -700,7 +756,17 @@
                             </div>
                           </div>
                           <div class="mb-3">
-                            <label class="form-label">Tipologie di notifica</label>
+                            <div class="d-flex align-items-center justify-content-between">
+                              <label class="form-label mb-0">Tipologie di notifica</label>
+                              <div class="btn-group btn-group-sm" role="group" aria-label="Seleziona tipologie">
+                                <button class="btn btn-outline-secondary" type="button" (click)="setAllNotificationTypes(true)">
+                                  Seleziona tutti
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" (click)="setAllNotificationTypes(false)">
+                                  Deseleziona
+                                </button>
+                              </div>
+                            </div>
                             <div class="form-check">
                               <input class="form-check-input" type="checkbox" id="prefTypeAppointments" name="prefTypeAppointments" [(ngModel)]="notificationPrefs.types.appointments" />
                               <label class="form-check-label" for="prefTypeAppointments">Appuntamenti</label>
@@ -711,7 +777,11 @@
                             </div>
                             <div class="form-check">
                               <input class="form-check-input" type="checkbox" id="prefTypePayments" name="prefTypePayments" [(ngModel)]="notificationPrefs.types.payments" />
-                              <label class="form-check-label" for="prefTypePayments">Pagamenti e ricoveri</label>
+                              <label class="form-check-label" for="prefTypePayments">Pagamenti</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" id="prefTypeAdmissions" name="prefTypeAdmissions" [(ngModel)]="notificationPrefs.types.admissions" />
+                              <label class="form-check-label" for="prefTypeAdmissions">Ricoveri</label>
                             </div>
                             <div class="form-check">
                               <input class="form-check-input" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPrefs.types.prescriptions" />
