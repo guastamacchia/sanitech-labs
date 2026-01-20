@@ -164,9 +164,10 @@ export class ResourcePageComponent {
   schedulingError = '';
   bookingForm = {
     slotId: null as number | null,
-    speciality: '',
+    department: '',
     reason: ''
   };
+  rescheduleDates: Record<number, string> = {};
   slotForm = {
     date: '',
     time: '',
@@ -223,6 +224,7 @@ export class ResourcePageComponent {
       appointments: true,
       documents: true,
       payments: false,
+      admissions: false,
       prescriptions: false
     }
   };
@@ -419,6 +421,14 @@ export class ResourcePageComponent {
         this.schedulingError = 'Impossibile caricare le specializzazioni.';
       }
     });
+    this.api.request<DepartmentItem[]>('GET', '/api/departments').subscribe({
+      next: (departments) => {
+        this.departments = departments;
+      },
+      error: () => {
+        this.schedulingError = 'Impossibile caricare i reparti.';
+      }
+    });
   }
 
   loadDoctors(): void {
@@ -433,8 +443,8 @@ export class ResourcePageComponent {
   }
 
   submitBooking(): void {
-    if (this.isPatient && !this.bookingForm.speciality) {
-      this.schedulingError = 'Seleziona una specializzazione.';
+    if (this.isPatient && !this.bookingForm.department) {
+      this.schedulingError = 'Seleziona un reparto.';
       return;
     }
     if (!this.bookingForm.slotId) {
@@ -442,7 +452,7 @@ export class ResourcePageComponent {
       return;
     }
     if (!this.bookingForm.reason.trim()) {
-      this.schedulingError = 'Inserisci il motivo della visita.';
+      this.schedulingError = 'Inserisci il motivo della prenotazione.';
       return;
     }
     const slot = this.slots.find((item) => item.id === this.bookingForm.slotId);
@@ -582,6 +592,7 @@ export class ResourcePageComponent {
     const labels: Record<string, string> = {
       ACTIVE: 'Attivo',
       CONFIRMED: 'Confermato',
+      REJECTED: 'Rifiutato',
       DISCHARGED: 'Dimesso'
     };
     return labels[status] ?? status;
@@ -589,9 +600,11 @@ export class ResourcePageComponent {
 
   getPaymentStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      PAID: 'Pagato',
-      PENDING: 'In attesa',
-      IN_ATTESA: 'In attesa',
+      PENDING: 'Da pagare',
+      PAID: 'Pagamento effettuato',
+      RECEIPT_UPLOADED: 'Ricevuta allegata',
+      CONFIRMED: 'Pagato',
+      IN_ATTESA: 'Da pagare',
       FAILED: 'Non riuscito'
     };
     return labels[status] ?? status;
@@ -637,13 +650,13 @@ export class ResourcePageComponent {
 
   get availableSlots(): SchedulingSlot[] {
     if (this.isPatient) {
-      if (!this.bookingForm.speciality) {
+      if (!this.bookingForm.department) {
         return [];
       }
       return this.slots.filter(
         (slot) =>
           slot.status === 'AVAILABLE' &&
-          this.getDoctorById(slot.doctorId)?.speciality === this.bookingForm.speciality
+          this.getDoctorById(slot.doctorId)?.speciality === this.bookingForm.department
       );
     }
     return this.slots.filter((slot) => slot.status === 'AVAILABLE');
@@ -800,13 +813,35 @@ export class ResourcePageComponent {
   }
 
   cancelAppointment(appointment: SchedulingAppointment): void {
-    if (appointment.status !== 'PENDING') {
-      return;
-    }
     this.appointments = this.appointments.filter((item) => item.id !== appointment.id);
     this.slots = this.slots.map((slot) =>
       slot.id === appointment.slotId ? { ...slot, status: 'AVAILABLE' } : slot
     );
+  }
+
+  confirmPatientAppointment(appointment: SchedulingAppointment): void {
+    if (appointment.status === 'CONFIRMED') {
+      return;
+    }
+    this.appointments = this.appointments.map((item) =>
+      item.id === appointment.id ? { ...item, status: 'CONFIRMED' } : item
+    );
+  }
+
+  submitReschedule(appointment: SchedulingAppointment): void {
+    const newDate = this.rescheduleDates[appointment.id];
+    if (!newDate) {
+      this.schedulingError = 'Seleziona una nuova data per la riprogrammazione.';
+      return;
+    }
+    this.slots = this.slots.map((slot) =>
+      slot.id === appointment.slotId ? { ...slot, date: newDate } : slot
+    );
+    this.appointments = this.appointments.map((item) =>
+      item.id === appointment.id ? { ...item, status: 'PENDING' } : item
+    );
+    delete this.rescheduleDates[appointment.id];
+    this.schedulingError = '';
   }
 
   loadDocs(): void {
@@ -1060,6 +1095,58 @@ export class ResourcePageComponent {
     this.admissions = this.admissions.map((item) =>
       item.id === admission.id ? { ...item, status: 'CONFIRMED' } : item
     );
+  }
+
+  rejectAdmission(admission: AdmissionItem): void {
+    if (admission.status === 'CONFIRMED' || admission.status === 'REJECTED') {
+      return;
+    }
+    this.admissions = this.admissions.map((item) =>
+      item.id === admission.id ? { ...item, status: 'REJECTED' } : item
+    );
+  }
+
+  markPaymentAsPaid(payment: PaymentItem): void {
+    if (payment.status === 'PAID' || payment.status === 'CONFIRMED') {
+      return;
+    }
+    this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'PAID' } : item));
+  }
+
+  attachPaymentReceipt(payment: PaymentItem): void {
+    if (payment.receiptName || payment.status !== 'PAID') {
+      return;
+    }
+    this.payments = this.payments.map((item) =>
+      item.id === payment.id
+        ? { ...item, receiptName: 'ricevuta-caricata.pdf', status: item.status === 'PAID' ? 'RECEIPT_UPLOADED' : item.status }
+        : item
+    );
+  }
+
+  confirmPayment(payment: PaymentItem): void {
+    if (payment.status !== 'RECEIPT_UPLOADED') {
+      return;
+    }
+    this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'CONFIRMED' } : item));
+  }
+
+  setAllNotificationChannels(checked: boolean): void {
+    this.notificationPrefs.channels = {
+      email: checked,
+      sms: checked,
+      app: checked
+    };
+  }
+
+  setAllNotificationTypes(checked: boolean): void {
+    this.notificationPrefs.types = {
+      appointments: checked,
+      documents: checked,
+      payments: checked,
+      admissions: checked,
+      prescriptions: checked
+    };
   }
 
   loadPrescriptions(): void {
