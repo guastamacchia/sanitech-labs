@@ -231,6 +231,8 @@ export class ResourcePageComponent {
   };
   prescriptions: PrescriptionItem[] = [];
   prescribingError = '';
+  prescriptionQuestions: Record<number, string> = {};
+  showPrescriptionQuestion: Record<number, boolean> = {};
   prescriptionForm = {
     patientId: 1,
     drug: '',
@@ -1204,6 +1206,28 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  confirmPrescription(prescription: PrescriptionItem): void {
+    this.prescribingError = '';
+    this.prescriptions = this.prescriptions.map((item) =>
+      item.id === prescription.id ? { ...item, status: 'CONFIRMED' } : item
+    );
+  }
+
+  togglePrescriptionQuestion(prescriptionId: number): void {
+    this.showPrescriptionQuestion[prescriptionId] = !this.showPrescriptionQuestion[prescriptionId];
+  }
+
+  submitPrescriptionQuestion(prescription: PrescriptionItem): void {
+    const question = (this.prescriptionQuestions[prescription.id] || '').trim();
+    if (!question) {
+      this.prescribingError = 'Inserisci una domanda per il medico.';
+      return;
+    }
+    this.prescribingError = '';
+    this.prescriptionQuestions[prescription.id] = '';
+    this.showPrescriptionQuestion[prescription.id] = false;
   }
 
   viewDocument(doc: DocumentItem): void {

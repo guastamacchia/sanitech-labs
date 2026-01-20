@@ -1005,18 +1005,58 @@
                           <th>Posologia</th>
                           <th>Durata</th>
                           <th>Note</th>
+                          <th>Azioni</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let prescription of visiblePrescriptions | slice:getPageSliceStart('prescriptions'):getPageSliceEnd('prescriptions')">
-                          <td>{{ getDoctorLabel(prescription.doctorId) }}</td>
-                          <td>{{ prescription.drug }}</td>
-                          <td>{{ prescription.dosage }}</td>
-                          <td>{{ prescription.durationDays }} giorni</td>
-                          <td>{{ prescription.notes || '-' }}</td>
-                        </tr>
+                        <ng-container *ngFor="let prescription of visiblePrescriptions | slice:getPageSliceStart('prescriptions'):getPageSliceEnd('prescriptions')">
+                          <tr>
+                            <td>{{ getDoctorLabel(prescription.doctorId) }}</td>
+                            <td>{{ prescription.drug }}</td>
+                            <td>{{ prescription.dosage }}</td>
+                            <td>{{ prescription.durationDays }} giorni</td>
+                            <td>{{ prescription.notes || '-' }}</td>
+                            <td>
+                              <button
+                                class="btn btn-outline-success btn-sm me-2"
+                                type="button"
+                                aria-label="Conferma presa visione"
+                                (click)="confirmPrescription(prescription)">
+                                ✅
+                              </button>
+                              <button
+                                class="btn btn-outline-secondary btn-sm"
+                                type="button"
+                                aria-label="Chiedi spiegazioni"
+                                (click)="togglePrescriptionQuestion(prescription.id)">
+                                ❓
+                              </button>
+                            </td>
+                          </tr>
+                          <tr class="table-light" *ngIf="showPrescriptionQuestion[prescription.id]">
+                            <td colspan="6">
+                              <div class="d-flex flex-wrap align-items-center gap-2">
+                                <label class="form-label mb-0" [for]="'prescriptionQuestion-' + prescription.id">
+                                  Domanda al medico
+                                </label>
+                                <input
+                                  class="form-control form-control-sm flex-grow-1"
+                                  type="text"
+                                  [id]="'prescriptionQuestion-' + prescription.id"
+                                  [name]="'prescriptionQuestion-' + prescription.id"
+                                  [(ngModel)]="prescriptionQuestions[prescription.id]" />
+                                <button
+                                  class="btn btn-outline-primary btn-sm"
+                                  type="button"
+                                  (click)="submitPrescriptionQuestion(prescription)">
+                                  Invia
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        </ng-container>
                         <tr *ngIf="!visiblePrescriptions.length">
-                          <td colspan="5" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
+                          <td colspan="6" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
                         </tr>
                       </tbody>
                     </table>
