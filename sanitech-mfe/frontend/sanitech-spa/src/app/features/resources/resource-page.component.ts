@@ -144,7 +144,7 @@ export class ResourcePageComponent {
   payload = '';
   responseBody = '';
   isLoading = false;
-  pageSize = 10;
+  pageSize = 5;
   pageSizeOptions = [5, 10, 20, 50];
   private pageState: Record<string, number> = {};
   mode:
@@ -169,6 +169,8 @@ export class ResourcePageComponent {
   };
   rescheduleDates: Record<number, string> = {};
   showBookingModal = false;
+  showDocumentModal = false;
+  showConsentModal = false;
   slotForm = {
     date: '',
     time: '',
@@ -189,6 +191,7 @@ export class ResourcePageComponent {
     consentType: 'GDPR',
     accepted: true
   };
+  editingConsentId: number | null = null;
   payments: PaymentItem[] = [];
   admissions: AdmissionItem[] = [];
   paymentsError = '';
@@ -213,6 +216,8 @@ export class ResourcePageComponent {
     message: '',
     notes: ''
   };
+  showNotificationContactsModal = false;
+  showNotificationPreferencesModal = false;
   notificationPrefs = {
     email: 'anna.conti@sanitech.example',
     phone: '+39 347 123 4567',
@@ -539,9 +544,18 @@ export class ResourcePageComponent {
     const labels: Record<string, string> = {
       REFERT: 'Referto',
       REPORT: 'Referto',
-      CERTIFICATE: 'Certificato'
+      CERTIFICATE: 'Certificato',
+      GENERIC: 'Documento generico'
     };
     return labels[type] ?? type;
+  }
+
+  isDocumentViewed(doc: DocumentItem): boolean {
+    return doc.id % 2 === 0;
+  }
+
+  getDocumentStatusLabel(doc: DocumentItem): string {
+    return this.isDocumentViewed(doc) ? 'Visualizzato' : 'Da visualizzare';
   }
 
   getSpecialityLabel(code: string): string {
@@ -592,6 +606,12 @@ export class ResourcePageComponent {
     return labels[status] ?? status;
   }
 
+  editConsent(consent: ConsentItem): void {
+    this.consentForm.consentType = consent.consentType;
+    this.consentForm.accepted = consent.accepted;
+    this.openConsentModal(consent.id);
+  }
+
   getAdmissionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       ACTIVE: 'Attivo',
@@ -604,14 +624,39 @@ export class ResourcePageComponent {
 
   getPaymentStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      PENDING: 'Da pagare',
-      PAID: 'Pagamento effettuato',
-      RECEIPT_UPLOADED: 'Ricevuta allegata',
-      CONFIRMED: 'Pagato',
-      IN_ATTESA: 'Da pagare',
+      PENDING: 'Pagamento in attesa',
+      IN_ATTESA: 'Pagamento in attesa',
+      PAID: 'Carica allegato',
+      RECEIPT_UPLOADED: 'In attesa di conferma',
+      CONFIRMED: 'Pagamento confermato',
       FAILED: 'Non riuscito'
     };
     return labels[status] ?? status;
+  }
+
+  get latestConfirmedAdmission(): AdmissionItem | null {
+    const admissions = this.visibleAdmissions.filter((admission) => admission.status === 'CONFIRMED');
+    if (!admissions.length) {
+      return null;
+    }
+    return admissions.reduce((latest, admission) =>
+      new Date(admission.admittedAt).getTime() > new Date(latest.admittedAt).getTime() ? admission : latest
+    );
+  }
+
+  getAdmissionPaymentLabel(admission: AdmissionItem): string {
+    const startDate = this.formatDate(admission.admittedAt);
+    const endDate = this.formatDate(this.addDays(admission.admittedAt, 3));
+    return `Ricovero confermato in ${this.getDepartmentLabel(admission.department)} dal ${startDate} al ${endDate}`;
+  }
+
+  addDays(dateValue: string, days: number): string {
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return dateValue;
+    }
+    parsed.setDate(parsed.getDate() + days);
+    return parsed.toISOString();
   }
 
   getConsentTypeLabel(consentType: string): string {
@@ -856,6 +901,26 @@ export class ResourcePageComponent {
     this.showBookingModal = false;
   }
 
+  openDocumentModal(): void {
+    this.docsError = '';
+    this.showDocumentModal = true;
+  }
+
+  closeDocumentModal(): void {
+    this.showDocumentModal = false;
+  }
+
+  openConsentModal(editingId: number | null = null): void {
+    this.docsError = '';
+    this.editingConsentId = editingId;
+    this.showConsentModal = true;
+  }
+
+  closeConsentModal(): void {
+    this.showConsentModal = false;
+    this.editingConsentId = null;
+  }
+
   loadDocs(): void {
     this.isLoading = true;
     this.docsError = '';
@@ -903,6 +968,7 @@ export class ResourcePageComponent {
         this.docForm.name = '';
         this.docForm.fileName = '';
         this.docForm.notes = '';
+        this.closeDocumentModal();
         this.isLoading = false;
       },
       error: () => {
@@ -915,14 +981,23 @@ export class ResourcePageComponent {
   submitConsent(): void {
     this.isLoading = true;
     this.docsError = '';
-    this.api.request<ConsentItem>('POST', '/api/consents', {
+    const payload: Record<string, unknown> = {
       consentType: this.consentForm.consentType,
       accepted: this.consentForm.accepted
-    }).subscribe({
+    };
+    if (this.editingConsentId) {
+      payload['id'] = this.editingConsentId;
+    }
+    this.api.request<ConsentItem>('POST', '/api/consents', payload).subscribe({
       next: (consent) => {
-        if (!this.consents.some((item) => item.id === consent.id)) {
+        if (this.editingConsentId) {
+          this.consents = this.consents.map((item) =>
+            item.id === this.editingConsentId ? { ...item, ...consent } : item
+          );
+        } else if (!this.consents.some((item) => item.id === consent.id)) {
           this.consents = [...this.consents, consent];
         }
+        this.closeConsentModal();
         this.isLoading = false;
       },
       error: () => {
@@ -1098,6 +1173,28 @@ export class ResourcePageComponent {
       return;
     }
     this.notificationsSuccess = 'Preferenze notifiche aggiornate.';
+    this.closeNotificationContactsModal();
+    this.closeNotificationPreferencesModal();
+  }
+
+  openNotificationContactsModal(): void {
+    this.notificationsError = '';
+    this.notificationsSuccess = '';
+    this.showNotificationContactsModal = true;
+  }
+
+  closeNotificationContactsModal(): void {
+    this.showNotificationContactsModal = false;
+  }
+
+  openNotificationPreferencesModal(): void {
+    this.notificationsError = '';
+    this.notificationsSuccess = '';
+    this.showNotificationPreferencesModal = true;
+  }
+
+  closeNotificationPreferencesModal(): void {
+    this.showNotificationPreferencesModal = false;
   }
 
   confirmAdmission(admission: AdmissionItem): void {
@@ -1119,7 +1216,7 @@ export class ResourcePageComponent {
   }
 
   markPaymentAsPaid(payment: PaymentItem): void {
-    if (payment.status === 'PAID' || payment.status === 'CONFIRMED') {
+    if (payment.status !== 'PENDING' && payment.status !== 'IN_ATTESA') {
       return;
     }
     this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'PAID' } : item));
