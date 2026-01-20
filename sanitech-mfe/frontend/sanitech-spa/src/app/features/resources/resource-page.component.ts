@@ -168,6 +168,7 @@ export class ResourcePageComponent {
     reason: ''
   };
   rescheduleDates: Record<number, string> = {};
+  showBookingModal = false;
   slotForm = {
     date: '',
     time: '',
@@ -476,6 +477,7 @@ export class ResourcePageComponent {
         );
         this.bookingForm.reason = '';
         this.bookingForm.slotId = null;
+        this.closeBookingModal();
         this.isLoading = false;
       },
       error: () => {
@@ -842,6 +844,14 @@ export class ResourcePageComponent {
     );
     delete this.rescheduleDates[appointment.id];
     this.schedulingError = '';
+  }
+
+  openBookingModal(): void {
+    this.showBookingModal = true;
+  }
+
+  closeBookingModal(): void {
+    this.showBookingModal = false;
   }
 
   loadDocs(): void {
