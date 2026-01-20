@@ -634,6 +634,31 @@ export class ResourcePageComponent {
     return labels[status] ?? status;
   }
 
+  get latestConfirmedAdmission(): AdmissionItem | null {
+    const admissions = this.visibleAdmissions.filter((admission) => admission.status === 'CONFIRMED');
+    if (!admissions.length) {
+      return null;
+    }
+    return admissions.reduce((latest, admission) =>
+      new Date(admission.admittedAt).getTime() > new Date(latest.admittedAt).getTime() ? admission : latest
+    );
+  }
+
+  getAdmissionPaymentLabel(admission: AdmissionItem): string {
+    const startDate = this.formatDate(admission.admittedAt);
+    const endDate = this.formatDate(this.addDays(admission.admittedAt, 3));
+    return `Ricovero confermato in ${this.getDepartmentLabel(admission.department)} dal ${startDate} al ${endDate}`;
+  }
+
+  addDays(dateValue: string, days: number): string {
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return dateValue;
+    }
+    parsed.setDate(parsed.getDate() + days);
+    return parsed.toISOString();
+  }
+
   getConsentTypeLabel(consentType: string): string {
     const labels: Record<string, string> = {
       GDPR: 'Consenso GDPR',

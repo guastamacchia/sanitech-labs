@@ -635,6 +635,22 @@
                           </tr>
                         </thead>
                         <tbody>
+                          <tr *ngIf="isPatient && latestConfirmedAdmission">
+                            <td>{{ getAdmissionPaymentLabel(latestConfirmedAdmission) }}</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>Pagamento in attesa</td>
+                            <td>{{ formatDate(latestConfirmedAdmission.admittedAt) }}</td>
+                            <td>
+                              <button class="btn btn-outline-primary btn-sm me-2" type="button" aria-label="Registra pagamento" disabled>
+                                💳
+                              </button>
+                              <button class="btn btn-outline-secondary btn-sm me-2" type="button" aria-label="Allega ricevuta" disabled>
+                                📎
+                              </button>
+                            </td>
+                          </tr>
                           <tr *ngFor="let payment of payments | slice:getPageSliceStart('payments'):getPageSliceEnd('payments')">
                             <td *ngIf="!isPatient">{{ getPatientLabel(payment.patientId) }}</td>
                             <td>{{ payment.service }}</td>
@@ -662,7 +678,7 @@
                               </button>
                             </td>
                           </tr>
-                          <tr *ngIf="!payments.length">
+                          <tr *ngIf="!payments.length && !(isPatient && latestConfirmedAdmission)">
                             <td [attr.colspan]="isPatient ? 7 : 8" class="text-center text-muted">Nessun pagamento registrato.</td>
                           </tr>
                         </tbody>
