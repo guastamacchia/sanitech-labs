@@ -38,6 +38,7 @@ interface DocumentItem {
   name: string;
   notes?: string;
   uploadedAt: string;
+  viewedByCurrentUser?: boolean;
 }
 
 interface ConsentItem {
@@ -194,7 +195,16 @@ export class ResourcePageComponent {
   editingConsentId: number | null = null;
   payments: PaymentItem[] = [];
   admissions: AdmissionItem[] = [];
+  showAdmissionRescheduleModal = false;
+  rescheduleAdmission: AdmissionItem | null = null;
+  rescheduleForm = {
+    date: '',
+    reason: ''
+  };
+  rescheduleError = '';
+  rescheduleSuccess = '';
   paymentsError = '';
+  paymentsSuccess = '';
   paymentForm = {
     paymentId: null as number | null,
     receiptName: '',
@@ -551,6 +561,12 @@ export class ResourcePageComponent {
   }
 
   isDocumentViewed(doc: DocumentItem): boolean {
+    if (doc.viewedByCurrentUser) {
+      return true;
+    }
+    if (this.isPatient && doc.patientId === 1) {
+      return true;
+    }
     return doc.id % 2 === 0;
   }
 
@@ -614,7 +630,7 @@ export class ResourcePageComponent {
 
   getAdmissionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      ACTIVE: 'Attivo',
+      ACTIVE: 'Da confermare',
       CONFIRMED: 'Confermato',
       REJECTED: 'Rifiutato',
       DISCHARGED: 'Dimesso'
@@ -622,16 +638,31 @@ export class ResourcePageComponent {
     return labels[status] ?? status;
   }
 
-  getPaymentStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      PENDING: 'Pagamento in attesa',
-      IN_ATTESA: 'Pagamento in attesa',
-      PAID: 'Carica allegato',
-      RECEIPT_UPLOADED: 'In attesa di conferma',
-      CONFIRMED: 'Pagamento confermato',
-      FAILED: 'Non riuscito'
-    };
-    return labels[status] ?? status;
+  getPaymentStatusLabel(payment: PaymentItem): string {
+    if (payment.status === 'CONFIRMED') {
+      return 'Pagamento ricevuto';
+    }
+    if (payment.status === 'RECEIPT_UPLOADED' || (payment.status === 'PAID' && payment.receiptName)) {
+      return 'In fase di approvazione';
+    }
+    if (payment.status === 'PAID') {
+      return 'Ricevuta da caricare';
+    }
+    if (payment.status === 'PENDING' || payment.status === 'IN_ATTESA') {
+      return 'Pagamento da effettuare';
+    }
+    if (payment.status === 'FAILED') {
+      return 'Non riuscito';
+    }
+    return payment.status;
+  }
+
+  canMarkPaymentAsPaid(payment: PaymentItem): boolean {
+    return payment.status === 'PENDING' || payment.status === 'IN_ATTESA';
+  }
+
+  canAttachPaymentReceipt(payment: PaymentItem): boolean {
+    return payment.status === 'PAID' && !payment.receiptName;
   }
 
   get latestConfirmedAdmission(): AdmissionItem | null {
@@ -647,7 +678,7 @@ export class ResourcePageComponent {
   getAdmissionPaymentLabel(admission: AdmissionItem): string {
     const startDate = this.formatDate(admission.admittedAt);
     const endDate = this.formatDate(this.addDays(admission.admittedAt, 3));
-    return `Ricovero confermato in ${this.getDepartmentLabel(admission.department)} dal ${startDate} al ${endDate}`;
+    return `Ricovero da ${startDate} a ${endDate}`;
   }
 
   addDays(dateValue: string, days: number): string {
@@ -964,7 +995,7 @@ export class ResourcePageComponent {
     }
     this.api.request<DocumentItem>('POST', '/api/docs', payload).subscribe({
       next: (doc) => {
-        this.documents = [...this.documents, doc];
+        this.documents = [...this.documents, { ...doc, viewedByCurrentUser: true }];
         this.docForm.name = '';
         this.docForm.fileName = '';
         this.docForm.notes = '';
@@ -1010,6 +1041,7 @@ export class ResourcePageComponent {
   loadPayments(): void {
     this.isLoading = true;
     this.paymentsError = '';
+    this.paymentsSuccess = '';
     this.api.request<PaymentItem[]>('GET', '/api/payments').subscribe({
       next: (payments) => {
         this.payments = payments;
@@ -1197,6 +1229,37 @@ export class ResourcePageComponent {
     this.showNotificationPreferencesModal = false;
   }
 
+  openAdmissionRescheduleModal(admission: AdmissionItem): void {
+    this.rescheduleAdmission = admission;
+    this.rescheduleForm = {
+      date: '',
+      reason: admission.notes ?? ''
+    };
+    this.rescheduleError = '';
+    this.rescheduleSuccess = '';
+    this.showAdmissionRescheduleModal = true;
+  }
+
+  closeAdmissionRescheduleModal(): void {
+    this.showAdmissionRescheduleModal = false;
+    this.rescheduleAdmission = null;
+  }
+
+  submitAdmissionReschedule(): void {
+    this.rescheduleError = '';
+    if (!this.rescheduleAdmission) {
+      this.rescheduleError = 'Seleziona un ricovero da ripianificare.';
+      return;
+    }
+    if (!this.rescheduleForm.date.trim() || !this.rescheduleForm.reason.trim()) {
+      this.rescheduleError = 'Inserisci data e motivazione per la ripianificazione.';
+      return;
+    }
+    this.admissions = this.admissions.filter((item) => item.id !== this.rescheduleAdmission?.id);
+    this.rescheduleSuccess = 'Richiesta di ripianificazione inviata.';
+    this.closeAdmissionRescheduleModal();
+  }
+
   confirmAdmission(admission: AdmissionItem): void {
     if (admission.status === 'CONFIRMED') {
       return;
@@ -1222,15 +1285,28 @@ export class ResourcePageComponent {
     this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'PAID' } : item));
   }
 
-  attachPaymentReceipt(payment: PaymentItem): void {
-    if (payment.receiptName || payment.status !== 'PAID') {
+  openPaymentReceiptUpload(payment: PaymentItem, input: HTMLInputElement): void {
+    if (!this.canAttachPaymentReceipt(payment)) {
+      return;
+    }
+    input.click();
+  }
+
+  onPaymentReceiptSelected(event: Event, payment: PaymentItem): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
       return;
     }
     this.payments = this.payments.map((item) =>
-      item.id === payment.id
-        ? { ...item, receiptName: 'ricevuta-caricata.pdf', status: item.status === 'PAID' ? 'RECEIPT_UPLOADED' : item.status }
-        : item
+      item.id === payment.id ? { ...item, receiptName: file.name, status: 'RECEIPT_UPLOADED' } : item
     );
+    input.value = '';
+  }
+
+  askPaymentQuestion(payment: PaymentItem): void {
+    this.paymentsError = '';
+    this.paymentsSuccess = `Richiesta inviata per il pagamento #${payment.id}.`;
   }
 
   confirmPayment(payment: PaymentItem): void {
