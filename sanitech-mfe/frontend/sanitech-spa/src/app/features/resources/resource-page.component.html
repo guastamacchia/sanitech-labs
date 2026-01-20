@@ -287,32 +287,9 @@
                               type="button"
                               aria-label="Riprogramma appuntamento"
                               [disabled]="appointment.status !== 'CONFIRMED'"
-                              data-bs-toggle="collapse"
-                              [attr.data-bs-target]="'#reschedule-' + appointment.id"
-                              aria-expanded="false">
-                              🔁
+                              (click)="openAppointmentRescheduleModal(appointment)">
+                              🔄
                             </button>
-                          </td>
-                        </tr>
-                        <tr class="table-light collapse" [id]="'reschedule-' + appointment.id">
-                          <td colspan="6">
-                            <div class="d-flex flex-wrap align-items-center gap-2">
-                              <label class="form-label mb-0" [for]="'rescheduleDate-' + appointment.id">
-                                Nuova data
-                              </label>
-                              <input
-                                class="form-control form-control-sm w-auto"
-                                type="date"
-                                [id]="'rescheduleDate-' + appointment.id"
-                                [name]="'rescheduleDate-' + appointment.id"
-                                [(ngModel)]="rescheduleDates[appointment.id]" />
-                              <button
-                                class="btn btn-outline-primary btn-sm"
-                                type="button"
-                                (click)="submitReschedule(appointment)">
-                                Invia richiesta
-                              </button>
-                            </div>
                           </td>
                         </tr>
                       </ng-container>
@@ -322,6 +299,47 @@
                     </tbody>
                   </table>
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'appointments', total: appointments.length }"></ng-container>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="showAppointmentRescheduleModal">
+          <div
+            class="modal-backdrop fade show"
+            style="position: fixed; inset: 0; z-index: 1050;"
+            (click)="closeAppointmentRescheduleModal()"></div>
+          <div
+            class="modal d-flex align-items-center justify-content-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="appointmentRescheduleModalTitle"
+            style="position: fixed; inset: 0; z-index: 1055;">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="appointmentRescheduleModalTitle">Ripianifica appuntamento</h5>
+                  <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAppointmentRescheduleModal()"></button>
+                </div>
+                <div class="modal-body">
+                  <form (ngSubmit)="submitAppointmentReschedule()" #appointmentRescheduleRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Nuova data</label>
+                      <input class="form-control" type="date" name="appointmentRescheduleDate" [(ngModel)]="rescheduleAppointmentDate" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Motivazione</label>
+                      <textarea class="form-control" rows="3" name="appointmentRescheduleReason" [(ngModel)]="rescheduleAppointmentReason" required></textarea>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>
+                    <div class="d-flex justify-content-end gap-2">
+                      <button class="btn btn-outline-secondary" type="button" (click)="closeAppointmentRescheduleModal()">Annulla</button>
+                      <button class="btn btn-primary" type="submit" [disabled]="appointmentRescheduleRef.invalid || isLoading">
+                        Invia richiesta
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>
@@ -674,7 +692,7 @@
                               class="btn btn-outline-info btn-sm me-2"
                               type="button"
                               aria-label="Domanda alla struttura"
-                              (click)="askPaymentQuestion(payment)">
+                              (click)="openPaymentQuestionModal(payment)">
                               ❓
                             </button>
                             <input
@@ -715,6 +733,43 @@
           </ng-template>
         </ng-container>
       </ng-template>
+
+      <ng-container *ngIf="showPaymentQuestionModal">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closePaymentQuestionModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="paymentQuestionModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="paymentQuestionModalTitle">Domanda alla struttura</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePaymentQuestionModal()"></button>
+              </div>
+              <div class="modal-body">
+                <form (ngSubmit)="submitPaymentQuestion()" #paymentQuestionRef="ngForm">
+                  <div class="mb-3">
+                    <label class="form-label">Messaggio</label>
+                    <textarea class="form-control" rows="3" name="paymentQuestion" [(ngModel)]="paymentQuestion" required></textarea>
+                  </div>
+                  <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-outline-secondary" type="button" (click)="closePaymentQuestionModal()">Annulla</button>
+                    <button class="btn btn-primary" type="submit" [disabled]="paymentQuestionRef.invalid || isLoading">
+                      Invia richiesta
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
 
       <div
         class="modal d-block"
@@ -1013,10 +1068,6 @@
                               <input class="form-check-input" type="checkbox" id="prefChannelSms" name="prefChannelSms" [(ngModel)]="notificationPrefs.channels.sms" />
                               <label class="form-check-label" for="prefChannelSms">SMS</label>
                             </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="checkbox" id="prefChannelApp" name="prefChannelApp" [(ngModel)]="notificationPrefs.channels.app" />
-                              <label class="form-check-label" for="prefChannelApp">App</label>
-                            </div>
                           </div>
                           <div class="mb-3">
                             <div class="d-flex align-items-center justify-content-between">
@@ -1191,30 +1242,9 @@
                                 class="btn btn-outline-secondary btn-sm"
                                 type="button"
                                 aria-label="Chiedi spiegazioni"
-                                (click)="togglePrescriptionQuestion(prescription.id)">
+                                (click)="openPrescriptionQuestionModal(prescription)">
                                 ❓
                               </button>
-                            </td>
-                          </tr>
-                          <tr class="table-light" *ngIf="showPrescriptionQuestion[prescription.id]">
-                            <td colspan="6">
-                              <div class="d-flex flex-wrap align-items-center gap-2">
-                                <label class="form-label mb-0" [for]="'prescriptionQuestion-' + prescription.id">
-                                  Domanda al medico
-                                </label>
-                                <input
-                                  class="form-control form-control-sm flex-grow-1"
-                                  type="text"
-                                  [id]="'prescriptionQuestion-' + prescription.id"
-                                  [name]="'prescriptionQuestion-' + prescription.id"
-                                  [(ngModel)]="prescriptionQuestions[prescription.id]" />
-                                <button
-                                  class="btn btn-outline-primary btn-sm"
-                                  type="button"
-                                  (click)="submitPrescriptionQuestion(prescription)">
-                                  Invia
-                                </button>
-                              </div>
                             </td>
                           </tr>
                         </ng-container>
@@ -1307,6 +1337,43 @@
           </div>
         </ng-container>
       </ng-template>
+
+      <ng-container *ngIf="showPrescriptionQuestionModal">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closePrescriptionQuestionModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="prescriptionQuestionModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="prescriptionQuestionModalTitle">Domanda al medico</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePrescriptionQuestionModal()"></button>
+              </div>
+              <div class="modal-body">
+                <form (ngSubmit)="submitPrescriptionQuestion()" #prescriptionQuestionRef="ngForm">
+                  <div class="mb-3">
+                    <label class="form-label">Messaggio</label>
+                    <textarea class="form-control" rows="3" name="prescriptionQuestion" [(ngModel)]="prescriptionQuestion" required></textarea>
+                  </div>
+                  <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-outline-secondary" type="button" (click)="closePrescriptionQuestionModal()">Annulla</button>
+                    <button class="btn btn-primary" type="submit" [disabled]="prescriptionQuestionRef.invalid || isLoading">
+                      Invia domanda
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
 
       <ng-template #televisitLayout>
         <ng-container *ngIf="mode === 'televisit'; else adminDirectoryLayout">

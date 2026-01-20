@@ -168,7 +168,10 @@ export class ResourcePageComponent {
     department: '',
     reason: ''
   };
-  rescheduleDates: Record<number, string> = {};
+  showAppointmentRescheduleModal = false;
+  rescheduleAppointment: SchedulingAppointment | null = null;
+  rescheduleAppointmentDate = '';
+  rescheduleAppointmentReason = '';
   showBookingModal = false;
   showDocumentModal = false;
   showConsentModal = false;
@@ -233,8 +236,7 @@ export class ResourcePageComponent {
     phone: '+39 347 123 4567',
     channels: {
       email: true,
-      sms: false,
-      app: true
+      sms: false
     },
     types: {
       appointments: true,
@@ -246,8 +248,9 @@ export class ResourcePageComponent {
   };
   prescriptions: PrescriptionItem[] = [];
   prescribingError = '';
-  prescriptionQuestions: Record<number, string> = {};
-  showPrescriptionQuestion: Record<number, boolean> = {};
+  showPrescriptionQuestionModal = false;
+  selectedPrescription: PrescriptionItem | null = null;
+  prescriptionQuestion = '';
   prescriptionForm = {
     patientId: 1,
     drug: '',
@@ -278,6 +281,9 @@ export class ResourcePageComponent {
   };
   auditEvents: AuditItem[] = [];
   auditError = '';
+  showPaymentQuestionModal = false;
+  selectedPayment: PaymentItem | null = null;
+  paymentQuestion = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -632,6 +638,7 @@ export class ResourcePageComponent {
     const labels: Record<string, string> = {
       ACTIVE: 'Da confermare',
       CONFIRMED: 'Confermato',
+      RESCHEDULED: 'Ripianificato',
       REJECTED: 'Rifiutato',
       DISCHARGED: 'Dimesso'
     };
@@ -908,20 +915,40 @@ export class ResourcePageComponent {
     );
   }
 
-  submitReschedule(appointment: SchedulingAppointment): void {
-    const newDate = this.rescheduleDates[appointment.id];
-    if (!newDate) {
-      this.schedulingError = 'Seleziona una nuova data per la riprogrammazione.';
+  openAppointmentRescheduleModal(appointment: SchedulingAppointment): void {
+    this.rescheduleAppointment = appointment;
+    this.rescheduleAppointmentDate = '';
+    this.rescheduleAppointmentReason = appointment.reason;
+    this.schedulingError = '';
+    this.showAppointmentRescheduleModal = true;
+  }
+
+  closeAppointmentRescheduleModal(): void {
+    this.showAppointmentRescheduleModal = false;
+    this.rescheduleAppointment = null;
+    this.rescheduleAppointmentDate = '';
+    this.rescheduleAppointmentReason = '';
+  }
+
+  submitAppointmentReschedule(): void {
+    if (!this.rescheduleAppointment) {
+      this.schedulingError = 'Seleziona un appuntamento da riprogrammare.';
+      return;
+    }
+    if (!this.rescheduleAppointmentDate || !this.rescheduleAppointmentReason.trim()) {
+      this.schedulingError = 'Inserisci nuova data e motivazione per la riprogrammazione.';
       return;
     }
     this.slots = this.slots.map((slot) =>
-      slot.id === appointment.slotId ? { ...slot, date: newDate } : slot
+      slot.id === this.rescheduleAppointment?.slotId ? { ...slot, date: this.rescheduleAppointmentDate } : slot
     );
     this.appointments = this.appointments.map((item) =>
-      item.id === appointment.id ? { ...item, status: 'PENDING' } : item
+      item.id === this.rescheduleAppointment?.id
+        ? { ...item, status: 'PENDING', reason: this.rescheduleAppointmentReason }
+        : item
     );
-    delete this.rescheduleDates[appointment.id];
     this.schedulingError = '';
+    this.closeAppointmentRescheduleModal();
   }
 
   openBookingModal(): void {
@@ -1255,7 +1282,16 @@ export class ResourcePageComponent {
       this.rescheduleError = 'Inserisci data e motivazione per la ripianificazione.';
       return;
     }
-    this.admissions = this.admissions.filter((item) => item.id !== this.rescheduleAdmission?.id);
+    this.admissions = this.admissions.map((item) =>
+      item.id === this.rescheduleAdmission?.id
+        ? {
+            ...item,
+            status: 'RESCHEDULED',
+            admittedAt: this.rescheduleForm.date,
+            notes: this.rescheduleForm.reason
+          }
+        : item
+    );
     this.rescheduleSuccess = 'Richiesta di ripianificazione inviata.';
     this.closeAdmissionRescheduleModal();
   }
@@ -1304,9 +1340,30 @@ export class ResourcePageComponent {
     input.value = '';
   }
 
-  askPaymentQuestion(payment: PaymentItem): void {
+  openPaymentQuestionModal(payment: PaymentItem): void {
+    this.selectedPayment = payment;
+    this.paymentQuestion = '';
     this.paymentsError = '';
-    this.paymentsSuccess = `Richiesta inviata per il pagamento #${payment.id}.`;
+    this.showPaymentQuestionModal = true;
+  }
+
+  closePaymentQuestionModal(): void {
+    this.showPaymentQuestionModal = false;
+    this.selectedPayment = null;
+    this.paymentQuestion = '';
+  }
+
+  submitPaymentQuestion(): void {
+    if (!this.selectedPayment) {
+      this.paymentsError = 'Seleziona un pagamento valido.';
+      return;
+    }
+    if (!this.paymentQuestion.trim()) {
+      this.paymentsError = 'Inserisci una domanda per la struttura.';
+      return;
+    }
+    this.paymentsSuccess = `Richiesta inviata per il pagamento #${this.selectedPayment.id}.`;
+    this.closePaymentQuestionModal();
   }
 
   confirmPayment(payment: PaymentItem): void {
@@ -1314,24 +1371,6 @@ export class ResourcePageComponent {
       return;
     }
     this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'CONFIRMED' } : item));
-  }
-
-  setAllNotificationChannels(checked: boolean): void {
-    this.notificationPrefs.channels = {
-      email: checked,
-      sms: checked,
-      app: checked
-    };
-  }
-
-  setAllNotificationTypes(checked: boolean): void {
-    this.notificationPrefs.types = {
-      appointments: checked,
-      documents: checked,
-      payments: checked,
-      admissions: checked,
-      prescriptions: checked
-    };
   }
 
   loadPrescriptions(): void {
@@ -1388,19 +1427,30 @@ export class ResourcePageComponent {
     );
   }
 
-  togglePrescriptionQuestion(prescriptionId: number): void {
-    this.showPrescriptionQuestion[prescriptionId] = !this.showPrescriptionQuestion[prescriptionId];
+  openPrescriptionQuestionModal(prescription: PrescriptionItem): void {
+    this.selectedPrescription = prescription;
+    this.prescriptionQuestion = '';
+    this.prescribingError = '';
+    this.showPrescriptionQuestionModal = true;
   }
 
-  submitPrescriptionQuestion(prescription: PrescriptionItem): void {
-    const question = (this.prescriptionQuestions[prescription.id] || '').trim();
-    if (!question) {
+  closePrescriptionQuestionModal(): void {
+    this.showPrescriptionQuestionModal = false;
+    this.selectedPrescription = null;
+    this.prescriptionQuestion = '';
+  }
+
+  submitPrescriptionQuestion(): void {
+    if (!this.selectedPrescription) {
+      this.prescribingError = 'Seleziona una prescrizione valida.';
+      return;
+    }
+    if (!this.prescriptionQuestion.trim()) {
       this.prescribingError = 'Inserisci una domanda per il medico.';
       return;
     }
     this.prescribingError = '';
-    this.prescriptionQuestions[prescription.id] = '';
-    this.showPrescriptionQuestion[prescription.id] = false;
+    this.closePrescriptionQuestionModal();
   }
 
   viewDocument(doc: DocumentItem): void {
