@@ -191,6 +191,7 @@ export class ResourcePageComponent {
     consentType: 'GDPR',
     accepted: true
   };
+  editingConsentId: number | null = null;
   payments: PaymentItem[] = [];
   admissions: AdmissionItem[] = [];
   paymentsError = '';
@@ -606,7 +607,7 @@ export class ResourcePageComponent {
   editConsent(consent: ConsentItem): void {
     this.consentForm.consentType = consent.consentType;
     this.consentForm.accepted = consent.accepted;
-    this.openConsentModal();
+    this.openConsentModal(consent.id);
   }
 
   getAdmissionStatusLabel(status: string): string {
@@ -882,13 +883,15 @@ export class ResourcePageComponent {
     this.showDocumentModal = false;
   }
 
-  openConsentModal(): void {
+  openConsentModal(editingId: number | null = null): void {
     this.docsError = '';
+    this.editingConsentId = editingId;
     this.showConsentModal = true;
   }
 
   closeConsentModal(): void {
     this.showConsentModal = false;
+    this.editingConsentId = null;
   }
 
   loadDocs(): void {
@@ -951,12 +954,20 @@ export class ResourcePageComponent {
   submitConsent(): void {
     this.isLoading = true;
     this.docsError = '';
-    this.api.request<ConsentItem>('POST', '/api/consents', {
+    const payload: Record<string, unknown> = {
       consentType: this.consentForm.consentType,
       accepted: this.consentForm.accepted
-    }).subscribe({
+    };
+    if (this.editingConsentId) {
+      payload['id'] = this.editingConsentId;
+    }
+    this.api.request<ConsentItem>('POST', '/api/consents', payload).subscribe({
       next: (consent) => {
-        if (!this.consents.some((item) => item.id === consent.id)) {
+        if (this.editingConsentId) {
+          this.consents = this.consents.map((item) =>
+            item.id === this.editingConsentId ? { ...item, ...consent } : item
+          );
+        } else if (!this.consents.some((item) => item.id === consent.id)) {
           this.consents = [...this.consents, consent];
         }
         this.closeConsentModal();

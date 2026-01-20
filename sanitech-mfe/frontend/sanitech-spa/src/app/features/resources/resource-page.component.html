@@ -409,11 +409,7 @@
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
                         <td>{{ doc.notes || '-' }}</td>
-                        <td>
-                          <span class="badge" [class.bg-success]="isDocumentViewed(doc)" [class.bg-secondary]="!isDocumentViewed(doc)">
-                            {{ getDocumentStatusLabel(doc) }}
-                          </span>
-                        </td>
+                        <td>{{ getDocumentStatusLabel(doc) }}</td>
                         <td>{{ formatDateTime(doc.uploadedAt) }}</td>
                         <td>
                           <button
@@ -470,11 +466,7 @@
                       <tr *ngFor="let consent of visibleConsents | slice:getPageSliceStart('consents'):getPageSliceEnd('consents')">
                         <td *ngIf="isDoctor">{{ getPatientLabel(consent.patientId) }}</td>
                         <td>{{ getConsentTypeLabel(consent.consentType) }}</td>
-                        <td>
-                          <span class="badge" [class.bg-success]="consent.accepted" [class.bg-secondary]="!consent.accepted">
-                            {{ consent.accepted ? 'Si' : 'No' }}
-                          </span>
-                        </td>
+                        <td>{{ consent.accepted ? 'Si' : 'No' }}</td>
                         <td>{{ formatDate(consent.signedAt) }}</td>
                         <td>
                           <button
