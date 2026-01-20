@@ -47,25 +47,25 @@
           <table class="table align-middle">
             <thead>
               <tr>
-                <th *ngIf="!isDoctor">Medico</th>
-                <th *ngIf="!isDoctor">Specializzazione</th>
-                <th>Data</th>
-                <th>Ora</th>
+                <th>Reparto</th>
+                <th>Medico</th>
+                <th>Specializzazione</th>
+                <th>Data e ora</th>
                 <th>Modalità</th>
                 <th>Note</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let slot of visibleSlots | slice:getPageSliceStart('slots'):getPageSliceEnd('slots')">
-                <td *ngIf="!isDoctor">{{ getDoctorLabel(slot.doctorId) }}</td>
-                <td *ngIf="!isDoctor">{{ getSpecialityLabel(getDoctorById(slot.doctorId)?.speciality || '-') }}</td>
-                <td>{{ formatDate(slot.date) }}</td>
-                <td>{{ slot.time }}</td>
+                <td>{{ getDepartmentLabel(getDoctorById(slot.doctorId)?.speciality || '-') }}</td>
+                <td>{{ getDoctorLabel(slot.doctorId) }}</td>
+                <td>{{ getSpecialityLabel(getDoctorById(slot.doctorId)?.speciality || '-') }}</td>
+                <td>{{ formatDate(slot.date) }} • {{ slot.time }}</td>
                 <td>{{ getModalityLabel(slot.modality) }}</td>
                 <td>{{ slot.notes || '-' }}</td>
               </tr>
               <tr *ngIf="!visibleSlots.length">
-                <td [attr.colspan]="isDoctor ? 4 : 6" class="text-center text-muted">Nessuno slot disponibile.</td>
+                <td colspan="6" class="text-center text-muted">Nessuna disponibilità attiva.</td>
               </tr>
             </tbody>
           </table>
@@ -80,18 +80,18 @@
               <div class="accordion-item card-glass border-0">
                 <h2 class="accordion-header">
                   <button
-                    class="accordion-button"
+                    class="accordion-button collapsed"
                     type="button"
                     data-bs-toggle="collapse"
                     data-bs-target="#availableSlotsCollapse"
-                    aria-expanded="true"
+                    aria-expanded="false"
                     aria-controls="availableSlotsCollapse">
-                    Consulta gli slot disponibili
+                    Consulta le disponibilità attualmente offerte dalla struttura
                   </button>
                 </h2>
                 <div
                   id="availableSlotsCollapse"
-                  class="accordion-collapse collapse show"
+                  class="accordion-collapse collapse"
                   data-bs-parent="#availableSlotsAccordion">
                   <div class="accordion-body">
                     <ng-container *ngTemplateOutlet="slotsTable"></ng-container>
@@ -167,7 +167,7 @@
         </ng-template>
 
         <ng-container *ngIf="isPatient; else doctorScheduling">
-          <div class="col-lg-8">
+          <div class="col-lg-9">
             <div class="card card-glass">
               <div class="card-body">
                 <h5 class="fw-semibold mb-3">Appuntamenti attivi</h5>
@@ -175,20 +175,26 @@
                   <table class="table align-middle">
                     <thead>
                       <tr>
-                        <th>Medico</th>
-                        <th>Data</th>
-                        <th>Ora</th>
+                        <th>Reparto</th>
+                        <th>Nome del medico</th>
+                        <th>Data e ora</th>
                         <th>Motivo</th>
                         <th>Stato</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr *ngFor="let appointment of appointments | slice:getPageSliceStart('appointments'):getPageSliceEnd('appointments')">
+                        <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
                         <td>{{ getDoctorLabel(appointment.doctorId) }}</td>
-                        <td>{{ formatDate(getSlotById(appointment.slotId)?.date || '') }}</td>
-                        <td>{{ getSlotById(appointment.slotId)?.time || '-' }}</td>
+                        <td>
+                          {{ formatDate(getSlotById(appointment.slotId)?.date || '') }} •
+                          {{ getSlotById(appointment.slotId)?.time || '-' }}
+                        </td>
                         <td>{{ appointment.reason }}</td>
                         <td>
+                          <span class="me-2">
+                            {{ appointment.status === 'CONFIRMED' ? '✅' : appointment.status === 'PENDING' ? '⏳' : '⚠️' }}
+                          </span>
                           <span>{{ getStatusLabel(appointment.status) }}</span>
                           <button
                             *ngIf="appointment.status === 'PENDING'"
@@ -211,37 +217,37 @@
             </div>
           </div>
 
-          <div class="col-lg-4">
+          <div class="col-lg-3">
             <div class="card card-glass">
               <div class="card-body">
                 <h5 class="fw-semibold mb-3">Nuova prenotazione</h5>
                 <form (ngSubmit)="submitBooking()" #bookingFormRef="ngForm">
                   <div class="mb-3">
-                    <label class="form-label">Specializzazione</label>
+                    <label class="form-label">Reparto</label>
                     <select
                       class="form-select"
-                      name="bookingSpeciality"
-                      [(ngModel)]="bookingForm.speciality"
+                      name="bookingDepartment"
+                      [(ngModel)]="bookingForm.department"
                       (ngModelChange)="bookingForm.slotId = null"
                       required>
-                      <option value="" disabled>Seleziona una specializzazione</option>
-                      <option *ngFor="let speciality of specialities" [value]="speciality.code">
-                        {{ speciality.name }}
+                      <option value="" disabled>Seleziona un reparto</option>
+                      <option *ngFor="let department of departments" [value]="department.code">
+                        {{ department.name }}
                       </option>
                     </select>
                   </div>
                   <div class="mb-3">
-                    <label class="form-label">Slot disponibile</label>
+                    <label class="form-label">Slot disponibili</label>
                     <select class="form-select" name="slotId" [(ngModel)]="bookingForm.slotId" required>
                       <option [ngValue]="null" disabled>Seleziona uno slot</option>
                       <option *ngFor="let slot of availableSlots" [ngValue]="slot.id">
                         {{ getSlotLabel(slot) }}
                       </option>
                     </select>
-                    <div class="form-text">Lo slot selezionato include medico, data e ora.</div>
+                    <div class="form-text">La disponibilità selezionata include medico, data e ora.</div>
                   </div>
                   <div class="mb-3">
-                    <label class="form-label">Motivo visita</label>
+                    <label class="form-label">Motivo prenotazione</label>
                     <textarea class="form-control" rows="3" name="reason" [(ngModel)]="bookingForm.reason" required></textarea>
                   </div>
                   <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>

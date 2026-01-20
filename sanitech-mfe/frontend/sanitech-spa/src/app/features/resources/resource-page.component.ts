@@ -164,7 +164,7 @@ export class ResourcePageComponent {
   schedulingError = '';
   bookingForm = {
     slotId: null as number | null,
-    speciality: '',
+    department: '',
     reason: ''
   };
   slotForm = {
@@ -433,8 +433,8 @@ export class ResourcePageComponent {
   }
 
   submitBooking(): void {
-    if (this.isPatient && !this.bookingForm.speciality) {
-      this.schedulingError = 'Seleziona una specializzazione.';
+    if (this.isPatient && !this.bookingForm.department) {
+      this.schedulingError = 'Seleziona un reparto.';
       return;
     }
     if (!this.bookingForm.slotId) {
@@ -442,7 +442,7 @@ export class ResourcePageComponent {
       return;
     }
     if (!this.bookingForm.reason.trim()) {
-      this.schedulingError = 'Inserisci il motivo della visita.';
+      this.schedulingError = 'Inserisci il motivo della prenotazione.';
       return;
     }
     const slot = this.slots.find((item) => item.id === this.bookingForm.slotId);
@@ -637,13 +637,13 @@ export class ResourcePageComponent {
 
   get availableSlots(): SchedulingSlot[] {
     if (this.isPatient) {
-      if (!this.bookingForm.speciality) {
+      if (!this.bookingForm.department) {
         return [];
       }
       return this.slots.filter(
         (slot) =>
           slot.status === 'AVAILABLE' &&
-          this.getDoctorById(slot.doctorId)?.speciality === this.bookingForm.speciality
+          this.getDoctorById(slot.doctorId)?.speciality === this.bookingForm.department
       );
     }
     return this.slots.filter((slot) => slot.status === 'AVAILABLE');
