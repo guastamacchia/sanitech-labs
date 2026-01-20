@@ -373,14 +373,19 @@
     <ng-template #otherLayouts>
       <ng-container *ngIf="mode === 'docs'; else paymentsLayout">
         <div class="row g-4">
-          <div class="col-lg-8">
+          <div class="col-12">
             <div class="card card-glass mb-4">
               <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                   <h5 class="fw-semibold mb-0">Documenti clinici</h5>
-                  <button class="btn btn-outline-secondary btn-sm" (click)="loadDocs()" [disabled]="isLoading">
-                    Aggiorna
-                  </button>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" (click)="loadDocs()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                    <button class="btn btn-primary btn-sm" type="button" (click)="openDocumentModal()">
+                      Carica documento
+                    </button>
+                  </div>
                 </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
@@ -430,7 +435,12 @@
 
             <div class="card card-glass" *ngIf="!isDoctor">
               <div class="card-body">
-                <h5 class="fw-semibold mb-3">Consensi informati</h5>
+                <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+                  <h5 class="fw-semibold mb-0">Consensi informati</h5>
+                  <button class="btn btn-outline-primary btn-sm" type="button" (click)="openConsentModal()">
+                    Registra consenso
+                  </button>
+                </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
                     <thead>
@@ -473,31 +483,6 @@
             </div>
           </div>
 
-          <div class="col-lg-4">
-            <div class="card card-glass mb-4">
-              <div class="card-body">
-                <h5 class="fw-semibold mb-3">Carica documento</h5>
-                <p class="text-muted mb-3">
-                  Carica referti o certificati clinici per lo storico del paziente.
-                </p>
-                <button class="btn btn-primary w-100" type="button" (click)="openDocumentModal()">
-                  Carica documento
-                </button>
-              </div>
-            </div>
-
-            <div class="card card-glass" *ngIf="!isDoctor">
-              <div class="card-body">
-                <h5 class="fw-semibold mb-3">Registra consenso</h5>
-                <p class="text-muted mb-3">
-                  Registra un nuovo consenso informato firmato dal paziente.
-                </p>
-                <button class="btn btn-outline-primary w-100" type="button" (click)="openConsentModal()">
-                  Registra consenso
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
 
         <ng-container *ngIf="showDocumentModal">
