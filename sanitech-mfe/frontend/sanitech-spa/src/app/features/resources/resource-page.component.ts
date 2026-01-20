@@ -216,6 +216,8 @@ export class ResourcePageComponent {
     message: '',
     notes: ''
   };
+  showNotificationContactsModal = false;
+  showNotificationPreferencesModal = false;
   notificationPrefs = {
     email: 'anna.conti@sanitech.example',
     phone: '+39 347 123 4567',
@@ -1146,6 +1148,28 @@ export class ResourcePageComponent {
       return;
     }
     this.notificationsSuccess = 'Preferenze notifiche aggiornate.';
+    this.closeNotificationContactsModal();
+    this.closeNotificationPreferencesModal();
+  }
+
+  openNotificationContactsModal(): void {
+    this.notificationsError = '';
+    this.notificationsSuccess = '';
+    this.showNotificationContactsModal = true;
+  }
+
+  closeNotificationContactsModal(): void {
+    this.showNotificationContactsModal = false;
+  }
+
+  openNotificationPreferencesModal(): void {
+    this.notificationsError = '';
+    this.notificationsSuccess = '';
+    this.showNotificationPreferencesModal = true;
+  }
+
+  closeNotificationPreferencesModal(): void {
+    this.showNotificationPreferencesModal = false;
   }
 
   confirmAdmission(admission: AdmissionItem): void {
