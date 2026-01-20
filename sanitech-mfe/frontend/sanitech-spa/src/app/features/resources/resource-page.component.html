@@ -232,12 +232,21 @@
               <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
                   <h5 class="fw-semibold mb-0">Appuntamenti attivi</h5>
-                  <button
-                    class="btn btn-outline-primary btn-sm"
-                    type="button"
-                    (click)="openBookingModal()">
-                    Nuova prenotazione
-                  </button>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button
+                      class="btn btn-outline-secondary btn-sm"
+                      type="button"
+                      (click)="loadScheduling()"
+                      [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                    <button
+                      class="btn btn-outline-primary btn-sm"
+                      type="button"
+                      (click)="openBookingModal()">
+                      Nuova prenotazione
+                    </button>
+                  </div>
                 </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
@@ -266,28 +275,22 @@
                           </td>
                           <td>
                             <button
-                              class="btn btn-outline-success btn-sm me-2"
-                              type="button"
-                              aria-label="Conferma appuntamento"
-                              [disabled]="appointment.status === 'CONFIRMED'"
-                              (click)="confirmPatientAppointment(appointment)">
-                              ✅
-                            </button>
-                            <button
                               class="btn btn-outline-danger btn-sm me-2"
                               type="button"
                               aria-label="Elimina appuntamento"
+                              [disabled]="appointment.status !== 'PENDING' && appointment.status !== 'IN_ATTESA'"
                               (click)="cancelAppointment(appointment)">
                               🗑️
                             </button>
                             <button
                               class="btn btn-outline-secondary btn-sm"
                               type="button"
-                              aria-label="Richiedi riprogrammazione"
+                              aria-label="Riprogramma appuntamento"
+                              [disabled]="appointment.status !== 'CONFIRMED'"
                               data-bs-toggle="collapse"
                               [attr.data-bs-target]="'#reschedule-' + appointment.id"
                               aria-expanded="false">
-                              📅
+                              🔁
                             </button>
                           </td>
                         </tr>
@@ -373,14 +376,19 @@
     <ng-template #otherLayouts>
       <ng-container *ngIf="mode === 'docs'; else paymentsLayout">
         <div class="row g-4">
-          <div class="col-lg-8">
+          <div class="col-12">
             <div class="card card-glass mb-4">
               <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between mb-3">
                   <h5 class="fw-semibold mb-0">Documenti clinici</h5>
-                  <button class="btn btn-outline-secondary btn-sm" (click)="loadDocs()" [disabled]="isLoading">
-                    Aggiorna
-                  </button>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" (click)="loadDocs()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                    <button class="btn btn-primary btn-sm" type="button" (click)="openDocumentModal()">
+                      Carica documento
+                    </button>
+                  </div>
                 </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
@@ -390,7 +398,8 @@
                         <th>Tipo</th>
                         <th>Nome</th>
                         <th>Note</th>
-                        <th>Data</th>
+                        <th>Stato</th>
+                        <th>Data e ora</th>
                         <th>Azioni</th>
                       </tr>
                     </thead>
@@ -400,7 +409,12 @@
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
                         <td>{{ doc.notes || '-' }}</td>
-                        <td>{{ formatDate(doc.uploadedAt) }}</td>
+                        <td>
+                          <span class="badge" [class.bg-success]="isDocumentViewed(doc)" [class.bg-secondary]="!isDocumentViewed(doc)">
+                            {{ getDocumentStatusLabel(doc) }}
+                          </span>
+                        </td>
+                        <td>{{ formatDateTime(doc.uploadedAt) }}</td>
                         <td>
                           <button
                             class="btn btn-outline-secondary btn-sm me-2"
@@ -419,7 +433,7 @@
                         </td>
                       </tr>
                       <tr *ngIf="!documents.length">
-                        <td [attr.colspan]="isDoctor ? 6 : 5" class="text-center text-muted">Nessun documento presente.</td>
+                        <td [attr.colspan]="isDoctor ? 7 : 6" class="text-center text-muted">Nessun documento presente.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -430,7 +444,17 @@
 
             <div class="card card-glass" *ngIf="!isDoctor">
               <div class="card-body">
-                <h5 class="fw-semibold mb-3">Consensi informati</h5>
+                <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+                  <h5 class="fw-semibold mb-0">Consensi informati</h5>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="loadDocs()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="openConsentModal()">
+                      Registra consenso
+                    </button>
+                  </div>
+                </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
                     <thead>
@@ -460,6 +484,13 @@
                             (click)="deleteConsent(consent)">
                             🗑️
                           </button>
+                          <button
+                            class="btn btn-outline-secondary btn-sm ms-2"
+                            type="button"
+                            aria-label="Modifica consenso"
+                            (click)="editConsent(consent)">
+                            ✏️
+                          </button>
                         </td>
                       </tr>
                       <tr *ngIf="!visibleConsents.length">
@@ -473,72 +504,115 @@
             </div>
           </div>
 
-          <div class="col-lg-4">
-            <div class="card card-glass mb-4">
-              <div class="card-body">
-                <h5 class="fw-semibold mb-3">Carica documento</h5>
-                <form (ngSubmit)="submitDocument()" #docFormRef="ngForm">
-                  <div class="mb-3" *ngIf="isDoctor">
-                    <label class="form-label">Paziente</label>
-                    <select class="form-select" name="docPatientId" [(ngModel)]="docForm.patientId" required>
-                      <option [ngValue]="null" disabled>Seleziona un paziente</option>
-                      <option *ngFor="let patient of patients" [ngValue]="patient.id">
-                        {{ patient.firstName }} {{ patient.lastName }}
-                      </option>
-                    </select>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Tipo documento</label>
-                    <select class="form-select" name="docType" [(ngModel)]="docForm.type" required>
-                      <option value="REFERT">Referto</option>
-                      <option value="CERTIFICATE">Certificato</option>
-                    </select>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Documento</label>
-                    <input class="form-control" type="file" name="docFile" (change)="handleDocumentFileSelected($event)" />
-                    <div class="form-text" *ngIf="docForm.fileName">Selezionato: {{ docForm.fileName }}</div>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Nome documento</label>
-                    <input class="form-control" type="text" name="docName" [(ngModel)]="docForm.name" required />
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Note</label>
-                    <textarea class="form-control" rows="2" name="docNotes" [(ngModel)]="docForm.notes"></textarea>
-                  </div>
-                  <div class="alert alert-danger py-2" *ngIf="docsError">{{ docsError }}</div>
-                  <button class="btn btn-primary w-100" type="submit" [disabled]="docFormRef.invalid || isLoading">
-                    {{ isLoading ? 'Salvataggio...' : 'Carica documento' }}
-                  </button>
-                </form>
-              </div>
-            </div>
+        </div>
 
-            <div class="card card-glass" *ngIf="!isDoctor">
-              <div class="card-body">
-                <h5 class="fw-semibold mb-3">Registra consenso</h5>
-                <form (ngSubmit)="submitConsent()" #consentFormRef="ngForm">
-                  <div class="mb-3">
-                    <label class="form-label">Tipo consenso</label>
-                    <select class="form-select" name="consentType" [(ngModel)]="consentForm.consentType" required>
-                      <option value="GDPR">GDPR</option>
-                      <option value="PRIVACY">Privacy</option>
-                      <option value="THERAPY">Consenso terapia</option>
-                    </select>
-                  </div>
-                  <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="consentAccepted" name="consentAccepted" [(ngModel)]="consentForm.accepted" />
-                    <label class="form-check-label" for="consentAccepted">Consenso accettato</label>
-                  </div>
-                  <button class="btn btn-outline-primary w-100" type="submit" [disabled]="consentFormRef.invalid || isLoading">
-                    {{ isLoading ? 'Salvataggio...' : 'Salva consenso' }}
-                  </button>
-                </form>
+        <ng-container *ngIf="showDocumentModal">
+          <div
+            class="modal-backdrop fade show"
+            style="position: fixed; inset: 0; z-index: 1050;"
+            (click)="closeDocumentModal()"></div>
+          <div
+            class="modal d-flex align-items-center justify-content-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="uploadDocumentModalTitle"
+            style="position: fixed; inset: 0; z-index: 1055;">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="uploadDocumentModalTitle">Carica documento</h5>
+                  <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDocumentModal()"></button>
+                </div>
+                <div class="modal-body">
+                  <form (ngSubmit)="submitDocument()" #docFormRef="ngForm">
+                    <div class="mb-3" *ngIf="isDoctor">
+                      <label class="form-label">Paziente</label>
+                      <select class="form-select" name="docPatientId" [(ngModel)]="docForm.patientId" required>
+                        <option [ngValue]="null" disabled>Seleziona un paziente</option>
+                        <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                          {{ patient.firstName }} {{ patient.lastName }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Tipo documento</label>
+                      <select class="form-select" name="docType" [(ngModel)]="docForm.type" required>
+                        <option value="REFERT">Referto</option>
+                        <option value="CERTIFICATE">Certificato</option>
+                        <option value="GENERIC">Documento generico</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Documento</label>
+                      <input class="form-control" type="file" name="docFile" (change)="handleDocumentFileSelected($event)" />
+                      <div class="form-text" *ngIf="docForm.fileName">Selezionato: {{ docForm.fileName }}</div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Nome documento</label>
+                      <input class="form-control" type="text" name="docName" [(ngModel)]="docForm.name" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Note</label>
+                      <textarea class="form-control" rows="2" name="docNotes" [(ngModel)]="docForm.notes"></textarea>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="docsError">{{ docsError }}</div>
+                    <div class="d-flex justify-content-end gap-2">
+                      <button class="btn btn-outline-secondary" type="button" (click)="closeDocumentModal()">Annulla</button>
+                      <button class="btn btn-primary" type="submit" [disabled]="docFormRef.invalid || isLoading">
+                        {{ isLoading ? 'Salvataggio...' : 'Carica documento' }}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </ng-container>
+
+        <ng-container *ngIf="showConsentModal">
+          <div
+            class="modal-backdrop fade show"
+            style="position: fixed; inset: 0; z-index: 1050;"
+            (click)="closeConsentModal()"></div>
+          <div
+            class="modal d-flex align-items-center justify-content-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="registerConsentModalTitle"
+            style="position: fixed; inset: 0; z-index: 1055;">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="registerConsentModalTitle">Registra consenso</h5>
+                  <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeConsentModal()"></button>
+                </div>
+                <div class="modal-body">
+                  <form (ngSubmit)="submitConsent()" #consentFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Tipo consenso</label>
+                      <select class="form-select" name="consentType" [(ngModel)]="consentForm.consentType" required>
+                        <option value="GDPR">GDPR</option>
+                        <option value="PRIVACY">Privacy</option>
+                        <option value="THERAPY">Consenso terapia</option>
+                      </select>
+                    </div>
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" id="consentAcceptedModal" name="consentAccepted" [(ngModel)]="consentForm.accepted" />
+                      <label class="form-check-label" for="consentAcceptedModal">Consenso accettato</label>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="docsError">{{ docsError }}</div>
+                    <div class="d-flex justify-content-end gap-2">
+                      <button class="btn btn-outline-secondary" type="button" (click)="closeConsentModal()">Annulla</button>
+                      <button class="btn btn-outline-primary" type="submit" [disabled]="consentFormRef.invalid || isLoading">
+                        {{ isLoading ? 'Salvataggio...' : 'Salva consenso' }}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
       </ng-container>
 
       <ng-template #paymentsLayout>

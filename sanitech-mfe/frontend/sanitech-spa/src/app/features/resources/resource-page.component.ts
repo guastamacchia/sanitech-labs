@@ -144,7 +144,7 @@ export class ResourcePageComponent {
   payload = '';
   responseBody = '';
   isLoading = false;
-  pageSize = 10;
+  pageSize = 5;
   pageSizeOptions = [5, 10, 20, 50];
   private pageState: Record<string, number> = {};
   mode:
@@ -169,6 +169,8 @@ export class ResourcePageComponent {
   };
   rescheduleDates: Record<number, string> = {};
   showBookingModal = false;
+  showDocumentModal = false;
+  showConsentModal = false;
   slotForm = {
     date: '',
     time: '',
@@ -539,9 +541,18 @@ export class ResourcePageComponent {
     const labels: Record<string, string> = {
       REFERT: 'Referto',
       REPORT: 'Referto',
-      CERTIFICATE: 'Certificato'
+      CERTIFICATE: 'Certificato',
+      GENERIC: 'Documento generico'
     };
     return labels[type] ?? type;
+  }
+
+  isDocumentViewed(doc: DocumentItem): boolean {
+    return doc.id % 2 === 0;
+  }
+
+  getDocumentStatusLabel(doc: DocumentItem): string {
+    return this.isDocumentViewed(doc) ? 'Visualizzato' : 'Da visualizzare';
   }
 
   getSpecialityLabel(code: string): string {
@@ -590,6 +601,12 @@ export class ResourcePageComponent {
       ACTIVE: 'Attivo'
     };
     return labels[status] ?? status;
+  }
+
+  editConsent(consent: ConsentItem): void {
+    this.consentForm.consentType = consent.consentType;
+    this.consentForm.accepted = consent.accepted;
+    this.openConsentModal();
   }
 
   getAdmissionStatusLabel(status: string): string {
@@ -856,6 +873,24 @@ export class ResourcePageComponent {
     this.showBookingModal = false;
   }
 
+  openDocumentModal(): void {
+    this.docsError = '';
+    this.showDocumentModal = true;
+  }
+
+  closeDocumentModal(): void {
+    this.showDocumentModal = false;
+  }
+
+  openConsentModal(): void {
+    this.docsError = '';
+    this.showConsentModal = true;
+  }
+
+  closeConsentModal(): void {
+    this.showConsentModal = false;
+  }
+
   loadDocs(): void {
     this.isLoading = true;
     this.docsError = '';
@@ -903,6 +938,7 @@ export class ResourcePageComponent {
         this.docForm.name = '';
         this.docForm.fileName = '';
         this.docForm.notes = '';
+        this.closeDocumentModal();
         this.isLoading = false;
       },
       error: () => {
@@ -923,6 +959,7 @@ export class ResourcePageComponent {
         if (!this.consents.some((item) => item.id === consent.id)) {
           this.consents = [...this.consents, consent];
         }
+        this.closeConsentModal();
         this.isLoading = false;
       },
       error: () => {
