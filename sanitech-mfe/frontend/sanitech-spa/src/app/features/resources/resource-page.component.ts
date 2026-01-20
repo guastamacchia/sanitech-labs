@@ -38,6 +38,7 @@ interface DocumentItem {
   name: string;
   notes?: string;
   uploadedAt: string;
+  viewedByCurrentUser?: boolean;
 }
 
 interface ConsentItem {
@@ -194,7 +195,16 @@ export class ResourcePageComponent {
   editingConsentId: number | null = null;
   payments: PaymentItem[] = [];
   admissions: AdmissionItem[] = [];
+  showAdmissionRescheduleModal = false;
+  rescheduleAdmission: AdmissionItem | null = null;
+  rescheduleForm = {
+    date: '',
+    reason: ''
+  };
+  rescheduleError = '';
+  rescheduleSuccess = '';
   paymentsError = '';
+  paymentsSuccess = '';
   paymentForm = {
     paymentId: null as number | null,
     receiptName: '',
@@ -551,6 +561,12 @@ export class ResourcePageComponent {
   }
 
   isDocumentViewed(doc: DocumentItem): boolean {
+    if (doc.viewedByCurrentUser) {
+      return true;
+    }
+    if (this.isPatient && doc.patientId === 1) {
+      return true;
+    }
     return doc.id % 2 === 0;
   }
 
@@ -979,7 +995,7 @@ export class ResourcePageComponent {
     }
     this.api.request<DocumentItem>('POST', '/api/docs', payload).subscribe({
       next: (doc) => {
-        this.documents = [...this.documents, doc];
+        this.documents = [...this.documents, { ...doc, viewedByCurrentUser: true }];
         this.docForm.name = '';
         this.docForm.fileName = '';
         this.docForm.notes = '';
@@ -1025,6 +1041,7 @@ export class ResourcePageComponent {
   loadPayments(): void {
     this.isLoading = true;
     this.paymentsError = '';
+    this.paymentsSuccess = '';
     this.api.request<PaymentItem[]>('GET', '/api/payments').subscribe({
       next: (payments) => {
         this.payments = payments;
@@ -1212,6 +1229,37 @@ export class ResourcePageComponent {
     this.showNotificationPreferencesModal = false;
   }
 
+  openAdmissionRescheduleModal(admission: AdmissionItem): void {
+    this.rescheduleAdmission = admission;
+    this.rescheduleForm = {
+      date: '',
+      reason: admission.notes ?? ''
+    };
+    this.rescheduleError = '';
+    this.rescheduleSuccess = '';
+    this.showAdmissionRescheduleModal = true;
+  }
+
+  closeAdmissionRescheduleModal(): void {
+    this.showAdmissionRescheduleModal = false;
+    this.rescheduleAdmission = null;
+  }
+
+  submitAdmissionReschedule(): void {
+    this.rescheduleError = '';
+    if (!this.rescheduleAdmission) {
+      this.rescheduleError = 'Seleziona un ricovero da ripianificare.';
+      return;
+    }
+    if (!this.rescheduleForm.date.trim() || !this.rescheduleForm.reason.trim()) {
+      this.rescheduleError = 'Inserisci data e motivazione per la ripianificazione.';
+      return;
+    }
+    this.admissions = this.admissions.filter((item) => item.id !== this.rescheduleAdmission?.id);
+    this.rescheduleSuccess = 'Richiesta di ripianificazione inviata.';
+    this.closeAdmissionRescheduleModal();
+  }
+
   confirmAdmission(admission: AdmissionItem): void {
     if (admission.status === 'CONFIRMED') {
       return;
@@ -1237,15 +1285,28 @@ export class ResourcePageComponent {
     this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'PAID' } : item));
   }
 
-  attachPaymentReceipt(payment: PaymentItem): void {
-    if (payment.receiptName || payment.status !== 'PAID') {
+  openPaymentReceiptUpload(payment: PaymentItem, input: HTMLInputElement): void {
+    if (!this.canAttachPaymentReceipt(payment)) {
+      return;
+    }
+    input.click();
+  }
+
+  onPaymentReceiptSelected(event: Event, payment: PaymentItem): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
       return;
     }
     this.payments = this.payments.map((item) =>
-      item.id === payment.id
-        ? { ...item, receiptName: 'ricevuta-caricata.pdf', status: item.status === 'PAID' ? 'RECEIPT_UPLOADED' : item.status }
-        : item
+      item.id === payment.id ? { ...item, receiptName: file.name, status: 'RECEIPT_UPLOADED' } : item
     );
+    input.value = '';
+  }
+
+  askPaymentQuestion(payment: PaymentItem): void {
+    this.paymentsError = '';
+    this.paymentsSuccess = `Richiesta inviata per il pagamento #${payment.id}.`;
   }
 
   confirmPayment(payment: PaymentItem): void {
