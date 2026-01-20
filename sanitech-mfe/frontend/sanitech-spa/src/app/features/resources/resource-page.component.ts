@@ -647,7 +647,7 @@ export class ResourcePageComponent {
   getAdmissionPaymentLabel(admission: AdmissionItem): string {
     const startDate = this.formatDate(admission.admittedAt);
     const endDate = this.formatDate(this.addDays(admission.admittedAt, 3));
-    return `Ricovero confermato in ${this.getDepartmentLabel(admission.department)} dal ${startDate} al ${endDate}`;
+    return `Ricovero da ${startDate} a ${endDate}`;
   }
 
   addDays(dateValue: string, days: number): string {
