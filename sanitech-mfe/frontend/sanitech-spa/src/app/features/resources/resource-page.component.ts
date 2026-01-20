@@ -713,15 +713,6 @@ export class ResourcePageComponent {
     return labels[consentType] ?? consentType;
   }
 
-  getPrescriptionStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      ACTIVE: 'Attiva',
-      CONFIRMED: 'Confermata',
-      PENDING: 'In attesa'
-    };
-    return labels[status] ?? status;
-  }
-
   getCurrencyLabel(currency: string): string {
     const labels: Record<string, string> = {
       EUR: 'Euro',
