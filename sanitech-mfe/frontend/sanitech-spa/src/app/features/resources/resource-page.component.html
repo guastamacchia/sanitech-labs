@@ -262,9 +262,6 @@
                           </td>
                           <td>{{ appointment.reason }}</td>
                           <td>
-                            <span class="me-2">
-                              {{ appointment.status === 'CONFIRMED' ? '✅' : appointment.status === 'PENDING' ? '⏳' : '⚠️' }}
-                            </span>
                             <span>{{ getStatusLabel(appointment.status) }}</span>
                           </td>
                           <td>
