@@ -839,7 +839,8 @@ export class ResourcePageComponent {
       ACTIVE: 'Attiva',
       SUSPENDED: 'Sospesa',
       COMPLETED: 'Conclusa',
-      PENDING: 'In attesa'
+      PENDING: 'In attesa',
+      CONFIRMED: 'Confermata'
     };
     return labels[status] ?? status;
   }
