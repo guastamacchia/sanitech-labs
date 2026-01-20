@@ -232,12 +232,21 @@
               <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
                   <h5 class="fw-semibold mb-0">Appuntamenti attivi</h5>
-                  <button
-                    class="btn btn-outline-primary btn-sm"
-                    type="button"
-                    (click)="openBookingModal()">
-                    Nuova prenotazione
-                  </button>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button
+                      class="btn btn-outline-secondary btn-sm"
+                      type="button"
+                      (click)="loadScheduling()"
+                      [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                    <button
+                      class="btn btn-outline-primary btn-sm"
+                      type="button"
+                      (click)="openBookingModal()">
+                      Nuova prenotazione
+                    </button>
+                  </div>
                 </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
@@ -266,28 +275,22 @@
                           </td>
                           <td>
                             <button
-                              class="btn btn-outline-success btn-sm me-2"
-                              type="button"
-                              aria-label="Conferma appuntamento"
-                              [disabled]="appointment.status === 'CONFIRMED'"
-                              (click)="confirmPatientAppointment(appointment)">
-                              ✅
-                            </button>
-                            <button
                               class="btn btn-outline-danger btn-sm me-2"
                               type="button"
                               aria-label="Elimina appuntamento"
+                              [disabled]="appointment.status !== 'PENDING' && appointment.status !== 'IN_ATTESA'"
                               (click)="cancelAppointment(appointment)">
                               🗑️
                             </button>
                             <button
                               class="btn btn-outline-secondary btn-sm"
                               type="button"
-                              aria-label="Richiedi riprogrammazione"
+                              aria-label="Riprogramma appuntamento"
+                              [disabled]="appointment.status !== 'CONFIRMED'"
                               data-bs-toggle="collapse"
                               [attr.data-bs-target]="'#reschedule-' + appointment.id"
                               aria-expanded="false">
-                              📅
+                              🔁
                             </button>
                           </td>
                         </tr>
