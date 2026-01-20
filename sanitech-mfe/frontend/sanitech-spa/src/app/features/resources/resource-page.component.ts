@@ -624,11 +624,11 @@ export class ResourcePageComponent {
 
   getPaymentStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      PENDING: 'Da pagare',
-      PAID: 'Pagamento effettuato',
-      RECEIPT_UPLOADED: 'Ricevuta allegata',
-      CONFIRMED: 'Pagato',
-      IN_ATTESA: 'Da pagare',
+      PENDING: 'Pagamento in attesa',
+      IN_ATTESA: 'Pagamento in attesa',
+      PAID: 'Carica allegato',
+      RECEIPT_UPLOADED: 'In attesa di conferma',
+      CONFIRMED: 'Pagamento confermato',
       FAILED: 'Non riuscito'
     };
     return labels[status] ?? status;
@@ -1191,7 +1191,7 @@ export class ResourcePageComponent {
   }
 
   markPaymentAsPaid(payment: PaymentItem): void {
-    if (payment.status === 'PAID' || payment.status === 'CONFIRMED') {
+    if (payment.status !== 'PENDING' && payment.status !== 'IN_ATTESA') {
       return;
     }
     this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'PAID' } : item));

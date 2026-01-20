@@ -572,7 +572,7 @@
             aria-modal="true"
             aria-labelledby="registerConsentModalTitle"
             style="position: fixed; inset: 0; z-index: 1055;">
-            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
               <div class="modal-content">
                 <div class="modal-header">
                   <h5 class="modal-title" id="registerConsentModalTitle">Registra consenso</h5>
@@ -660,14 +660,6 @@
                                 (click)="attachPaymentReceipt(payment)">
                                 📎
                               </button>
-                              <button
-                                class="btn btn-outline-success btn-sm"
-                                type="button"
-                                aria-label="Conferma pagamento ricevuto"
-                                [disabled]="payment.status !== 'RECEIPT_UPLOADED'"
-                                (click)="confirmPayment(payment)">
-                                ✅
-                              </button>
                             </td>
                           </tr>
                           <tr *ngIf="!payments.length">
@@ -676,6 +668,41 @@
                         </tbody>
                       </table>
                       <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'payments', total: payments.length }"></ng-container>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="card card-glass">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                      <h5 class="fw-semibold mb-0">Ricoveri</h5>
+                    </div>
+                    <div class="table-responsive">
+                      <table class="table align-middle">
+                        <thead>
+                          <tr>
+                            <th>Reparto</th>
+                            <th>Letto</th>
+                            <th>Data ricovero</th>
+                            <th>Stato</th>
+                            <th>Motivo</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissionsPayments'):getPageSliceEnd('admissionsPayments')">
+                            <td>{{ getDepartmentLabel(admission.department) }}</td>
+                            <td>{{ admission.bedId }}</td>
+                            <td>{{ formatDate(admission.admittedAt) }}</td>
+                            <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
+                            <td>{{ admission.notes || '-' }}</td>
+                          </tr>
+                          <tr *ngIf="!visibleAdmissions.length">
+                            <td colspan="5" class="text-center text-muted">Nessun ricovero registrato.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'admissionsPayments', total: visibleAdmissions.length }"></ng-container>
                     </div>
                   </div>
                 </div>
@@ -700,7 +727,7 @@
         aria-modal="true"
         aria-labelledby="newBookingModalTitle"
         *ngIf="showBookingModal">
-        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title" id="newBookingModalTitle">Nuova prenotazione</h5>
@@ -880,7 +907,7 @@
                   aria-modal="true"
                   aria-labelledby="notificationContactsModalTitle"
                   style="position: fixed; inset: 0; z-index: 1055;">
-                  <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-dialog modal-dialog-centered modal-lg">
                     <div class="modal-content">
                       <div class="modal-header">
                         <h5 class="modal-title" id="notificationContactsModalTitle">Contatti per le notifiche</h5>
@@ -922,7 +949,7 @@
                   aria-modal="true"
                   aria-labelledby="notificationPreferencesModalTitle"
                   style="position: fixed; inset: 0; z-index: 1055;">
-                  <div class="modal-dialog modal-dialog-centered modal-lg">
+                  <div class="modal-dialog modal-dialog-centered modal-xl">
                     <div class="modal-content">
                       <div class="modal-header">
                         <h5 class="modal-title" id="notificationPreferencesModalTitle">Preferenze di notifica</h5>
