@@ -624,11 +624,11 @@ export class ResourcePageComponent {
 
   getPaymentStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      PENDING: 'Pagamento in attesa',
-      IN_ATTESA: 'Pagamento in attesa',
-      PAID: 'Carica allegato',
-      RECEIPT_UPLOADED: 'In attesa di conferma',
-      CONFIRMED: 'Pagamento confermato',
+      PENDING: 'Pagamento da effettuare',
+      IN_ATTESA: 'Pagamento da effettuare',
+      PAID: 'Ricevuta da caricare',
+      RECEIPT_UPLOADED: 'In fase di approvazione',
+      CONFIRMED: 'Pagamento ricevuto',
       FAILED: 'Non riuscito'
     };
     return labels[status] ?? status;
