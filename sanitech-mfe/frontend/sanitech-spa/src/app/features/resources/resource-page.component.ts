@@ -614,7 +614,7 @@ export class ResourcePageComponent {
 
   getAdmissionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      ACTIVE: 'Attivo',
+      ACTIVE: 'Da confermare',
       CONFIRMED: 'Confermato',
       REJECTED: 'Rifiutato',
       DISCHARGED: 'Dimesso'
@@ -622,16 +622,31 @@ export class ResourcePageComponent {
     return labels[status] ?? status;
   }
 
-  getPaymentStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      PENDING: 'Pagamento in attesa',
-      IN_ATTESA: 'Pagamento in attesa',
-      PAID: 'Carica allegato',
-      RECEIPT_UPLOADED: 'In attesa di conferma',
-      CONFIRMED: 'Pagamento confermato',
-      FAILED: 'Non riuscito'
-    };
-    return labels[status] ?? status;
+  getPaymentStatusLabel(payment: PaymentItem): string {
+    if (payment.status === 'CONFIRMED') {
+      return 'Pagamento ricevuto';
+    }
+    if (payment.status === 'RECEIPT_UPLOADED' || (payment.status === 'PAID' && payment.receiptName)) {
+      return 'In fase di approvazione';
+    }
+    if (payment.status === 'PAID') {
+      return 'Ricevuta da caricare';
+    }
+    if (payment.status === 'PENDING' || payment.status === 'IN_ATTESA') {
+      return 'Pagamento da effettuare';
+    }
+    if (payment.status === 'FAILED') {
+      return 'Non riuscito';
+    }
+    return payment.status;
+  }
+
+  canMarkPaymentAsPaid(payment: PaymentItem): boolean {
+    return payment.status === 'PENDING' || payment.status === 'IN_ATTESA';
+  }
+
+  canAttachPaymentReceipt(payment: PaymentItem): boolean {
+    return payment.status === 'PAID' && !payment.receiptName;
   }
 
   get latestConfirmedAdmission(): AdmissionItem | null {
@@ -647,7 +662,7 @@ export class ResourcePageComponent {
   getAdmissionPaymentLabel(admission: AdmissionItem): string {
     const startDate = this.formatDate(admission.admittedAt);
     const endDate = this.formatDate(this.addDays(admission.admittedAt, 3));
-    return `Ricovero confermato in ${this.getDepartmentLabel(admission.department)} dal ${startDate} al ${endDate}`;
+    return `Ricovero da ${startDate} a ${endDate}`;
   }
 
   addDays(dateValue: string, days: number): string {

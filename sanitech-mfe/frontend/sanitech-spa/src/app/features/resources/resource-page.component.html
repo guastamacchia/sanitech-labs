@@ -657,14 +657,14 @@
                             <td>{{ payment.amount }}</td>
                             <td>{{ getCurrencyLabel(payment.currency) }}</td>
                             <td>{{ payment.receiptName ? 'Caricata' : '-' }}</td>
-                            <td>{{ getPaymentStatusLabel(payment.status) }}</td>
+                            <td>{{ getPaymentStatusLabel(payment) }}</td>
                             <td>{{ formatDate(payment.paidAt) }}</td>
                             <td>
                               <button
                                 class="btn btn-outline-primary btn-sm me-2"
                                 type="button"
                                 aria-label="Registra pagamento"
-                                [disabled]="payment.status !== 'PENDING' && payment.status !== 'IN_ATTESA'"
+                                [disabled]="!canMarkPaymentAsPaid(payment)"
                                 (click)="markPaymentAsPaid(payment)">
                                 💳
                               </button>
@@ -672,7 +672,7 @@
                                 class="btn btn-outline-secondary btn-sm me-2"
                                 type="button"
                                 aria-label="Allega ricevuta"
-                                [disabled]="payment.status !== 'PAID' || payment.receiptName"
+                                [disabled]="!canAttachPaymentReceipt(payment)"
                                 (click)="attachPaymentReceipt(payment)">
                                 📎
                               </button>
@@ -684,41 +684,6 @@
                         </tbody>
                       </table>
                       <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'payments', total: payments.length }"></ng-container>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="card card-glass">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                      <h5 class="fw-semibold mb-0">Ricoveri</h5>
-                    </div>
-                    <div class="table-responsive">
-                      <table class="table align-middle">
-                        <thead>
-                          <tr>
-                            <th>Reparto</th>
-                            <th>Letto</th>
-                            <th>Data ricovero</th>
-                            <th>Stato</th>
-                            <th>Motivo</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissionsPayments'):getPageSliceEnd('admissionsPayments')">
-                            <td>{{ getDepartmentLabel(admission.department) }}</td>
-                            <td>{{ admission.bedId }}</td>
-                            <td>{{ formatDate(admission.admittedAt) }}</td>
-                            <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
-                            <td>{{ admission.notes || '-' }}</td>
-                          </tr>
-                          <tr *ngIf="!visibleAdmissions.length">
-                            <td colspan="5" class="text-center text-muted">Nessun ricovero registrato.</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                      <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'admissionsPayments', total: visibleAdmissions.length }"></ng-container>
                     </div>
                   </div>
                 </div>
@@ -923,7 +888,7 @@
                   aria-modal="true"
                   aria-labelledby="notificationContactsModalTitle"
                   style="position: fixed; inset: 0; z-index: 1055;">
-                  <div class="modal-dialog modal-dialog-centered modal-lg">
+                  <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 720px;">
                     <div class="modal-content">
                       <div class="modal-header">
                         <h5 class="modal-title" id="notificationContactsModalTitle">Contatti per le notifiche</h5>
@@ -965,7 +930,7 @@
                   aria-modal="true"
                   aria-labelledby="notificationPreferencesModalTitle"
                   style="position: fixed; inset: 0; z-index: 1055;">
-                  <div class="modal-dialog modal-dialog-centered modal-xl">
+                  <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 980px;">
                     <div class="modal-content">
                       <div class="modal-header">
                         <h5 class="modal-title" id="notificationPreferencesModalTitle">Preferenze di notifica</h5>
