@@ -614,7 +614,7 @@ export class ResourcePageComponent {
 
   getAdmissionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      ACTIVE: 'Attivo',
+      ACTIVE: 'Da confermare',
       CONFIRMED: 'Confermato',
       REJECTED: 'Rifiutato',
       DISCHARGED: 'Dimesso'
@@ -622,16 +622,31 @@ export class ResourcePageComponent {
     return labels[status] ?? status;
   }
 
-  getPaymentStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      PENDING: 'Pagamento da effettuare',
-      IN_ATTESA: 'Pagamento da effettuare',
-      PAID: 'Ricevuta da caricare',
-      RECEIPT_UPLOADED: 'In fase di approvazione',
-      CONFIRMED: 'Pagamento ricevuto',
-      FAILED: 'Non riuscito'
-    };
-    return labels[status] ?? status;
+  getPaymentStatusLabel(payment: PaymentItem): string {
+    if (payment.status === 'CONFIRMED') {
+      return 'Pagamento ricevuto';
+    }
+    if (payment.status === 'RECEIPT_UPLOADED' || (payment.status === 'PAID' && payment.receiptName)) {
+      return 'In fase di approvazione';
+    }
+    if (payment.status === 'PAID') {
+      return 'Ricevuta da caricare';
+    }
+    if (payment.status === 'PENDING' || payment.status === 'IN_ATTESA') {
+      return 'Pagamento da effettuare';
+    }
+    if (payment.status === 'FAILED') {
+      return 'Non riuscito';
+    }
+    return payment.status;
+  }
+
+  canMarkPaymentAsPaid(payment: PaymentItem): boolean {
+    return payment.status === 'PENDING' || payment.status === 'IN_ATTESA';
+  }
+
+  canAttachPaymentReceipt(payment: PaymentItem): boolean {
+    return payment.status === 'PAID' && !payment.receiptName;
   }
 
   get latestConfirmedAdmission(): AdmissionItem | null {
