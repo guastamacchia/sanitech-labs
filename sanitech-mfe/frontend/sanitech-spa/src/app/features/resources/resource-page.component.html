@@ -480,11 +480,11 @@
         <ng-container *ngIf="mode === 'payments'; else admissionsLayout">
           <ng-container *ngIf="!isDoctor; else doctorPaymentsHidden">
             <div class="row g-4">
-              <div class="col-lg-8">
+              <div class="col-12">
                 <div class="card card-glass">
                   <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                      <h5 class="fw-semibold mb-0">Ricoveri</h5>
+                      <h5 class="fw-semibold mb-0">Pagamenti</h5>
                       <button class="btn btn-outline-secondary btn-sm" (click)="loadPayments()" [disabled]="isLoading">
                         Aggiorna
                       </button>
@@ -493,11 +493,11 @@
                       <table class="table align-middle">
                         <thead>
                           <tr>
-                            <th>ID</th>
                             <th *ngIf="!isPatient">Paziente</th>
                             <th>Prestazione</th>
                             <th>Importo</th>
                             <th>Valuta</th>
+                            <th>Ricevuta</th>
                             <th>Stato</th>
                             <th>Data</th>
                             <th>Azioni</th>
@@ -505,28 +505,37 @@
                         </thead>
                         <tbody>
                           <tr *ngFor="let payment of payments | slice:getPageSliceStart('payments'):getPageSliceEnd('payments')">
-                            <td>{{ payment.id }}</td>
                             <td *ngIf="!isPatient">{{ getPatientLabel(payment.patientId) }}</td>
                             <td>{{ payment.service }}</td>
                             <td>{{ payment.amount }}</td>
                             <td>{{ getCurrencyLabel(payment.currency) }}</td>
+                            <td>{{ payment.receiptName ? 'Caricata' : '-' }}</td>
                             <td>{{ getPaymentStatusLabel(payment.status) }}</td>
                             <td>{{ formatDate(payment.paidAt) }}</td>
                             <td>
                               <button
-                                class="btn btn-outline-secondary btn-sm me-2"
+                                class="btn btn-outline-primary btn-sm me-2"
                                 type="button"
-                                aria-label="Visualizza ricevuta"
-                                [disabled]="!payment.receiptName"
-                                (click)="viewPaymentReceipt(payment)">
-                                👁️
+                                aria-label="Registra pagamento"
+                                [disabled]="payment.status !== 'PENDING' && payment.status !== 'IN_ATTESA'"
+                                (click)="markPaymentAsPaid(payment)">
+                                💳
                               </button>
                               <button
-                                class="btn btn-outline-danger btn-sm"
+                                class="btn btn-outline-secondary btn-sm me-2"
                                 type="button"
-                                aria-label="Elimina pagamento"
-                                (click)="deletePayment(payment)">
-                                🗑️
+                                aria-label="Allega ricevuta"
+                                [disabled]="payment.status !== 'PAID' || payment.receiptName"
+                                (click)="attachPaymentReceipt(payment)">
+                                📎
+                              </button>
+                              <button
+                                class="btn btn-outline-success btn-sm"
+                                type="button"
+                                aria-label="Conferma pagamento ricevuto"
+                                [disabled]="payment.status !== 'RECEIPT_UPLOADED'"
+                                (click)="confirmPayment(payment)">
+                                ✅
                               </button>
                             </td>
                           </tr>
@@ -537,49 +546,6 @@
                       </table>
                       <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'payments', total: payments.length }"></ng-container>
                     </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-4">
-                <div class="card card-glass">
-                  <div class="card-body">
-                    <h5 class="fw-semibold mb-3">Registra pagamento</h5>
-                    <form (ngSubmit)="submitPayment()" #paymentFormRef="ngForm">
-                      <div class="mb-3">
-                        <label class="form-label">Pagamento in attesa</label>
-                        <select
-                          class="form-select"
-                          name="paymentPendingId"
-                          [(ngModel)]="paymentForm.paymentId"
-                          (ngModelChange)="handlePaymentSelectionChange($event)"
-                          required>
-                          <option [ngValue]="null" disabled>Seleziona un pagamento in attesa</option>
-                          <option *ngFor="let payment of pendingPayments" [ngValue]="payment.id">
-                            #{{ payment.id }} • {{ payment.service }} • {{ payment.amount }} {{ getCurrencyLabel(payment.currency) }}
-                          </option>
-                        </select>
-                        <div class="form-text" *ngIf="!pendingPayments.length">Nessun pagamento in attesa disponibile.</div>
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Importo</label>
-                        <input
-                          class="form-control"
-                          type="number"
-                          name="paymentAmount"
-                          [(ngModel)]="paymentForm.amount"
-                          min="0"
-                          required />
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Ricevuta pagamento</label>
-                        <input class="form-control" type="file" name="paymentReceipt" (change)="handlePaymentReceiptSelected($event)" />
-                        <div class="form-text" *ngIf="paymentForm.receiptName">Selezionato: {{ paymentForm.receiptName }}</div>
-                      </div>
-                      <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
-                      <button class="btn btn-primary w-100" type="submit" [disabled]="paymentFormRef.invalid || isLoading || !pendingPayments.length">
-                        {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
-                      </button>
-                    </form>
                   </div>
                 </div>
               </div>
@@ -616,10 +582,10 @@
                           <th *ngIf="!isPatient">Paziente</th>
                           <th>Reparto</th>
                           <th>Letto</th>
+                          <th>Data ricovero</th>
                           <th>Stato</th>
-                          <th>Note</th>
-                          <th>Data</th>
-                          <th *ngIf="isPatient">Azione</th>
+                          <th>Motivo</th>
+                          <th>Azioni</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -627,21 +593,30 @@
                           <td *ngIf="!isPatient">{{ getPatientLabel(admission.patientId) }}</td>
                           <td>{{ getDepartmentLabel(admission.department) }}</td>
                           <td>{{ admission.bedId }}</td>
+                          <td>{{ formatDate(admission.admittedAt) }}</td>
                           <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
                           <td>{{ admission.notes || '-' }}</td>
-                          <td>{{ formatDate(admission.admittedAt) }}</td>
-                          <td *ngIf="isPatient">
+                          <td>
                             <button
-                              class="btn btn-outline-primary btn-sm"
+                              class="btn btn-outline-success btn-sm me-2"
                               type="button"
+                              aria-label="Conferma ricovero"
                               (click)="confirmAdmission(admission)"
-                              [disabled]="admission.status === 'CONFIRMED'">
-                              {{ admission.status === 'CONFIRMED' ? 'Confermato' : 'Conferma ricovero' }}
+                              [disabled]="admission.status === 'CONFIRMED' || admission.status === 'REJECTED'">
+                              ✅
+                            </button>
+                            <button
+                              class="btn btn-outline-danger btn-sm"
+                              type="button"
+                              aria-label="Rifiuta ricovero"
+                              (click)="rejectAdmission(admission)"
+                              [disabled]="admission.status === 'CONFIRMED' || admission.status === 'REJECTED'">
+                              ❌
                             </button>
                           </td>
                         </tr>
                         <tr *ngIf="!visibleAdmissions.length">
-                          <td [attr.colspan]="isPatient ? 6 : 6" class="text-center text-muted">Nessun ricovero registrato.</td>
+                          <td [attr.colspan]="isPatient ? 6 : 7" class="text-center text-muted">Nessun ricovero registrato.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -691,7 +666,17 @@
                         <div class="card-body d-flex flex-column h-100">
                           <h5 class="fw-semibold mb-3">Preferenze di notifica</h5>
                           <div class="mb-3">
-                            <label class="form-label">Canali preferiti</label>
+                            <div class="d-flex align-items-center justify-content-between">
+                              <label class="form-label mb-0">Canali preferiti</label>
+                              <div class="btn-group btn-group-sm" role="group" aria-label="Seleziona canali">
+                                <button class="btn btn-outline-secondary" type="button" (click)="setAllNotificationChannels(true)">
+                                  Seleziona tutti
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" (click)="setAllNotificationChannels(false)">
+                                  Deseleziona
+                                </button>
+                              </div>
+                            </div>
                             <div class="form-check">
                               <input class="form-check-input" type="checkbox" id="prefChannelEmail" name="prefChannelEmail" [(ngModel)]="notificationPrefs.channels.email" />
                               <label class="form-check-label" for="prefChannelEmail">Email</label>
@@ -706,7 +691,17 @@
                             </div>
                           </div>
                           <div class="mb-3">
-                            <label class="form-label">Tipologie di notifica</label>
+                            <div class="d-flex align-items-center justify-content-between">
+                              <label class="form-label mb-0">Tipologie di notifica</label>
+                              <div class="btn-group btn-group-sm" role="group" aria-label="Seleziona tipologie">
+                                <button class="btn btn-outline-secondary" type="button" (click)="setAllNotificationTypes(true)">
+                                  Seleziona tutti
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" (click)="setAllNotificationTypes(false)">
+                                  Deseleziona
+                                </button>
+                              </div>
+                            </div>
                             <div class="form-check">
                               <input class="form-check-input" type="checkbox" id="prefTypeAppointments" name="prefTypeAppointments" [(ngModel)]="notificationPrefs.types.appointments" />
                               <label class="form-check-label" for="prefTypeAppointments">Appuntamenti</label>
@@ -717,7 +712,11 @@
                             </div>
                             <div class="form-check">
                               <input class="form-check-input" type="checkbox" id="prefTypePayments" name="prefTypePayments" [(ngModel)]="notificationPrefs.types.payments" />
-                              <label class="form-check-label" for="prefTypePayments">Pagamenti e ricoveri</label>
+                              <label class="form-check-label" for="prefTypePayments">Pagamenti</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="checkbox" id="prefTypeAdmissions" name="prefTypeAdmissions" [(ngModel)]="notificationPrefs.types.admissions" />
+                              <label class="form-check-label" for="prefTypeAdmissions">Ricoveri</label>
                             </div>
                             <div class="form-check">
                               <input class="form-check-input" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPrefs.types.prescriptions" />
