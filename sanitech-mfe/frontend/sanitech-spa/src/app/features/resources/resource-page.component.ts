@@ -38,6 +38,7 @@ interface DocumentItem {
   name: string;
   notes?: string;
   uploadedAt: string;
+  viewedByCurrentUser?: boolean;
 }
 
 interface ConsentItem {
@@ -167,7 +168,10 @@ export class ResourcePageComponent {
     department: '',
     reason: ''
   };
-  rescheduleDates: Record<number, string> = {};
+  showAppointmentRescheduleModal = false;
+  rescheduleAppointment: SchedulingAppointment | null = null;
+  rescheduleAppointmentDate = '';
+  rescheduleAppointmentReason = '';
   showBookingModal = false;
   showDocumentModal = false;
   showConsentModal = false;
@@ -194,7 +198,16 @@ export class ResourcePageComponent {
   editingConsentId: number | null = null;
   payments: PaymentItem[] = [];
   admissions: AdmissionItem[] = [];
+  showAdmissionRescheduleModal = false;
+  rescheduleAdmission: AdmissionItem | null = null;
+  rescheduleForm = {
+    date: '',
+    reason: ''
+  };
+  rescheduleError = '';
+  rescheduleSuccess = '';
   paymentsError = '';
+  paymentsSuccess = '';
   paymentForm = {
     paymentId: null as number | null,
     receiptName: '',
@@ -223,8 +236,7 @@ export class ResourcePageComponent {
     phone: '+39 347 123 4567',
     channels: {
       email: true,
-      sms: false,
-      app: true
+      sms: false
     },
     types: {
       appointments: true,
@@ -236,8 +248,9 @@ export class ResourcePageComponent {
   };
   prescriptions: PrescriptionItem[] = [];
   prescribingError = '';
-  prescriptionQuestions: Record<number, string> = {};
-  showPrescriptionQuestion: Record<number, boolean> = {};
+  showPrescriptionQuestionModal = false;
+  selectedPrescription: PrescriptionItem | null = null;
+  prescriptionQuestion = '';
   prescriptionForm = {
     patientId: 1,
     drug: '',
@@ -268,6 +281,9 @@ export class ResourcePageComponent {
   };
   auditEvents: AuditItem[] = [];
   auditError = '';
+  showPaymentQuestionModal = false;
+  selectedPayment: PaymentItem | null = null;
+  paymentQuestion = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -551,6 +567,12 @@ export class ResourcePageComponent {
   }
 
   isDocumentViewed(doc: DocumentItem): boolean {
+    if (doc.viewedByCurrentUser) {
+      return true;
+    }
+    if (this.isPatient && doc.patientId === 1) {
+      return true;
+    }
     return doc.id % 2 === 0;
   }
 
@@ -614,24 +636,40 @@ export class ResourcePageComponent {
 
   getAdmissionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      ACTIVE: 'Attivo',
+      ACTIVE: 'Da confermare',
       CONFIRMED: 'Confermato',
+      RESCHEDULED: 'Ripianificato',
       REJECTED: 'Rifiutato',
       DISCHARGED: 'Dimesso'
     };
     return labels[status] ?? status;
   }
 
-  getPaymentStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      PENDING: 'Pagamento in attesa',
-      IN_ATTESA: 'Pagamento in attesa',
-      PAID: 'Carica allegato',
-      RECEIPT_UPLOADED: 'In attesa di conferma',
-      CONFIRMED: 'Pagamento confermato',
-      FAILED: 'Non riuscito'
-    };
-    return labels[status] ?? status;
+  getPaymentStatusLabel(payment: PaymentItem): string {
+    if (payment.status === 'CONFIRMED') {
+      return 'Pagamento ricevuto';
+    }
+    if (payment.status === 'RECEIPT_UPLOADED' || (payment.status === 'PAID' && payment.receiptName)) {
+      return 'In fase di approvazione';
+    }
+    if (payment.status === 'PAID') {
+      return 'Ricevuta da caricare';
+    }
+    if (payment.status === 'PENDING' || payment.status === 'IN_ATTESA') {
+      return 'Pagamento da effettuare';
+    }
+    if (payment.status === 'FAILED') {
+      return 'Non riuscito';
+    }
+    return payment.status;
+  }
+
+  canMarkPaymentAsPaid(payment: PaymentItem): boolean {
+    return payment.status === 'PENDING' || payment.status === 'IN_ATTESA';
+  }
+
+  canAttachPaymentReceipt(payment: PaymentItem): boolean {
+    return payment.status === 'PAID' && !payment.receiptName;
   }
 
   get latestConfirmedAdmission(): AdmissionItem | null {
@@ -647,7 +685,7 @@ export class ResourcePageComponent {
   getAdmissionPaymentLabel(admission: AdmissionItem): string {
     const startDate = this.formatDate(admission.admittedAt);
     const endDate = this.formatDate(this.addDays(admission.admittedAt, 3));
-    return `Ricovero confermato in ${this.getDepartmentLabel(admission.department)} dal ${startDate} al ${endDate}`;
+    return `Ricovero da ${startDate} a ${endDate}`;
   }
 
   addDays(dateValue: string, days: number): string {
@@ -877,20 +915,40 @@ export class ResourcePageComponent {
     );
   }
 
-  submitReschedule(appointment: SchedulingAppointment): void {
-    const newDate = this.rescheduleDates[appointment.id];
-    if (!newDate) {
-      this.schedulingError = 'Seleziona una nuova data per la riprogrammazione.';
+  openAppointmentRescheduleModal(appointment: SchedulingAppointment): void {
+    this.rescheduleAppointment = appointment;
+    this.rescheduleAppointmentDate = '';
+    this.rescheduleAppointmentReason = appointment.reason;
+    this.schedulingError = '';
+    this.showAppointmentRescheduleModal = true;
+  }
+
+  closeAppointmentRescheduleModal(): void {
+    this.showAppointmentRescheduleModal = false;
+    this.rescheduleAppointment = null;
+    this.rescheduleAppointmentDate = '';
+    this.rescheduleAppointmentReason = '';
+  }
+
+  submitAppointmentReschedule(): void {
+    if (!this.rescheduleAppointment) {
+      this.schedulingError = 'Seleziona un appuntamento da riprogrammare.';
+      return;
+    }
+    if (!this.rescheduleAppointmentDate || !this.rescheduleAppointmentReason.trim()) {
+      this.schedulingError = 'Inserisci nuova data e motivazione per la riprogrammazione.';
       return;
     }
     this.slots = this.slots.map((slot) =>
-      slot.id === appointment.slotId ? { ...slot, date: newDate } : slot
+      slot.id === this.rescheduleAppointment?.slotId ? { ...slot, date: this.rescheduleAppointmentDate } : slot
     );
     this.appointments = this.appointments.map((item) =>
-      item.id === appointment.id ? { ...item, status: 'PENDING' } : item
+      item.id === this.rescheduleAppointment?.id
+        ? { ...item, status: 'PENDING', reason: this.rescheduleAppointmentReason }
+        : item
     );
-    delete this.rescheduleDates[appointment.id];
     this.schedulingError = '';
+    this.closeAppointmentRescheduleModal();
   }
 
   openBookingModal(): void {
@@ -964,7 +1022,7 @@ export class ResourcePageComponent {
     }
     this.api.request<DocumentItem>('POST', '/api/docs', payload).subscribe({
       next: (doc) => {
-        this.documents = [...this.documents, doc];
+        this.documents = [...this.documents, { ...doc, viewedByCurrentUser: true }];
         this.docForm.name = '';
         this.docForm.fileName = '';
         this.docForm.notes = '';
@@ -1010,6 +1068,7 @@ export class ResourcePageComponent {
   loadPayments(): void {
     this.isLoading = true;
     this.paymentsError = '';
+    this.paymentsSuccess = '';
     this.api.request<PaymentItem[]>('GET', '/api/payments').subscribe({
       next: (payments) => {
         this.payments = payments;
@@ -1197,6 +1256,46 @@ export class ResourcePageComponent {
     this.showNotificationPreferencesModal = false;
   }
 
+  openAdmissionRescheduleModal(admission: AdmissionItem): void {
+    this.rescheduleAdmission = admission;
+    this.rescheduleForm = {
+      date: '',
+      reason: admission.notes ?? ''
+    };
+    this.rescheduleError = '';
+    this.rescheduleSuccess = '';
+    this.showAdmissionRescheduleModal = true;
+  }
+
+  closeAdmissionRescheduleModal(): void {
+    this.showAdmissionRescheduleModal = false;
+    this.rescheduleAdmission = null;
+  }
+
+  submitAdmissionReschedule(): void {
+    this.rescheduleError = '';
+    if (!this.rescheduleAdmission) {
+      this.rescheduleError = 'Seleziona un ricovero da ripianificare.';
+      return;
+    }
+    if (!this.rescheduleForm.date.trim() || !this.rescheduleForm.reason.trim()) {
+      this.rescheduleError = 'Inserisci data e motivazione per la ripianificazione.';
+      return;
+    }
+    this.admissions = this.admissions.map((item) =>
+      item.id === this.rescheduleAdmission?.id
+        ? {
+            ...item,
+            status: 'RESCHEDULED',
+            admittedAt: this.rescheduleForm.date,
+            notes: this.rescheduleForm.reason
+          }
+        : item
+    );
+    this.rescheduleSuccess = 'Richiesta di ripianificazione inviata.';
+    this.closeAdmissionRescheduleModal();
+  }
+
   confirmAdmission(admission: AdmissionItem): void {
     if (admission.status === 'CONFIRMED') {
       return;
@@ -1222,15 +1321,49 @@ export class ResourcePageComponent {
     this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'PAID' } : item));
   }
 
-  attachPaymentReceipt(payment: PaymentItem): void {
-    if (payment.receiptName || payment.status !== 'PAID') {
+  openPaymentReceiptUpload(payment: PaymentItem, input: HTMLInputElement): void {
+    if (!this.canAttachPaymentReceipt(payment)) {
+      return;
+    }
+    input.click();
+  }
+
+  onPaymentReceiptSelected(event: Event, payment: PaymentItem): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
       return;
     }
     this.payments = this.payments.map((item) =>
-      item.id === payment.id
-        ? { ...item, receiptName: 'ricevuta-caricata.pdf', status: item.status === 'PAID' ? 'RECEIPT_UPLOADED' : item.status }
-        : item
+      item.id === payment.id ? { ...item, receiptName: file.name, status: 'RECEIPT_UPLOADED' } : item
     );
+    input.value = '';
+  }
+
+  openPaymentQuestionModal(payment: PaymentItem): void {
+    this.selectedPayment = payment;
+    this.paymentQuestion = '';
+    this.paymentsError = '';
+    this.showPaymentQuestionModal = true;
+  }
+
+  closePaymentQuestionModal(): void {
+    this.showPaymentQuestionModal = false;
+    this.selectedPayment = null;
+    this.paymentQuestion = '';
+  }
+
+  submitPaymentQuestion(): void {
+    if (!this.selectedPayment) {
+      this.paymentsError = 'Seleziona un pagamento valido.';
+      return;
+    }
+    if (!this.paymentQuestion.trim()) {
+      this.paymentsError = 'Inserisci una domanda per la struttura.';
+      return;
+    }
+    this.paymentsSuccess = `Richiesta inviata per il pagamento #${this.selectedPayment.id}.`;
+    this.closePaymentQuestionModal();
   }
 
   confirmPayment(payment: PaymentItem): void {
@@ -1238,24 +1371,6 @@ export class ResourcePageComponent {
       return;
     }
     this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'CONFIRMED' } : item));
-  }
-
-  setAllNotificationChannels(checked: boolean): void {
-    this.notificationPrefs.channels = {
-      email: checked,
-      sms: checked,
-      app: checked
-    };
-  }
-
-  setAllNotificationTypes(checked: boolean): void {
-    this.notificationPrefs.types = {
-      appointments: checked,
-      documents: checked,
-      payments: checked,
-      admissions: checked,
-      prescriptions: checked
-    };
   }
 
   loadPrescriptions(): void {
@@ -1312,19 +1427,30 @@ export class ResourcePageComponent {
     );
   }
 
-  togglePrescriptionQuestion(prescriptionId: number): void {
-    this.showPrescriptionQuestion[prescriptionId] = !this.showPrescriptionQuestion[prescriptionId];
+  openPrescriptionQuestionModal(prescription: PrescriptionItem): void {
+    this.selectedPrescription = prescription;
+    this.prescriptionQuestion = '';
+    this.prescribingError = '';
+    this.showPrescriptionQuestionModal = true;
   }
 
-  submitPrescriptionQuestion(prescription: PrescriptionItem): void {
-    const question = (this.prescriptionQuestions[prescription.id] || '').trim();
-    if (!question) {
+  closePrescriptionQuestionModal(): void {
+    this.showPrescriptionQuestionModal = false;
+    this.selectedPrescription = null;
+    this.prescriptionQuestion = '';
+  }
+
+  submitPrescriptionQuestion(): void {
+    if (!this.selectedPrescription) {
+      this.prescribingError = 'Seleziona una prescrizione valida.';
+      return;
+    }
+    if (!this.prescriptionQuestion.trim()) {
       this.prescribingError = 'Inserisci una domanda per il medico.';
       return;
     }
     this.prescribingError = '';
-    this.prescriptionQuestions[prescription.id] = '';
-    this.showPrescriptionQuestion[prescription.id] = false;
+    this.closePrescriptionQuestionModal();
   }
 
   viewDocument(doc: DocumentItem): void {
