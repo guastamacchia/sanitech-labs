@@ -1683,11 +1683,10 @@
                     <table class="table align-middle">
                       <thead>
                         <tr>
-                          <th *ngIf="isDoctor">Paziente</th>
-                          <th *ngIf="!isDoctor">Prenotazione</th>
                           <th>Reparto</th>
+                          <th *ngIf="isDoctor">Paziente</th>
                           <th>Data e ora</th>
-                          <th>Stato prenotazione</th>
+                          <th>Prenotazione visita medica</th>
                           <th>Provider</th>
                           <th>Stato sessione</th>
                           <th *ngIf="!isDoctor">Token</th>
@@ -1696,11 +1695,10 @@
                       </thead>
                       <tbody>
                         <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('televisits'):getPageSliceEnd('televisits')">
-                          <td *ngIf="isDoctor">{{ getTelevisitPatientLabel(televisit) }}</td>
-                          <td *ngIf="!isDoctor">{{ getTelevisitAppointmentLabel(televisit.appointmentId) }}</td>
                           <td>{{ getTelevisitDepartmentLabel(televisit) }}</td>
+                          <td *ngIf="isDoctor">{{ getTelevisitPatientLabel(televisit) }}</td>
                           <td>{{ getTelevisitDateTimeLabel(televisit) }}</td>
-                          <td>{{ getTelevisitBookingStatusLabel(televisit) }}</td>
+                          <td>{{ getTelevisitAppointmentLabel(televisit.appointmentId) }}</td>
                           <td>{{ televisit.provider }}</td>
                           <td>{{ getTelevisitStatusLabel(televisit.status) }}</td>
                           <td *ngIf="!isDoctor">{{ televisit.token }}</td>
@@ -1732,7 +1730,7 @@
                           </td>
                         </tr>
                         <tr *ngIf="!televisits.length">
-                          <td [attr.colspan]="isDoctor ? 7 : 8" class="text-center text-muted">Nessuna sessione presente.</td>
+                          <td [attr.colspan]="7" class="text-center text-muted">Nessuna sessione presente.</td>
                         </tr>
                       </tbody>
                     </table>
