@@ -1566,7 +1566,7 @@
         <div class="col-12">
                 <div class="card card-glass">
                   <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
                       <h5 class="fw-semibold mb-0">Prescrizioni attive</h5>
                       <div class="d-flex flex-wrap gap-2">
                         <button class="btn btn-outline-secondary btn-sm" (click)="loadPrescriptions()" [disabled]="isLoading">
@@ -1575,6 +1575,21 @@
                         <button class="btn btn-outline-primary btn-sm" type="button" (click)="openPrescriptionModal()">
                           Nuova prescrizione
                         </button>
+                      </div>
+                    </div>
+                    <div class="row g-3 align-items-end mb-3">
+                      <div class="col-lg-4">
+                        <label class="form-label">Paziente</label>
+                        <select class="form-select" name="prescriptionPatientFilter" [(ngModel)]="prescriptionPatientFilterId">
+                          <option [ngValue]="null">Tutti i pazienti</option>
+                          <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                            {{ patient.firstName }} {{ patient.lastName }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="col-lg-8">
+                        <label class="form-label">Commento paziente</label>
+                        <textarea class="form-control" rows="2" readonly>{{ prescriptionPatientComment }}</textarea>
                       </div>
                     </div>
                     <div class="table-responsive">
@@ -1591,7 +1606,7 @@
                           </tr>
                         </thead>
                         <tbody>
-                          <tr *ngFor="let prescription of visiblePrescriptions | slice:getPageSliceStart('prescriptions'):getPageSliceEnd('prescriptions')">
+                          <tr *ngFor="let prescription of filteredPrescriptions | slice:getPageSliceStart('prescriptions'):getPageSliceEnd('prescriptions')">
                             <td>{{ getPatientLabel(prescription.patientId) }}</td>
                             <td>{{ prescription.drug }}</td>
                             <td>{{ prescription.dosage }}</td>
@@ -1633,12 +1648,12 @@
                               </button>
                             </td>
                           </tr>
-                          <tr *ngIf="!visiblePrescriptions.length">
+                          <tr *ngIf="!filteredPrescriptions.length">
                             <td colspan="7" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
                           </tr>
                         </tbody>
                       </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'prescriptionsStaff', total: visiblePrescriptions.length }"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'prescriptionsStaff', total: filteredPrescriptions.length }"></ng-container>
                     </div>
                   </div>
                 </div>

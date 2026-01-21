@@ -202,6 +202,7 @@ export class ResourcePageComponent {
   admissionPatientFilterId: number | null = null;
   televisitPatientFilterId: number | null = null;
   consentPatientFilterId: number | null = null;
+  prescriptionPatientFilterId: number | null = null;
   consentForm = {
     consentType: 'GDPR',
     accepted: true
@@ -915,6 +916,29 @@ export class ResourcePageComponent {
     return this.prescriptions;
   }
 
+  get filteredPrescriptions(): PrescriptionItem[] {
+    const prescriptions = this.visiblePrescriptions;
+    if (!this.isDoctor || !this.prescriptionPatientFilterId) {
+      return prescriptions;
+    }
+    return prescriptions.filter((prescription) => prescription.patientId === this.prescriptionPatientFilterId);
+  }
+
+  get prescriptionPatientComment(): string {
+    if (!this.prescriptionPatientFilterId) {
+      return 'Seleziona un paziente per visualizzare eventuali commenti.';
+    }
+    const patientPrescriptions = this.visiblePrescriptions.filter(
+      (prescription) => prescription.patientId === this.prescriptionPatientFilterId
+    );
+    if (!patientPrescriptions.length) {
+      return 'Nessun commento disponibile per il paziente selezionato.';
+    }
+    const latestPrescription = [...patientPrescriptions].sort((a, b) => b.id - a.id)[0];
+    const comment = latestPrescription.patientQuestion?.trim() || latestPrescription.notes?.trim();
+    return comment || 'Nessun commento disponibile per il paziente selezionato.';
+  }
+
   get visibleAdmissions(): AdmissionItem[] {
     if (this.isDoctor) {
       const doctorAppointments = this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
@@ -1490,6 +1514,33 @@ export class ResourcePageComponent {
             status: 'COMPLETED',
             admittedAt: '2026-01-18',
             notes: 'Ha segnalato vertigini notturne negli ultimi giorni.'
+          },
+          {
+            id: 4,
+            patientId: 1,
+            department: 'ORTO',
+            bedId: 7,
+            status: 'CONFIRMED',
+            admittedAt: '2025-12-05',
+            notes: 'Ricovero programmato per intervento al ginocchio.'
+          },
+          {
+            id: 5,
+            patientId: 1,
+            department: 'CARD',
+            bedId: 9,
+            status: 'COMPLETED',
+            admittedAt: '2025-10-21',
+            notes: 'Dimesso con indicazioni di follow-up cardiologico.'
+          },
+          {
+            id: 6,
+            patientId: 2,
+            department: 'PNEU',
+            bedId: 11,
+            status: 'PROPOSED',
+            admittedAt: '2026-04-02',
+            notes: 'In attesa di conferma per monitoraggio respiratorio.'
           }
         ];
       },
