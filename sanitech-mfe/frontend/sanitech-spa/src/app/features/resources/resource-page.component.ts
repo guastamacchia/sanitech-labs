@@ -312,6 +312,8 @@ export class ResourcePageComponent {
     patientId: null as number | null,
     provider: 'LIVEKIT'
   };
+  showAdminTelevisitModal = false;
+  showAdminAdmissionModal = false;
   showSlotModal = false;
   doctors: DoctorItem[] = [];
   patients: PatientItem[] = [];
@@ -1617,6 +1619,9 @@ export class ResourcePageComponent {
     }).subscribe({
       next: (admission) => {
         this.admissions = [...this.admissions, admission];
+        if (this.showAdminAdmissionModal) {
+          this.closeAdminAdmissionModal();
+        }
         this.isLoading = false;
       },
       error: () => {
@@ -1686,6 +1691,26 @@ export class ResourcePageComponent {
     };
     this.admissions = [...this.admissions, proposal];
     this.closeAdmissionProposalModal();
+  }
+
+  openAdminTelevisitModal(): void {
+    this.televisitError = '';
+    this.showAdminTelevisitModal = true;
+  }
+
+  closeAdminTelevisitModal(): void {
+    this.showAdminTelevisitModal = false;
+    this.televisitError = '';
+  }
+
+  openAdminAdmissionModal(): void {
+    this.paymentsError = '';
+    this.showAdminAdmissionModal = true;
+  }
+
+  closeAdminAdmissionModal(): void {
+    this.showAdminAdmissionModal = false;
+    this.paymentsError = '';
   }
 
   loadNotifications(): void {
@@ -2349,7 +2374,11 @@ export class ResourcePageComponent {
       next: (televisit) => {
         this.televisits = [...this.televisits, televisit];
         this.televisitForm.patientId = this.patients[0]?.id ?? null;
-        this.closeTelevisitModal();
+        if (this.showAdminTelevisitModal) {
+          this.closeAdminTelevisitModal();
+        } else {
+          this.closeTelevisitModal();
+        }
         this.isLoading = false;
       },
       error: () => {

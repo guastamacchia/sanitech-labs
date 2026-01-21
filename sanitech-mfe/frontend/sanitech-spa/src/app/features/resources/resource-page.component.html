@@ -2501,14 +2501,19 @@
       <ng-template #adminTelevisitLayout>
         <ng-container *ngIf="mode === 'admin-televisit'; else apiLayout">
           <div class="row g-4">
-            <div class="col-lg-8">
+            <div class="col-12">
               <div class="card card-glass mb-4">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
                     <h5 class="fw-semibold mb-0">Sessioni di televisita</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="loadAdminTelevisit()" [disabled]="isLoading">
-                      Aggiorna
-                    </button>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadAdminTelevisit()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                      <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminTelevisitModal()">
+                        Avvia sessione
+                      </button>
+                    </div>
                   </div>
                   <div class="table-responsive">
                     <table class="table align-middle">
@@ -2541,7 +2546,12 @@
 
               <div class="card card-glass">
                 <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Ricoveri</h5>
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">Ricoveri</h5>
+                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminAdmissionModal()">
+                      Registra ricovero
+                    </button>
+                  </div>
                   <div class="table-responsive">
                     <table class="table align-middle">
                       <thead>
@@ -2594,58 +2604,98 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="col-lg-4">
-              <div class="card card-glass mb-4">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Avvia sessione</h5>
-                  <form (ngSubmit)="submitTelevisit()" #adminTelevisitFormRef="ngForm">
-                    <div class="mb-3">
-                      <label class="form-label">ID Appuntamento</label>
-                      <input class="form-control" type="number" name="adminTelevisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Provider</label>
-                      <select class="form-select" name="adminTelevisitProvider" [(ngModel)]="televisitForm.provider" required>
-                        <option value="LIVEKIT">LiveKit</option>
-                        <option value="WEBRTC">WebRTC</option>
-                      </select>
-                    </div>
-                    <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
-                    <button class="btn btn-primary w-100" type="submit" [disabled]="adminTelevisitFormRef.invalid || isLoading">
-                      {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
-                    </button>
-                  </form>
-                </div>
-              </div>
-
-              <div class="card card-glass">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Registra ricovero</h5>
-                  <form (ngSubmit)="submitAdmission()" #adminAdmissionFormRef="ngForm">
-                    <div class="mb-3">
-                      <label class="form-label">ID Paziente</label>
-                      <input class="form-control" type="number" name="adminAdmissionPatientId" [(ngModel)]="admissionForm.patientId" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Reparto</label>
-                      <select class="form-select" name="adminAdmissionDepartment" [(ngModel)]="admissionForm.department" required>
-                        <option value="CARD">Cardiologia</option>
-                        <option value="NEURO">Neurologia</option>
-                      </select>
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Letto</label>
-                      <input class="form-control" type="number" name="adminAdmissionBedId" [(ngModel)]="admissionForm.bedId" required />
-                    </div>
-                    <button class="btn btn-outline-primary w-100" type="submit" [disabled]="adminAdmissionFormRef.invalid || isLoading">
-                      {{ isLoading ? 'Salvataggio...' : 'Registra ricovero' }}
-                    </button>
-                  </form>
+          <ng-container *ngIf="showAdminTelevisitModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeAdminTelevisitModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="adminTelevisitModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="adminTelevisitModalTitle">Avvia sessione</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminTelevisitModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form (ngSubmit)="submitTelevisit()" #adminTelevisitFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">ID Appuntamento</label>
+                        <input class="form-control" type="number" name="adminTelevisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Provider</label>
+                        <select class="form-select" name="adminTelevisitProvider" [(ngModel)]="televisitForm.provider" required>
+                          <option value="LIVEKIT">LiveKit</option>
+                          <option value="WEBRTC">WebRTC</option>
+                        </select>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeAdminTelevisitModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="adminTelevisitFormRef.invalid || isLoading">
+                          {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </ng-container>
+
+          <ng-container *ngIf="showAdminAdmissionModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeAdminAdmissionModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="adminAdmissionModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="adminAdmissionModalTitle">Registra ricovero</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminAdmissionModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form (ngSubmit)="submitAdmission()" #adminAdmissionFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">ID Paziente</label>
+                        <input class="form-control" type="number" name="adminAdmissionPatientId" [(ngModel)]="admissionForm.patientId" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Reparto</label>
+                        <select class="form-select" name="adminAdmissionDepartment" [(ngModel)]="admissionForm.department" required>
+                          <option value="CARD">Cardiologia</option>
+                          <option value="NEURO">Neurologia</option>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Letto</label>
+                        <input class="form-control" type="number" name="adminAdmissionBedId" [(ngModel)]="admissionForm.bedId" required />
+                      </div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeAdminAdmissionModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="adminAdmissionFormRef.invalid || isLoading">
+                          {{ isLoading ? 'Salvataggio...' : 'Registra ricovero' }}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
 
           <ng-container *ngIf="showAdmissionRejectModal">
             <div
