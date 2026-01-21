@@ -643,34 +643,6 @@
           </div>
         </ng-container>
 
-        <ng-container *ngIf="showDeleteConfirmModal">
-          <div
-            class="modal-backdrop fade show"
-            style="position: fixed; inset: 0; z-index: 1050;"
-            (click)="closeDeleteConfirmModal()"></div>
-          <div
-            class="modal d-flex align-items-center justify-content-center"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="deleteConfirmModalTitle"
-            style="position: fixed; inset: 0; z-index: 1055;">
-            <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="deleteConfirmModalTitle">Conferma eliminazione</h5>
-                  <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDeleteConfirmModal()"></button>
-                </div>
-                <div class="modal-body">
-                  <p class="mb-0">{{ deleteConfirmMessage }}</p>
-                </div>
-                <div class="modal-footer">
-                  <button class="btn btn-outline-secondary" type="button" (click)="closeDeleteConfirmModal()">Annulla</button>
-                  <button class="btn btn-danger" type="button" (click)="confirmDelete()">Conferma</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </ng-container>
       </ng-container>
 
       <ng-template #paymentsLayout>
@@ -1963,4 +1935,33 @@
     </ng-template>
     </ng-template>
   </div>
+
+  <ng-container *ngIf="showDeleteConfirmModal">
+    <div
+      class="modal-backdrop fade show"
+      style="position: fixed; inset: 0; z-index: 1050;"
+      (click)="closeDeleteConfirmModal()"></div>
+    <div
+      class="modal d-flex align-items-center justify-content-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="deleteConfirmModalTitle"
+      style="position: fixed; inset: 0; z-index: 1055;">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteConfirmModalTitle">Conferma eliminazione</h5>
+            <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDeleteConfirmModal()"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">{{ deleteConfirmMessage }}</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" type="button" (click)="closeDeleteConfirmModal()">Annulla</button>
+            <button class="btn btn-danger" type="button" (click)="confirmDelete()">Conferma</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
 </section>
