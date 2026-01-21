@@ -1596,39 +1596,60 @@
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
                     <h5 class="fw-semibold mb-0">Sessioni di televisita</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="loadTelevisits()" [disabled]="isLoading">
-                      Aggiorna
-                    </button>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-outline-primary btn-sm" type="button" (click)="openTelevisitModal()">
+                        Nuova televisita
+                      </button>
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadTelevisits()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                    </div>
                   </div>
                   <div class="table-responsive">
                     <table class="table align-middle">
                       <thead>
                         <tr>
-                          <th *ngIf="!isDoctor">ID</th>
                           <th *ngIf="isDoctor">Paziente</th>
-                          <th *ngIf="!isDoctor">Appuntamento</th>
+                          <th *ngIf="!isDoctor">Prenotazione</th>
+                          <th>Reparto</th>
+                          <th>Data e ora</th>
+                          <th>Stato prenotazione</th>
                           <th>Provider</th>
-                          <th>Stato</th>
+                          <th>Stato sessione</th>
                           <th *ngIf="!isDoctor">Token</th>
-                          <th *ngIf="isDoctor">Azione</th>
+                          <th>Azione</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('televisits'):getPageSliceEnd('televisits')">
-                          <td *ngIf="!isDoctor">{{ televisit.id }}</td>
-                          <td *ngIf="isDoctor">{{ getPatientLabel(televisit.appointmentId) }}</td>
-                          <td *ngIf="!isDoctor">{{ televisit.appointmentId }}</td>
+                          <td *ngIf="isDoctor">{{ getTelevisitPatientLabel(televisit) }}</td>
+                          <td *ngIf="!isDoctor">{{ getTelevisitAppointmentLabel(televisit.appointmentId) }}</td>
+                          <td>{{ getTelevisitDepartmentLabel(televisit) }}</td>
+                          <td>{{ getTelevisitDateTimeLabel(televisit) }}</td>
+                          <td>{{ getTelevisitBookingStatusLabel(televisit) }}</td>
                           <td>{{ televisit.provider }}</td>
                           <td>{{ getTelevisitStatusLabel(televisit.status) }}</td>
                           <td *ngIf="!isDoctor">{{ televisit.token }}</td>
-                          <td *ngIf="isDoctor">
-                            <button class="btn btn-outline-primary btn-sm" type="button" (click)="joinTelevisit(televisit)">
-                              Partecipa alla call
-                            </button>
+                          <td>
+                            <div class="d-flex flex-wrap gap-2">
+                              <button class="btn btn-outline-primary btn-sm" type="button" (click)="joinTelevisit(televisit)">
+                                Partecipa alla call
+                              </button>
+                              <button
+                                class="btn btn-outline-secondary btn-sm"
+                                type="button"
+                                [disabled]="!canRescheduleTelevisit(televisit)"
+                                (click)="openTelevisitRescheduleModal(televisit)">
+                                Ripianifica
+                              </button>
+                              <button class="btn btn-outline-danger btn-sm" type="button" (click)="openTelevisitDeleteModal(televisit)">
+                                Elimina
+                              </button>
+                            </div>
                           </td>
                         </tr>
                         <tr *ngIf="!televisits.length">
-                          <td [attr.colspan]="isDoctor ? 4 : 5" class="text-center text-muted">Nessuna sessione presente.</td>
+                          <td [attr.colspan]="isDoctor ? 8 : 9" class="text-center text-muted">Nessuna sessione presente.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -1642,34 +1663,8 @@
               <div class="card card-glass">
                 <div class="card-body">
                   <h5 class="fw-semibold mb-3">Avvia sessione</h5>
-                  <form (ngSubmit)="submitTelevisit()" #televisitFormRef="ngForm">
-                    <div class="mb-3" *ngIf="isDoctor; else televisitAppointment">
-                      <label class="form-label">Paziente</label>
-                      <select class="form-select" name="televisitPatientId" [(ngModel)]="televisitForm.patientId" required>
-                        <option [ngValue]="null" disabled>Seleziona un paziente</option>
-                        <option *ngFor="let patient of patients" [ngValue]="patient.id">
-                          {{ patient.firstName }} {{ patient.lastName }}
-                        </option>
-                      </select>
-                    </div>
-                    <ng-template #televisitAppointment>
-                      <div class="mb-3">
-                        <label class="form-label">ID Appuntamento</label>
-                        <input class="form-control" type="number" name="televisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required />
-                      </div>
-                    </ng-template>
-                    <div class="mb-3">
-                      <label class="form-label">Provider</label>
-                      <select class="form-select" name="televisitProvider" [(ngModel)]="televisitForm.provider" required>
-                        <option value="LIVEKIT">LiveKit</option>
-                        <option value="WEBRTC">WebRTC</option>
-                      </select>
-                    </div>
-                    <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
-                    <button class="btn btn-primary w-100" type="submit" [disabled]="televisitFormRef.invalid || isLoading">
-                      {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
-                    </button>
-                  </form>
+                  <p class="text-muted mb-3">Crea una nuova sessione partendo da una prenotazione confermata.</p>
+                  <button class="btn btn-primary w-100" type="button" (click)="openTelevisitModal()">Avvia televisita</button>
                 </div>
               </div>
             </div>
@@ -1677,6 +1672,198 @@
         </ng-container>
 
       </ng-template>
+
+      <ng-container *ngIf="showTelevisitModal">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closeTelevisitModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="televisitModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="televisitModalTitle">Nuova televisita</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeTelevisitModal()"></button>
+              </div>
+              <div class="modal-body">
+                <form (ngSubmit)="submitTelevisit()" #televisitFormRef="ngForm">
+                  <div class="mb-3" *ngIf="isDoctor; else televisitAppointment">
+                    <label class="form-label">Prenotazione confermata</label>
+                    <select class="form-select" name="televisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required>
+                      <option [ngValue]="null" disabled>Seleziona una prenotazione</option>
+                      <option *ngFor="let appointment of confirmedAppointments" [ngValue]="appointment.id">
+                        {{ getTelevisitAppointmentLabel(appointment.id) }}
+                      </option>
+                    </select>
+                    <div class="form-text" *ngIf="!confirmedAppointments.length">
+                      Nessuna prenotazione confermata disponibile.
+                    </div>
+                  </div>
+                  <ng-template #televisitAppointment>
+                    <div class="mb-3">
+                      <label class="form-label">ID Appuntamento</label>
+                      <input class="form-control" type="number" name="televisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required />
+                    </div>
+                  </ng-template>
+                  <div class="mb-3">
+                    <label class="form-label">Provider</label>
+                    <select class="form-select" name="televisitProvider" [(ngModel)]="televisitForm.provider" required>
+                      <option value="LIVEKIT">LiveKit</option>
+                      <option value="WEBRTC">WebRTC</option>
+                    </select>
+                  </div>
+                  <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeTelevisitModal()">Annulla</button>
+                    <button class="btn btn-primary" type="submit" [disabled]="televisitFormRef.invalid || isLoading">
+                      {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="showTelevisitDeleteModal && selectedTelevisit">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closeTelevisitDeleteModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="televisitDeleteModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="televisitDeleteModalTitle">Elimina televisita</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeTelevisitDeleteModal()"></button>
+              </div>
+              <div class="modal-body">
+                <p class="text-muted mb-3">
+                  Stai eliminando la sessione per {{ getTelevisitAppointmentLabel(selectedTelevisit.appointmentId) }}.
+                </p>
+                <form (ngSubmit)="submitTelevisitDelete()" #televisitDeleteRef="ngForm">
+                  <div class="mb-3">
+                    <label class="form-label">Motivazione</label>
+                    <textarea
+                      class="form-control"
+                      rows="3"
+                      name="televisitDeleteReason"
+                      [(ngModel)]="televisitDeleteReason"
+                      required></textarea>
+                  </div>
+                  <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeTelevisitDeleteModal()">Annulla</button>
+                    <button class="btn btn-danger" type="submit" [disabled]="televisitDeleteRef.invalid">Elimina</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="showTelevisitRescheduleModal && selectedTelevisit">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closeTelevisitRescheduleModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="televisitRescheduleModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="televisitRescheduleModalTitle">Ripianifica televisita</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeTelevisitRescheduleModal()"></button>
+              </div>
+              <div class="modal-body">
+                <p class="text-muted mb-3">
+                  Ripianifica la sessione per {{ getTelevisitAppointmentLabel(selectedTelevisit.appointmentId) }}.
+                </p>
+                <form (ngSubmit)="submitTelevisitReschedule()" #televisitRescheduleRef="ngForm">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Nuova data</label>
+                      <input
+                        class="form-control"
+                        type="date"
+                        name="televisitRescheduleDate"
+                        [(ngModel)]="televisitRescheduleDate"
+                        required />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Nuova ora</label>
+                      <input
+                        class="form-control"
+                        type="time"
+                        name="televisitRescheduleTime"
+                        [(ngModel)]="televisitRescheduleTime"
+                        required />
+                    </div>
+                  </div>
+                  <div class="alert alert-danger py-2 mt-3" *ngIf="televisitError">{{ televisitError }}</div>
+                  <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeTelevisitRescheduleModal()">Annulla</button>
+                    <button class="btn btn-primary" type="submit" [disabled]="televisitRescheduleRef.invalid">Salva</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="showPrescriptionRejectModal">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closePrescriptionRejectModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="prescriptionRejectModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="prescriptionRejectModalTitle">Rifiuta prescrizione</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePrescriptionRejectModal()"></button>
+              </div>
+              <div class="modal-body">
+                <form (ngSubmit)="submitPrescriptionRejection()" #prescriptionRejectRef="ngForm">
+                  <div class="mb-3">
+                    <label class="form-label">Motivazione</label>
+                    <textarea class="form-control" rows="3" name="prescriptionRejectReason" [(ngModel)]="rejectPrescriptionReason" required></textarea>
+                  </div>
+                  <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-outline-secondary" type="button" (click)="closePrescriptionRejectModal()">Annulla</button>
+                    <button class="btn btn-danger" type="submit" [disabled]="prescriptionRejectRef.invalid || isLoading">
+                      Rifiuta prescrizione
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
 
       <ng-container *ngIf="showPrescriptionRejectModal">
         <div

@@ -282,6 +282,13 @@ export class ResourcePageComponent {
   };
   televisits: TelevisitItem[] = [];
   televisitError = '';
+  showTelevisitModal = false;
+  showTelevisitDeleteModal = false;
+  showTelevisitRescheduleModal = false;
+  selectedTelevisit: TelevisitItem | null = null;
+  televisitDeleteReason = '';
+  televisitRescheduleDate = '';
+  televisitRescheduleTime = '';
   televisitForm = {
     appointmentId: 1,
     patientId: null as number | null,
@@ -541,6 +548,10 @@ export class ResourcePageComponent {
 
   getSlotById(slotId: number): SchedulingSlot | undefined {
     return this.slots.find((slot) => slot.id === slotId);
+  }
+
+  getAppointmentById(appointmentId: number): SchedulingAppointment | undefined {
+    return this.appointments.find((appointment) => appointment.id === appointmentId);
   }
 
   isAppointmentReschedulable(appointment: SchedulingAppointment): boolean {
@@ -953,6 +964,69 @@ export class ResourcePageComponent {
 
   getModalityLabel(modality: SchedulingSlot['modality']): string {
     return modality === 'REMOTE' ? 'Da remoto' : 'In presenza';
+  }
+
+  getTelevisitAppointmentLabel(appointmentId: number): string {
+    const appointment = this.getAppointmentById(appointmentId);
+    if (!appointment) {
+      return `Prenotazione ${appointmentId}`;
+    }
+    const slot = this.getSlotById(appointment.slotId);
+    const dateLabel = slot ? `${this.formatDate(slot.date)} • ${slot.time}` : '-';
+    return `${this.getPatientLabel(appointment.patientId)} • ${dateLabel}`;
+  }
+
+  getTelevisitDepartmentLabel(televisit: TelevisitItem): string {
+    const appointment = this.getAppointmentById(televisit.appointmentId);
+    if (!appointment) {
+      return '-';
+    }
+    return this.getDepartmentLabel(this.getDoctorById(appointment.doctorId)?.speciality || '-');
+  }
+
+  getTelevisitPatientLabel(televisit: TelevisitItem): string {
+    const appointment = this.getAppointmentById(televisit.appointmentId);
+    if (!appointment) {
+      return '-';
+    }
+    return this.getPatientLabel(appointment.patientId);
+  }
+
+  getTelevisitDateTimeLabel(televisit: TelevisitItem): string {
+    const appointment = this.getAppointmentById(televisit.appointmentId);
+    if (!appointment) {
+      return '-';
+    }
+    const slot = this.getSlotById(appointment.slotId);
+    if (!slot) {
+      return '-';
+    }
+    return `${this.formatDate(slot.date)} • ${slot.time}`;
+  }
+
+  getTelevisitBookingStatusLabel(televisit: TelevisitItem): string {
+    const appointment = this.getAppointmentById(televisit.appointmentId);
+    if (!appointment) {
+      return '-';
+    }
+    return this.getAppointmentStatusLabel(appointment.status);
+  }
+
+  canRescheduleTelevisit(televisit: TelevisitItem): boolean {
+    const appointment = this.getAppointmentById(televisit.appointmentId);
+    if (!appointment) {
+      return false;
+    }
+    const slot = this.getSlotById(appointment.slotId);
+    if (!slot?.date || !slot.time) {
+      return false;
+    }
+    const dateTimeValue = slot.date.includes('T') ? slot.date : `${slot.date}T${slot.time}`;
+    const parsed = new Date(dateTimeValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+    return parsed.getTime() >= Date.now();
   }
 
   submitSlot(): void {
@@ -1658,6 +1732,82 @@ export class ResourcePageComponent {
     );
   }
 
+  openTelevisitModal(): void {
+    this.televisitError = '';
+    if (this.isDoctor) {
+      const confirmedAppointmentId = this.confirmedAppointments[0]?.id ?? null;
+      this.televisitForm.appointmentId = confirmedAppointmentId ?? this.televisitForm.appointmentId;
+    }
+    this.showTelevisitModal = true;
+  }
+
+  closeTelevisitModal(): void {
+    this.showTelevisitModal = false;
+  }
+
+  openTelevisitDeleteModal(televisit: TelevisitItem): void {
+    this.selectedTelevisit = televisit;
+    this.televisitDeleteReason = '';
+    this.televisitError = '';
+    this.showTelevisitDeleteModal = true;
+  }
+
+  closeTelevisitDeleteModal(): void {
+    this.showTelevisitDeleteModal = false;
+    this.selectedTelevisit = null;
+    this.televisitDeleteReason = '';
+  }
+
+  submitTelevisitDelete(): void {
+    if (!this.selectedTelevisit) {
+      this.televisitError = 'Seleziona una televisita valida.';
+      return;
+    }
+    if (!this.televisitDeleteReason.trim()) {
+      this.televisitError = 'Inserisci una motivazione per l’eliminazione.';
+      return;
+    }
+    this.televisits = this.televisits.filter((item) => item.id !== this.selectedTelevisit?.id);
+    this.closeTelevisitDeleteModal();
+  }
+
+  openTelevisitRescheduleModal(televisit: TelevisitItem): void {
+    this.selectedTelevisit = televisit;
+    this.televisitRescheduleDate = '';
+    this.televisitRescheduleTime = '';
+    this.televisitError = '';
+    this.showTelevisitRescheduleModal = true;
+  }
+
+  closeTelevisitRescheduleModal(): void {
+    this.showTelevisitRescheduleModal = false;
+    this.selectedTelevisit = null;
+    this.televisitRescheduleDate = '';
+    this.televisitRescheduleTime = '';
+  }
+
+  submitTelevisitReschedule(): void {
+    if (!this.selectedTelevisit) {
+      this.televisitError = 'Seleziona una televisita valida.';
+      return;
+    }
+    if (!this.televisitRescheduleDate || !this.televisitRescheduleTime) {
+      this.televisitError = 'Inserisci data e ora della televisita.';
+      return;
+    }
+    const appointment = this.getAppointmentById(this.selectedTelevisit.appointmentId);
+    if (!appointment) {
+      this.televisitError = 'Prenotazione non trovata.';
+      return;
+    }
+    this.slots = this.slots.map((slot) =>
+      slot.id === appointment.slotId
+        ? { ...slot, date: this.televisitRescheduleDate, time: this.televisitRescheduleTime }
+        : slot
+    );
+    this.closeTelevisitRescheduleModal();
+  }
+
   openPrescriptionMessageModal(prescription: PrescriptionItem): void {
     this.selectedPrescription = prescription;
     this.prescriptionMessageText = prescription.patientQuestion?.trim() || 'Nessuna domanda del paziente.';
@@ -1874,22 +2024,32 @@ export class ResourcePageComponent {
   submitTelevisit(): void {
     this.isLoading = true;
     this.televisitError = '';
-    const appointmentId = this.televisitForm.patientId ?? this.televisitForm.appointmentId;
+    const appointmentId = this.isDoctor
+      ? this.televisitForm.appointmentId
+      : this.televisitForm.patientId ?? this.televisitForm.appointmentId;
     if (!appointmentId) {
       this.televisitError = this.isDoctor
-        ? 'Seleziona il paziente per la televisita.'
+        ? 'Seleziona la prenotazione confermata.'
         : 'Inserisci l’identificativo dell’appuntamento.';
       this.isLoading = false;
       return;
     }
+    const appointment = this.isDoctor ? this.getAppointmentById(appointmentId) : undefined;
+    if (this.isDoctor && !appointment) {
+      this.televisitError = 'Prenotazione non trovata.';
+      this.isLoading = false;
+      return;
+    }
+    const patientId = this.isDoctor ? appointment?.patientId ?? null : this.televisitForm.patientId;
     this.api.request<TelevisitItem>('POST', '/api/televisit', {
       appointmentId,
-      patientId: this.televisitForm.patientId,
+      patientId,
       provider: this.televisitForm.provider
     }).subscribe({
       next: (televisit) => {
         this.televisits = [...this.televisits, televisit];
         this.televisitForm.patientId = this.patients[0]?.id ?? null;
+        this.closeTelevisitModal();
         this.isLoading = false;
       },
       error: () => {
