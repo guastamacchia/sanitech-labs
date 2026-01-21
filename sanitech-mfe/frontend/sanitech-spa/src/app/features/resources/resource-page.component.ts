@@ -528,6 +528,19 @@ export class ResourcePageComponent {
     return this.slots.find((slot) => slot.id === slotId);
   }
 
+  isAppointmentReschedulable(appointment: SchedulingAppointment): boolean {
+    const slot = this.getSlotById(appointment.slotId);
+    if (!slot?.date || !slot.time) {
+      return false;
+    }
+    const dateTimeValue = slot.date.includes('T') ? slot.date : `${slot.date}T${slot.time}`;
+    const parsed = new Date(dateTimeValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+    return parsed.getTime() <= Date.now();
+  }
+
   formatDate(value: string): string {
     if (!value) {
       return '-';

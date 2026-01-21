@@ -267,7 +267,7 @@
                               class="btn btn-outline-secondary btn-sm"
                               type="button"
                               aria-label="Riprogramma appuntamento"
-                              [disabled]="appointment.status !== 'CONFIRMED'"
+                              [disabled]="appointment.status !== 'CONFIRMED' || !isAppointmentReschedulable(appointment)"
                               (click)="openAppointmentRescheduleModal(appointment)">
                               🔄
                             </button>
