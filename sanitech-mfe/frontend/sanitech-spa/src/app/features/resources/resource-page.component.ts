@@ -1479,7 +1479,7 @@ export class ResourcePageComponent {
             department: 'CARD',
             bedId: 12,
             status: 'PROPOSED',
-            admittedAt: '2026-03-12',
+            admittedAt: '2026-08-12',
             notes: 'Il paziente segnala dolore toracico intermittente.',
             appointmentId: 3
           },
@@ -1489,7 +1489,7 @@ export class ResourcePageComponent {
             department: 'DERM',
             bedId: 4,
             status: 'CONFIRMED',
-            admittedAt: '2026-02-28',
+            admittedAt: '2026-07-28',
             notes: 'Chiede chiarimenti sulla terapia topica.'
           },
           {
@@ -1497,7 +1497,7 @@ export class ResourcePageComponent {
             patientId: 3,
             department: 'NEUR',
             status: 'COMPLETED',
-            admittedAt: '2026-01-18',
+            admittedAt: '2026-06-18',
             notes: 'Ha segnalato vertigini notturne negli ultimi giorni.'
           },
           {
@@ -1506,7 +1506,7 @@ export class ResourcePageComponent {
             department: 'ORTO',
             bedId: 7,
             status: 'CONFIRMED',
-            admittedAt: '2025-12-05',
+            admittedAt: '2026-09-05',
             notes: 'Ricovero programmato per intervento al ginocchio.'
           },
           {
@@ -1515,7 +1515,7 @@ export class ResourcePageComponent {
             department: 'CARD',
             bedId: 9,
             status: 'COMPLETED',
-            admittedAt: '2025-10-21',
+            admittedAt: '2026-10-21',
             notes: 'Dimesso con indicazioni di follow-up cardiologico.'
           },
           {
@@ -1524,7 +1524,7 @@ export class ResourcePageComponent {
             department: 'PNEU',
             bedId: 5,
             status: 'CONFIRMED',
-            admittedAt: '2025-08-14',
+            admittedAt: '2026-11-14',
             notes: 'Monitoraggio post-riacutizzazione bronchiale.'
           },
           {
@@ -1533,7 +1533,7 @@ export class ResourcePageComponent {
             department: 'GASTRO',
             bedId: 16,
             status: 'COMPLETED',
-            admittedAt: '2025-06-02',
+            admittedAt: '2026-12-02',
             notes: 'Dimesso con dieta controllata e terapia domiciliare.'
           },
           {
@@ -1542,7 +1542,7 @@ export class ResourcePageComponent {
             department: 'PNEU',
             bedId: 11,
             status: 'PROPOSED',
-            admittedAt: '2026-04-02',
+            admittedAt: '2027-01-15',
             notes: 'In attesa di conferma per monitoraggio respiratorio.'
           }
         ];
