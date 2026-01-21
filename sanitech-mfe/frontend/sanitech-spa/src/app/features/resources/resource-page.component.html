@@ -75,7 +75,7 @@
 
       <div class="row g-4">
         <ng-container *ngIf="!isDoctor; else doctorAgenda">
-          <div class="col-lg-12">
+          <div class="col-lg-12" *ngIf="!isPatient">
             <div class="accordion" id="availableSlotsAccordion">
               <div class="accordion-item card-glass border-0">
                 <h2 class="accordion-header">
@@ -204,7 +204,7 @@
             <div class="card card-glass">
               <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
-                  <h5 class="fw-semibold mb-0">Appuntamenti attivi</h5>
+                  <h5 class="fw-semibold mb-0">Appuntamenti prenotati</h5>
                   <div class="d-flex flex-wrap gap-2">
                     <button
                       class="btn btn-outline-secondary btn-sm"
@@ -252,16 +252,8 @@
                               type="button"
                               aria-label="Elimina appuntamento"
                               [disabled]="appointment.status !== 'PENDING' && appointment.status !== 'IN_ATTESA'"
-                              (click)="cancelAppointment(appointment)">
+                              (click)="openDeleteAppointmentConfirm(appointment)">
                               🗑️
-                            </button>
-                            <button
-                              class="btn btn-outline-success btn-sm me-2"
-                              type="button"
-                              aria-label="Conferma appuntamento"
-                              (click)="confirmPatientAppointment(appointment)"
-                              [disabled]="appointment.status === 'CONFIRMED' || appointment.status === 'REJECTED'">
-                              ✅
                             </button>
                             <button
                               class="btn btn-outline-danger btn-sm me-2"
@@ -275,7 +267,7 @@
                               class="btn btn-outline-secondary btn-sm"
                               type="button"
                               aria-label="Riprogramma appuntamento"
-                              [disabled]="appointment.status !== 'CONFIRMED'"
+                              [disabled]="appointment.status !== 'CONFIRMED' || !isAppointmentReschedulable(appointment)"
                               (click)="openAppointmentRescheduleModal(appointment)">
                               🔄
                             </button>
@@ -442,7 +434,7 @@
                         <th>Tipo</th>
                         <th>Nome</th>
                         <th>Note</th>
-                        <th>Stato</th>
+                        <th>Caricato da</th>
                         <th>Data e ora</th>
                         <th>Azioni</th>
                       </tr>
@@ -453,7 +445,7 @@
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
                         <td>{{ doc.notes || '-' }}</td>
-                        <td>{{ getDocumentStatusLabel(doc) }}</td>
+                        <td>{{ getDocumentUploaderLabel(doc) }}</td>
                         <td>{{ formatDateTime(doc.uploadedAt) }}</td>
                         <td>
                           <button
@@ -467,7 +459,8 @@
                             class="btn btn-outline-danger btn-sm"
                             type="button"
                             aria-label="Elimina documento"
-                            (click)="deleteDocument(doc)">
+                            (click)="openDeleteDocumentConfirm(doc)"
+                            [disabled]="!isDocumentDeletable(doc)">
                             🗑️
                           </button>
                         </td>
@@ -517,7 +510,7 @@
                             class="btn btn-outline-danger btn-sm"
                             type="button"
                             aria-label="Elimina consenso"
-                            (click)="deleteConsent(consent)">
+                            (click)="openDeleteConsentConfirm(consent)">
                             🗑️
                           </button>
                           <button
@@ -644,6 +637,35 @@
                       </button>
                     </div>
                   </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="showDeleteConfirmModal">
+          <div
+            class="modal-backdrop fade show"
+            style="position: fixed; inset: 0; z-index: 1050;"
+            (click)="closeDeleteConfirmModal()"></div>
+          <div
+            class="modal d-flex align-items-center justify-content-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="deleteConfirmModalTitle"
+            style="position: fixed; inset: 0; z-index: 1055;">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="deleteConfirmModalTitle">Conferma eliminazione</h5>
+                  <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDeleteConfirmModal()"></button>
+                </div>
+                <div class="modal-body">
+                  <p class="mb-0">{{ deleteConfirmMessage }}</p>
+                </div>
+                <div class="modal-footer">
+                  <button class="btn btn-outline-secondary" type="button" (click)="closeDeleteConfirmModal()">Annulla</button>
+                  <button class="btn btn-danger" type="button" (click)="confirmDelete()">Conferma</button>
                 </div>
               </div>
             </div>
@@ -1305,6 +1327,14 @@
                                 ✅
                               </button>
                               <button
+                                class="btn btn-outline-danger btn-sm me-2"
+                                type="button"
+                                aria-label="Rifiuta prescrizione"
+                                (click)="openPrescriptionRejectModal(prescription)"
+                                [disabled]="prescription.status === 'REJECTED'">
+                                ❌
+                              </button>
+                              <button
                                 class="btn btn-outline-secondary btn-sm"
                                 type="button"
                                 aria-label="Chiedi spiegazioni"
@@ -1404,11 +1434,11 @@
         </ng-container>
       </ng-template>
 
-      <ng-container *ngIf="showPrescriptionQuestionModal">
-        <div
-          class="modal-backdrop fade show"
-          style="position: fixed; inset: 0; z-index: 1050;"
-          (click)="closePrescriptionQuestionModal()"></div>
+        <ng-container *ngIf="showPrescriptionQuestionModal">
+          <div
+            class="modal-backdrop fade show"
+            style="position: fixed; inset: 0; z-index: 1050;"
+            (click)="closePrescriptionQuestionModal()"></div>
         <div
           class="modal d-flex align-items-center justify-content-center"
           role="dialog"
@@ -1528,7 +1558,45 @@
             </div>
           </div>
         </ng-container>
+
       </ng-template>
+
+      <ng-container *ngIf="showPrescriptionRejectModal">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closePrescriptionRejectModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="prescriptionRejectModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="prescriptionRejectModalTitle">Rifiuta prescrizione</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePrescriptionRejectModal()"></button>
+              </div>
+              <div class="modal-body">
+                <form (ngSubmit)="submitPrescriptionRejection()" #prescriptionRejectRef="ngForm">
+                  <div class="mb-3">
+                    <label class="form-label">Motivazione</label>
+                    <textarea class="form-control" rows="3" name="prescriptionRejectReason" [(ngModel)]="rejectPrescriptionReason" required></textarea>
+                  </div>
+                  <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-outline-secondary" type="button" (click)="closePrescriptionRejectModal()">Annulla</button>
+                    <button class="btn btn-danger" type="submit" [disabled]="prescriptionRejectRef.invalid || isLoading">
+                      Rifiuta prescrizione
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
 
       <ng-template #adminDirectoryLayout>
         <ng-container *ngIf="mode === 'admin-directory'; else adminAuditLayout">
