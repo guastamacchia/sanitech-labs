@@ -486,6 +486,7 @@
                   </div>
                 </div>
                 <div class="mb-3" *ngIf="isDoctor">
+                  <p class="text-muted small mb-2">Filtra i documenti selezionando un paziente specifico.</p>
                   <label class="form-label">Paziente</label>
                   <select class="form-select" name="docFilterPatient" [(ngModel)]="docFilterPatientId">
                     <option [ngValue]="null">Tutti i pazienti</option>
@@ -494,7 +495,7 @@
                     </option>
                   </select>
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive mt-2">
                   <table class="table align-middle">
                     <thead>
                       <tr>
@@ -1697,7 +1698,7 @@
                           <th>Reparto</th>
                           <th *ngIf="isDoctor">Paziente</th>
                           <th>Data e ora</th>
-                          <th>Prenotazione visita medica</th>
+                          <th>ID visita medica</th>
                           <th>Provider</th>
                           <th>Stato sessione</th>
                           <th *ngIf="!isDoctor">Token</th>
