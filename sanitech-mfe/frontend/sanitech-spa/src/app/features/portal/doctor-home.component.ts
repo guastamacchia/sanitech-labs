@@ -10,6 +10,7 @@ type UpcomingVisit = {
   time: string;
   modality: string;
   reason: string;
+  status: 'CONFIRMED' | 'PENDING';
 };
 
 @Component({
@@ -26,7 +27,8 @@ export class DoctorHomeComponent {
       date: '12/05/2024',
       time: '09:30',
       modality: 'In presenza',
-      reason: 'Controllo cardiologico'
+      reason: 'Controllo cardiologico',
+      status: 'CONFIRMED'
     },
     {
       department: 'Neurologia',
@@ -34,7 +36,8 @@ export class DoctorHomeComponent {
       date: '13/05/2024',
       time: '11:00',
       modality: 'Da remoto',
-      reason: 'Visita di follow-up'
+      reason: 'Visita di follow-up',
+      status: 'PENDING'
     },
     {
       department: 'Oncologia',
@@ -42,7 +45,8 @@ export class DoctorHomeComponent {
       date: '14/05/2024',
       time: '15:00',
       modality: 'In presenza',
-      reason: 'Monitoraggio terapia'
+      reason: 'Monitoraggio terapia',
+      status: 'CONFIRMED'
     }
   ];
 
@@ -51,13 +55,15 @@ export class DoctorHomeComponent {
   currentPage = 1;
 
   get paginatedVisits(): UpcomingVisit[] {
+    const confirmedVisits = this.upcomingVisits.filter((visit) => visit.status === 'CONFIRMED');
     const start = (this.currentPage - 1) * this.pageSize;
     const end = start + this.pageSize;
-    return this.upcomingVisits.slice(start, end);
+    return confirmedVisits.slice(start, end);
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.upcomingVisits.length / this.pageSize));
+    const confirmedCount = this.upcomingVisits.filter((visit) => visit.status === 'CONFIRMED').length;
+    return Math.max(1, Math.ceil(confirmedCount / this.pageSize));
   }
 
   changePage(nextPage: number): void {
