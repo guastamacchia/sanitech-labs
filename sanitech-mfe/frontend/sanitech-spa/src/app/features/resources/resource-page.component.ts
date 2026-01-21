@@ -316,6 +316,8 @@ export class ResourcePageComponent {
   departments: DepartmentItem[] = [];
   specialities: SpecialityItem[] = [];
   directoryError = '';
+  showDoctorModal = false;
+  showPatientModal = false;
   doctorForm = {
     firstName: '',
     lastName: '',
@@ -2369,6 +2371,26 @@ export class ResourcePageComponent {
     });
   }
 
+  openDoctorModal(): void {
+    this.directoryError = '';
+    this.showDoctorModal = true;
+  }
+
+  closeDoctorModal(): void {
+    this.showDoctorModal = false;
+    this.directoryError = '';
+  }
+
+  openPatientModal(): void {
+    this.directoryError = '';
+    this.showPatientModal = true;
+  }
+
+  closePatientModal(): void {
+    this.showPatientModal = false;
+    this.directoryError = '';
+  }
+
   submitDoctor(): void {
     if (!this.doctorForm.firstName.trim() || !this.doctorForm.lastName.trim()) {
       this.directoryError = 'Inserisci nome e cognome del medico.';
@@ -2385,6 +2407,7 @@ export class ResourcePageComponent {
         this.doctors = [...this.doctors, doctor];
         this.doctorForm.firstName = '';
         this.doctorForm.lastName = '';
+        this.closeDoctorModal();
         this.isLoading = false;
       },
       error: () => {
@@ -2411,6 +2434,7 @@ export class ResourcePageComponent {
         this.patientForm.firstName = '';
         this.patientForm.lastName = '';
         this.patientForm.email = '';
+        this.closePatientModal();
         this.isLoading = false;
       },
       error: () => {

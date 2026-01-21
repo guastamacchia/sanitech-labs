@@ -2071,14 +2071,19 @@
       <ng-template #adminDirectoryLayout>
         <ng-container *ngIf="mode === 'admin-directory'; else adminAuditLayout">
           <div class="row g-4">
-            <div class="col-lg-8">
+            <div class="col-12">
               <div class="card card-glass mb-4">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
                     <h5 class="fw-semibold mb-0">Medici</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="loadDirectory()" [disabled]="isLoading">
-                      Aggiorna
-                    </button>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadDirectory()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                      <button class="btn btn-outline-primary btn-sm" type="button" (click)="openDoctorModal()">
+                        Registra medico
+                      </button>
+                    </div>
                   </div>
                   <div class="table-responsive">
                     <table class="table align-middle">
@@ -2109,7 +2114,17 @@
 
               <div class="card card-glass">
                 <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Pazienti</h5>
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">Pazienti</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadDirectory()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                      <button class="btn btn-outline-primary btn-sm" type="button" (click)="openPatientModal()">
+                        Registra paziente
+                      </button>
+                    </div>
+                  </div>
                   <div class="table-responsive">
                     <table class="table align-middle">
                       <thead>
@@ -2137,83 +2152,100 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="col-lg-4">
-              <div class="card card-glass mb-4">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Registra medico</h5>
-                  <form (ngSubmit)="submitDoctor()" #doctorFormRef="ngForm">
-                    <div class="mb-3">
-                      <label class="form-label">Nome</label>
-                      <input class="form-control" type="text" name="doctorFirstName" [(ngModel)]="doctorForm.firstName" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Cognome</label>
-                      <input class="form-control" type="text" name="doctorLastName" [(ngModel)]="doctorForm.lastName" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Specialità</label>
-                      <select class="form-select" name="doctorSpeciality" [(ngModel)]="doctorForm.speciality" required>
-                        <option value="CARD">Cardiologia</option>
-                        <option value="NEURO">Neurologia</option>
-                      </select>
-                    </div>
-                    <div class="alert alert-danger py-2" *ngIf="directoryError">{{ directoryError }}</div>
-                    <button class="btn btn-primary w-100" type="submit" [disabled]="doctorFormRef.invalid || isLoading">
-                      {{ isLoading ? 'Salvataggio...' : 'Registra medico' }}
-                    </button>
-                  </form>
-                </div>
-              </div>
-
-              <div class="card card-glass mb-4">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Registra paziente</h5>
-                  <form (ngSubmit)="submitPatient()" #patientFormRef="ngForm">
-                    <div class="mb-3">
-                      <label class="form-label">Nome</label>
-                      <input class="form-control" type="text" name="patientFirstName" [(ngModel)]="patientForm.firstName" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Cognome</label>
-                      <input class="form-control" type="text" name="patientLastName" [(ngModel)]="patientForm.lastName" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Email</label>
-                      <input class="form-control" type="email" name="patientEmail" [(ngModel)]="patientForm.email" required />
-                    </div>
-                    <button class="btn btn-outline-primary w-100" type="submit" [disabled]="patientFormRef.invalid || isLoading">
-                      {{ isLoading ? 'Salvataggio...' : 'Registra paziente' }}
-                    </button>
-                  </form>
-                </div>
-              </div>
-
-              <div class="card card-glass">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Reparti & specialità</h5>
-                  <div class="mb-3">
-                    <p class="small text-muted mb-2">Reparti attivi</p>
-                    <ul class="list-group list-group-flush">
-                      <li class="list-group-item px-0" *ngFor="let department of departments">
-                        {{ department.name }} ({{ department.code }})
-                      </li>
-                      <li class="list-group-item px-0 text-muted" *ngIf="!departments.length">Nessun reparto.</li>
-                    </ul>
+          <ng-container *ngIf="showDoctorModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeDoctorModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="adminDoctorModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="adminDoctorModalTitle">Registra medico</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDoctorModal()"></button>
                   </div>
-                  <div>
-                    <p class="small text-muted mb-2">Specialità</p>
-                    <ul class="list-group list-group-flush">
-                      <li class="list-group-item px-0" *ngFor="let speciality of specialities">
-                        {{ speciality.name }} ({{ speciality.code }})
-                      </li>
-                      <li class="list-group-item px-0 text-muted" *ngIf="!specialities.length">Nessuna specialità.</li>
-                    </ul>
+                  <div class="modal-body">
+                    <form (ngSubmit)="submitDoctor()" #doctorFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Nome</label>
+                        <input class="form-control" type="text" name="doctorFirstName" [(ngModel)]="doctorForm.firstName" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Cognome</label>
+                        <input class="form-control" type="text" name="doctorLastName" [(ngModel)]="doctorForm.lastName" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Specialità</label>
+                        <select class="form-select" name="doctorSpeciality" [(ngModel)]="doctorForm.speciality" required>
+                          <option value="CARD">Cardiologia</option>
+                          <option value="NEURO">Neurologia</option>
+                        </select>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="directoryError">{{ directoryError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeDoctorModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="doctorFormRef.invalid || isLoading">
+                          {{ isLoading ? 'Salvataggio...' : 'Registra medico' }}
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </ng-container>
+
+          <ng-container *ngIf="showPatientModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closePatientModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="adminPatientModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="adminPatientModalTitle">Registra paziente</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePatientModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form (ngSubmit)="submitPatient()" #patientFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Nome</label>
+                        <input class="form-control" type="text" name="patientFirstName" [(ngModel)]="patientForm.firstName" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Cognome</label>
+                        <input class="form-control" type="text" name="patientLastName" [(ngModel)]="patientForm.lastName" required />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input class="form-control" type="email" name="patientEmail" [(ngModel)]="patientForm.email" required />
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="directoryError">{{ directoryError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closePatientModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="patientFormRef.invalid || isLoading">
+                          {{ isLoading ? 'Salvataggio...' : 'Registra paziente' }}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </ng-container>
       </ng-template>
 
