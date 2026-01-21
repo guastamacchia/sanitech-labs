@@ -911,10 +911,19 @@
               <div class="card card-glass">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">{{ isDoctor ? 'Ricoveri del reparto' : 'Ricoveri' }}</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="loadAdmissions()" [disabled]="isLoading">
-                      Aggiorna
-                    </button>
+                    <h5 class="fw-semibold mb-0">{{ isDoctor ? 'Ricoveri pazienti' : 'Ricoveri' }}</h5>
+                    <div class="d-flex gap-2">
+                      <button
+                        *ngIf="isDoctor"
+                        class="btn btn-outline-primary btn-sm"
+                        type="button"
+                        (click)="openAdmissionProposalModal()">
+                        Proponi ricovero
+                      </button>
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadAdmissions()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                    </div>
                   </div>
                   <div class="table-responsive">
                     <table class="table align-middle">
@@ -938,31 +947,19 @@
                           <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
                           <td>{{ admission.notes || '-' }}</td>
                           <td>
-                            <button
-                              *ngIf="isPatient"
-                              class="btn btn-outline-primary btn-sm me-2"
-                              type="button"
-                              aria-label="Ripianifica ricovero"
-                              (click)="openAdmissionRescheduleModal(admission)"
-                              [disabled]="!isAdmissionReschedulable(admission)">
-                              🔄
-                            </button>
-                            <button
-                              class="btn btn-outline-success btn-sm me-2"
-                              type="button"
-                              aria-label="Conferma ricovero"
-                              (click)="confirmAdmission(admission)"
-                              [disabled]="admission.status === 'CONFIRMED' || admission.status === 'REJECTED'">
-                              ✅
-                            </button>
-                            <button
-                              class="btn btn-outline-danger btn-sm"
-                              type="button"
-                              aria-label="Rifiuta ricovero"
-                              (click)="rejectAdmission(admission)"
-                              [disabled]="admission.status === 'CONFIRMED' || admission.status === 'REJECTED'">
-                              ❌
-                            </button>
+                            <ng-container *ngIf="isPatient; else admissionNoActions">
+                              <button
+                                class="btn btn-outline-primary btn-sm me-2"
+                                type="button"
+                                aria-label="Ripianifica ricovero"
+                                (click)="openAdmissionRescheduleModal(admission)"
+                                [disabled]="!isAdmissionReschedulable(admission)">
+                                🔄
+                              </button>
+                            </ng-container>
+                            <ng-template #admissionNoActions>
+                              <span class="text-muted">-</span>
+                            </ng-template>
                           </td>
                         </tr>
                         <tr *ngIf="!visibleAdmissions.length">
@@ -1011,6 +1008,94 @@
                         <button class="btn btn-outline-secondary" type="button" (click)="closeAdmissionRescheduleModal()">Annulla</button>
                         <button class="btn btn-primary" type="submit" [disabled]="rescheduleFormRef.invalid || isLoading">
                           Invia richiesta
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="showAdmissionProposalModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeAdmissionProposalModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admissionProposalModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="admissionProposalModalTitle">Proponi ricovero</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdmissionProposalModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form (ngSubmit)="submitAdmissionProposal()" #admissionProposalRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Visita già effettuata</label>
+                        <select
+                          class="form-select"
+                          name="admissionProposalAppointmentId"
+                          [(ngModel)]="admissionProposalForm.appointmentId"
+                          required>
+                          <option [ngValue]="null" disabled>Seleziona una visita conclusa</option>
+                          <option *ngFor="let appointment of completedDoctorAppointments" [ngValue]="appointment.id">
+                            {{ getPatientLabel(appointment.patientId) }} • {{ getAppointmentDateTimeLabel(appointment) }}
+                          </option>
+                        </select>
+                        <div class="form-text" *ngIf="!completedDoctorAppointments.length">
+                          Nessuna visita conclusa disponibile.
+                        </div>
+                      </div>
+
+                      <div class="border rounded p-3 mb-3 bg-light-subtle" *ngIf="admissionProposalAppointment as appointment">
+                        <div class="fw-semibold mb-2">Dettagli visita</div>
+                        <div class="small text-muted">
+                          <div>Paziente: <span class="text-body">{{ getPatientLabel(appointment.patientId) }}</span></div>
+                          <div>Data e ora: <span class="text-body">{{ getAppointmentDateTimeLabel(appointment) }}</span></div>
+                          <div>Motivo visita: <span class="text-body">{{ appointment.reason }}</span></div>
+                        </div>
+                      </div>
+
+                      <div class="row g-3">
+                        <div class="col-md-6">
+                          <label class="form-label">Data proposta ricovero</label>
+                          <input
+                            class="form-control"
+                            type="date"
+                            name="admissionProposalDate"
+                            [(ngModel)]="admissionProposalForm.date"
+                            required />
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Letto proposto</label>
+                          <input
+                            class="form-control"
+                            type="number"
+                            name="admissionProposalBed"
+                            [(ngModel)]="admissionProposalForm.bedId"
+                            required />
+                        </div>
+                      </div>
+                      <div class="mb-3 mt-3">
+                        <label class="form-label">Motivazione proposta</label>
+                        <textarea
+                          class="form-control"
+                          rows="3"
+                          name="admissionProposalReason"
+                          [(ngModel)]="admissionProposalForm.reason"
+                          required></textarea>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="admissionProposalError">{{ admissionProposalError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary" (click)="closeAdmissionProposalModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="admissionProposalRef.invalid">
+                          Invia proposta
                         </button>
                       </div>
                     </form>
@@ -1865,43 +1950,6 @@
         </div>
       </ng-container>
 
-      <ng-container *ngIf="showPrescriptionRejectModal">
-        <div
-          class="modal-backdrop fade show"
-          style="position: fixed; inset: 0; z-index: 1050;"
-          (click)="closePrescriptionRejectModal()"></div>
-        <div
-          class="modal d-flex align-items-center justify-content-center"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="prescriptionRejectModalTitle"
-          style="position: fixed; inset: 0; z-index: 1055;">
-          <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="prescriptionRejectModalTitle">Rifiuta prescrizione</h5>
-                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePrescriptionRejectModal()"></button>
-              </div>
-              <div class="modal-body">
-                <form (ngSubmit)="submitPrescriptionRejection()" #prescriptionRejectRef="ngForm">
-                  <div class="mb-3">
-                    <label class="form-label">Motivazione</label>
-                    <textarea class="form-control" rows="3" name="prescriptionRejectReason" [(ngModel)]="rejectPrescriptionReason" required></textarea>
-                  </div>
-                  <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
-                  <div class="d-flex justify-content-end gap-2">
-                    <button class="btn btn-outline-secondary" type="button" (click)="closePrescriptionRejectModal()">Annulla</button>
-                    <button class="btn btn-danger" type="submit" [disabled]="prescriptionRejectRef.invalid || isLoading">
-                      Rifiuta prescrizione
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      </ng-container>
-
       <ng-template #adminDirectoryLayout>
         <ng-container *ngIf="mode === 'admin-directory'; else adminAuditLayout">
           <div class="row g-4">
@@ -2142,22 +2190,43 @@
                           <th>Paziente</th>
                           <th>Reparto</th>
                           <th>Letto</th>
+                          <th>Visita</th>
                           <th>Stato</th>
                           <th>Note</th>
                           <th>Data</th>
+                          <th>Azioni</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr *ngFor="let admission of admissions | slice:getPageSliceStart('adminAdmissions'):getPageSliceEnd('adminAdmissions')">
-                          <td>{{ admission.patientId }}</td>
-                          <td>{{ admission.department }}</td>
+                          <td>{{ getPatientLabel(admission.patientId) }}</td>
+                          <td>{{ getDepartmentLabel(admission.department) }}</td>
                           <td>{{ admission.bedId }}</td>
-                          <td>{{ admission.status }}</td>
+                          <td>{{ getAdmissionAppointmentLabel(admission) }}</td>
+                          <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
                           <td>{{ admission.notes || '-' }}</td>
-                          <td>{{ admission.admittedAt }}</td>
+                          <td>{{ formatDate(admission.admittedAt) }}</td>
+                          <td>
+                            <div class="d-flex flex-wrap gap-2">
+                              <button
+                                class="btn btn-outline-success btn-sm"
+                                type="button"
+                                (click)="confirmAdmission(admission)"
+                                [disabled]="admission.status !== 'PROPOSED'">
+                                Approva
+                              </button>
+                              <button
+                                class="btn btn-outline-danger btn-sm"
+                                type="button"
+                                (click)="rejectAdmission(admission)"
+                                [disabled]="admission.status !== 'PROPOSED'">
+                                Rifiuta
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                         <tr *ngIf="!admissions.length">
-                          <td colspan="6" class="text-center text-muted">Nessun ricovero registrato.</td>
+                          <td colspan="8" class="text-center text-muted">Nessun ricovero registrato.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -2218,6 +2287,43 @@
               </div>
             </div>
           </div>
+
+          <ng-container *ngIf="showAdmissionRejectModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeAdmissionRejectModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="adminAdmissionRejectModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="adminAdmissionRejectModalTitle">Rifiuta proposta di ricovero</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdmissionRejectModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form (ngSubmit)="submitAdmissionRejection()" #adminAdmissionRejectRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Motivazione</label>
+                        <textarea class="form-control" rows="3" name="adminAdmissionRejectReason" [(ngModel)]="rejectAdmissionReason" required></textarea>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="rescheduleError">{{ rescheduleError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeAdmissionRejectModal()">Annulla</button>
+                        <button class="btn btn-danger" type="submit" [disabled]="adminAdmissionRejectRef.invalid || isLoading">
+                          Rifiuta proposta
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </ng-container>
       </ng-template>
 

@@ -69,6 +69,7 @@ interface AdmissionItem {
   status: string;
   admittedAt: string;
   notes?: string;
+  appointmentId?: number;
 }
 
 interface NotificationItem {
@@ -204,6 +205,7 @@ export class ResourcePageComponent {
   payments: PaymentItem[] = [];
   admissions: AdmissionItem[] = [];
   showAdmissionRescheduleModal = false;
+  showAdmissionProposalModal = false;
   rescheduleAdmission: AdmissionItem | null = null;
   rescheduleForm = {
     date: '',
@@ -211,6 +213,13 @@ export class ResourcePageComponent {
   };
   rescheduleError = '';
   rescheduleSuccess = '';
+  admissionProposalError = '';
+  admissionProposalForm = {
+    appointmentId: null as number | null,
+    date: '',
+    bedId: null as number | null,
+    reason: ''
+  };
   showAdmissionRejectModal = false;
   rejectAdmissionTarget: AdmissionItem | null = null;
   rejectAdmissionReason = '';
@@ -689,6 +698,10 @@ export class ResourcePageComponent {
     return this.auth.hasRole('ROLE_DOCTOR');
   }
 
+  get isAdmin(): boolean {
+    return this.auth.hasRole('ROLE_ADMIN');
+  }
+
   getStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       AVAILABLE: 'Disponibile',
@@ -710,6 +723,7 @@ export class ResourcePageComponent {
   getAdmissionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       ACTIVE: 'Da confermare',
+      PROPOSED: 'Proposta inviata',
       CONFIRMED: 'Confermato',
       RESCHEDULED: 'Ripianificato',
       REJECTED: 'Rifiutato',
@@ -870,11 +884,15 @@ export class ResourcePageComponent {
 
   get visibleAdmissions(): AdmissionItem[] {
     if (this.isDoctor) {
-      const department = this.currentDoctorDepartment;
-      if (!department) {
+      const doctorAppointments = this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
+      if (!doctorAppointments.length) {
         return [];
       }
-      return this.admissions.filter((admission) => admission.department === department);
+      const patientIds = new Set(doctorAppointments.map((appointment) => appointment.patientId));
+      const appointmentIds = new Set(doctorAppointments.map((appointment) => appointment.id));
+      return this.admissions.filter((admission) =>
+        admission.appointmentId ? appointmentIds.has(admission.appointmentId) : patientIds.has(admission.patientId)
+      );
     }
     if (this.isPatient) {
       return this.admissions.filter((admission) => admission.patientId === 1);
@@ -1012,21 +1030,67 @@ export class ResourcePageComponent {
     return this.getAppointmentStatusLabel(appointment.status);
   }
 
+  getSlotDateTimeValue(slot?: SchedulingSlot): Date | null {
+    if (!slot?.date || !slot.time) {
+      return null;
+    }
+    const dateTimeValue = slot.date.includes('T') ? slot.date : `${slot.date}T${slot.time}`;
+    const parsed = new Date(dateTimeValue);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  getAppointmentDateTimeValue(appointment: SchedulingAppointment): Date | null {
+    const slot = this.getSlotById(appointment.slotId);
+    return this.getSlotDateTimeValue(slot);
+  }
+
+  getAppointmentDateTimeLabel(appointment: SchedulingAppointment): string {
+    const slot = this.getSlotById(appointment.slotId);
+    if (!slot) {
+      return '-';
+    }
+    return `${this.formatDate(slot.date)} • ${slot.time}`;
+  }
+
+  getAdmissionAppointmentLabel(admission: AdmissionItem): string {
+    if (!admission.appointmentId) {
+      return '-';
+    }
+    const appointment = this.getAppointmentById(admission.appointmentId);
+    if (!appointment) {
+      return `Visita ${admission.appointmentId}`;
+    }
+    return `${this.getPatientLabel(appointment.patientId)} • ${this.getAppointmentDateTimeLabel(appointment)}`;
+  }
+
+  get completedDoctorAppointments(): SchedulingAppointment[] {
+    if (!this.isDoctor) {
+      return [];
+    }
+    return this.appointments.filter((appointment) => {
+      if (appointment.doctorId !== this.currentDoctorId || appointment.status !== 'CONFIRMED') {
+        return false;
+      }
+      const dateTime = this.getAppointmentDateTimeValue(appointment);
+      return dateTime ? dateTime.getTime() < Date.now() : false;
+    });
+  }
+
+  get admissionProposalAppointment(): SchedulingAppointment | null {
+    if (!this.admissionProposalForm.appointmentId) {
+      return null;
+    }
+    return this.getAppointmentById(this.admissionProposalForm.appointmentId) ?? null;
+  }
+
   canRescheduleTelevisit(televisit: TelevisitItem): boolean {
     const appointment = this.getAppointmentById(televisit.appointmentId);
     if (!appointment) {
       return false;
     }
     const slot = this.getSlotById(appointment.slotId);
-    if (!slot?.date || !slot.time) {
-      return false;
-    }
-    const dateTimeValue = slot.date.includes('T') ? slot.date : `${slot.date}T${slot.time}`;
-    const parsed = new Date(dateTimeValue);
-    if (Number.isNaN(parsed.getTime())) {
-      return false;
-    }
-    return parsed.getTime() >= Date.now();
+    const parsed = this.getSlotDateTimeValue(slot);
+    return parsed ? parsed.getTime() >= Date.now() : false;
   }
 
   submitSlot(): void {
@@ -1416,6 +1480,64 @@ export class ResourcePageComponent {
     });
   }
 
+  openAdmissionProposalModal(): void {
+    if (!this.isDoctor) {
+      return;
+    }
+    this.admissionProposalError = '';
+    this.admissionProposalForm = {
+      appointmentId: this.completedDoctorAppointments[0]?.id ?? null,
+      date: '',
+      bedId: null,
+      reason: ''
+    };
+    this.showAdmissionProposalModal = true;
+  }
+
+  closeAdmissionProposalModal(): void {
+    this.showAdmissionProposalModal = false;
+    this.admissionProposalError = '';
+  }
+
+  submitAdmissionProposal(): void {
+    if (!this.admissionProposalForm.appointmentId) {
+      this.admissionProposalError = 'Seleziona una visita conclusa.';
+      return;
+    }
+    if (!this.admissionProposalForm.date) {
+      this.admissionProposalError = 'Inserisci una data proposta per il ricovero.';
+      return;
+    }
+    if (!this.admissionProposalForm.bedId) {
+      this.admissionProposalError = 'Inserisci il letto proposto.';
+      return;
+    }
+    if (!this.admissionProposalForm.reason.trim()) {
+      this.admissionProposalError = 'Inserisci una motivazione per la proposta.';
+      return;
+    }
+    const appointment = this.getAppointmentById(this.admissionProposalForm.appointmentId);
+    if (!appointment) {
+      this.admissionProposalError = 'Visita non trovata.';
+      return;
+    }
+    const department = this.getDoctorById(appointment.doctorId)?.speciality || this.currentDoctorDepartment || 'CARD';
+    const nextId = Math.max(0, ...this.admissions.map((item) => item.id)) + 1;
+    const notes = `Proposta da visita ${appointment.id}: ${appointment.reason}. ${this.admissionProposalForm.reason}`;
+    const proposal: AdmissionItem = {
+      id: nextId,
+      patientId: appointment.patientId,
+      department,
+      bedId: this.admissionProposalForm.bedId,
+      status: 'PROPOSED',
+      admittedAt: this.admissionProposalForm.date,
+      notes,
+      appointmentId: appointment.id
+    };
+    this.admissions = [...this.admissions, proposal];
+    this.closeAdmissionProposalModal();
+  }
+
   loadNotifications(): void {
     this.isLoading = true;
     this.notificationsError = '';
@@ -1580,7 +1702,7 @@ export class ResourcePageComponent {
   }
 
   confirmAdmission(admission: AdmissionItem): void {
-    if (admission.status === 'CONFIRMED') {
+    if (admission.status !== 'PROPOSED') {
       return;
     }
     this.admissions = this.admissions.map((item) =>
@@ -1589,7 +1711,7 @@ export class ResourcePageComponent {
   }
 
   rejectAdmission(admission: AdmissionItem): void {
-    if (admission.status === 'CONFIRMED' || admission.status === 'REJECTED') {
+    if (admission.status !== 'PROPOSED') {
       return;
     }
     this.openAdmissionRejectModal(admission);
