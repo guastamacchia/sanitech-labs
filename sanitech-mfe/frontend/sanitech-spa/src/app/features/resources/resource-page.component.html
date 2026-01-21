@@ -959,7 +959,7 @@
                           <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
                           <td>{{ admission.notes || '-' }}</td>
                           <td>
-                            <ng-container *ngIf="isPatient; else admissionNoActions">
+                            <ng-container *ngIf="isPatient; else admissionDoctorActions">
                               <button
                                 class="btn btn-outline-primary btn-sm me-2"
                                 type="button"
@@ -969,8 +969,15 @@
                                 🔄
                               </button>
                             </ng-container>
-                            <ng-template #admissionNoActions>
-                              <span class="text-muted">-</span>
+                            <ng-template #admissionDoctorActions>
+                              <button
+                                class="btn btn-outline-secondary btn-sm"
+                                type="button"
+                                aria-label="Leggi commento paziente"
+                                (click)="openAdmissionNoteModal(admission)"
+                                [disabled]="!admission.notes">
+                                💬
+                              </button>
                             </ng-template>
                           </td>
                         </tr>
@@ -1023,6 +1030,34 @@
                         </button>
                       </div>
                     </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="showAdmissionNoteModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeAdmissionNoteModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admissionNoteModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="admissionNoteModalTitle">Commento paziente</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdmissionNoteModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="mb-0">{{ admissionNoteTarget?.notes || 'Nessun commento disponibile.' }}</p>
+                  </div>
+                  <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" type="button" (click)="closeAdmissionNoteModal()">Chiudi</button>
                   </div>
                 </div>
               </div>

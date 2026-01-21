@@ -212,6 +212,8 @@ export class ResourcePageComponent {
     date: '',
     reason: ''
   };
+  showAdmissionNoteModal = false;
+  admissionNoteTarget: AdmissionItem | null = null;
   rescheduleError = '';
   rescheduleSuccess = '';
   admissionProposalError = '';
@@ -1431,7 +1433,7 @@ export class ResourcePageComponent {
             bedId: 12,
             status: 'PROPOSED',
             admittedAt: '2026-03-12',
-            notes: 'Valutazione cardiologica post visita.',
+            notes: 'Il paziente segnala dolore toracico intermittente.',
             appointmentId: 3
           },
           {
@@ -1441,7 +1443,7 @@ export class ResourcePageComponent {
             bedId: 4,
             status: 'CONFIRMED',
             admittedAt: '2026-02-28',
-            notes: 'Trattamento programmato con follow-up.'
+            notes: 'Chiede chiarimenti sulla terapia topica.'
           },
           {
             id: 3,
@@ -1449,7 +1451,7 @@ export class ResourcePageComponent {
             department: 'NEUR',
             status: 'COMPLETED',
             admittedAt: '2026-01-18',
-            notes: 'Ricovero concluso senza complicazioni.'
+            notes: 'Ha segnalato vertigini notturne negli ultimi giorni.'
           }
         ];
       },
@@ -1538,6 +1540,16 @@ export class ResourcePageComponent {
   closeAdmissionProposalModal(): void {
     this.showAdmissionProposalModal = false;
     this.admissionProposalError = '';
+  }
+
+  openAdmissionNoteModal(admission: AdmissionItem): void {
+    this.admissionNoteTarget = admission;
+    this.showAdmissionNoteModal = true;
+  }
+
+  closeAdmissionNoteModal(): void {
+    this.showAdmissionNoteModal = false;
+    this.admissionNoteTarget = null;
   }
 
   submitAdmissionProposal(): void {
