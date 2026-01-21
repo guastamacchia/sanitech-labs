@@ -2,7 +2,7 @@ package it.sanitech.prescribing.services;
 
 import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import it.sanitech.prescribing.integrations.consents.ConsentClient;
 import it.sanitech.prescribing.repositories.PrescriptionRepository;
 import it.sanitech.prescribing.repositories.entities.Prescription;
@@ -69,7 +69,7 @@ public class PrescriptionService {
 
         Prescription saved = prescriptions.save(entity);
 
-        events.add(
+        events.publish(
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_PRESCRIPTION_CREATED,
@@ -160,7 +160,7 @@ public class PrescriptionService {
 
         Prescription saved = prescriptions.save(p);
 
-        events.add(
+        events.publish(
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_PRESCRIPTION_UPDATED,
@@ -186,7 +186,7 @@ public class PrescriptionService {
 
         Prescription saved = prescriptions.save(p);
 
-        events.add(
+        events.publish(
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_PRESCRIPTION_UPDATED,
@@ -210,7 +210,7 @@ public class PrescriptionService {
 
         p.markCancelled();
 
-        events.add(
+        events.publish(
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(prescriptionId),
                 AppConstants.Outbox.EVT_PRESCRIPTION_CANCELLED,

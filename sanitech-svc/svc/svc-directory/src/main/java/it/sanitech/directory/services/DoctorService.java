@@ -2,7 +2,6 @@ package it.sanitech.directory.services;
 
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import it.sanitech.commons.exception.NotFoundException;
-import it.sanitech.outbox.DomainEventPublisher;
 import it.sanitech.directory.repositories.DoctorRepository;
 import it.sanitech.directory.repositories.DepartmentRepository;
 import it.sanitech.directory.repositories.SpecializationRepository;
@@ -18,6 +17,7 @@ import it.sanitech.directory.services.mapper.DoctorMapper;
 import it.sanitech.directory.utilities.AppConstants;
 import it.sanitech.commons.utilities.PageableUtils;
 import it.sanitech.commons.utilities.SortUtils;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.security.core.Authentication;
@@ -84,7 +84,7 @@ public class DoctorService {
 
         Doctor saved = doctorRepository.save(entity);
 
-        eventPublisher.add(
+        eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EventType.DOCTOR_CREATED,
@@ -133,7 +133,7 @@ public class DoctorService {
 
         Doctor saved = doctorRepository.save(entity);
 
-        eventPublisher.add(
+        eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EventType.DOCTOR_UPDATED,
@@ -154,7 +154,7 @@ public class DoctorService {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
         doctorRepository.delete(entity);
 
-        eventPublisher.add(
+        eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 String.valueOf(id),
                 AppConstants.Outbox.EventType.DOCTOR_DELETED,

@@ -1,5 +1,6 @@
 package it.sanitech.directory;
 
+import it.sanitech.commons.boot.EnableSanitechPlatform;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -12,7 +13,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * il publisher Outbox → Kafka.
  * </p>
  */
-@SpringBootApplication(scanBasePackages = {"it.sanitech.directory", "it.sanitech.commons", "it.sanitech.outbox"})
+@SpringBootApplication
+@EnableSanitechPlatform
 @EnableScheduling
 public class DirectoryApplication {
 

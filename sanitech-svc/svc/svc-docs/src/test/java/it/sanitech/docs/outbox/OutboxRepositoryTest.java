@@ -9,8 +9,10 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import it.sanitech.outbox.persistence.OutboxEvent;
+import it.sanitech.outbox.persistence.OutboxRepository;
 
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,7 +52,7 @@ class OutboxRepositoryTest {
                 .aggregateType("DOCUMENT")
                 .aggregateId("123")
                 .eventType("DOCUMENT_UPLOADED")
-                .payload("{\"hello\": \"world\"}")
+                .payload(new ObjectMapper().createObjectNode().put("hello", "world"))
                 .build();
 
         outbox.saveAndFlush(evt);
