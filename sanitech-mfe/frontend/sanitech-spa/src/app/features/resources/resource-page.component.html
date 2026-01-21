@@ -167,7 +167,17 @@
             <div class="card card-glass">
               <div class="card-body">
                 <h5 class="fw-semibold mb-3">Prossimi appuntamenti ricevuti</h5>
-                <div class="table-responsive">
+                <div class="mb-3" *ngIf="isDoctor">
+                  <p class="text-muted small mb-2">Filtra gli appuntamenti selezionando un paziente specifico.</p>
+                  <label class="form-label">Paziente</label>
+                  <select class="form-select" name="appointmentPatientFilter" [(ngModel)]="appointmentPatientFilterId">
+                    <option [ngValue]="null">Tutti i pazienti</option>
+                    <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                      {{ patient.firstName }} {{ patient.lastName }}
+                    </option>
+                  </select>
+                </div>
+                <div class="table-responsive mt-2">
                   <table class="table align-middle">
                     <thead>
                       <tr>
@@ -181,7 +191,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let appointment of doctorReceivedAppointments | slice:getPageSliceStart('appointmentsDoctor'):getPageSliceEnd('appointmentsDoctor')">
+                      <tr *ngFor="let appointment of filteredDoctorReceivedAppointments | slice:getPageSliceStart('appointmentsDoctor'):getPageSliceEnd('appointmentsDoctor')">
                         <td>{{ appointment.id }}</td>
                         <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
                         <td>{{ getPatientLabel(appointment.patientId) }}</td>
@@ -210,12 +220,14 @@
                           </button>
                         </td>
                       </tr>
-                      <tr *ngIf="!doctorReceivedAppointments.length">
+                      <tr *ngIf="!filteredDoctorReceivedAppointments.length">
                         <td colspan="7" class="text-center text-muted">Nessun appuntamento ricevuto.</td>
                       </tr>
                     </tbody>
                   </table>
-                  <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'appointmentsDoctor', total: doctorReceivedAppointments.length }"></ng-container>
+                  <ng-container
+                    *ngTemplateOutlet="paginationFooter; context: { key: 'appointmentsDoctor', total: filteredDoctorReceivedAppointments.length }">
+                  </ng-container>
                 </div>
               </div>
             </div>
@@ -250,7 +262,7 @@
                     </button>
                   </div>
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive mt-2">
                   <table class="table align-middle">
                     <thead>
                       <tr>
@@ -557,7 +569,17 @@
                     </button>
                   </div>
                 </div>
-                <div class="table-responsive">
+                <div class="mb-3" *ngIf="isDoctor">
+                  <p class="text-muted small mb-2">Filtra i consensi selezionando un paziente specifico.</p>
+                  <label class="form-label">Paziente</label>
+                  <select class="form-select" name="consentPatientFilter" [(ngModel)]="consentPatientFilterId">
+                    <option [ngValue]="null">Tutti i pazienti</option>
+                    <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                      {{ patient.firstName }} {{ patient.lastName }}
+                    </option>
+                  </select>
+                </div>
+                <div class="table-responsive mt-2">
                   <table class="table align-middle">
                     <thead>
                       <tr>
@@ -569,7 +591,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let consent of visibleConsents | slice:getPageSliceStart('consents'):getPageSliceEnd('consents')">
+                      <tr *ngFor="let consent of filteredConsents | slice:getPageSliceStart('consents'):getPageSliceEnd('consents')">
                         <td *ngIf="isDoctor">{{ getPatientLabel(consent.patientId) }}</td>
                         <td>{{ getConsentTypeLabel(consent.consentType) }}</td>
                         <td>{{ consent.accepted ? 'Si' : 'No' }}</td>
@@ -591,12 +613,12 @@
                           </button>
                         </td>
                       </tr>
-                      <tr *ngIf="!visibleConsents.length">
+                      <tr *ngIf="!filteredConsents.length">
                         <td [attr.colspan]="4" class="text-center text-muted">Nessun consenso registrato.</td>
                       </tr>
                     </tbody>
                   </table>
-                  <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'consents', total: visibleConsents.length }"></ng-container>
+                  <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'consents', total: filteredConsents.length }"></ng-container>
                 </div>
               </div>
             </div>
@@ -937,7 +959,17 @@
                       </button>
                     </div>
                   </div>
-                  <div class="table-responsive">
+                  <div class="mb-3" *ngIf="isDoctor">
+                    <p class="text-muted small mb-2">Filtra i ricoveri selezionando un paziente specifico.</p>
+                    <label class="form-label">Paziente</label>
+                    <select class="form-select" name="admissionPatientFilter" [(ngModel)]="admissionPatientFilterId">
+                      <option [ngValue]="null">Tutti i pazienti</option>
+                      <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                        {{ patient.firstName }} {{ patient.lastName }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="table-responsive mt-2">
                     <table class="table align-middle">
                       <thead>
                         <tr>
@@ -949,9 +981,9 @@
                           <th>Motivo</th>
                           <th>Azioni</th>
                         </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissions'):getPageSliceEnd('admissions')">
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let admission of filteredAdmissions | slice:getPageSliceStart('admissions'):getPageSliceEnd('admissions')">
                           <td *ngIf="!isPatient">{{ getPatientLabel(admission.patientId) }}</td>
                           <td>{{ getDepartmentLabel(admission.department) }}</td>
                           <td>{{ admission.bedId ?? '-' }}</td>
@@ -981,13 +1013,13 @@
                             </ng-template>
                           </td>
                         </tr>
-                        <tr *ngIf="!visibleAdmissions.length">
+                        <tr *ngIf="!filteredAdmissions.length">
                           <td [attr.colspan]="isPatient ? 6 : 7" class="text-center text-muted">Nessun ricovero registrato.</td>
                         </tr>
                       </tbody>
                     </table>
                     <div class="mt-3">
-                      <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'admissions', total: visibleAdmissions.length }"></ng-container>
+                      <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'admissions', total: filteredAdmissions.length }"></ng-container>
                     </div>
                   </div>
                 </div>
@@ -1201,7 +1233,7 @@
                         </button>
                       </div>
                     </div>
-                    <div class="table-responsive">
+                <div class="table-responsive mt-2">
                       <table class="table align-middle">
                         <thead>
                           <tr>
@@ -1726,7 +1758,17 @@
                       </button>
                     </div>
                   </div>
-                  <div class="table-responsive">
+                  <div class="mb-3" *ngIf="isDoctor">
+                    <p class="text-muted small mb-2">Filtra le televisite selezionando un paziente specifico.</p>
+                    <label class="form-label">Paziente</label>
+                    <select class="form-select" name="televisitPatientFilter" [(ngModel)]="televisitPatientFilterId">
+                      <option [ngValue]="null">Tutti i pazienti</option>
+                      <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                        {{ patient.firstName }} {{ patient.lastName }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="table-responsive mt-2">
                     <table class="table align-middle">
                       <thead>
                         <tr>
@@ -1739,9 +1781,9 @@
                           <th *ngIf="!isDoctor">Token</th>
                           <th>Azione</th>
                         </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('televisits'):getPageSliceEnd('televisits')">
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let televisit of filteredTelevisits | slice:getPageSliceStart('televisits'):getPageSliceEnd('televisits')">
                           <td>{{ getTelevisitDepartmentLabel(televisit) }}</td>
                           <td *ngIf="isDoctor">{{ getTelevisitPatientLabel(televisit) }}</td>
                           <td>{{ getTelevisitDateTimeLabel(televisit) }}</td>
@@ -1776,12 +1818,12 @@
                             </div>
                           </td>
                         </tr>
-                        <tr *ngIf="!televisits.length">
+                        <tr *ngIf="!filteredTelevisits.length">
                           <td [attr.colspan]="7" class="text-center text-muted">Nessuna sessione presente.</td>
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'televisits', total: televisits.length }"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'televisits', total: filteredTelevisits.length }"></ng-container>
                   </div>
                 </div>
               </div>

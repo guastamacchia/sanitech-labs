@@ -198,6 +198,10 @@ export class ResourcePageComponent {
     notes: ''
   };
   docFilterPatientId: number | null = null;
+  appointmentPatientFilterId: number | null = null;
+  admissionPatientFilterId: number | null = null;
+  televisitPatientFilterId: number | null = null;
+  consentPatientFilterId: number | null = null;
   consentForm = {
     consentType: 'GDPR',
     accepted: true
@@ -355,6 +359,7 @@ export class ResourcePageComponent {
     this.payload = this.selectedEndpoint?.payload ?? '';
     if (this.mode === 'scheduling') {
       this.loadScheduling();
+      this.loadPatients();
     }
     if (this.mode === 'docs') {
       this.loadDocs();
@@ -825,6 +830,14 @@ export class ResourcePageComponent {
     return this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
   }
 
+  get filteredDoctorReceivedAppointments(): SchedulingAppointment[] {
+    const appointments = this.doctorReceivedAppointments;
+    if (!this.isDoctor || !this.appointmentPatientFilterId) {
+      return appointments;
+    }
+    return appointments.filter((appointment) => appointment.patientId === this.appointmentPatientFilterId);
+  }
+
   getAppointmentStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       PENDING: 'In attesa di conferma',
@@ -887,6 +900,14 @@ export class ResourcePageComponent {
     return this.consents;
   }
 
+  get filteredConsents(): ConsentItem[] {
+    const consents = this.visibleConsents;
+    if (!this.isDoctor || !this.consentPatientFilterId) {
+      return consents;
+    }
+    return consents.filter((consent) => consent.patientId === this.consentPatientFilterId);
+  }
+
   get visiblePrescriptions(): PrescriptionItem[] {
     if (this.isPatient) {
       return this.prescriptions.filter((prescription) => prescription.patientId === 1);
@@ -910,6 +931,23 @@ export class ResourcePageComponent {
       return this.admissions.filter((admission) => admission.patientId === 1);
     }
     return this.admissions;
+  }
+
+  get filteredAdmissions(): AdmissionItem[] {
+    const admissions = this.visibleAdmissions;
+    if (!this.isDoctor || !this.admissionPatientFilterId) {
+      return admissions;
+    }
+    return admissions.filter((admission) => admission.patientId === this.admissionPatientFilterId);
+  }
+
+  get filteredTelevisits(): TelevisitItem[] {
+    if (!this.isDoctor || !this.televisitPatientFilterId) {
+      return this.televisits;
+    }
+    return this.televisits.filter(
+      (televisit) => this.getAppointmentById(televisit.appointmentId)?.patientId === this.televisitPatientFilterId
+    );
   }
 
   get doctorSlotsByDate(): Array<{ date: string; slots: SchedulingSlot[] }> {
