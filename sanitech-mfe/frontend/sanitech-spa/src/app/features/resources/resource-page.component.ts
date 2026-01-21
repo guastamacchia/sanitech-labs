@@ -261,6 +261,13 @@ export class ResourcePageComponent {
   prescriptionQuestion = '';
   rejectPrescriptionTarget: PrescriptionItem | null = null;
   rejectPrescriptionReason = '';
+  showDeleteConfirmModal = false;
+  deleteConfirmMessage = '';
+  deleteConfirmTarget:
+    | { type: 'appointment'; value: SchedulingAppointment }
+    | { type: 'document'; value: DocumentItem }
+    | { type: 'consent'; value: ConsentItem }
+    | null = null;
   prescriptionForm = {
     patientId: 1,
     drug: '',
@@ -1024,6 +1031,12 @@ export class ResourcePageComponent {
     this.closeAppointmentRejectModal();
   }
 
+  openDeleteAppointmentConfirm(appointment: SchedulingAppointment): void {
+    this.deleteConfirmTarget = { type: 'appointment', value: appointment };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione dell’appuntamento?';
+    this.showDeleteConfirmModal = true;
+  }
+
   openBookingModal(): void {
     this.showBookingModal = true;
   }
@@ -1050,6 +1063,38 @@ export class ResourcePageComponent {
   closeConsentModal(): void {
     this.showConsentModal = false;
     this.editingConsentId = null;
+  }
+
+  openDeleteDocumentConfirm(doc: DocumentItem): void {
+    this.deleteConfirmTarget = { type: 'document', value: doc };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione del documento?';
+    this.showDeleteConfirmModal = true;
+  }
+
+  openDeleteConsentConfirm(consent: ConsentItem): void {
+    this.deleteConfirmTarget = { type: 'consent', value: consent };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione del consenso?';
+    this.showDeleteConfirmModal = true;
+  }
+
+  closeDeleteConfirmModal(): void {
+    this.showDeleteConfirmModal = false;
+    this.deleteConfirmTarget = null;
+    this.deleteConfirmMessage = '';
+  }
+
+  confirmDelete(): void {
+    if (!this.deleteConfirmTarget) {
+      return;
+    }
+    if (this.deleteConfirmTarget.type === 'appointment') {
+      this.cancelAppointment(this.deleteConfirmTarget.value);
+    } else if (this.deleteConfirmTarget.type === 'document') {
+      this.deleteDocument(this.deleteConfirmTarget.value);
+    } else {
+      this.deleteConsent(this.deleteConfirmTarget.value);
+    }
+    this.closeDeleteConfirmModal();
   }
 
   loadDocs(): void {
