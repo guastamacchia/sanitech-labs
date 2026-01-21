@@ -4,10 +4,13 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 type UpcomingVisit = {
+  department: string;
   patient: string;
   date: string;
   time: string;
+  modality: string;
   reason: string;
+  status: 'CONFIRMED' | 'PENDING';
 };
 
 @Component({
@@ -19,22 +22,31 @@ type UpcomingVisit = {
 export class DoctorHomeComponent {
   upcomingVisits: UpcomingVisit[] = [
     {
+      department: 'Cardiologia',
       patient: 'Anna Conti',
       date: '12/05/2024',
       time: '09:30',
-      reason: 'Controllo cardiologico'
+      modality: 'In presenza',
+      reason: 'Controllo cardiologico',
+      status: 'CONFIRMED'
     },
     {
+      department: 'Neurologia',
       patient: 'Luca Rinaldi',
       date: '13/05/2024',
       time: '11:00',
-      reason: 'Visita di follow-up'
+      modality: 'Da remoto',
+      reason: 'Visita di follow-up',
+      status: 'PENDING'
     },
     {
+      department: 'Oncologia',
       patient: 'Elena Greco',
       date: '14/05/2024',
       time: '15:00',
-      reason: 'Monitoraggio terapia'
+      modality: 'In presenza',
+      reason: 'Monitoraggio terapia',
+      status: 'CONFIRMED'
     }
   ];
 
@@ -43,13 +55,15 @@ export class DoctorHomeComponent {
   currentPage = 1;
 
   get paginatedVisits(): UpcomingVisit[] {
+    const confirmedVisits = this.upcomingVisits.filter((visit) => visit.status === 'CONFIRMED');
     const start = (this.currentPage - 1) * this.pageSize;
     const end = start + this.pageSize;
-    return this.upcomingVisits.slice(start, end);
+    return confirmedVisits.slice(start, end);
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.upcomingVisits.length / this.pageSize));
+    const confirmedCount = this.upcomingVisits.filter((visit) => visit.status === 'CONFIRMED').length;
+    return Math.max(1, Math.ceil(confirmedCount / this.pageSize));
   }
 
   changePage(nextPage: number): void {
