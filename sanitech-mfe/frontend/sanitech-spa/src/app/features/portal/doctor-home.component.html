@@ -1,70 +1,54 @@
-<div class="accordion mb-4" id="upcomingVisitsAccordion">
-  <div class="accordion-item card-glass border-0">
-    <h2 class="accordion-header">
-      <button
-        class="accordion-button"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#upcomingVisitsCollapse"
-        aria-expanded="true"
-        aria-controls="upcomingVisitsCollapse">
-        Prossime visite
-      </button>
-    </h2>
-    <div
-      id="upcomingVisitsCollapse"
-      class="accordion-collapse collapse show"
-      data-bs-parent="#upcomingVisitsAccordion">
-      <div class="accordion-body">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <h5 class="fw-semibold mb-0">Prossime visite</h5>
-          <a class="btn btn-outline-primary btn-sm" routerLink="/portal/doctor/scheduling">Vai all’agenda</a>
-        </div>
-        <div class="table-responsive">
-          <table class="table align-middle">
-            <thead>
-              <tr>
-                <th>Paziente</th>
-                <th>Data</th>
-                <th>Ora</th>
-                <th>Motivo</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let visit of paginatedVisits">
-                <td>{{ visit.patient }}</td>
-                <td>{{ visit.date }}</td>
-                <td>{{ visit.time }}</td>
-                <td>{{ visit.reason }}</td>
-              </tr>
-              <tr *ngIf="!upcomingVisits.length">
-                <td colspan="4" class="text-center text-muted">Nessuna visita programmata.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="d-flex flex-wrap align-items-center justify-content-between mt-3">
-          <div class="d-flex align-items-center gap-2">
-            <small class="text-muted">Elementi per pagina</small>
-            <select class="form-select form-select-sm w-auto" [(ngModel)]="pageSize" (ngModelChange)="resetPagination()">
-              <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
-            </select>
-          </div>
-          <nav aria-label="Paginazione prossime visite">
-            <ul class="pagination pagination-sm mb-0">
-              <li class="page-item" [class.disabled]="currentPage <= 1">
-                <button class="page-link" type="button" (click)="changePage(currentPage - 1)">«</button>
-              </li>
-              <li class="page-item active">
-                <span class="page-link">{{ currentPage }} / {{ totalPages }}</span>
-              </li>
-              <li class="page-item" [class.disabled]="currentPage >= totalPages">
-                <button class="page-link" type="button" (click)="changePage(currentPage + 1)">»</button>
-              </li>
-            </ul>
-          </nav>
-        </div>
+<div class="card card-glass mb-4">
+  <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h5 class="fw-semibold mb-0">Prossime visite</h5>
+      <a class="btn btn-outline-primary btn-sm" routerLink="/portal/doctor/scheduling">Vai all’agenda</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>Reparto</th>
+            <th>Paziente</th>
+            <th>Data e ora</th>
+            <th>Modalità</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let visit of paginatedVisits">
+            <td>{{ visit.department }}</td>
+            <td>{{ visit.patient }}</td>
+            <td>{{ visit.date }} • {{ visit.time }}</td>
+            <td>{{ visit.modality }}</td>
+            <td>{{ visit.reason }}</td>
+          </tr>
+          <tr *ngIf="!upcomingVisits.length">
+            <td colspan="5" class="text-center text-muted">Nessuna visita programmata.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="d-flex flex-wrap align-items-center justify-content-between mt-3">
+      <div class="d-flex align-items-center gap-2">
+        <small class="text-muted">Elementi per pagina</small>
+        <select class="form-select form-select-sm w-auto" [(ngModel)]="pageSize" (ngModelChange)="resetPagination()">
+          <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+        </select>
       </div>
+      <nav aria-label="Paginazione prossime visite">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" [class.disabled]="currentPage <= 1">
+            <button class="page-link" type="button" (click)="changePage(currentPage - 1)">«</button>
+          </li>
+          <li class="page-item active">
+            <span class="page-link">{{ currentPage }} / {{ totalPages }}</span>
+          </li>
+          <li class="page-item" [class.disabled]="currentPage >= totalPages">
+            <button class="page-link" type="button" (click)="changePage(currentPage + 1)">»</button>
+          </li>
+        </ul>
+      </nav>
     </div>
   </div>
 </div>
