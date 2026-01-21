@@ -1,9 +1,6 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../core/services/api.service';
-import { AuthService } from '../../core/auth/auth.service';
+import { ApiService } from '../../../../core/services/api.service';
+import { AuthService } from '../../../../core/auth/auth.service';
 
 interface ResourceEndpoint {
   label: string;
@@ -134,13 +131,7 @@ interface AuditItem {
   timestamp: string;
 }
 
-@Component({
-  selector: 'app-resource-page',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './resource-page.component.html'
-})
-export class ResourcePageComponent {
+export class ResourcePageState {
   title = '';
   description = '';
   endpoints: ResourceEndpoint[] = [];
