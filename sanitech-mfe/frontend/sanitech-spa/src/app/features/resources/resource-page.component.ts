@@ -924,21 +924,6 @@ export class ResourcePageComponent {
     return prescriptions.filter((prescription) => prescription.patientId === this.prescriptionPatientFilterId);
   }
 
-  get prescriptionPatientComment(): string {
-    if (!this.prescriptionPatientFilterId) {
-      return 'Seleziona un paziente per visualizzare eventuali commenti.';
-    }
-    const patientPrescriptions = this.visiblePrescriptions.filter(
-      (prescription) => prescription.patientId === this.prescriptionPatientFilterId
-    );
-    if (!patientPrescriptions.length) {
-      return 'Nessun commento disponibile per il paziente selezionato.';
-    }
-    const latestPrescription = [...patientPrescriptions].sort((a, b) => b.id - a.id)[0];
-    const comment = latestPrescription.patientQuestion?.trim() || latestPrescription.notes?.trim();
-    return comment || 'Nessun commento disponibile per il paziente selezionato.';
-  }
-
   get visibleAdmissions(): AdmissionItem[] {
     if (this.isDoctor) {
       const doctorAppointments = this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
