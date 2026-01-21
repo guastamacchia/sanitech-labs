@@ -255,8 +255,11 @@ export class ResourcePageComponent {
   prescriptions: PrescriptionItem[] = [];
   prescribingError = '';
   showPrescriptionQuestionModal = false;
+  showPrescriptionRejectModal = false;
   selectedPrescription: PrescriptionItem | null = null;
   prescriptionQuestion = '';
+  rejectPrescriptionTarget: PrescriptionItem | null = null;
+  rejectPrescriptionReason = '';
   prescriptionForm = {
     patientId: 1,
     drug: '',
@@ -525,6 +528,19 @@ export class ResourcePageComponent {
     return this.slots.find((slot) => slot.id === slotId);
   }
 
+  isAppointmentReschedulable(appointment: SchedulingAppointment): boolean {
+    const slot = this.getSlotById(appointment.slotId);
+    if (!slot?.date || !slot.time) {
+      return false;
+    }
+    const dateTimeValue = slot.date.includes('T') ? slot.date : `${slot.date}T${slot.time}`;
+    const parsed = new Date(dateTimeValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+    return parsed.getTime() <= Date.now();
+  }
+
   formatDate(value: string): string {
     if (!value) {
       return '-';
@@ -713,15 +729,6 @@ export class ResourcePageComponent {
     return labels[consentType] ?? consentType;
   }
 
-  getPrescriptionStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      ACTIVE: 'Attiva',
-      CONFIRMED: 'Confermata',
-      PENDING: 'In attesa'
-    };
-    return labels[status] ?? status;
-  }
-
   getCurrencyLabel(currency: string): string {
     const labels: Record<string, string> = {
       EUR: 'Euro',
@@ -837,6 +844,7 @@ export class ResourcePageComponent {
   getPrescriptionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       ACTIVE: 'Attiva',
+      REJECTED: 'Rifiutata',
       SUSPENDED: 'Sospesa',
       COMPLETED: 'Conclusa',
       PENDING: 'In attesa',
@@ -1504,6 +1512,38 @@ export class ResourcePageComponent {
     this.prescriptions = this.prescriptions.map((item) =>
       item.id === prescription.id ? { ...item, status: 'CONFIRMED' } : item
     );
+  }
+
+  openPrescriptionRejectModal(prescription: PrescriptionItem): void {
+    this.rejectPrescriptionTarget = prescription;
+    this.rejectPrescriptionReason = '';
+    this.prescribingError = '';
+    this.showPrescriptionRejectModal = true;
+  }
+
+  closePrescriptionRejectModal(): void {
+    this.showPrescriptionRejectModal = false;
+    this.rejectPrescriptionTarget = null;
+    this.rejectPrescriptionReason = '';
+    this.prescribingError = '';
+  }
+
+  submitPrescriptionRejection(): void {
+    if (!this.rejectPrescriptionTarget) {
+      this.prescribingError = 'Seleziona una prescrizione valida.';
+      return;
+    }
+    if (!this.rejectPrescriptionReason.trim()) {
+      this.prescribingError = 'Inserisci una motivazione per il rifiuto.';
+      return;
+    }
+    this.prescribingError = '';
+    this.prescriptions = this.prescriptions.map((item) =>
+      item.id === this.rejectPrescriptionTarget?.id
+        ? { ...item, status: 'REJECTED', notes: this.rejectPrescriptionReason }
+        : item
+    );
+    this.closePrescriptionRejectModal();
   }
 
   openPrescriptionQuestionModal(prescription: PrescriptionItem): void {
