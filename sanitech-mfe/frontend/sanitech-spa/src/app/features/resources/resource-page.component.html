@@ -76,29 +76,7 @@
       <div class="row g-4">
         <ng-container *ngIf="!isDoctor; else doctorAgenda">
           <div class="col-lg-12">
-            <div class="accordion" id="availableSlotsAccordion">
-              <div class="accordion-item card-glass border-0">
-                <h2 class="accordion-header">
-                  <button
-                    class="accordion-button collapsed"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#availableSlotsCollapse"
-                    aria-expanded="false"
-                    aria-controls="availableSlotsCollapse">
-                    Consulta le disponibilità attualmente offerte dalla struttura
-                  </button>
-                </h2>
-                <div
-                  id="availableSlotsCollapse"
-                  class="accordion-collapse collapse"
-                  data-bs-parent="#availableSlotsAccordion">
-                  <div class="accordion-body">
-                    <ng-container *ngTemplateOutlet="slotsTable"></ng-container>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ng-container *ngTemplateOutlet="slotsTable"></ng-container>
           </div>
           <ng-container *ngIf="showBookingModal">
             <div
@@ -171,21 +149,21 @@
                   <table class="table align-middle">
                     <thead>
                       <tr>
+                        <th>Reparto</th>
                         <th>Paziente</th>
                         <th>Data e ora</th>
                         <th>Modalità</th>
-                        <th>Reparto</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr *ngFor="let appointment of confirmedAppointments | slice:getPageSliceStart('appointmentsDoctor'):getPageSliceEnd('appointmentsDoctor')">
+                        <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
                         <td>{{ getPatientLabel(appointment.patientId) }}</td>
                         <td>
                           {{ formatDate(getSlotById(appointment.slotId)?.date || '') }} •
                           {{ getSlotById(appointment.slotId)?.time || '-' }}
                         </td>
                         <td>{{ getModalityLabel(getSlotById(appointment.slotId)?.modality || 'IN_PERSON') }}</td>
-                        <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
                       </tr>
                       <tr *ngIf="!confirmedAppointments.length">
                         <td colspan="4" class="text-center text-muted">Nessuna visita confermata.</td>
@@ -254,14 +232,6 @@
                               [disabled]="appointment.status !== 'PENDING' && appointment.status !== 'IN_ATTESA'"
                               (click)="cancelAppointment(appointment)">
                               🗑️
-                            </button>
-                            <button
-                              class="btn btn-outline-success btn-sm me-2"
-                              type="button"
-                              aria-label="Conferma appuntamento"
-                              (click)="confirmPatientAppointment(appointment)"
-                              [disabled]="appointment.status === 'CONFIRMED' || appointment.status === 'REJECTED'">
-                              ✅
                             </button>
                             <button
                               class="btn btn-outline-danger btn-sm me-2"
