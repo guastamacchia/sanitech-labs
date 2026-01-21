@@ -37,7 +37,7 @@
 
     <ng-container *ngIf="mode === 'scheduling'; else otherLayouts">
       <ng-template #slotsTable>
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-3" *ngIf="!isDoctor">
           <h5 class="fw-semibold mb-0">Slot disponibili</h5>
           <button class="btn btn-outline-secondary btn-sm" (click)="loadScheduling()" [disabled]="isLoading">
             Aggiorna
@@ -75,7 +75,7 @@
 
       <div class="row g-4">
         <ng-container *ngIf="!isDoctor; else doctorAgenda">
-          <div class="col-lg-12">
+          <div class="col-lg-12" *ngIf="!isPatient">
             <div class="accordion" id="availableSlotsAccordion">
               <div class="accordion-item card-glass border-0">
                 <h2 class="accordion-header">
@@ -166,45 +166,72 @@
           <div class="col-lg-12">
             <div class="card card-glass">
               <div class="card-body">
-                <h5 class="fw-semibold mb-3">Prossime visite confermate</h5>
+                <h5 class="fw-semibold mb-3">Prossimi appuntamenti ricevuti</h5>
                 <div class="table-responsive">
                   <table class="table align-middle">
                     <thead>
                       <tr>
+                        <th>Reparto</th>
                         <th>Paziente</th>
                         <th>Data e ora</th>
                         <th>Modalità</th>
-                        <th>Reparto</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let appointment of confirmedAppointments | slice:getPageSliceStart('appointmentsDoctor'):getPageSliceEnd('appointmentsDoctor')">
+                      <tr *ngFor="let appointment of doctorReceivedAppointments | slice:getPageSliceStart('appointmentsDoctor'):getPageSliceEnd('appointmentsDoctor')">
+                        <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
                         <td>{{ getPatientLabel(appointment.patientId) }}</td>
                         <td>
                           {{ formatDate(getSlotById(appointment.slotId)?.date || '') }} •
                           {{ getSlotById(appointment.slotId)?.time || '-' }}
                         </td>
                         <td>{{ getModalityLabel(getSlotById(appointment.slotId)?.modality || 'IN_PERSON') }}</td>
-                        <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
+                        <td>{{ getAppointmentStatusLabel(appointment.status) }}</td>
+                        <td>
+                          <button
+                            class="btn btn-outline-success btn-sm me-2"
+                            type="button"
+                            aria-label="Conferma appuntamento"
+                            (click)="confirmAppointment(appointment)"
+                            [disabled]="appointment.status === 'CONFIRMED' || appointment.status === 'REJECTED'">
+                            ✅
+                          </button>
+                          <button
+                            class="btn btn-outline-danger btn-sm"
+                            type="button"
+                            aria-label="Rifiuta appuntamento"
+                            (click)="openAppointmentRejectModal(appointment)"
+                            [disabled]="appointment.status === 'CONFIRMED' || appointment.status === 'REJECTED'">
+                            ❌
+                          </button>
+                        </td>
                       </tr>
-                      <tr *ngIf="!confirmedAppointments.length">
-                        <td colspan="4" class="text-center text-muted">Nessuna visita confermata.</td>
+                      <tr *ngIf="!doctorReceivedAppointments.length">
+                        <td colspan="6" class="text-center text-muted">Nessun appuntamento ricevuto.</td>
                       </tr>
                     </tbody>
                   </table>
-                  <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'appointmentsDoctor', total: confirmedAppointments.length }"></ng-container>
+                  <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'appointmentsDoctor', total: doctorReceivedAppointments.length }"></ng-container>
                 </div>
               </div>
             </div>
           </div>
         </ng-template>
 
+        <div class="col-12" *ngIf="isDoctor">
+          <p class="text-muted mb-0">
+            Qui puoi gestire gli appuntamenti disponibili che i pazienti potranno prenotare in agenda.
+          </p>
+        </div>
+
         <ng-container *ngIf="isPatient; else doctorScheduling">
           <div class="col-12">
             <div class="card card-glass">
               <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
-                  <h5 class="fw-semibold mb-0">Appuntamenti attivi</h5>
+                  <h5 class="fw-semibold mb-0">Appuntamenti prenotati</h5>
                   <div class="d-flex flex-wrap gap-2">
                     <button
                       class="btn btn-outline-secondary btn-sm"
@@ -252,16 +279,8 @@
                               type="button"
                               aria-label="Elimina appuntamento"
                               [disabled]="appointment.status !== 'PENDING' && appointment.status !== 'IN_ATTESA'"
-                              (click)="cancelAppointment(appointment)">
+                              (click)="openDeleteAppointmentConfirm(appointment)">
                               🗑️
-                            </button>
-                            <button
-                              class="btn btn-outline-success btn-sm me-2"
-                              type="button"
-                              aria-label="Conferma appuntamento"
-                              (click)="confirmPatientAppointment(appointment)"
-                              [disabled]="appointment.status === 'CONFIRMED' || appointment.status === 'REJECTED'">
-                              ✅
                             </button>
                             <button
                               class="btn btn-outline-danger btn-sm me-2"
@@ -275,7 +294,7 @@
                               class="btn btn-outline-secondary btn-sm"
                               type="button"
                               aria-label="Riprogramma appuntamento"
-                              [disabled]="appointment.status !== 'CONFIRMED'"
+                              [disabled]="appointment.status !== 'CONFIRMED' || !isAppointmentReschedulable(appointment)"
                               (click)="openAppointmentRescheduleModal(appointment)">
                               🔄
                             </button>
@@ -372,44 +391,74 @@
           </div>
         </ng-container>
 
-        <ng-template #doctorScheduling>
-          <div class="col-lg-8">
-            <div class="card card-glass">
-              <div class="card-body">
-                <ng-container *ngTemplateOutlet="slotsTable"></ng-container>
+        <ng-container *ngIf="showSlotModal">
+          <div
+            class="modal-backdrop fade show"
+            style="position: fixed; inset: 0; z-index: 1050;"
+            (click)="closeSlotModal()"></div>
+          <div
+            class="modal d-flex align-items-center justify-content-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="slotModalTitle"
+            style="position: fixed; inset: 0; z-index: 1055;">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="slotModalTitle">Nuovo slot disponibile</h5>
+                  <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeSlotModal()"></button>
+                </div>
+                <div class="modal-body">
+                  <form (ngSubmit)="submitSlot()" #slotFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Data</label>
+                      <input class="form-control" type="date" name="slotDate" [(ngModel)]="slotForm.date" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Ora</label>
+                      <input class="form-control" type="time" name="slotTime" [(ngModel)]="slotForm.time" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Modalità</label>
+                      <select class="form-select" name="slotModality" [(ngModel)]="slotForm.modality" required>
+                        <option [ngValue]="'IN_PERSON'">In presenza</option>
+                        <option [ngValue]="'REMOTE'">Da remoto (televisita)</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Note</label>
+                      <textarea class="form-control" rows="3" name="slotNotes" [(ngModel)]="slotForm.notes" placeholder="Inserisci note per il paziente"></textarea>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>
+                    <div class="d-flex justify-content-end gap-2">
+                      <button class="btn btn-outline-secondary" type="button" (click)="closeSlotModal()">Annulla</button>
+                      <button class="btn btn-primary" type="submit" [disabled]="slotFormRef.invalid || isLoading">
+                        {{ isLoading ? 'Salvataggio...' : 'Salva slot' }}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
+        </ng-container>
 
-          <div class="col-lg-4">
+        <ng-template #doctorScheduling>
+          <div class="col-12">
             <div class="card card-glass">
               <div class="card-body">
-                <h5 class="fw-semibold mb-3">Nuovo slot disponibile</h5>
-                <form (ngSubmit)="submitSlot()" #slotFormRef="ngForm">
-                  <div class="mb-3">
-                    <label class="form-label">Data</label>
-                    <input class="form-control" type="date" name="slotDate" [(ngModel)]="slotForm.date" required />
+                <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+                  <h5 class="fw-semibold mb-0">Appuntamenti disponibili</h5>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" (click)="loadScheduling()" [disabled]="isLoading">
+                      Aggiorna
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="openSlotModal()">
+                      Nuovo appuntamento disponibile
+                    </button>
                   </div>
-                  <div class="mb-3">
-                    <label class="form-label">Ora</label>
-                    <input class="form-control" type="time" name="slotTime" [(ngModel)]="slotForm.time" required />
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Modalità</label>
-                    <select class="form-select" name="slotModality" [(ngModel)]="slotForm.modality" required>
-                      <option [ngValue]="'IN_PERSON'">In presenza</option>
-                      <option [ngValue]="'REMOTE'">Da remoto (televisita)</option>
-                    </select>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label">Note</label>
-                    <textarea class="form-control" rows="3" name="slotNotes" [(ngModel)]="slotForm.notes" placeholder="Inserisci note per il paziente"></textarea>
-                  </div>
-                  <div class="alert alert-danger py-2" *ngIf="schedulingError">{{ schedulingError }}</div>
-                  <button class="btn btn-primary w-100" type="submit" [disabled]="slotFormRef.invalid || isLoading">
-                    {{ isLoading ? 'Salvataggio...' : 'Salva slot' }}
-                  </button>
-                </form>
+                </div>
+                <ng-container *ngTemplateOutlet="slotsTable"></ng-container>
               </div>
             </div>
           </div>
@@ -442,7 +491,7 @@
                         <th>Tipo</th>
                         <th>Nome</th>
                         <th>Note</th>
-                        <th>Stato</th>
+                        <th>Caricato da</th>
                         <th>Data e ora</th>
                         <th>Azioni</th>
                       </tr>
@@ -453,7 +502,7 @@
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
                         <td>{{ doc.notes || '-' }}</td>
-                        <td>{{ getDocumentStatusLabel(doc) }}</td>
+                        <td>{{ getDocumentUploaderLabel(doc) }}</td>
                         <td>{{ formatDateTime(doc.uploadedAt) }}</td>
                         <td>
                           <button
@@ -467,7 +516,8 @@
                             class="btn btn-outline-danger btn-sm"
                             type="button"
                             aria-label="Elimina documento"
-                            (click)="deleteDocument(doc)">
+                            (click)="openDeleteDocumentConfirm(doc)"
+                            [disabled]="!isDocumentDeletable(doc)">
                             🗑️
                           </button>
                         </td>
@@ -517,7 +567,7 @@
                             class="btn btn-outline-danger btn-sm"
                             type="button"
                             aria-label="Elimina consenso"
-                            (click)="deleteConsent(consent)">
+                            (click)="openDeleteConsentConfirm(consent)">
                             🗑️
                           </button>
                           <button
@@ -649,6 +699,7 @@
             </div>
           </div>
         </ng-container>
+
       </ng-container>
 
       <ng-template #paymentsLayout>
@@ -892,7 +943,8 @@
                               class="btn btn-outline-primary btn-sm me-2"
                               type="button"
                               aria-label="Ripianifica ricovero"
-                              (click)="openAdmissionRescheduleModal(admission)">
+                              (click)="openAdmissionRescheduleModal(admission)"
+                              [disabled]="!isAdmissionReschedulable(admission)">
                               🔄
                             </button>
                             <button
@@ -1305,6 +1357,14 @@
                                 ✅
                               </button>
                               <button
+                                class="btn btn-outline-danger btn-sm me-2"
+                                type="button"
+                                aria-label="Rifiuta prescrizione"
+                                (click)="openPrescriptionRejectModal(prescription)"
+                                [disabled]="prescription.status === 'REJECTED'">
+                                ❌
+                              </button>
+                              <button
                                 class="btn btn-outline-secondary btn-sm"
                                 type="button"
                                 aria-label="Chiedi spiegazioni"
@@ -1325,15 +1385,20 @@
               </div>
             </div>
 
-            <ng-template #prescribingStaff>
-              <div class="col-lg-8">
+      <ng-template #prescribingStaff>
+        <div class="col-12">
                 <div class="card card-glass">
                   <div class="card-body">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                       <h5 class="fw-semibold mb-0">Prescrizioni attive</h5>
-                      <button class="btn btn-outline-secondary btn-sm" (click)="loadPrescriptions()" [disabled]="isLoading">
-                        Aggiorna
-                      </button>
+                      <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-outline-secondary btn-sm" (click)="loadPrescriptions()" [disabled]="isLoading">
+                          Aggiorna
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" type="button" (click)="openPrescriptionModal()">
+                          Nuova prescrizione
+                        </button>
+                      </div>
                     </div>
                     <div class="table-responsive">
                       <table class="table align-middle">
@@ -1344,6 +1409,8 @@
                             <th>Posologia</th>
                             <th>Durata</th>
                             <th>Note</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1353,9 +1420,40 @@
                             <td>{{ prescription.dosage }}</td>
                             <td>{{ prescription.durationDays }} giorni</td>
                             <td>{{ prescription.notes || '-' }}</td>
+                            <td>{{ getPrescriptionDoctorStatusLabel(prescription.status) }}</td>
+                            <td>
+                              <button
+                                class="btn btn-outline-secondary btn-sm me-2"
+                                type="button"
+                                aria-label="Modifica prescrizione"
+                                (click)="openPrescriptionModal(prescription)">
+                                ✏️
+                              </button>
+                              <button
+                                class="btn btn-outline-danger btn-sm me-2"
+                                type="button"
+                                aria-label="Elimina prescrizione"
+                                (click)="openDeletePrescriptionConfirm(prescription)">
+                                🗑️
+                              </button>
+                              <button
+                                class="btn btn-outline-secondary btn-sm me-2"
+                                type="button"
+                                aria-label="Visualizza domanda"
+                                (click)="openPrescriptionMessageModal(prescription)">
+                                💬
+                              </button>
+                              <button
+                                class="btn btn-outline-primary btn-sm"
+                                type="button"
+                                aria-label="Reinvia prescrizione"
+                                (click)="resendPrescription(prescription)">
+                                🔁
+                              </button>
+                            </td>
                           </tr>
                           <tr *ngIf="!visiblePrescriptions.length">
-                            <td colspan="5" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
+                            <td colspan="7" class="text-center text-muted">Nessuna prescrizione disponibile.</td>
                           </tr>
                         </tbody>
                       </table>
@@ -1363,52 +1461,101 @@
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div class="col-lg-4">
-                <div class="card card-glass">
-                  <div class="card-body">
-                    <h5 class="fw-semibold mb-3">Nuova prescrizione</h5>
-                    <form (ngSubmit)="submitPrescription()" #prescriptionFormRef="ngForm">
-                      <div class="mb-3">
-                        <label class="form-label">Paziente</label>
-                        <select class="form-select" name="prescriptionPatientId" [(ngModel)]="prescriptionForm.patientId" required>
-                          <option [ngValue]="null" disabled>Seleziona un paziente</option>
-                          <option *ngFor="let patient of patients" [ngValue]="patient.id">
-                            {{ patient.firstName }} {{ patient.lastName }}
-                          </option>
-                        </select>
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Farmaco</label>
-                        <input class="form-control" type="text" name="prescriptionDrug" [(ngModel)]="prescriptionForm.drug" required />
-                      </div>
-                    <div class="mb-3">
-                      <label class="form-label">Posologia</label>
-                      <input class="form-control" type="text" name="prescriptionDosage" [(ngModel)]="prescriptionForm.dosage" required />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Durata terapia (giorni)</label>
-                      <input class="form-control" type="number" name="prescriptionDuration" [(ngModel)]="prescriptionForm.durationDays" min="1" required />
-                    </div>
-                      <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
-                      <button class="btn btn-primary w-100" type="submit" [disabled]="prescriptionFormRef.invalid || isLoading">
-                        {{ isLoading ? 'Salvataggio...' : 'Registra prescrizione' }}
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              </div>
-            </ng-template>
-          </div>
-        </ng-container>
+        </div>
       </ng-template>
+    </div>
+  </ng-container>
+</ng-template>
 
-      <ng-container *ngIf="showPrescriptionQuestionModal">
-        <div
-          class="modal-backdrop fade show"
-          style="position: fixed; inset: 0; z-index: 1050;"
-          (click)="closePrescriptionQuestionModal()"></div>
+<ng-container *ngIf="showPrescriptionModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closePrescriptionModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="prescriptionModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="prescriptionModalTitle">
+            {{ editingPrescriptionId ? 'Modifica prescrizione' : 'Nuova prescrizione' }}
+          </h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePrescriptionModal()"></button>
+        </div>
+        <div class="modal-body">
+          <form (ngSubmit)="submitPrescription()" #prescriptionFormRef="ngForm">
+            <div class="mb-3">
+              <label class="form-label">Paziente</label>
+              <select class="form-select" name="prescriptionPatientId" [(ngModel)]="prescriptionForm.patientId" required>
+                <option [ngValue]="null" disabled>Seleziona un paziente</option>
+                <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                  {{ patient.firstName }} {{ patient.lastName }}
+                </option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Farmaco</label>
+              <input class="form-control" type="text" name="prescriptionDrug" [(ngModel)]="prescriptionForm.drug" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Posologia</label>
+              <input class="form-control" type="text" name="prescriptionDosage" [(ngModel)]="prescriptionForm.dosage" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Durata terapia (giorni)</label>
+              <input class="form-control" type="number" name="prescriptionDuration" [(ngModel)]="prescriptionForm.durationDays" min="1" required />
+            </div>
+            <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
+            <div class="d-flex justify-content-end gap-2">
+              <button class="btn btn-outline-secondary" type="button" (click)="closePrescriptionModal()">Annulla</button>
+              <button class="btn btn-primary" type="submit" [disabled]="prescriptionFormRef.invalid || isLoading">
+                {{ editingPrescriptionId ? 'Salva modifiche' : 'Registra prescrizione' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="showPrescriptionMessageModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closePrescriptionMessageModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="prescriptionMessageModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="prescriptionMessageModalTitle">Domanda del paziente</h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePrescriptionMessageModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">{{ prescriptionMessageText }}</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" type="button" (click)="closePrescriptionMessageModal()">Chiudi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+        <ng-container *ngIf="showPrescriptionQuestionModal">
+          <div
+            class="modal-backdrop fade show"
+            style="position: fixed; inset: 0; z-index: 1050;"
+            (click)="closePrescriptionQuestionModal()"></div>
         <div
           class="modal d-flex align-items-center justify-content-center"
           role="dialog"
@@ -1449,39 +1596,60 @@
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
                     <h5 class="fw-semibold mb-0">Sessioni di televisita</h5>
-                    <button class="btn btn-outline-secondary btn-sm" (click)="loadTelevisits()" [disabled]="isLoading">
-                      Aggiorna
-                    </button>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-outline-primary btn-sm" type="button" (click)="openTelevisitModal()">
+                        Nuova televisita
+                      </button>
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadTelevisits()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                    </div>
                   </div>
                   <div class="table-responsive">
                     <table class="table align-middle">
                       <thead>
                         <tr>
-                          <th *ngIf="!isDoctor">ID</th>
                           <th *ngIf="isDoctor">Paziente</th>
-                          <th *ngIf="!isDoctor">Appuntamento</th>
+                          <th *ngIf="!isDoctor">Prenotazione</th>
+                          <th>Reparto</th>
+                          <th>Data e ora</th>
+                          <th>Stato prenotazione</th>
                           <th>Provider</th>
-                          <th>Stato</th>
+                          <th>Stato sessione</th>
                           <th *ngIf="!isDoctor">Token</th>
-                          <th *ngIf="isDoctor">Azione</th>
+                          <th>Azione</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('televisits'):getPageSliceEnd('televisits')">
-                          <td *ngIf="!isDoctor">{{ televisit.id }}</td>
-                          <td *ngIf="isDoctor">{{ getPatientLabel(televisit.appointmentId) }}</td>
-                          <td *ngIf="!isDoctor">{{ televisit.appointmentId }}</td>
+                          <td *ngIf="isDoctor">{{ getTelevisitPatientLabel(televisit) }}</td>
+                          <td *ngIf="!isDoctor">{{ getTelevisitAppointmentLabel(televisit.appointmentId) }}</td>
+                          <td>{{ getTelevisitDepartmentLabel(televisit) }}</td>
+                          <td>{{ getTelevisitDateTimeLabel(televisit) }}</td>
+                          <td>{{ getTelevisitBookingStatusLabel(televisit) }}</td>
                           <td>{{ televisit.provider }}</td>
                           <td>{{ getTelevisitStatusLabel(televisit.status) }}</td>
                           <td *ngIf="!isDoctor">{{ televisit.token }}</td>
-                          <td *ngIf="isDoctor">
-                            <button class="btn btn-outline-primary btn-sm" type="button" (click)="joinTelevisit(televisit)">
-                              Partecipa alla call
-                            </button>
+                          <td>
+                            <div class="d-flex flex-wrap gap-2">
+                              <button class="btn btn-outline-primary btn-sm" type="button" (click)="joinTelevisit(televisit)">
+                                Partecipa alla call
+                              </button>
+                              <button
+                                class="btn btn-outline-secondary btn-sm"
+                                type="button"
+                                [disabled]="!canRescheduleTelevisit(televisit)"
+                                (click)="openTelevisitRescheduleModal(televisit)">
+                                Ripianifica
+                              </button>
+                              <button class="btn btn-outline-danger btn-sm" type="button" (click)="openTelevisitDeleteModal(televisit)">
+                                Elimina
+                              </button>
+                            </div>
                           </td>
                         </tr>
                         <tr *ngIf="!televisits.length">
-                          <td [attr.colspan]="isDoctor ? 4 : 5" class="text-center text-muted">Nessuna sessione presente.</td>
+                          <td [attr.colspan]="isDoctor ? 8 : 9" class="text-center text-muted">Nessuna sessione presente.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -1495,40 +1663,207 @@
               <div class="card card-glass">
                 <div class="card-body">
                   <h5 class="fw-semibold mb-3">Avvia sessione</h5>
-                  <form (ngSubmit)="submitTelevisit()" #televisitFormRef="ngForm">
-                    <div class="mb-3" *ngIf="isDoctor; else televisitAppointment">
-                      <label class="form-label">Paziente</label>
-                      <select class="form-select" name="televisitPatientId" [(ngModel)]="televisitForm.patientId" required>
-                        <option [ngValue]="null" disabled>Seleziona un paziente</option>
-                        <option *ngFor="let patient of patients" [ngValue]="patient.id">
-                          {{ patient.firstName }} {{ patient.lastName }}
-                        </option>
-                      </select>
-                    </div>
-                    <ng-template #televisitAppointment>
-                      <div class="mb-3">
-                        <label class="form-label">ID Appuntamento</label>
-                        <input class="form-control" type="number" name="televisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required />
-                      </div>
-                    </ng-template>
-                    <div class="mb-3">
-                      <label class="form-label">Provider</label>
-                      <select class="form-select" name="televisitProvider" [(ngModel)]="televisitForm.provider" required>
-                        <option value="LIVEKIT">LiveKit</option>
-                        <option value="WEBRTC">WebRTC</option>
-                      </select>
-                    </div>
-                    <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
-                    <button class="btn btn-primary w-100" type="submit" [disabled]="televisitFormRef.invalid || isLoading">
-                      {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
-                    </button>
-                  </form>
+                  <p class="text-muted mb-3">Crea una nuova sessione partendo da una prenotazione confermata.</p>
+                  <button class="btn btn-primary w-100" type="button" (click)="openTelevisitModal()">Avvia televisita</button>
                 </div>
               </div>
             </div>
           </div>
         </ng-container>
+
       </ng-template>
+
+      <ng-container *ngIf="showTelevisitModal">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closeTelevisitModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="televisitModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="televisitModalTitle">Nuova televisita</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeTelevisitModal()"></button>
+              </div>
+              <div class="modal-body">
+                <form (ngSubmit)="submitTelevisit()" #televisitFormRef="ngForm">
+                  <div class="mb-3" *ngIf="isDoctor; else televisitAppointment">
+                    <label class="form-label">Prenotazione confermata</label>
+                    <select class="form-select" name="televisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required>
+                      <option [ngValue]="null" disabled>Seleziona una prenotazione</option>
+                      <option *ngFor="let appointment of confirmedAppointments" [ngValue]="appointment.id">
+                        {{ getTelevisitAppointmentLabel(appointment.id) }}
+                      </option>
+                    </select>
+                    <div class="form-text" *ngIf="!confirmedAppointments.length">
+                      Nessuna prenotazione confermata disponibile.
+                    </div>
+                  </div>
+                  <ng-template #televisitAppointment>
+                    <div class="mb-3">
+                      <label class="form-label">ID Appuntamento</label>
+                      <input class="form-control" type="number" name="televisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required />
+                    </div>
+                  </ng-template>
+                  <div class="mb-3">
+                    <label class="form-label">Provider</label>
+                    <select class="form-select" name="televisitProvider" [(ngModel)]="televisitForm.provider" required>
+                      <option value="LIVEKIT">LiveKit</option>
+                      <option value="WEBRTC">WebRTC</option>
+                    </select>
+                  </div>
+                  <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeTelevisitModal()">Annulla</button>
+                    <button class="btn btn-primary" type="submit" [disabled]="televisitFormRef.invalid || isLoading">
+                      {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="showTelevisitDeleteModal && selectedTelevisit">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closeTelevisitDeleteModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="televisitDeleteModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="televisitDeleteModalTitle">Elimina televisita</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeTelevisitDeleteModal()"></button>
+              </div>
+              <div class="modal-body">
+                <p class="text-muted mb-3">
+                  Stai eliminando la sessione per {{ getTelevisitAppointmentLabel(selectedTelevisit.appointmentId) }}.
+                </p>
+                <form (ngSubmit)="submitTelevisitDelete()" #televisitDeleteRef="ngForm">
+                  <div class="mb-3">
+                    <label class="form-label">Motivazione</label>
+                    <textarea
+                      class="form-control"
+                      rows="3"
+                      name="televisitDeleteReason"
+                      [(ngModel)]="televisitDeleteReason"
+                      required></textarea>
+                  </div>
+                  <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeTelevisitDeleteModal()">Annulla</button>
+                    <button class="btn btn-danger" type="submit" [disabled]="televisitDeleteRef.invalid">Elimina</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="showTelevisitRescheduleModal && selectedTelevisit">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closeTelevisitRescheduleModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="televisitRescheduleModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="televisitRescheduleModalTitle">Ripianifica televisita</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeTelevisitRescheduleModal()"></button>
+              </div>
+              <div class="modal-body">
+                <p class="text-muted mb-3">
+                  Ripianifica la sessione per {{ getTelevisitAppointmentLabel(selectedTelevisit.appointmentId) }}.
+                </p>
+                <form (ngSubmit)="submitTelevisitReschedule()" #televisitRescheduleRef="ngForm">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Nuova data</label>
+                      <input
+                        class="form-control"
+                        type="date"
+                        name="televisitRescheduleDate"
+                        [(ngModel)]="televisitRescheduleDate"
+                        required />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Nuova ora</label>
+                      <input
+                        class="form-control"
+                        type="time"
+                        name="televisitRescheduleTime"
+                        [(ngModel)]="televisitRescheduleTime"
+                        required />
+                    </div>
+                  </div>
+                  <div class="alert alert-danger py-2 mt-3" *ngIf="televisitError">{{ televisitError }}</div>
+                  <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeTelevisitRescheduleModal()">Annulla</button>
+                    <button class="btn btn-primary" type="submit" [disabled]="televisitRescheduleRef.invalid">Salva</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="showPrescriptionRejectModal">
+        <div
+          class="modal-backdrop fade show"
+          style="position: fixed; inset: 0; z-index: 1050;"
+          (click)="closePrescriptionRejectModal()"></div>
+        <div
+          class="modal d-flex align-items-center justify-content-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="prescriptionRejectModalTitle"
+          style="position: fixed; inset: 0; z-index: 1055;">
+          <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="prescriptionRejectModalTitle">Rifiuta prescrizione</h5>
+                <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePrescriptionRejectModal()"></button>
+              </div>
+              <div class="modal-body">
+                <form (ngSubmit)="submitPrescriptionRejection()" #prescriptionRejectRef="ngForm">
+                  <div class="mb-3">
+                    <label class="form-label">Motivazione</label>
+                    <textarea class="form-control" rows="3" name="prescriptionRejectReason" [(ngModel)]="rejectPrescriptionReason" required></textarea>
+                  </div>
+                  <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
+                  <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-outline-secondary" type="button" (click)="closePrescriptionRejectModal()">Annulla</button>
+                    <button class="btn btn-danger" type="submit" [disabled]="prescriptionRejectRef.invalid || isLoading">
+                      Rifiuta prescrizione
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
 
       <ng-template #adminDirectoryLayout>
         <ng-container *ngIf="mode === 'admin-directory'; else adminAuditLayout">
@@ -1895,4 +2230,33 @@
     </ng-template>
     </ng-template>
   </div>
+
+  <ng-container *ngIf="showDeleteConfirmModal">
+    <div
+      class="modal-backdrop fade show"
+      style="position: fixed; inset: 0; z-index: 1050;"
+      (click)="closeDeleteConfirmModal()"></div>
+    <div
+      class="modal d-flex align-items-center justify-content-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="deleteConfirmModalTitle"
+      style="position: fixed; inset: 0; z-index: 1055;">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="deleteConfirmModalTitle">Conferma eliminazione</h5>
+            <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDeleteConfirmModal()"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">{{ deleteConfirmMessage }}</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" type="button" (click)="closeDeleteConfirmModal()">Annulla</button>
+            <button class="btn btn-danger" type="button" (click)="confirmDelete()">Conferma</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
 </section>

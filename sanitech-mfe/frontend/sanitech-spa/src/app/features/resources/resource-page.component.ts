@@ -38,6 +38,7 @@ interface DocumentItem {
   name: string;
   notes?: string;
   uploadedAt: string;
+  uploadedBy?: 'PATIENT' | 'DOCTOR';
   viewedByCurrentUser?: boolean;
 }
 
@@ -90,6 +91,7 @@ interface PrescriptionItem {
   durationDays: number;
   status: string;
   notes?: string;
+  patientQuestion?: string;
 }
 
 interface TelevisitItem {
@@ -255,8 +257,23 @@ export class ResourcePageComponent {
   prescriptions: PrescriptionItem[] = [];
   prescribingError = '';
   showPrescriptionQuestionModal = false;
+  showPrescriptionRejectModal = false;
+  showPrescriptionMessageModal = false;
   selectedPrescription: PrescriptionItem | null = null;
   prescriptionQuestion = '';
+  prescriptionMessageText = '';
+  rejectPrescriptionTarget: PrescriptionItem | null = null;
+  rejectPrescriptionReason = '';
+  showDeleteConfirmModal = false;
+  deleteConfirmMessage = '';
+  deleteConfirmTarget:
+    | { type: 'appointment'; value: SchedulingAppointment }
+    | { type: 'document'; value: DocumentItem }
+    | { type: 'consent'; value: ConsentItem }
+    | { type: 'prescription'; value: PrescriptionItem }
+    | null = null;
+  showPrescriptionModal = false;
+  editingPrescriptionId: number | null = null;
   prescriptionForm = {
     patientId: 1,
     drug: '',
@@ -265,11 +282,19 @@ export class ResourcePageComponent {
   };
   televisits: TelevisitItem[] = [];
   televisitError = '';
+  showTelevisitModal = false;
+  showTelevisitDeleteModal = false;
+  showTelevisitRescheduleModal = false;
+  selectedTelevisit: TelevisitItem | null = null;
+  televisitDeleteReason = '';
+  televisitRescheduleDate = '';
+  televisitRescheduleTime = '';
   televisitForm = {
     appointmentId: 1,
     patientId: null as number | null,
     provider: 'LIVEKIT'
   };
+  showSlotModal = false;
   doctors: DoctorItem[] = [];
   patients: PatientItem[] = [];
   departments: DepartmentItem[] = [];
@@ -525,6 +550,34 @@ export class ResourcePageComponent {
     return this.slots.find((slot) => slot.id === slotId);
   }
 
+  getAppointmentById(appointmentId: number): SchedulingAppointment | undefined {
+    return this.appointments.find((appointment) => appointment.id === appointmentId);
+  }
+
+  isAppointmentReschedulable(appointment: SchedulingAppointment): boolean {
+    const slot = this.getSlotById(appointment.slotId);
+    if (!slot?.date || !slot.time) {
+      return false;
+    }
+    const dateTimeValue = slot.date.includes('T') ? slot.date : `${slot.date}T${slot.time}`;
+    const parsed = new Date(dateTimeValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+    return parsed.getTime() >= Date.now();
+  }
+
+  isAdmissionReschedulable(admission: AdmissionItem): boolean {
+    if (!admission.admittedAt) {
+      return false;
+    }
+    const parsed = new Date(admission.admittedAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+    return parsed.getTime() >= Date.now();
+  }
+
   formatDate(value: string): string {
     if (!value) {
       return '-';
@@ -584,6 +637,19 @@ export class ResourcePageComponent {
 
   getDocumentStatusLabel(doc: DocumentItem): string {
     return this.isDocumentViewed(doc) ? 'Visualizzato' : 'Da visualizzare';
+  }
+
+  getDocumentUploaderLabel(doc: DocumentItem): string {
+    const uploader = doc.uploadedBy ?? 'DOCTOR';
+    return uploader === 'PATIENT' ? 'Utente' : 'Medico';
+  }
+
+  isDocumentDeletable(doc: DocumentItem): boolean {
+    const uploader = doc.uploadedBy ?? 'DOCTOR';
+    if (this.isDoctor) {
+      return uploader === 'DOCTOR';
+    }
+    return uploader === 'PATIENT';
   }
 
   getSpecialityLabel(code: string): string {
@@ -713,15 +779,6 @@ export class ResourcePageComponent {
     return labels[consentType] ?? consentType;
   }
 
-  getPrescriptionStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      ACTIVE: 'Attiva',
-      CONFIRMED: 'Confermata',
-      PENDING: 'In attesa'
-    };
-    return labels[status] ?? status;
-  }
-
   getCurrencyLabel(currency: string): string {
     const labels: Record<string, string> = {
       EUR: 'Euro',
@@ -743,6 +800,23 @@ export class ResourcePageComponent {
 
   get confirmedAppointments(): SchedulingAppointment[] {
     return this.appointments.filter((appointment) => appointment.status === 'CONFIRMED');
+  }
+
+  get doctorReceivedAppointments(): SchedulingAppointment[] {
+    if (!this.isDoctor) {
+      return [];
+    }
+    return this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
+  }
+
+  getAppointmentStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      PENDING: 'In attesa di conferma',
+      IN_ATTESA: 'In attesa di conferma',
+      CONFIRMED: 'Confermato',
+      REJECTED: 'Rifiutato'
+    };
+    return labels[status] ?? status;
   }
 
   get pendingPayments(): PaymentItem[] {
@@ -836,11 +910,22 @@ export class ResourcePageComponent {
 
   getPrescriptionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      ACTIVE: 'Attiva',
+      ACTIVE: 'In attesa di conferma',
+      PENDING: 'In attesa di conferma',
+      CONFIRMED: 'Confermato',
+      REJECTED: 'Rifiutato',
       SUSPENDED: 'Sospesa',
-      COMPLETED: 'Conclusa',
-      PENDING: 'In attesa',
-      CONFIRMED: 'Confermata'
+      COMPLETED: 'Conclusa'
+    };
+    return labels[status] ?? status;
+  }
+
+  getPrescriptionDoctorStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      ACTIVE: 'Inviato al paziente',
+      PENDING: 'Inviato al paziente',
+      CONFIRMED: 'Confermato dal paziente',
+      REJECTED: 'Rifiutato dal paziente'
     };
     return labels[status] ?? status;
   }
@@ -881,6 +966,69 @@ export class ResourcePageComponent {
     return modality === 'REMOTE' ? 'Da remoto' : 'In presenza';
   }
 
+  getTelevisitAppointmentLabel(appointmentId: number): string {
+    const appointment = this.getAppointmentById(appointmentId);
+    if (!appointment) {
+      return `Prenotazione ${appointmentId}`;
+    }
+    const slot = this.getSlotById(appointment.slotId);
+    const dateLabel = slot ? `${this.formatDate(slot.date)} • ${slot.time}` : '-';
+    return `${this.getPatientLabel(appointment.patientId)} • ${dateLabel}`;
+  }
+
+  getTelevisitDepartmentLabel(televisit: TelevisitItem): string {
+    const appointment = this.getAppointmentById(televisit.appointmentId);
+    if (!appointment) {
+      return '-';
+    }
+    return this.getDepartmentLabel(this.getDoctorById(appointment.doctorId)?.speciality || '-');
+  }
+
+  getTelevisitPatientLabel(televisit: TelevisitItem): string {
+    const appointment = this.getAppointmentById(televisit.appointmentId);
+    if (!appointment) {
+      return '-';
+    }
+    return this.getPatientLabel(appointment.patientId);
+  }
+
+  getTelevisitDateTimeLabel(televisit: TelevisitItem): string {
+    const appointment = this.getAppointmentById(televisit.appointmentId);
+    if (!appointment) {
+      return '-';
+    }
+    const slot = this.getSlotById(appointment.slotId);
+    if (!slot) {
+      return '-';
+    }
+    return `${this.formatDate(slot.date)} • ${slot.time}`;
+  }
+
+  getTelevisitBookingStatusLabel(televisit: TelevisitItem): string {
+    const appointment = this.getAppointmentById(televisit.appointmentId);
+    if (!appointment) {
+      return '-';
+    }
+    return this.getAppointmentStatusLabel(appointment.status);
+  }
+
+  canRescheduleTelevisit(televisit: TelevisitItem): boolean {
+    const appointment = this.getAppointmentById(televisit.appointmentId);
+    if (!appointment) {
+      return false;
+    }
+    const slot = this.getSlotById(appointment.slotId);
+    if (!slot?.date || !slot.time) {
+      return false;
+    }
+    const dateTimeValue = slot.date.includes('T') ? slot.date : `${slot.date}T${slot.time}`;
+    const parsed = new Date(dateTimeValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+    return parsed.getTime() >= Date.now();
+  }
+
   submitSlot(): void {
     if (!this.slotForm.date || !this.slotForm.time) {
       this.schedulingError = 'Inserisci data e ora dello slot.';
@@ -902,6 +1050,7 @@ export class ResourcePageComponent {
         this.slotForm.time = '';
         this.slotForm.modality = 'IN_PERSON';
         this.slotForm.notes = '';
+        this.showSlotModal = false;
         this.isLoading = false;
       },
       error: () => {
@@ -909,6 +1058,15 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  openSlotModal(): void {
+    this.schedulingError = '';
+    this.showSlotModal = true;
+  }
+
+  closeSlotModal(): void {
+    this.showSlotModal = false;
   }
 
   confirmAppointment(appointment: SchedulingAppointment): void {
@@ -1002,6 +1160,12 @@ export class ResourcePageComponent {
     this.closeAppointmentRejectModal();
   }
 
+  openDeleteAppointmentConfirm(appointment: SchedulingAppointment): void {
+    this.deleteConfirmTarget = { type: 'appointment', value: appointment };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione dell’appuntamento?';
+    this.showDeleteConfirmModal = true;
+  }
+
   openBookingModal(): void {
     this.showBookingModal = true;
   }
@@ -1028,6 +1192,40 @@ export class ResourcePageComponent {
   closeConsentModal(): void {
     this.showConsentModal = false;
     this.editingConsentId = null;
+  }
+
+  openDeleteDocumentConfirm(doc: DocumentItem): void {
+    this.deleteConfirmTarget = { type: 'document', value: doc };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione del documento?';
+    this.showDeleteConfirmModal = true;
+  }
+
+  openDeleteConsentConfirm(consent: ConsentItem): void {
+    this.deleteConfirmTarget = { type: 'consent', value: consent };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione del consenso?';
+    this.showDeleteConfirmModal = true;
+  }
+
+  closeDeleteConfirmModal(): void {
+    this.showDeleteConfirmModal = false;
+    this.deleteConfirmTarget = null;
+    this.deleteConfirmMessage = '';
+  }
+
+  confirmDelete(): void {
+    if (!this.deleteConfirmTarget) {
+      return;
+    }
+    if (this.deleteConfirmTarget.type === 'appointment') {
+      this.cancelAppointment(this.deleteConfirmTarget.value);
+    } else if (this.deleteConfirmTarget.type === 'document') {
+      this.deleteDocument(this.deleteConfirmTarget.value);
+    } else if (this.deleteConfirmTarget.type === 'prescription') {
+      this.deletePrescription(this.deleteConfirmTarget.value);
+    } else {
+      this.deleteConsent(this.deleteConfirmTarget.value);
+    }
+    this.closeDeleteConfirmModal();
   }
 
   loadDocs(): void {
@@ -1066,14 +1264,18 @@ export class ResourcePageComponent {
     const payload: Record<string, unknown> = {
       type: this.docForm.type,
       name: this.docForm.name,
-      notes: this.docForm.notes
+      notes: this.docForm.notes,
+      uploadedBy: this.isDoctor ? 'DOCTOR' : 'PATIENT'
     };
     if (this.isDoctor) {
       payload['patientId'] = this.docForm.patientId ?? this.patients[0]?.id ?? 1;
     }
     this.api.request<DocumentItem>('POST', '/api/docs', payload).subscribe({
       next: (doc) => {
-        this.documents = [...this.documents, { ...doc, viewedByCurrentUser: true }];
+        this.documents = [
+          ...this.documents,
+          { ...doc, viewedByCurrentUser: true, uploadedBy: this.isDoctor ? 'DOCTOR' : 'PATIENT' }
+        ];
         this.docForm.name = '';
         this.docForm.fileName = '';
         this.docForm.notes = '';
@@ -1476,6 +1678,23 @@ export class ResourcePageComponent {
       this.prescribingError = 'Inserisci la durata della terapia.';
       return;
     }
+    if (this.editingPrescriptionId) {
+      this.prescriptions = this.prescriptions.map((item) =>
+        item.id === this.editingPrescriptionId
+          ? {
+              ...item,
+              patientId: this.prescriptionForm.patientId,
+              drug: this.prescriptionForm.drug,
+              dosage: this.prescriptionForm.dosage,
+              durationDays: this.prescriptionForm.durationDays
+            }
+          : item
+      );
+      this.editingPrescriptionId = null;
+      this.closePrescriptionModal();
+      this.prescribingError = '';
+      return;
+    }
     this.isLoading = true;
     this.prescribingError = '';
     this.api.request<PrescriptionItem>('POST', '/api/prescribing/prescriptions', {
@@ -1490,6 +1709,7 @@ export class ResourcePageComponent {
         this.prescriptionForm.drug = '';
         this.prescriptionForm.dosage = '';
         this.prescriptionForm.durationDays = 10;
+        this.closePrescriptionModal();
         this.isLoading = false;
       },
       error: () => {
@@ -1504,6 +1724,165 @@ export class ResourcePageComponent {
     this.prescriptions = this.prescriptions.map((item) =>
       item.id === prescription.id ? { ...item, status: 'CONFIRMED' } : item
     );
+  }
+
+  resendPrescription(prescription: PrescriptionItem): void {
+    this.prescriptions = this.prescriptions.map((item) =>
+      item.id === prescription.id ? { ...item, status: 'PENDING' } : item
+    );
+  }
+
+  openTelevisitModal(): void {
+    this.televisitError = '';
+    if (this.isDoctor) {
+      const confirmedAppointmentId = this.confirmedAppointments[0]?.id ?? null;
+      this.televisitForm.appointmentId = confirmedAppointmentId ?? this.televisitForm.appointmentId;
+    }
+    this.showTelevisitModal = true;
+  }
+
+  closeTelevisitModal(): void {
+    this.showTelevisitModal = false;
+  }
+
+  openTelevisitDeleteModal(televisit: TelevisitItem): void {
+    this.selectedTelevisit = televisit;
+    this.televisitDeleteReason = '';
+    this.televisitError = '';
+    this.showTelevisitDeleteModal = true;
+  }
+
+  closeTelevisitDeleteModal(): void {
+    this.showTelevisitDeleteModal = false;
+    this.selectedTelevisit = null;
+    this.televisitDeleteReason = '';
+  }
+
+  submitTelevisitDelete(): void {
+    if (!this.selectedTelevisit) {
+      this.televisitError = 'Seleziona una televisita valida.';
+      return;
+    }
+    if (!this.televisitDeleteReason.trim()) {
+      this.televisitError = 'Inserisci una motivazione per l’eliminazione.';
+      return;
+    }
+    this.televisits = this.televisits.filter((item) => item.id !== this.selectedTelevisit?.id);
+    this.closeTelevisitDeleteModal();
+  }
+
+  openTelevisitRescheduleModal(televisit: TelevisitItem): void {
+    this.selectedTelevisit = televisit;
+    this.televisitRescheduleDate = '';
+    this.televisitRescheduleTime = '';
+    this.televisitError = '';
+    this.showTelevisitRescheduleModal = true;
+  }
+
+  closeTelevisitRescheduleModal(): void {
+    this.showTelevisitRescheduleModal = false;
+    this.selectedTelevisit = null;
+    this.televisitRescheduleDate = '';
+    this.televisitRescheduleTime = '';
+  }
+
+  submitTelevisitReschedule(): void {
+    if (!this.selectedTelevisit) {
+      this.televisitError = 'Seleziona una televisita valida.';
+      return;
+    }
+    if (!this.televisitRescheduleDate || !this.televisitRescheduleTime) {
+      this.televisitError = 'Inserisci data e ora della televisita.';
+      return;
+    }
+    const appointment = this.getAppointmentById(this.selectedTelevisit.appointmentId);
+    if (!appointment) {
+      this.televisitError = 'Prenotazione non trovata.';
+      return;
+    }
+    this.slots = this.slots.map((slot) =>
+      slot.id === appointment.slotId
+        ? { ...slot, date: this.televisitRescheduleDate, time: this.televisitRescheduleTime }
+        : slot
+    );
+    this.closeTelevisitRescheduleModal();
+  }
+
+  openPrescriptionMessageModal(prescription: PrescriptionItem): void {
+    this.selectedPrescription = prescription;
+    this.prescriptionMessageText = prescription.patientQuestion?.trim() || 'Nessuna domanda del paziente.';
+    this.showPrescriptionMessageModal = true;
+  }
+
+  closePrescriptionMessageModal(): void {
+    this.showPrescriptionMessageModal = false;
+    this.prescriptionMessageText = '';
+    this.selectedPrescription = null;
+  }
+
+  openPrescriptionModal(prescription?: PrescriptionItem): void {
+    if (prescription) {
+      this.editingPrescriptionId = prescription.id;
+      this.prescriptionForm.patientId = prescription.patientId;
+      this.prescriptionForm.drug = prescription.drug;
+      this.prescriptionForm.dosage = prescription.dosage;
+      this.prescriptionForm.durationDays = prescription.durationDays;
+    } else {
+      this.editingPrescriptionId = null;
+      this.prescriptionForm.patientId = this.patients[0]?.id ?? 1;
+      this.prescriptionForm.drug = '';
+      this.prescriptionForm.dosage = '';
+      this.prescriptionForm.durationDays = 10;
+    }
+    this.prescribingError = '';
+    this.showPrescriptionModal = true;
+  }
+
+  closePrescriptionModal(): void {
+    this.showPrescriptionModal = false;
+    this.editingPrescriptionId = null;
+  }
+
+  openDeletePrescriptionConfirm(prescription: PrescriptionItem): void {
+    this.deleteConfirmTarget = { type: 'prescription', value: prescription };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione della prescrizione?';
+    this.showDeleteConfirmModal = true;
+  }
+
+  deletePrescription(prescription: PrescriptionItem): void {
+    this.prescriptions = this.prescriptions.filter((item) => item.id !== prescription.id);
+  }
+
+  openPrescriptionRejectModal(prescription: PrescriptionItem): void {
+    this.rejectPrescriptionTarget = prescription;
+    this.rejectPrescriptionReason = '';
+    this.prescribingError = '';
+    this.showPrescriptionRejectModal = true;
+  }
+
+  closePrescriptionRejectModal(): void {
+    this.showPrescriptionRejectModal = false;
+    this.rejectPrescriptionTarget = null;
+    this.rejectPrescriptionReason = '';
+    this.prescribingError = '';
+  }
+
+  submitPrescriptionRejection(): void {
+    if (!this.rejectPrescriptionTarget) {
+      this.prescribingError = 'Seleziona una prescrizione valida.';
+      return;
+    }
+    if (!this.rejectPrescriptionReason.trim()) {
+      this.prescribingError = 'Inserisci una motivazione per il rifiuto.';
+      return;
+    }
+    this.prescribingError = '';
+    this.prescriptions = this.prescriptions.map((item) =>
+      item.id === this.rejectPrescriptionTarget?.id
+        ? { ...item, status: 'REJECTED', notes: this.rejectPrescriptionReason }
+        : item
+    );
+    this.closePrescriptionRejectModal();
   }
 
   openPrescriptionQuestionModal(prescription: PrescriptionItem): void {
@@ -1645,22 +2024,32 @@ export class ResourcePageComponent {
   submitTelevisit(): void {
     this.isLoading = true;
     this.televisitError = '';
-    const appointmentId = this.televisitForm.patientId ?? this.televisitForm.appointmentId;
+    const appointmentId = this.isDoctor
+      ? this.televisitForm.appointmentId
+      : this.televisitForm.patientId ?? this.televisitForm.appointmentId;
     if (!appointmentId) {
       this.televisitError = this.isDoctor
-        ? 'Seleziona il paziente per la televisita.'
+        ? 'Seleziona la prenotazione confermata.'
         : 'Inserisci l’identificativo dell’appuntamento.';
       this.isLoading = false;
       return;
     }
+    const appointment = this.isDoctor ? this.getAppointmentById(appointmentId) : undefined;
+    if (this.isDoctor && !appointment) {
+      this.televisitError = 'Prenotazione non trovata.';
+      this.isLoading = false;
+      return;
+    }
+    const patientId = this.isDoctor ? appointment?.patientId ?? null : this.televisitForm.patientId;
     this.api.request<TelevisitItem>('POST', '/api/televisit', {
       appointmentId,
-      patientId: this.televisitForm.patientId,
+      patientId,
       provider: this.televisitForm.provider
     }).subscribe({
       next: (televisit) => {
         this.televisits = [...this.televisits, televisit];
         this.televisitForm.patientId = this.patients[0]?.id ?? null;
+        this.closeTelevisitModal();
         this.isLoading = false;
       },
       error: () => {
