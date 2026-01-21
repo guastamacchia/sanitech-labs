@@ -1,4 +1,4 @@
-# Runbook — Sanitech Frontend (sanitech-mfe)
+# Runbook — Sanitech Frontend (sanitech-fe)
 
 ## Prerequisiti
 - Node.js 18+
@@ -6,7 +6,7 @@
 
 ## Avvio SPA Angular
 ```bash
-cd frontend/sanitech-spa
+cd spa
 npm install
 npm start
 ```
@@ -19,8 +19,8 @@ URL:
 - La SPA Angular può essere containerizzata separatamente (es. con Nginx) se richiesto.
 
 ## Layout
-- `frontend/sanitech-spa`: SPA Angular (portale pubblico + area privata con ruoli).
-- `frontend/shell`, `frontend/mfe-patient`, `frontend/mfe-doctor`, `frontend/mfe-admin`: HTML/Bootstrap statici legacy.
+- `spa`: SPA Angular (portale pubblico + area privata con ruoli).
+- `infra/dockerfiles/`: Dockerfile legacy dei micro-frontend statici rimossi.
 - `scripts/`: helper per up/down/logs/status.
 
 ## Note
