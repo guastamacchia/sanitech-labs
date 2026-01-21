@@ -1297,6 +1297,14 @@
                                 ✅
                               </button>
                               <button
+                                class="btn btn-outline-danger btn-sm me-2"
+                                type="button"
+                                aria-label="Rifiuta prescrizione"
+                                (click)="openPrescriptionRejectModal(prescription)"
+                                [disabled]="prescription.status === 'REJECTED'">
+                                ❌
+                              </button>
+                              <button
                                 class="btn btn-outline-secondary btn-sm"
                                 type="button"
                                 aria-label="Chiedi spiegazioni"
@@ -1396,11 +1404,11 @@
         </ng-container>
       </ng-template>
 
-      <ng-container *ngIf="showPrescriptionQuestionModal">
-        <div
-          class="modal-backdrop fade show"
-          style="position: fixed; inset: 0; z-index: 1050;"
-          (click)="closePrescriptionQuestionModal()"></div>
+        <ng-container *ngIf="showPrescriptionQuestionModal">
+          <div
+            class="modal-backdrop fade show"
+            style="position: fixed; inset: 0; z-index: 1050;"
+            (click)="closePrescriptionQuestionModal()"></div>
         <div
           class="modal d-flex align-items-center justify-content-center"
           role="dialog"
@@ -1514,6 +1522,43 @@
                     <button class="btn btn-primary w-100" type="submit" [disabled]="televisitFormRef.invalid || isLoading">
                       {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
                     </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="showPrescriptionRejectModal">
+          <div
+            class="modal-backdrop fade show"
+            style="position: fixed; inset: 0; z-index: 1050;"
+            (click)="closePrescriptionRejectModal()"></div>
+          <div
+            class="modal d-flex align-items-center justify-content-center"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="prescriptionRejectModalTitle"
+            style="position: fixed; inset: 0; z-index: 1055;">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="prescriptionRejectModalTitle">Rifiuta prescrizione</h5>
+                  <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePrescriptionRejectModal()"></button>
+                </div>
+                <div class="modal-body">
+                  <form (ngSubmit)="submitPrescriptionRejection()" #prescriptionRejectRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Motivazione</label>
+                      <textarea class="form-control" rows="3" name="prescriptionRejectReason" [(ngModel)]="rejectPrescriptionReason" required></textarea>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="prescribingError">{{ prescribingError }}</div>
+                    <div class="d-flex justify-content-end gap-2">
+                      <button class="btn btn-outline-secondary" type="button" (click)="closePrescriptionRejectModal()">Annulla</button>
+                      <button class="btn btn-danger" type="submit" [disabled]="prescriptionRejectRef.invalid || isLoading">
+                        Rifiuta prescrizione
+                      </button>
+                    </div>
                   </form>
                 </div>
               </div>
