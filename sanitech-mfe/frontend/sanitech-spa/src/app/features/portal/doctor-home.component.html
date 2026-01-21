@@ -8,6 +8,7 @@
       <table class="table align-middle">
         <thead>
           <tr>
+            <th>ID</th>
             <th>Reparto</th>
             <th>Paziente</th>
             <th>Data e ora</th>
@@ -17,6 +18,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let visit of paginatedVisits">
+            <td>{{ visit.id }}</td>
             <td>{{ visit.department }}</td>
             <td>{{ visit.patient }}</td>
             <td>{{ visit.date }} • {{ visit.time }}</td>
@@ -24,7 +26,7 @@
             <td>{{ visit.reason }}</td>
           </tr>
           <tr *ngIf="!upcomingVisits.length">
-            <td colspan="5" class="text-center text-muted">Nessuna visita programmata.</td>
+            <td colspan="6" class="text-center text-muted">Nessuna visita programmata.</td>
           </tr>
         </tbody>
       </table>

@@ -326,7 +326,7 @@ export const routes: Routes = [
         component: ResourcePageComponent,
         canActivate: [roleGuard('ROLE_DOCTOR')],
         data: {
-          title: 'Ricoveri reparto',
+          title: 'Ricoveri',
           description: 'Storico ricoveri del reparto e conferme.',
           endpoints: admissionsEndpoints,
           view: 'admissions'

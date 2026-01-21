@@ -171,6 +171,7 @@
                   <table class="table align-middle">
                     <thead>
                       <tr>
+                        <th>ID</th>
                         <th>Reparto</th>
                         <th>Paziente</th>
                         <th>Data e ora</th>
@@ -181,6 +182,7 @@
                     </thead>
                     <tbody>
                       <tr *ngFor="let appointment of doctorReceivedAppointments | slice:getPageSliceStart('appointmentsDoctor'):getPageSliceEnd('appointmentsDoctor')">
+                        <td>{{ appointment.id }}</td>
                         <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
                         <td>{{ getPatientLabel(appointment.patientId) }}</td>
                         <td>
@@ -209,7 +211,7 @@
                         </td>
                       </tr>
                       <tr *ngIf="!doctorReceivedAppointments.length">
-                        <td colspan="6" class="text-center text-muted">Nessun appuntamento ricevuto.</td>
+                        <td colspan="7" class="text-center text-muted">Nessun appuntamento ricevuto.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -483,6 +485,15 @@
                     </button>
                   </div>
                 </div>
+                <div class="mb-3" *ngIf="isDoctor">
+                  <label class="form-label">Paziente</label>
+                  <select class="form-select" name="docFilterPatient" [(ngModel)]="docFilterPatientId">
+                    <option [ngValue]="null">Tutti i pazienti</option>
+                    <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                      {{ patient.firstName }} {{ patient.lastName }}
+                    </option>
+                  </select>
+                </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
                     <thead>
@@ -497,7 +508,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let doc of documents | slice:getPageSliceStart('documents'):getPageSliceEnd('documents')">
+                      <tr *ngFor="let doc of filteredDocuments | slice:getPageSliceStart('documents'):getPageSliceEnd('documents')">
                         <td *ngIf="isDoctor">{{ getPatientLabel(doc.patientId) }}</td>
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
@@ -522,17 +533,17 @@
                           </button>
                         </td>
                       </tr>
-                      <tr *ngIf="!documents.length">
+                      <tr *ngIf="!filteredDocuments.length">
                         <td [attr.colspan]="isDoctor ? 7 : 6" class="text-center text-muted">Nessun documento presente.</td>
                       </tr>
                     </tbody>
                   </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'documents', total: documents.length }"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'documents', total: filteredDocuments.length }"></ng-container>
                   </div>
                 </div>
               </div>
 
-            <div class="card card-glass" *ngIf="!isDoctor">
+            <div class="card card-glass">
               <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
                   <h5 class="fw-semibold mb-0">Consensi informati</h5>
@@ -540,7 +551,7 @@
                     <button class="btn btn-outline-secondary btn-sm" type="button" (click)="loadDocs()" [disabled]="isLoading">
                       Aggiorna
                     </button>
-                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="openConsentModal()">
+                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="openConsentModal()" *ngIf="!isDoctor">
                       Registra consenso
                     </button>
                   </div>
@@ -553,7 +564,7 @@
                         <th>Tipo</th>
                         <th>Accettato</th>
                         <th>Data firma</th>
-                        <th>Azioni</th>
+                        <th *ngIf="!isDoctor">Azioni</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -562,7 +573,7 @@
                         <td>{{ getConsentTypeLabel(consent.consentType) }}</td>
                         <td>{{ consent.accepted ? 'Si' : 'No' }}</td>
                         <td>{{ formatDate(consent.signedAt) }}</td>
-                        <td>
+                        <td *ngIf="!isDoctor">
                           <button
                             class="btn btn-outline-danger btn-sm"
                             type="button"
@@ -580,7 +591,7 @@
                         </td>
                       </tr>
                       <tr *ngIf="!visibleConsents.length">
-                        <td [attr.colspan]="isDoctor ? 5 : 4" class="text-center text-muted">Nessun consenso registrato.</td>
+                        <td [attr.colspan]="4" class="text-center text-muted">Nessun consenso registrato.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -942,7 +953,7 @@
                         <tr *ngFor="let admission of visibleAdmissions | slice:getPageSliceStart('admissions'):getPageSliceEnd('admissions')">
                           <td *ngIf="!isPatient">{{ getPatientLabel(admission.patientId) }}</td>
                           <td>{{ getDepartmentLabel(admission.department) }}</td>
-                          <td>{{ admission.bedId }}</td>
+                          <td>{{ admission.bedId ?? '-' }}</td>
                           <td>{{ formatDate(admission.admittedAt) }}</td>
                           <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
                           <td>{{ admission.notes || '-' }}</td>
@@ -1062,25 +1073,14 @@
                         </div>
                       </div>
 
-                      <div class="row g-3">
-                        <div class="col-md-6">
-                          <label class="form-label">Data proposta ricovero</label>
-                          <input
-                            class="form-control"
-                            type="date"
-                            name="admissionProposalDate"
-                            [(ngModel)]="admissionProposalForm.date"
-                            required />
-                        </div>
-                        <div class="col-md-6">
-                          <label class="form-label">Letto proposto</label>
-                          <input
-                            class="form-control"
-                            type="number"
-                            name="admissionProposalBed"
-                            [(ngModel)]="admissionProposalForm.bedId"
-                            required />
-                        </div>
+                      <div class="mb-3">
+                        <label class="form-label">Data proposta ricovero</label>
+                        <input
+                          class="form-control"
+                          type="date"
+                          name="admissionProposalDate"
+                          [(ngModel)]="admissionProposalForm.date"
+                          required />
                       </div>
                       <div class="mb-3 mt-3">
                         <label class="form-label">Motivazione proposta</label>
@@ -1676,7 +1676,7 @@
       <ng-template #televisitLayout>
         <ng-container *ngIf="mode === 'televisit'; else adminDirectoryLayout">
           <div class="row g-4">
-            <div class="col-lg-8">
+            <div class="col-12">
               <div class="card card-glass">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
@@ -1694,11 +1694,10 @@
                     <table class="table align-middle">
                       <thead>
                         <tr>
-                          <th *ngIf="isDoctor">Paziente</th>
-                          <th *ngIf="!isDoctor">Prenotazione</th>
                           <th>Reparto</th>
+                          <th *ngIf="isDoctor">Paziente</th>
                           <th>Data e ora</th>
-                          <th>Stato prenotazione</th>
+                          <th>Prenotazione visita medica</th>
                           <th>Provider</th>
                           <th>Stato sessione</th>
                           <th *ngIf="!isDoctor">Token</th>
@@ -1707,49 +1706,47 @@
                       </thead>
                       <tbody>
                         <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('televisits'):getPageSliceEnd('televisits')">
-                          <td *ngIf="isDoctor">{{ getTelevisitPatientLabel(televisit) }}</td>
-                          <td *ngIf="!isDoctor">{{ getTelevisitAppointmentLabel(televisit.appointmentId) }}</td>
                           <td>{{ getTelevisitDepartmentLabel(televisit) }}</td>
+                          <td *ngIf="isDoctor">{{ getTelevisitPatientLabel(televisit) }}</td>
                           <td>{{ getTelevisitDateTimeLabel(televisit) }}</td>
-                          <td>{{ getTelevisitBookingStatusLabel(televisit) }}</td>
+                          <td>{{ getTelevisitAppointmentLabel(televisit.appointmentId) }}</td>
                           <td>{{ televisit.provider }}</td>
                           <td>{{ getTelevisitStatusLabel(televisit.status) }}</td>
                           <td *ngIf="!isDoctor">{{ televisit.token }}</td>
                           <td>
                             <div class="d-flex flex-wrap gap-2">
-                              <button class="btn btn-outline-primary btn-sm" type="button" (click)="joinTelevisit(televisit)">
-                                Partecipa alla call
+                              <button
+                                class="btn btn-outline-primary btn-sm"
+                                type="button"
+                                aria-label="Partecipa alla call"
+                                (click)="joinTelevisit(televisit)">
+                                📞
                               </button>
                               <button
                                 class="btn btn-outline-secondary btn-sm"
                                 type="button"
+                                aria-label="Ripianifica"
                                 [disabled]="!canRescheduleTelevisit(televisit)"
                                 (click)="openTelevisitRescheduleModal(televisit)">
-                                Ripianifica
+                                📅
                               </button>
-                              <button class="btn btn-outline-danger btn-sm" type="button" (click)="openTelevisitDeleteModal(televisit)">
-                                Elimina
+                              <button
+                                class="btn btn-outline-danger btn-sm"
+                                type="button"
+                                aria-label="Elimina"
+                                (click)="openTelevisitDeleteModal(televisit)">
+                                🗑️
                               </button>
                             </div>
                           </td>
                         </tr>
                         <tr *ngIf="!televisits.length">
-                          <td [attr.colspan]="isDoctor ? 8 : 9" class="text-center text-muted">Nessuna sessione presente.</td>
+                          <td [attr.colspan]="7" class="text-center text-muted">Nessuna sessione presente.</td>
                         </tr>
                       </tbody>
                     </table>
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'televisits', total: televisits.length }"></ng-container>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-lg-4">
-              <div class="card card-glass">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">Avvia sessione</h5>
-                  <p class="text-muted mb-3">Crea una nuova sessione partendo da una prenotazione confermata.</p>
-                  <button class="btn btn-primary w-100" type="button" (click)="openTelevisitModal()">Avvia televisita</button>
                 </div>
               </div>
             </div>
