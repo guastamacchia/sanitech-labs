@@ -220,6 +220,12 @@
           </div>
         </ng-template>
 
+        <div class="col-12" *ngIf="isDoctor">
+          <p class="text-muted mb-0">
+            Qui puoi gestire gli appuntamenti disponibili che i pazienti potranno prenotare in agenda.
+          </p>
+        </div>
+
         <ng-container *ngIf="isPatient; else doctorScheduling">
           <div class="col-12">
             <div class="card card-glass">
@@ -448,7 +454,7 @@
                       Aggiorna
                     </button>
                     <button class="btn btn-outline-primary btn-sm" type="button" (click)="openSlotModal()">
-                      Nuovo slot disponibile
+                      Nuovo appuntamento disponibile
                     </button>
                   </div>
                 </div>
