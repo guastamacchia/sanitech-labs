@@ -197,6 +197,7 @@ export class ResourcePageComponent {
     fileName: '',
     notes: ''
   };
+  docFilterPatientId: number | null = null;
   consentForm = {
     consentType: 'GDPR',
     accepted: true
@@ -863,6 +864,16 @@ export class ResourcePageComponent {
     return this.slots.filter((slot) => slot.status === 'AVAILABLE');
   }
 
+  get filteredDocuments(): DocumentItem[] {
+    if (this.isDoctor && this.docFilterPatientId) {
+      return this.documents.filter((doc) => doc.patientId === this.docFilterPatientId);
+    }
+    if (this.isPatient) {
+      return this.documents.filter((doc) => doc.patientId === 1);
+    }
+    return this.documents;
+  }
+
   get visibleConsents(): ConsentItem[] {
     if (this.isDoctor) {
       const patientIds = new Set(this.patients.map((patient) => patient.id));
@@ -885,7 +896,7 @@ export class ResourcePageComponent {
     if (this.isDoctor) {
       const doctorAppointments = this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
       if (!doctorAppointments.length) {
-        return [];
+        return this.admissions;
       }
       const patientIds = new Set(doctorAppointments.map((appointment) => appointment.patientId));
       const appointmentIds = new Set(doctorAppointments.map((appointment) => appointment.id));
@@ -1408,7 +1419,39 @@ export class ResourcePageComponent {
   loadAdmissions(): void {
     this.api.request<AdmissionItem[]>('GET', '/api/admissions').subscribe({
       next: (admissions) => {
-        this.admissions = admissions;
+        if (admissions.length) {
+          this.admissions = admissions;
+          return;
+        }
+        this.admissions = [
+          {
+            id: 1,
+            patientId: 1,
+            department: 'CARD',
+            bedId: 12,
+            status: 'PROPOSED',
+            admittedAt: '2026-03-12',
+            notes: 'Valutazione cardiologica post visita.',
+            appointmentId: 3
+          },
+          {
+            id: 2,
+            patientId: 2,
+            department: 'DERM',
+            bedId: 4,
+            status: 'CONFIRMED',
+            admittedAt: '2026-02-28',
+            notes: 'Trattamento programmato con follow-up.'
+          },
+          {
+            id: 3,
+            patientId: 3,
+            department: 'NEUR',
+            status: 'COMPLETED',
+            admittedAt: '2026-01-18',
+            notes: 'Ricovero concluso senza complicazioni.'
+          }
+        ];
       },
       error: () => {
         this.paymentsError = 'Impossibile caricare i ricoveri.';

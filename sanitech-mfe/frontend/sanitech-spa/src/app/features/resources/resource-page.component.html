@@ -483,6 +483,15 @@
                     </button>
                   </div>
                 </div>
+                <div class="mb-3" *ngIf="isDoctor">
+                  <label class="form-label">Paziente</label>
+                  <select class="form-select" name="docFilterPatient" [(ngModel)]="docFilterPatientId">
+                    <option [ngValue]="null">Tutti i pazienti</option>
+                    <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                      {{ patient.firstName }} {{ patient.lastName }}
+                    </option>
+                  </select>
+                </div>
                 <div class="table-responsive">
                   <table class="table align-middle">
                     <thead>
@@ -497,7 +506,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr *ngFor="let doc of documents | slice:getPageSliceStart('documents'):getPageSliceEnd('documents')">
+                      <tr *ngFor="let doc of filteredDocuments | slice:getPageSliceStart('documents'):getPageSliceEnd('documents')">
                         <td *ngIf="isDoctor">{{ getPatientLabel(doc.patientId) }}</td>
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
@@ -522,12 +531,12 @@
                           </button>
                         </td>
                       </tr>
-                      <tr *ngIf="!documents.length">
+                      <tr *ngIf="!filteredDocuments.length">
                         <td [attr.colspan]="isDoctor ? 7 : 6" class="text-center text-muted">Nessun documento presente.</td>
                       </tr>
                     </tbody>
                   </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'documents', total: documents.length }"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'documents', total: filteredDocuments.length }"></ng-container>
                   </div>
                 </div>
               </div>
