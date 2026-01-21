@@ -434,7 +434,7 @@
                         <th>Tipo</th>
                         <th>Nome</th>
                         <th>Note</th>
-                        <th>Stato</th>
+                        <th>Caricato da</th>
                         <th>Data e ora</th>
                         <th>Azioni</th>
                       </tr>
@@ -445,7 +445,7 @@
                         <td>{{ getDocumentTypeLabel(doc.type) }}</td>
                         <td>{{ doc.name }}</td>
                         <td>{{ doc.notes || '-' }}</td>
-                        <td>{{ getDocumentStatusLabel(doc) }}</td>
+                        <td>{{ getDocumentUploaderLabel(doc) }}</td>
                         <td>{{ formatDateTime(doc.uploadedAt) }}</td>
                         <td>
                           <button
@@ -459,7 +459,8 @@
                             class="btn btn-outline-danger btn-sm"
                             type="button"
                             aria-label="Elimina documento"
-                            (click)="deleteDocument(doc)">
+                            (click)="deleteDocument(doc)"
+                            [disabled]="!isDocumentDeletable(doc)">
                             🗑️
                           </button>
                         </td>

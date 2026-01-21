@@ -38,6 +38,7 @@ interface DocumentItem {
   name: string;
   notes?: string;
   uploadedAt: string;
+  uploadedBy?: 'PATIENT' | 'DOCTOR';
   viewedByCurrentUser?: boolean;
 }
 
@@ -602,6 +603,19 @@ export class ResourcePageComponent {
     return this.isDocumentViewed(doc) ? 'Visualizzato' : 'Da visualizzare';
   }
 
+  getDocumentUploaderLabel(doc: DocumentItem): string {
+    const uploader = doc.uploadedBy ?? 'DOCTOR';
+    return uploader === 'PATIENT' ? 'Utente' : 'Medico';
+  }
+
+  isDocumentDeletable(doc: DocumentItem): boolean {
+    const uploader = doc.uploadedBy ?? 'DOCTOR';
+    if (this.isDoctor) {
+      return uploader === 'DOCTOR';
+    }
+    return uploader === 'PATIENT';
+  }
+
   getSpecialityLabel(code: string): string {
     const speciality = this.specialities.find((item) => item.code === code);
     return speciality ? speciality.name : code;
@@ -1074,14 +1088,18 @@ export class ResourcePageComponent {
     const payload: Record<string, unknown> = {
       type: this.docForm.type,
       name: this.docForm.name,
-      notes: this.docForm.notes
+      notes: this.docForm.notes,
+      uploadedBy: this.isDoctor ? 'DOCTOR' : 'PATIENT'
     };
     if (this.isDoctor) {
       payload['patientId'] = this.docForm.patientId ?? this.patients[0]?.id ?? 1;
     }
     this.api.request<DocumentItem>('POST', '/api/docs', payload).subscribe({
       next: (doc) => {
-        this.documents = [...this.documents, { ...doc, viewedByCurrentUser: true }];
+        this.documents = [
+          ...this.documents,
+          { ...doc, viewedByCurrentUser: true, uploadedBy: this.isDoctor ? 'DOCTOR' : 'PATIENT' }
+        ];
         this.docForm.name = '';
         this.docForm.fileName = '';
         this.docForm.notes = '';
