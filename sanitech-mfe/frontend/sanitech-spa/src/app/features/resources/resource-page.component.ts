@@ -38,6 +38,7 @@ interface DocumentItem {
   name: string;
   notes?: string;
   uploadedAt: string;
+  uploadedBy?: 'PATIENT' | 'DOCTOR';
   viewedByCurrentUser?: boolean;
 }
 
@@ -255,8 +256,11 @@ export class ResourcePageComponent {
   prescriptions: PrescriptionItem[] = [];
   prescribingError = '';
   showPrescriptionQuestionModal = false;
+  showPrescriptionRejectModal = false;
   selectedPrescription: PrescriptionItem | null = null;
   prescriptionQuestion = '';
+  rejectPrescriptionTarget: PrescriptionItem | null = null;
+  rejectPrescriptionReason = '';
   prescriptionForm = {
     patientId: 1,
     drug: '',
@@ -525,6 +529,19 @@ export class ResourcePageComponent {
     return this.slots.find((slot) => slot.id === slotId);
   }
 
+  isAppointmentReschedulable(appointment: SchedulingAppointment): boolean {
+    const slot = this.getSlotById(appointment.slotId);
+    if (!slot?.date || !slot.time) {
+      return false;
+    }
+    const dateTimeValue = slot.date.includes('T') ? slot.date : `${slot.date}T${slot.time}`;
+    const parsed = new Date(dateTimeValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+    return parsed.getTime() >= Date.now();
+  }
+
   formatDate(value: string): string {
     if (!value) {
       return '-';
@@ -584,6 +601,19 @@ export class ResourcePageComponent {
 
   getDocumentStatusLabel(doc: DocumentItem): string {
     return this.isDocumentViewed(doc) ? 'Visualizzato' : 'Da visualizzare';
+  }
+
+  getDocumentUploaderLabel(doc: DocumentItem): string {
+    const uploader = doc.uploadedBy ?? 'DOCTOR';
+    return uploader === 'PATIENT' ? 'Utente' : 'Medico';
+  }
+
+  isDocumentDeletable(doc: DocumentItem): boolean {
+    const uploader = doc.uploadedBy ?? 'DOCTOR';
+    if (this.isDoctor) {
+      return uploader === 'DOCTOR';
+    }
+    return uploader === 'PATIENT';
   }
 
   getSpecialityLabel(code: string): string {
@@ -713,15 +743,6 @@ export class ResourcePageComponent {
     return labels[consentType] ?? consentType;
   }
 
-  getPrescriptionStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      ACTIVE: 'Attiva',
-      CONFIRMED: 'Confermata',
-      PENDING: 'In attesa'
-    };
-    return labels[status] ?? status;
-  }
-
   getCurrencyLabel(currency: string): string {
     const labels: Record<string, string> = {
       EUR: 'Euro',
@@ -837,6 +858,7 @@ export class ResourcePageComponent {
   getPrescriptionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       ACTIVE: 'Attiva',
+      REJECTED: 'Rifiutata',
       SUSPENDED: 'Sospesa',
       COMPLETED: 'Conclusa',
       PENDING: 'In attesa',
@@ -1066,14 +1088,18 @@ export class ResourcePageComponent {
     const payload: Record<string, unknown> = {
       type: this.docForm.type,
       name: this.docForm.name,
-      notes: this.docForm.notes
+      notes: this.docForm.notes,
+      uploadedBy: this.isDoctor ? 'DOCTOR' : 'PATIENT'
     };
     if (this.isDoctor) {
       payload['patientId'] = this.docForm.patientId ?? this.patients[0]?.id ?? 1;
     }
     this.api.request<DocumentItem>('POST', '/api/docs', payload).subscribe({
       next: (doc) => {
-        this.documents = [...this.documents, { ...doc, viewedByCurrentUser: true }];
+        this.documents = [
+          ...this.documents,
+          { ...doc, viewedByCurrentUser: true, uploadedBy: this.isDoctor ? 'DOCTOR' : 'PATIENT' }
+        ];
         this.docForm.name = '';
         this.docForm.fileName = '';
         this.docForm.notes = '';
@@ -1504,6 +1530,38 @@ export class ResourcePageComponent {
     this.prescriptions = this.prescriptions.map((item) =>
       item.id === prescription.id ? { ...item, status: 'CONFIRMED' } : item
     );
+  }
+
+  openPrescriptionRejectModal(prescription: PrescriptionItem): void {
+    this.rejectPrescriptionTarget = prescription;
+    this.rejectPrescriptionReason = '';
+    this.prescribingError = '';
+    this.showPrescriptionRejectModal = true;
+  }
+
+  closePrescriptionRejectModal(): void {
+    this.showPrescriptionRejectModal = false;
+    this.rejectPrescriptionTarget = null;
+    this.rejectPrescriptionReason = '';
+    this.prescribingError = '';
+  }
+
+  submitPrescriptionRejection(): void {
+    if (!this.rejectPrescriptionTarget) {
+      this.prescribingError = 'Seleziona una prescrizione valida.';
+      return;
+    }
+    if (!this.rejectPrescriptionReason.trim()) {
+      this.prescribingError = 'Inserisci una motivazione per il rifiuto.';
+      return;
+    }
+    this.prescribingError = '';
+    this.prescriptions = this.prescriptions.map((item) =>
+      item.id === this.rejectPrescriptionTarget?.id
+        ? { ...item, status: 'REJECTED', notes: this.rejectPrescriptionReason }
+        : item
+    );
+    this.closePrescriptionRejectModal();
   }
 
   openPrescriptionQuestionModal(prescription: PrescriptionItem): void {
