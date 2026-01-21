@@ -886,7 +886,8 @@
                               class="btn btn-outline-primary btn-sm me-2"
                               type="button"
                               aria-label="Ripianifica ricovero"
-                              (click)="openAdmissionRescheduleModal(admission)">
+                              (click)="openAdmissionRescheduleModal(admission)"
+                              [disabled]="!isAdmissionReschedulable(admission)">
                               🔄
                             </button>
                             <button

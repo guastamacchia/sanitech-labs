@@ -549,6 +549,17 @@ export class ResourcePageComponent {
     return parsed.getTime() >= Date.now();
   }
 
+  isAdmissionReschedulable(admission: AdmissionItem): boolean {
+    if (!admission.admittedAt) {
+      return false;
+    }
+    const parsed = new Date(admission.admittedAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+    return parsed.getTime() >= Date.now();
+  }
+
   formatDate(value: string): string {
     if (!value) {
       return '-';
