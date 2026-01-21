@@ -91,6 +91,7 @@ interface PrescriptionItem {
   durationDays: number;
   status: string;
   notes?: string;
+  patientQuestion?: string;
 }
 
 interface TelevisitItem {
@@ -257,8 +258,10 @@ export class ResourcePageComponent {
   prescribingError = '';
   showPrescriptionQuestionModal = false;
   showPrescriptionRejectModal = false;
+  showPrescriptionMessageModal = false;
   selectedPrescription: PrescriptionItem | null = null;
   prescriptionQuestion = '';
+  prescriptionMessageText = '';
   rejectPrescriptionTarget: PrescriptionItem | null = null;
   rejectPrescriptionReason = '';
   showDeleteConfirmModal = false;
@@ -267,7 +270,10 @@ export class ResourcePageComponent {
     | { type: 'appointment'; value: SchedulingAppointment }
     | { type: 'document'; value: DocumentItem }
     | { type: 'consent'; value: ConsentItem }
+    | { type: 'prescription'; value: PrescriptionItem }
     | null = null;
+  showPrescriptionModal = false;
+  editingPrescriptionId: number | null = null;
   prescriptionForm = {
     patientId: 1,
     drug: '',
@@ -903,6 +909,16 @@ export class ResourcePageComponent {
     return labels[status] ?? status;
   }
 
+  getPrescriptionDoctorStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      ACTIVE: 'Inviato al paziente',
+      PENDING: 'Inviato al paziente',
+      CONFIRMED: 'Confermato dal paziente',
+      REJECTED: 'Rifiutato dal paziente'
+    };
+    return labels[status] ?? status;
+  }
+
   getTelevisitStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       READY: 'Pronta',
@@ -1130,6 +1146,8 @@ export class ResourcePageComponent {
       this.cancelAppointment(this.deleteConfirmTarget.value);
     } else if (this.deleteConfirmTarget.type === 'document') {
       this.deleteDocument(this.deleteConfirmTarget.value);
+    } else if (this.deleteConfirmTarget.type === 'prescription') {
+      this.deletePrescription(this.deleteConfirmTarget.value);
     } else {
       this.deleteConsent(this.deleteConfirmTarget.value);
     }
@@ -1586,6 +1604,23 @@ export class ResourcePageComponent {
       this.prescribingError = 'Inserisci la durata della terapia.';
       return;
     }
+    if (this.editingPrescriptionId) {
+      this.prescriptions = this.prescriptions.map((item) =>
+        item.id === this.editingPrescriptionId
+          ? {
+              ...item,
+              patientId: this.prescriptionForm.patientId,
+              drug: this.prescriptionForm.drug,
+              dosage: this.prescriptionForm.dosage,
+              durationDays: this.prescriptionForm.durationDays
+            }
+          : item
+      );
+      this.editingPrescriptionId = null;
+      this.closePrescriptionModal();
+      this.prescribingError = '';
+      return;
+    }
     this.isLoading = true;
     this.prescribingError = '';
     this.api.request<PrescriptionItem>('POST', '/api/prescribing/prescriptions', {
@@ -1600,6 +1635,7 @@ export class ResourcePageComponent {
         this.prescriptionForm.drug = '';
         this.prescriptionForm.dosage = '';
         this.prescriptionForm.durationDays = 10;
+        this.closePrescriptionModal();
         this.isLoading = false;
       },
       error: () => {
@@ -1614,6 +1650,57 @@ export class ResourcePageComponent {
     this.prescriptions = this.prescriptions.map((item) =>
       item.id === prescription.id ? { ...item, status: 'CONFIRMED' } : item
     );
+  }
+
+  resendPrescription(prescription: PrescriptionItem): void {
+    this.prescriptions = this.prescriptions.map((item) =>
+      item.id === prescription.id ? { ...item, status: 'PENDING' } : item
+    );
+  }
+
+  openPrescriptionMessageModal(prescription: PrescriptionItem): void {
+    this.selectedPrescription = prescription;
+    this.prescriptionMessageText = prescription.patientQuestion?.trim() || 'Nessuna domanda del paziente.';
+    this.showPrescriptionMessageModal = true;
+  }
+
+  closePrescriptionMessageModal(): void {
+    this.showPrescriptionMessageModal = false;
+    this.prescriptionMessageText = '';
+    this.selectedPrescription = null;
+  }
+
+  openPrescriptionModal(prescription?: PrescriptionItem): void {
+    if (prescription) {
+      this.editingPrescriptionId = prescription.id;
+      this.prescriptionForm.patientId = prescription.patientId;
+      this.prescriptionForm.drug = prescription.drug;
+      this.prescriptionForm.dosage = prescription.dosage;
+      this.prescriptionForm.durationDays = prescription.durationDays;
+    } else {
+      this.editingPrescriptionId = null;
+      this.prescriptionForm.patientId = this.patients[0]?.id ?? 1;
+      this.prescriptionForm.drug = '';
+      this.prescriptionForm.dosage = '';
+      this.prescriptionForm.durationDays = 10;
+    }
+    this.prescribingError = '';
+    this.showPrescriptionModal = true;
+  }
+
+  closePrescriptionModal(): void {
+    this.showPrescriptionModal = false;
+    this.editingPrescriptionId = null;
+  }
+
+  openDeletePrescriptionConfirm(prescription: PrescriptionItem): void {
+    this.deleteConfirmTarget = { type: 'prescription', value: prescription };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione della prescrizione?';
+    this.showDeleteConfirmModal = true;
+  }
+
+  deletePrescription(prescription: PrescriptionItem): void {
+    this.prescriptions = this.prescriptions.filter((item) => item.id !== prescription.id);
   }
 
   openPrescriptionRejectModal(prescription: PrescriptionItem): void {
