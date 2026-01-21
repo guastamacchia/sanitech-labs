@@ -175,6 +175,7 @@
                         <th>Paziente</th>
                         <th>Data e ora</th>
                         <th>Modalità</th>
+                        <th>Stato</th>
                         <th>Azioni</th>
                       </tr>
                     </thead>
@@ -187,6 +188,7 @@
                           {{ getSlotById(appointment.slotId)?.time || '-' }}
                         </td>
                         <td>{{ getModalityLabel(getSlotById(appointment.slotId)?.modality || 'IN_PERSON') }}</td>
+                        <td>{{ getAppointmentStatusLabel(appointment.status) }}</td>
                         <td>
                           <button
                             class="btn btn-outline-success btn-sm me-2"
@@ -207,7 +209,7 @@
                         </td>
                       </tr>
                       <tr *ngIf="!doctorReceivedAppointments.length">
-                        <td colspan="5" class="text-center text-muted">Nessun appuntamento ricevuto.</td>
+                        <td colspan="6" class="text-center text-muted">Nessun appuntamento ricevuto.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -436,11 +438,11 @@
         </ng-container>
 
         <ng-template #doctorScheduling>
-          <div class="col-lg-8">
+          <div class="col-12">
             <div class="card card-glass">
               <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
-                  <h5 class="fw-semibold mb-0">Slot disponibili</h5>
+                  <h5 class="fw-semibold mb-0">Appuntamenti disponibili</h5>
                   <div class="d-flex flex-wrap gap-2">
                     <button class="btn btn-outline-secondary btn-sm" (click)="loadScheduling()" [disabled]="isLoading">
                       Aggiorna

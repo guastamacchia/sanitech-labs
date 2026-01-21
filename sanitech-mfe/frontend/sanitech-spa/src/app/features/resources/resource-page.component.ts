@@ -792,6 +792,16 @@ export class ResourcePageComponent {
     return this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
   }
 
+  getAppointmentStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      PENDING: 'In attesa di conferma',
+      IN_ATTESA: 'In attesa di conferma',
+      CONFIRMED: 'Confermato',
+      REJECTED: 'Rifiutato'
+    };
+    return labels[status] ?? status;
+  }
+
   get pendingPayments(): PaymentItem[] {
     const pending = this.payments.filter(
       (payment) => payment.status === 'PENDING' || payment.status === 'IN_ATTESA'
