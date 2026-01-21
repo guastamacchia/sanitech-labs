@@ -202,6 +202,7 @@ export class ResourcePageComponent {
   admissionPatientFilterId: number | null = null;
   televisitPatientFilterId: number | null = null;
   consentPatientFilterId: number | null = null;
+  prescriptionPatientFilterId: number | null = null;
   consentForm = {
     consentType: 'GDPR',
     accepted: true
@@ -315,6 +316,8 @@ export class ResourcePageComponent {
   departments: DepartmentItem[] = [];
   specialities: SpecialityItem[] = [];
   directoryError = '';
+  showDoctorModal = false;
+  showPatientModal = false;
   doctorForm = {
     firstName: '',
     lastName: '',
@@ -915,6 +918,14 @@ export class ResourcePageComponent {
     return this.prescriptions;
   }
 
+  get filteredPrescriptions(): PrescriptionItem[] {
+    const prescriptions = this.visiblePrescriptions;
+    if (!this.isDoctor || !this.prescriptionPatientFilterId) {
+      return prescriptions;
+    }
+    return prescriptions.filter((prescription) => prescription.patientId === this.prescriptionPatientFilterId);
+  }
+
   get visibleAdmissions(): AdmissionItem[] {
     if (this.isDoctor) {
       const doctorAppointments = this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
@@ -1470,7 +1481,7 @@ export class ResourcePageComponent {
             department: 'CARD',
             bedId: 12,
             status: 'PROPOSED',
-            admittedAt: '2026-03-12',
+            admittedAt: '2026-08-12',
             notes: 'Il paziente segnala dolore toracico intermittente.',
             appointmentId: 3
           },
@@ -1480,7 +1491,7 @@ export class ResourcePageComponent {
             department: 'DERM',
             bedId: 4,
             status: 'CONFIRMED',
-            admittedAt: '2026-02-28',
+            admittedAt: '2026-07-28',
             notes: 'Chiede chiarimenti sulla terapia topica.'
           },
           {
@@ -1488,8 +1499,53 @@ export class ResourcePageComponent {
             patientId: 3,
             department: 'NEUR',
             status: 'COMPLETED',
-            admittedAt: '2026-01-18',
+            admittedAt: '2026-06-18',
             notes: 'Ha segnalato vertigini notturne negli ultimi giorni.'
+          },
+          {
+            id: 4,
+            patientId: 1,
+            department: 'ORTO',
+            bedId: 7,
+            status: 'CONFIRMED',
+            admittedAt: '2026-09-05',
+            notes: 'Ricovero programmato per intervento al ginocchio.'
+          },
+          {
+            id: 5,
+            patientId: 1,
+            department: 'CARD',
+            bedId: 9,
+            status: 'COMPLETED',
+            admittedAt: '2026-10-21',
+            notes: 'Dimesso con indicazioni di follow-up cardiologico.'
+          },
+          {
+            id: 7,
+            patientId: 1,
+            department: 'PNEU',
+            bedId: 5,
+            status: 'CONFIRMED',
+            admittedAt: '2026-11-14',
+            notes: 'Monitoraggio post-riacutizzazione bronchiale.'
+          },
+          {
+            id: 8,
+            patientId: 1,
+            department: 'GASTRO',
+            bedId: 16,
+            status: 'COMPLETED',
+            admittedAt: '2026-12-02',
+            notes: 'Dimesso con dieta controllata e terapia domiciliare.'
+          },
+          {
+            id: 6,
+            patientId: 2,
+            department: 'PNEU',
+            bedId: 11,
+            status: 'PROPOSED',
+            admittedAt: '2027-01-15',
+            notes: 'In attesa di conferma per monitoraggio respiratorio.'
           }
         ];
       },
@@ -2315,6 +2371,26 @@ export class ResourcePageComponent {
     });
   }
 
+  openDoctorModal(): void {
+    this.directoryError = '';
+    this.showDoctorModal = true;
+  }
+
+  closeDoctorModal(): void {
+    this.showDoctorModal = false;
+    this.directoryError = '';
+  }
+
+  openPatientModal(): void {
+    this.directoryError = '';
+    this.showPatientModal = true;
+  }
+
+  closePatientModal(): void {
+    this.showPatientModal = false;
+    this.directoryError = '';
+  }
+
   submitDoctor(): void {
     if (!this.doctorForm.firstName.trim() || !this.doctorForm.lastName.trim()) {
       this.directoryError = 'Inserisci nome e cognome del medico.';
@@ -2331,6 +2407,7 @@ export class ResourcePageComponent {
         this.doctors = [...this.doctors, doctor];
         this.doctorForm.firstName = '';
         this.doctorForm.lastName = '';
+        this.closeDoctorModal();
         this.isLoading = false;
       },
       error: () => {
@@ -2357,6 +2434,7 @@ export class ResourcePageComponent {
         this.patientForm.firstName = '';
         this.patientForm.lastName = '';
         this.patientForm.email = '';
+        this.closePatientModal();
         this.isLoading = false;
       },
       error: () => {
