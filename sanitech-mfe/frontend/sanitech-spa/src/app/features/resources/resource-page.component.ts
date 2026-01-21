@@ -538,7 +538,7 @@ export class ResourcePageComponent {
     if (Number.isNaN(parsed.getTime())) {
       return false;
     }
-    return parsed.getTime() <= Date.now();
+    return parsed.getTime() >= Date.now();
   }
 
   formatDate(value: string): string {
