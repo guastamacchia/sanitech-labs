@@ -75,8 +75,30 @@
 
       <div class="row g-4">
         <ng-container *ngIf="!isDoctor; else doctorAgenda">
-          <div class="col-lg-12">
-            <ng-container *ngTemplateOutlet="slotsTable"></ng-container>
+          <div class="col-lg-12" *ngIf="!isPatient">
+            <div class="accordion" id="availableSlotsAccordion">
+              <div class="accordion-item card-glass border-0">
+                <h2 class="accordion-header">
+                  <button
+                    class="accordion-button collapsed"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#availableSlotsCollapse"
+                    aria-expanded="false"
+                    aria-controls="availableSlotsCollapse">
+                    Consulta le disponibilità attualmente offerte dalla struttura
+                  </button>
+                </h2>
+                <div
+                  id="availableSlotsCollapse"
+                  class="accordion-collapse collapse"
+                  data-bs-parent="#availableSlotsAccordion">
+                  <div class="accordion-body">
+                    <ng-container *ngTemplateOutlet="slotsTable"></ng-container>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <ng-container *ngIf="showBookingModal">
             <div
@@ -182,7 +204,7 @@
             <div class="card card-glass">
               <div class="card-body">
                 <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
-                  <h5 class="fw-semibold mb-0">Appuntamenti attivi</h5>
+                  <h5 class="fw-semibold mb-0">Appuntamenti prenotati</h5>
                   <div class="d-flex flex-wrap gap-2">
                     <button
                       class="btn btn-outline-secondary btn-sm"
