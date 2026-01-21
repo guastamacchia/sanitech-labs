@@ -206,6 +206,7 @@
                             class="btn btn-outline-success btn-sm me-2"
                             type="button"
                             aria-label="Conferma appuntamento"
+                            title="Conferma appuntamento"
                             (click)="confirmAppointment(appointment)"
                             [disabled]="appointment.status === 'CONFIRMED' || appointment.status === 'REJECTED'">
                             ✅
@@ -214,6 +215,7 @@
                             class="btn btn-outline-danger btn-sm"
                             type="button"
                             aria-label="Rifiuta appuntamento"
+                            title="Rifiuta appuntamento"
                             (click)="openAppointmentRejectModal(appointment)"
                             [disabled]="appointment.status === 'CONFIRMED' || appointment.status === 'REJECTED'">
                             ❌
@@ -292,6 +294,7 @@
                               class="btn btn-outline-danger btn-sm me-2"
                               type="button"
                               aria-label="Elimina appuntamento"
+                              title="Elimina appuntamento"
                               [disabled]="appointment.status !== 'PENDING' && appointment.status !== 'IN_ATTESA'"
                               (click)="openDeleteAppointmentConfirm(appointment)">
                               🗑️
@@ -300,6 +303,7 @@
                               class="btn btn-outline-danger btn-sm me-2"
                               type="button"
                               aria-label="Rifiuta appuntamento"
+                              title="Rifiuta appuntamento"
                               (click)="openAppointmentRejectModal(appointment)"
                               [disabled]="appointment.status === 'CONFIRMED' || appointment.status === 'REJECTED'">
                               ❌
@@ -308,6 +312,7 @@
                               class="btn btn-outline-secondary btn-sm"
                               type="button"
                               aria-label="Riprogramma appuntamento"
+                              title="Riprogramma appuntamento"
                               [disabled]="appointment.status !== 'CONFIRMED' || !isAppointmentReschedulable(appointment)"
                               (click)="openAppointmentRescheduleModal(appointment)">
                               🔄
@@ -533,6 +538,7 @@
                             class="btn btn-outline-secondary btn-sm me-2"
                             type="button"
                             aria-label="Visualizza documento"
+                            title="Visualizza documento"
                             (click)="viewDocument(doc)">
                             👁️
                           </button>
@@ -540,6 +546,7 @@
                             class="btn btn-outline-danger btn-sm"
                             type="button"
                             aria-label="Elimina documento"
+                            title="Elimina documento"
                             (click)="openDeleteDocumentConfirm(doc)"
                             [disabled]="!isDocumentDeletable(doc)">
                             🗑️
@@ -601,6 +608,7 @@
                             class="btn btn-outline-danger btn-sm"
                             type="button"
                             aria-label="Elimina consenso"
+                            title="Elimina consenso"
                             (click)="openDeleteConsentConfirm(consent)">
                             🗑️
                           </button>
@@ -608,6 +616,7 @@
                             class="btn btn-outline-secondary btn-sm ms-2"
                             type="button"
                             aria-label="Modifica consenso"
+                            title="Modifica consenso"
                             (click)="editConsent(consent)">
                             ✏️
                           </button>
@@ -774,10 +783,20 @@
                             <td>Pagamento in attesa</td>
                             <td>{{ formatDate(latestConfirmedAdmission.admittedAt) }}</td>
                             <td>
-                              <button class="btn btn-outline-primary btn-sm me-2" type="button" aria-label="Registra pagamento" disabled>
+                              <button
+                                class="btn btn-outline-primary btn-sm me-2"
+                                type="button"
+                                aria-label="Registra pagamento"
+                                title="Registra pagamento"
+                                disabled>
                                 💳
                               </button>
-                              <button class="btn btn-outline-secondary btn-sm me-2" type="button" aria-label="Allega ricevuta" disabled>
+                              <button
+                                class="btn btn-outline-secondary btn-sm me-2"
+                                type="button"
+                                aria-label="Allega ricevuta"
+                                title="Allega ricevuta"
+                                disabled>
                                 📎
                               </button>
                             </td>
@@ -795,6 +814,7 @@
                               class="btn btn-outline-primary btn-sm me-2"
                               type="button"
                               aria-label="Registra pagamento"
+                              title="Registra pagamento"
                               [disabled]="!canMarkPaymentAsPaid(payment)"
                               (click)="markPaymentAsPaid(payment)">
                               💳
@@ -803,6 +823,7 @@
                               class="btn btn-outline-info btn-sm me-2"
                               type="button"
                               aria-label="Domanda alla struttura"
+                              title="Domanda alla struttura"
                               (click)="openPaymentQuestionModal(payment)">
                               ❓
                             </button>
@@ -815,6 +836,7 @@
                               class="btn btn-outline-secondary btn-sm me-2"
                               type="button"
                               aria-label="Allega ricevuta"
+                              title="Allega ricevuta"
                               [disabled]="!canAttachPaymentReceipt(payment)"
                               (click)="openPaymentReceiptUpload(payment, receiptInput)">
                               📎
@@ -996,6 +1018,7 @@
                                 class="btn btn-outline-primary btn-sm me-2"
                                 type="button"
                                 aria-label="Ripianifica ricovero"
+                                title="Ripianifica ricovero"
                                 (click)="openAdmissionRescheduleModal(admission)"
                                 [disabled]="!isAdmissionReschedulable(admission)">
                                 🔄
@@ -1006,6 +1029,7 @@
                                 class="btn btn-outline-secondary btn-sm"
                                 type="button"
                                 aria-label="Leggi commento paziente"
+                                title="Leggi commento paziente"
                                 (click)="openAdmissionNoteModal(admission)"
                                 [disabled]="!admission.notes">
                                 💬
@@ -1579,6 +1603,7 @@
                                 class="btn btn-outline-secondary btn-sm me-2"
                                 type="button"
                                 aria-label="Modifica prescrizione"
+                                title="Modifica prescrizione"
                                 (click)="openPrescriptionModal(prescription)">
                                 ✏️
                               </button>
@@ -1586,6 +1611,7 @@
                                 class="btn btn-outline-danger btn-sm me-2"
                                 type="button"
                                 aria-label="Elimina prescrizione"
+                                title="Elimina prescrizione"
                                 (click)="openDeletePrescriptionConfirm(prescription)">
                                 🗑️
                               </button>
@@ -1593,6 +1619,7 @@
                                 class="btn btn-outline-secondary btn-sm me-2"
                                 type="button"
                                 aria-label="Visualizza domanda"
+                                title="Visualizza domanda"
                                 (click)="openPrescriptionMessageModal(prescription)">
                                 💬
                               </button>
@@ -1600,6 +1627,7 @@
                                 class="btn btn-outline-primary btn-sm"
                                 type="button"
                                 aria-label="Reinvia prescrizione"
+                                title="Reinvia prescrizione"
                                 (click)="resendPrescription(prescription)">
                                 🔁
                               </button>
@@ -1797,6 +1825,7 @@
                                 class="btn btn-outline-primary btn-sm"
                                 type="button"
                                 aria-label="Partecipa alla call"
+                                title="Partecipa alla call"
                                 (click)="joinTelevisit(televisit)">
                                 📞
                               </button>
@@ -1804,6 +1833,7 @@
                                 class="btn btn-outline-secondary btn-sm"
                                 type="button"
                                 aria-label="Ripianifica"
+                                title="Ripianifica"
                                 [disabled]="!canRescheduleTelevisit(televisit)"
                                 (click)="openTelevisitRescheduleModal(televisit)">
                                 📅
@@ -1812,6 +1842,7 @@
                                 class="btn btn-outline-danger btn-sm"
                                 type="button"
                                 aria-label="Elimina"
+                                title="Elimina"
                                 (click)="openTelevisitDeleteModal(televisit)">
                                 🗑️
                               </button>
