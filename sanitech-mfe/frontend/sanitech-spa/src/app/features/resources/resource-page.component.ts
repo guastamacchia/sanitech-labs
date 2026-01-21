@@ -65,7 +65,7 @@ interface AdmissionItem {
   id: number;
   patientId: number;
   department: string;
-  bedId: number;
+  bedId?: number;
   status: string;
   admittedAt: string;
   notes?: string;
@@ -217,7 +217,6 @@ export class ResourcePageComponent {
   admissionProposalForm = {
     appointmentId: null as number | null,
     date: '',
-    bedId: null as number | null,
     reason: ''
   };
   showAdmissionRejectModal = false;
@@ -1488,7 +1487,6 @@ export class ResourcePageComponent {
     this.admissionProposalForm = {
       appointmentId: this.completedDoctorAppointments[0]?.id ?? null,
       date: '',
-      bedId: null,
       reason: ''
     };
     this.showAdmissionProposalModal = true;
@@ -1508,10 +1506,6 @@ export class ResourcePageComponent {
       this.admissionProposalError = 'Inserisci una data proposta per il ricovero.';
       return;
     }
-    if (!this.admissionProposalForm.bedId) {
-      this.admissionProposalError = 'Inserisci il letto proposto.';
-      return;
-    }
     if (!this.admissionProposalForm.reason.trim()) {
       this.admissionProposalError = 'Inserisci una motivazione per la proposta.';
       return;
@@ -1528,7 +1522,6 @@ export class ResourcePageComponent {
       id: nextId,
       patientId: appointment.patientId,
       department,
-      bedId: this.admissionProposalForm.bedId,
       status: 'PROPOSED',
       admittedAt: this.admissionProposalForm.date,
       notes,
