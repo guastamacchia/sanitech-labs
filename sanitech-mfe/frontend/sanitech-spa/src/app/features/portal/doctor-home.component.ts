@@ -4,9 +4,11 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 type UpcomingVisit = {
+  department: string;
   patient: string;
   date: string;
   time: string;
+  modality: string;
   reason: string;
 };
 
@@ -19,21 +21,27 @@ type UpcomingVisit = {
 export class DoctorHomeComponent {
   upcomingVisits: UpcomingVisit[] = [
     {
+      department: 'Cardiologia',
       patient: 'Anna Conti',
       date: '12/05/2024',
       time: '09:30',
+      modality: 'In presenza',
       reason: 'Controllo cardiologico'
     },
     {
+      department: 'Neurologia',
       patient: 'Luca Rinaldi',
       date: '13/05/2024',
       time: '11:00',
+      modality: 'Da remoto',
       reason: 'Visita di follow-up'
     },
     {
+      department: 'Oncologia',
       patient: 'Elena Greco',
       date: '14/05/2024',
       time: '15:00',
+      modality: 'In presenza',
       reason: 'Monitoraggio terapia'
     }
   ];
