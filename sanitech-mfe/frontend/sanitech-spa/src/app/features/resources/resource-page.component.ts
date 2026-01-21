@@ -246,6 +246,8 @@ export class ResourcePageComponent {
   notifications: NotificationItem[] = [];
   notificationsError = '';
   notificationsSuccess = '';
+  showAdminNotificationModal = false;
+  showAdminPaymentModal = false;
   notificationForm = {
     recipient: '',
     channel: 'EMAIL',
@@ -378,6 +380,9 @@ export class ResourcePageComponent {
     }
     if (this.mode === 'notifications') {
       this.loadNotifications();
+      if (this.isAdmin) {
+        this.loadPayments();
+      }
     }
     if (this.mode === 'prescribing') {
       this.loadPrescriptions();
@@ -1590,6 +1595,9 @@ export class ResourcePageComponent {
         this.paymentForm.receiptName = '';
         this.paymentForm.service = '';
         this.paymentForm.amount = 0;
+        if (this.showAdminPaymentModal) {
+          this.closeAdminPaymentModal();
+        }
         this.isLoading = false;
       },
       error: () => {
@@ -1718,6 +1726,9 @@ export class ResourcePageComponent {
         this.notificationForm.subject = '';
         this.notificationForm.message = '';
         this.notificationForm.notes = '';
+        if (this.showAdminNotificationModal) {
+          this.closeAdminNotificationModal();
+        }
         this.isLoading = false;
       },
       error: () => {
@@ -1771,6 +1782,31 @@ export class ResourcePageComponent {
 
   closeNotificationPreferencesModal(): void {
     this.showNotificationPreferencesModal = false;
+  }
+
+  openAdminNotificationModal(): void {
+    this.notificationsError = '';
+    this.notificationsSuccess = '';
+    this.showAdminNotificationModal = true;
+  }
+
+  closeAdminNotificationModal(): void {
+    this.showAdminNotificationModal = false;
+    this.notificationsError = '';
+  }
+
+  openAdminPaymentModal(): void {
+    this.paymentsError = '';
+    this.paymentsSuccess = '';
+    if (!this.paymentForm.paymentId && this.payments.length) {
+      this.paymentForm.paymentId = this.payments[0].id;
+    }
+    this.showAdminPaymentModal = true;
+  }
+
+  closeAdminPaymentModal(): void {
+    this.showAdminPaymentModal = false;
+    this.paymentsError = '';
   }
 
   openAdmissionRescheduleModal(admission: AdmissionItem): void {
