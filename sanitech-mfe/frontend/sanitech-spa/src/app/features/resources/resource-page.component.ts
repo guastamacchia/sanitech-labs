@@ -1519,6 +1519,24 @@ export class ResourcePageComponent {
             notes: 'Dimesso con indicazioni di follow-up cardiologico.'
           },
           {
+            id: 7,
+            patientId: 1,
+            department: 'PNEU',
+            bedId: 5,
+            status: 'CONFIRMED',
+            admittedAt: '2025-08-14',
+            notes: 'Monitoraggio post-riacutizzazione bronchiale.'
+          },
+          {
+            id: 8,
+            patientId: 1,
+            department: 'GASTRO',
+            bedId: 16,
+            status: 'COMPLETED',
+            admittedAt: '2025-06-02',
+            notes: 'Dimesso con dieta controllata e terapia domiciliare.'
+          },
+          {
             id: 6,
             patientId: 2,
             department: 'PNEU',
