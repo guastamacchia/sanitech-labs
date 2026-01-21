@@ -171,21 +171,21 @@
                   <table class="table align-middle">
                     <thead>
                       <tr>
+                        <th>Reparto</th>
                         <th>Paziente</th>
                         <th>Data e ora</th>
                         <th>Modalità</th>
-                        <th>Reparto</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr *ngFor="let appointment of confirmedAppointments | slice:getPageSliceStart('appointmentsDoctor'):getPageSliceEnd('appointmentsDoctor')">
+                        <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
                         <td>{{ getPatientLabel(appointment.patientId) }}</td>
                         <td>
                           {{ formatDate(getSlotById(appointment.slotId)?.date || '') }} •
                           {{ getSlotById(appointment.slotId)?.time || '-' }}
                         </td>
                         <td>{{ getModalityLabel(getSlotById(appointment.slotId)?.modality || 'IN_PERSON') }}</td>
-                        <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
                       </tr>
                       <tr *ngIf="!confirmedAppointments.length">
                         <td colspan="4" class="text-center text-muted">Nessuna visita confermata.</td>
