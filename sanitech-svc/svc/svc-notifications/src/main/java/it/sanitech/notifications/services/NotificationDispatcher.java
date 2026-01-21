@@ -4,7 +4,7 @@ import it.sanitech.notifications.NotificationsProperties;
 import it.sanitech.notifications.repositories.NotificationRepository;
 import it.sanitech.notifications.repositories.entities.Notification;
 import it.sanitech.notifications.repositories.entities.NotificationStatus;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -52,7 +52,7 @@ public class NotificationDispatcher {
 
                 n.markSent(Instant.now());
 
-                domainEventPublisher.add(
+                domainEventPublisher.publish(
                         AGGREGATE_TYPE,
                         String.valueOf(n.getId()),
                         "NOTIFICATION_SENT",
@@ -67,7 +67,7 @@ public class NotificationDispatcher {
                 // Dopo i retry configurati, se fallisce marchiamo FAILED (no loop infinito).
                 n.markFailed(ex.getMessage());
 
-                domainEventPublisher.add(
+                domainEventPublisher.publish(
                         AGGREGATE_TYPE,
                         String.valueOf(n.getId()),
                         "NOTIFICATION_FAILED",

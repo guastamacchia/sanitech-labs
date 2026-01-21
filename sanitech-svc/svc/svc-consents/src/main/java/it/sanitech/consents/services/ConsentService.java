@@ -8,7 +8,7 @@ import it.sanitech.consents.services.dto.ConsentCheckResponse;
 import it.sanitech.consents.services.dto.ConsentCreateDto;
 import it.sanitech.consents.services.dto.ConsentDto;
 import it.sanitech.consents.services.mapper.ConsentMapper;
-import it.sanitech.outbox.DomainEventPublisher;
+import it.sanitech.outbox.core.DomainEventPublisher;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -74,7 +74,7 @@ public class ConsentService {
         try {
             Consent saved = repository.save(consent);
 
-            domainEventPublisher.add(
+            domainEventPublisher.publish(
                     AGGREGATE_TYPE,
                     String.valueOf(saved.getId()),
                     "CONSENT_GRANTED",
@@ -105,7 +105,7 @@ public class ConsentService {
         consent.revoke();
         Consent saved = repository.save(consent);
 
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(saved.getId()),
                 "CONSENT_REVOKED",
@@ -131,7 +131,7 @@ public class ConsentService {
                 .orElseThrow(() -> NotFoundException.of("Consenso", id));
         repository.delete(consent);
 
-        domainEventPublisher.add(
+        domainEventPublisher.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(consent.getId()),
                 "CONSENT_DELETED",

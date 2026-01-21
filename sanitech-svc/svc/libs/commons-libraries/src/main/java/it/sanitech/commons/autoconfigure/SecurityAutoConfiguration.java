@@ -11,7 +11,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -37,7 +38,7 @@ import java.util.Optional;
  * </ul>
  */
 @Slf4j
-@Configuration
+@AutoConfiguration
 @EnableMethodSecurity
 @RequiredArgsConstructor
 @EnableConfigurationProperties(SecurityProperties.class)
@@ -47,7 +48,7 @@ import java.util.Optional;
 public class SecurityAutoConfiguration {
 
     private final JwtAuthConverter jwtAuthConverter;
-    private final SecurityProperties props;
+    private final SecurityProperties properties;
 
     /**
      * Validazione e diagnostica della configurazione a startup.
@@ -62,7 +63,7 @@ public class SecurityAutoConfiguration {
             throw new IllegalStateException("Configurazione sicurezza non valida: JwtAuthConverter nullo.");
         }
 
-        List<String> publicEndpoints = Optional.ofNullable(props.getPublicEndpoints()).orElse(List.of());
+        List<String> publicEndpoints = Optional.ofNullable(properties.getPublicEndpoints()).orElse(List.of());
 
         log.debug("Sicurezza: policy sessione prevista: STATELESS.");
         log.debug("Sicurezza: CORS abilitato (policy definita dalla configurazione CORS).");
@@ -96,10 +97,11 @@ public class SecurityAutoConfiguration {
      * </ul>
      */
     @Bean
+    @ConditionalOnMissingBean(SecurityFilterChain.class)
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         log.debug("Sicurezza: costruzione SecurityFilterChain.");
 
-        String[] publicMatchers = Optional.ofNullable(props.getPublicEndpoints()).orElse(List.of()).toArray(String[]::new);
+        String[] publicMatchers = Optional.ofNullable(properties.getPublicEndpoints()).orElse(List.of()).toArray(String[]::new);
 
         http
             // API stateless: CSRF non necessario
@@ -121,7 +123,7 @@ public class SecurityAutoConfiguration {
 
             // Resource server JWT con mapping custom delle authorities
             .oauth2ResourceServer(oauth -> oauth
-                    .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
             );
 
         SecurityFilterChain chain = http.build();

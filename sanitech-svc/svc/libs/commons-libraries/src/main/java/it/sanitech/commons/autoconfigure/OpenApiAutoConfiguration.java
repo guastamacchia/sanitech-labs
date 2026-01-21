@@ -12,10 +12,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -24,21 +25,12 @@ import java.util.Optional;
 
 /**
  * Configurazione OpenAPI (Springdoc).
- *
- * <p>
- * Responsabilità della classe:
- * </p>
- * <ul>
- *   <li>definire il gruppo OpenAPI e i package da scansionare</li>
- *   <li>validare e diagnosticare la configurazione a startup</li>
- *   <li>applicare impostazioni di default (Info + sicurezza JWT bearer)</li>
- * </ul>
  */
 @Slf4j
-@Configuration
+@AutoConfiguration
 @RequiredArgsConstructor
-@EnableConfigurationProperties(OpenApiProperties.class)
 @ConditionalOnClass(GroupedOpenApi.class)
+@EnableConfigurationProperties(OpenApiProperties.class)
 @ConditionalOnProperty(prefix = AppConstants.ConfigKeys.OpenApi.PREFIX, name = "enabled", havingValue = "true")
 public class OpenApiAutoConfiguration {
 
@@ -78,16 +70,17 @@ public class OpenApiAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(name = "serviceApi")
     public GroupedOpenApi serviceApi() {
         log.debug("OpenAPI: creazione GroupedOpenApi per il gruppo '{}'.", props.getGroup());
 
         String[] pkgs = Optional.ofNullable(props.getPackagesToScan()).orElse(List.of()).toArray(String[]::new);
 
         GroupedOpenApi api = GroupedOpenApi.builder()
-                .group(props.getGroup())
-                .packagesToScan(pkgs)
-                .addOpenApiCustomizer(this::applyDefaults)
-                .build();
+            .group(props.getGroup())
+            .packagesToScan(pkgs)
+            .addOpenApiCustomizer(this::applyDefaults)
+            .build();
 
         log.debug("OpenAPI: GroupedOpenApi creato correttamente.");
         return api;
@@ -95,11 +88,6 @@ public class OpenApiAutoConfiguration {
 
     /**
      * Applica le impostazioni di default al modello OpenAPI.
-     *
-     * <p>
-     * Le impostazioni vengono applicate solo se assenti, così da non sovrascrivere
-     * eventuali personalizzazioni definite altrove.
-     * </p>
      */
     private void applyDefaults(OpenAPI openApi) {
         if (Objects.isNull(openApi)) {
@@ -147,12 +135,12 @@ public class OpenApiAutoConfiguration {
         if (Objects.isNull(components.getSecuritySchemes())
         || !components.getSecuritySchemes().containsKey(BEARER_AUTH)) {
             components.addSecuritySchemes(BEARER_AUTH,
-                    new SecurityScheme()
-                            .type(SecurityScheme.Type.HTTP)
-                            .scheme("bearer")
-                            .bearerFormat("JWT")
-                            .in(SecurityScheme.In.HEADER)
-                            .name("Authorization"));
+                new SecurityScheme()
+                    .type(SecurityScheme.Type.HTTP)
+                    .scheme("bearer")
+                    .bearerFormat("JWT")
+                    .in(SecurityScheme.In.HEADER)
+                    .name("Authorization"));
 
             log.debug("OpenAPI: aggiunto SecurityScheme '{}' (HTTP bearer JWT).", BEARER_AUTH);
         } else {
@@ -172,7 +160,7 @@ public class OpenApiAutoConfiguration {
             return false;
         }
         return security.stream()
-                .filter(Objects::nonNull)
-                .anyMatch(req -> req.containsKey(OpenApiAutoConfiguration.BEARER_AUTH));
+            .filter(Objects::nonNull)
+            .anyMatch(req -> req.containsKey(OpenApiAutoConfiguration.BEARER_AUTH));
     }
 }
