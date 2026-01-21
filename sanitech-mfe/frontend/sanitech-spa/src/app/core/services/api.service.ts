@@ -107,11 +107,11 @@ export class ApiService {
       { id: 13, patientId: 4, doctorId: 5, slotId: 5, reason: 'Dolore al ginocchio', status: 'CONFIRMED' }
     ],
     docs: [
-      { id: 15, patientId: 1, type: 'REFERT', name: 'Referto cardiologia 2024', notes: 'Controllo annuale.', uploadedAt: '2024-04-01' },
-      { id: 16, patientId: 2, type: 'CERTIFICATE', name: 'Certificato neurologico', notes: 'Valido fino al 2025.', uploadedAt: '2024-04-03' },
-      { id: 17, patientId: 3, type: 'REFERT', name: 'Referto dermatologia', notes: 'Allergia lieve da monitorare.', uploadedAt: '2024-04-05' },
-      { id: 18, patientId: 4, type: 'CERTIFICATE', name: 'Certificato ortopedico', notes: 'Richiesto riposo di 10 giorni.', uploadedAt: '2024-04-06' },
-      { id: 19, patientId: 5, type: 'REFERT', name: 'Referto pneumologia', notes: 'Consigliata spirometria.', uploadedAt: '2024-04-08' }
+      { id: 15, patientId: 1, type: 'REFERT', name: 'Referto cardiologia 2024', notes: 'Controllo annuale.', uploadedAt: '2024-04-01', uploadedBy: 'PATIENT' },
+      { id: 16, patientId: 2, type: 'CERTIFICATE', name: 'Certificato neurologico', notes: 'Valido fino al 2025.', uploadedAt: '2024-04-03', uploadedBy: 'DOCTOR' },
+      { id: 17, patientId: 3, type: 'REFERT', name: 'Referto dermatologia', notes: 'Allergia lieve da monitorare.', uploadedAt: '2024-04-05', uploadedBy: 'DOCTOR' },
+      { id: 18, patientId: 4, type: 'CERTIFICATE', name: 'Certificato ortopedico', notes: 'Richiesto riposo di 10 giorni.', uploadedAt: '2024-04-06', uploadedBy: 'DOCTOR' },
+      { id: 19, patientId: 5, type: 'REFERT', name: 'Referto pneumologia', notes: 'Consigliata spirometria.', uploadedAt: '2024-04-08', uploadedBy: 'DOCTOR' }
     ],
     consents: [
       { id: 21, patientId: 1, consentType: 'GDPR', accepted: true, signedAt: '2024-03-20' },
@@ -355,7 +355,8 @@ export class ApiService {
             type: this.getString(payload.type, 'REFERT'),
             name: this.getString(payload.name, 'Documento clinico'),
             notes: this.getString(payload.notes, ''),
-            uploadedAt: this.today()
+            uploadedAt: this.today(),
+            uploadedBy: this.getString(payload.uploadedBy, 'PATIENT')
           };
           this.mockStore.docs.push(newDoc);
           return of(newDoc as T);

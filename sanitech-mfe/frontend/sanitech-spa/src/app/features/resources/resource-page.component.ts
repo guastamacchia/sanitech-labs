@@ -38,6 +38,7 @@ interface DocumentItem {
   name: string;
   notes?: string;
   uploadedAt: string;
+  uploadedBy?: 'PATIENT' | 'DOCTOR';
   viewedByCurrentUser?: boolean;
 }
 
@@ -255,8 +256,18 @@ export class ResourcePageComponent {
   prescriptions: PrescriptionItem[] = [];
   prescribingError = '';
   showPrescriptionQuestionModal = false;
+  showPrescriptionRejectModal = false;
   selectedPrescription: PrescriptionItem | null = null;
   prescriptionQuestion = '';
+  rejectPrescriptionTarget: PrescriptionItem | null = null;
+  rejectPrescriptionReason = '';
+  showDeleteConfirmModal = false;
+  deleteConfirmMessage = '';
+  deleteConfirmTarget:
+    | { type: 'appointment'; value: SchedulingAppointment }
+    | { type: 'document'; value: DocumentItem }
+    | { type: 'consent'; value: ConsentItem }
+    | null = null;
   prescriptionForm = {
     patientId: 1,
     drug: '',
@@ -270,6 +281,7 @@ export class ResourcePageComponent {
     patientId: null as number | null,
     provider: 'LIVEKIT'
   };
+  showSlotModal = false;
   doctors: DoctorItem[] = [];
   patients: PatientItem[] = [];
   departments: DepartmentItem[] = [];
@@ -525,6 +537,30 @@ export class ResourcePageComponent {
     return this.slots.find((slot) => slot.id === slotId);
   }
 
+  isAppointmentReschedulable(appointment: SchedulingAppointment): boolean {
+    const slot = this.getSlotById(appointment.slotId);
+    if (!slot?.date || !slot.time) {
+      return false;
+    }
+    const dateTimeValue = slot.date.includes('T') ? slot.date : `${slot.date}T${slot.time}`;
+    const parsed = new Date(dateTimeValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+    return parsed.getTime() >= Date.now();
+  }
+
+  isAdmissionReschedulable(admission: AdmissionItem): boolean {
+    if (!admission.admittedAt) {
+      return false;
+    }
+    const parsed = new Date(admission.admittedAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return false;
+    }
+    return parsed.getTime() >= Date.now();
+  }
+
   formatDate(value: string): string {
     if (!value) {
       return '-';
@@ -584,6 +620,19 @@ export class ResourcePageComponent {
 
   getDocumentStatusLabel(doc: DocumentItem): string {
     return this.isDocumentViewed(doc) ? 'Visualizzato' : 'Da visualizzare';
+  }
+
+  getDocumentUploaderLabel(doc: DocumentItem): string {
+    const uploader = doc.uploadedBy ?? 'DOCTOR';
+    return uploader === 'PATIENT' ? 'Utente' : 'Medico';
+  }
+
+  isDocumentDeletable(doc: DocumentItem): boolean {
+    const uploader = doc.uploadedBy ?? 'DOCTOR';
+    if (this.isDoctor) {
+      return uploader === 'DOCTOR';
+    }
+    return uploader === 'PATIENT';
   }
 
   getSpecialityLabel(code: string): string {
@@ -713,15 +762,6 @@ export class ResourcePageComponent {
     return labels[consentType] ?? consentType;
   }
 
-  getPrescriptionStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      ACTIVE: 'Attiva',
-      CONFIRMED: 'Confermata',
-      PENDING: 'In attesa'
-    };
-    return labels[status] ?? status;
-  }
-
   getCurrencyLabel(currency: string): string {
     const labels: Record<string, string> = {
       EUR: 'Euro',
@@ -743,6 +783,13 @@ export class ResourcePageComponent {
 
   get confirmedAppointments(): SchedulingAppointment[] {
     return this.appointments.filter((appointment) => appointment.status === 'CONFIRMED');
+  }
+
+  get doctorReceivedAppointments(): SchedulingAppointment[] {
+    if (!this.isDoctor) {
+      return [];
+    }
+    return this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
   }
 
   get pendingPayments(): PaymentItem[] {
@@ -836,11 +883,12 @@ export class ResourcePageComponent {
 
   getPrescriptionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      ACTIVE: 'Attiva',
+      ACTIVE: 'In attesa di conferma',
+      PENDING: 'In attesa di conferma',
+      CONFIRMED: 'Confermato',
+      REJECTED: 'Rifiutato',
       SUSPENDED: 'Sospesa',
-      COMPLETED: 'Conclusa',
-      PENDING: 'In attesa',
-      CONFIRMED: 'Confermata'
+      COMPLETED: 'Conclusa'
     };
     return labels[status] ?? status;
   }
@@ -902,6 +950,7 @@ export class ResourcePageComponent {
         this.slotForm.time = '';
         this.slotForm.modality = 'IN_PERSON';
         this.slotForm.notes = '';
+        this.showSlotModal = false;
         this.isLoading = false;
       },
       error: () => {
@@ -909,6 +958,15 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  openSlotModal(): void {
+    this.schedulingError = '';
+    this.showSlotModal = true;
+  }
+
+  closeSlotModal(): void {
+    this.showSlotModal = false;
   }
 
   confirmAppointment(appointment: SchedulingAppointment): void {
@@ -1002,6 +1060,12 @@ export class ResourcePageComponent {
     this.closeAppointmentRejectModal();
   }
 
+  openDeleteAppointmentConfirm(appointment: SchedulingAppointment): void {
+    this.deleteConfirmTarget = { type: 'appointment', value: appointment };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione dell’appuntamento?';
+    this.showDeleteConfirmModal = true;
+  }
+
   openBookingModal(): void {
     this.showBookingModal = true;
   }
@@ -1028,6 +1092,38 @@ export class ResourcePageComponent {
   closeConsentModal(): void {
     this.showConsentModal = false;
     this.editingConsentId = null;
+  }
+
+  openDeleteDocumentConfirm(doc: DocumentItem): void {
+    this.deleteConfirmTarget = { type: 'document', value: doc };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione del documento?';
+    this.showDeleteConfirmModal = true;
+  }
+
+  openDeleteConsentConfirm(consent: ConsentItem): void {
+    this.deleteConfirmTarget = { type: 'consent', value: consent };
+    this.deleteConfirmMessage = 'Confermi l’eliminazione del consenso?';
+    this.showDeleteConfirmModal = true;
+  }
+
+  closeDeleteConfirmModal(): void {
+    this.showDeleteConfirmModal = false;
+    this.deleteConfirmTarget = null;
+    this.deleteConfirmMessage = '';
+  }
+
+  confirmDelete(): void {
+    if (!this.deleteConfirmTarget) {
+      return;
+    }
+    if (this.deleteConfirmTarget.type === 'appointment') {
+      this.cancelAppointment(this.deleteConfirmTarget.value);
+    } else if (this.deleteConfirmTarget.type === 'document') {
+      this.deleteDocument(this.deleteConfirmTarget.value);
+    } else {
+      this.deleteConsent(this.deleteConfirmTarget.value);
+    }
+    this.closeDeleteConfirmModal();
   }
 
   loadDocs(): void {
@@ -1066,14 +1162,18 @@ export class ResourcePageComponent {
     const payload: Record<string, unknown> = {
       type: this.docForm.type,
       name: this.docForm.name,
-      notes: this.docForm.notes
+      notes: this.docForm.notes,
+      uploadedBy: this.isDoctor ? 'DOCTOR' : 'PATIENT'
     };
     if (this.isDoctor) {
       payload['patientId'] = this.docForm.patientId ?? this.patients[0]?.id ?? 1;
     }
     this.api.request<DocumentItem>('POST', '/api/docs', payload).subscribe({
       next: (doc) => {
-        this.documents = [...this.documents, { ...doc, viewedByCurrentUser: true }];
+        this.documents = [
+          ...this.documents,
+          { ...doc, viewedByCurrentUser: true, uploadedBy: this.isDoctor ? 'DOCTOR' : 'PATIENT' }
+        ];
         this.docForm.name = '';
         this.docForm.fileName = '';
         this.docForm.notes = '';
@@ -1504,6 +1604,38 @@ export class ResourcePageComponent {
     this.prescriptions = this.prescriptions.map((item) =>
       item.id === prescription.id ? { ...item, status: 'CONFIRMED' } : item
     );
+  }
+
+  openPrescriptionRejectModal(prescription: PrescriptionItem): void {
+    this.rejectPrescriptionTarget = prescription;
+    this.rejectPrescriptionReason = '';
+    this.prescribingError = '';
+    this.showPrescriptionRejectModal = true;
+  }
+
+  closePrescriptionRejectModal(): void {
+    this.showPrescriptionRejectModal = false;
+    this.rejectPrescriptionTarget = null;
+    this.rejectPrescriptionReason = '';
+    this.prescribingError = '';
+  }
+
+  submitPrescriptionRejection(): void {
+    if (!this.rejectPrescriptionTarget) {
+      this.prescribingError = 'Seleziona una prescrizione valida.';
+      return;
+    }
+    if (!this.rejectPrescriptionReason.trim()) {
+      this.prescribingError = 'Inserisci una motivazione per il rifiuto.';
+      return;
+    }
+    this.prescribingError = '';
+    this.prescriptions = this.prescriptions.map((item) =>
+      item.id === this.rejectPrescriptionTarget?.id
+        ? { ...item, status: 'REJECTED', notes: this.rejectPrescriptionReason }
+        : item
+    );
+    this.closePrescriptionRejectModal();
   }
 
   openPrescriptionQuestionModal(prescription: PrescriptionItem): void {
