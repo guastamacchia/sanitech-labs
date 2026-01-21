@@ -65,7 +65,7 @@ interface AdmissionItem {
   id: number;
   patientId: number;
   department: string;
-  bedId: number;
+  bedId?: number;
   status: string;
   admittedAt: string;
   notes?: string;
@@ -197,6 +197,11 @@ export class ResourcePageComponent {
     fileName: '',
     notes: ''
   };
+  docFilterPatientId: number | null = null;
+  appointmentPatientFilterId: number | null = null;
+  admissionPatientFilterId: number | null = null;
+  televisitPatientFilterId: number | null = null;
+  consentPatientFilterId: number | null = null;
   consentForm = {
     consentType: 'GDPR',
     accepted: true
@@ -211,13 +216,14 @@ export class ResourcePageComponent {
     date: '',
     reason: ''
   };
+  showAdmissionNoteModal = false;
+  admissionNoteTarget: AdmissionItem | null = null;
   rescheduleError = '';
   rescheduleSuccess = '';
   admissionProposalError = '';
   admissionProposalForm = {
     appointmentId: null as number | null,
     date: '',
-    bedId: null as number | null,
     reason: ''
   };
   showAdmissionRejectModal = false;
@@ -353,6 +359,7 @@ export class ResourcePageComponent {
     this.payload = this.selectedEndpoint?.payload ?? '';
     if (this.mode === 'scheduling') {
       this.loadScheduling();
+      this.loadPatients();
     }
     if (this.mode === 'docs') {
       this.loadDocs();
@@ -823,6 +830,14 @@ export class ResourcePageComponent {
     return this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
   }
 
+  get filteredDoctorReceivedAppointments(): SchedulingAppointment[] {
+    const appointments = this.doctorReceivedAppointments;
+    if (!this.isDoctor || !this.appointmentPatientFilterId) {
+      return appointments;
+    }
+    return appointments.filter((appointment) => appointment.patientId === this.appointmentPatientFilterId);
+  }
+
   getAppointmentStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       PENDING: 'In attesa di conferma',
@@ -864,6 +879,16 @@ export class ResourcePageComponent {
     return this.slots.filter((slot) => slot.status === 'AVAILABLE');
   }
 
+  get filteredDocuments(): DocumentItem[] {
+    if (this.isDoctor && this.docFilterPatientId) {
+      return this.documents.filter((doc) => doc.patientId === this.docFilterPatientId);
+    }
+    if (this.isPatient) {
+      return this.documents.filter((doc) => doc.patientId === 1);
+    }
+    return this.documents;
+  }
+
   get visibleConsents(): ConsentItem[] {
     if (this.isDoctor) {
       const patientIds = new Set(this.patients.map((patient) => patient.id));
@@ -873,6 +898,14 @@ export class ResourcePageComponent {
       return this.consents.filter((consent) => consent.patientId === 1);
     }
     return this.consents;
+  }
+
+  get filteredConsents(): ConsentItem[] {
+    const consents = this.visibleConsents;
+    if (!this.isDoctor || !this.consentPatientFilterId) {
+      return consents;
+    }
+    return consents.filter((consent) => consent.patientId === this.consentPatientFilterId);
   }
 
   get visiblePrescriptions(): PrescriptionItem[] {
@@ -886,7 +919,7 @@ export class ResourcePageComponent {
     if (this.isDoctor) {
       const doctorAppointments = this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
       if (!doctorAppointments.length) {
-        return [];
+        return this.admissions;
       }
       const patientIds = new Set(doctorAppointments.map((appointment) => appointment.patientId));
       const appointmentIds = new Set(doctorAppointments.map((appointment) => appointment.id));
@@ -898,6 +931,23 @@ export class ResourcePageComponent {
       return this.admissions.filter((admission) => admission.patientId === 1);
     }
     return this.admissions;
+  }
+
+  get filteredAdmissions(): AdmissionItem[] {
+    const admissions = this.visibleAdmissions;
+    if (!this.isDoctor || !this.admissionPatientFilterId) {
+      return admissions;
+    }
+    return admissions.filter((admission) => admission.patientId === this.admissionPatientFilterId);
+  }
+
+  get filteredTelevisits(): TelevisitItem[] {
+    if (!this.isDoctor || !this.televisitPatientFilterId) {
+      return this.televisits;
+    }
+    return this.televisits.filter(
+      (televisit) => this.getAppointmentById(televisit.appointmentId)?.patientId === this.televisitPatientFilterId
+    );
   }
 
   get doctorSlotsByDate(): Array<{ date: string; slots: SchedulingSlot[] }> {
@@ -1409,7 +1459,39 @@ export class ResourcePageComponent {
   loadAdmissions(): void {
     this.api.request<AdmissionItem[]>('GET', '/api/admissions').subscribe({
       next: (admissions) => {
-        this.admissions = admissions;
+        if (admissions.length) {
+          this.admissions = admissions;
+          return;
+        }
+        this.admissions = [
+          {
+            id: 1,
+            patientId: 1,
+            department: 'CARD',
+            bedId: 12,
+            status: 'PROPOSED',
+            admittedAt: '2026-03-12',
+            notes: 'Il paziente segnala dolore toracico intermittente.',
+            appointmentId: 3
+          },
+          {
+            id: 2,
+            patientId: 2,
+            department: 'DERM',
+            bedId: 4,
+            status: 'CONFIRMED',
+            admittedAt: '2026-02-28',
+            notes: 'Chiede chiarimenti sulla terapia topica.'
+          },
+          {
+            id: 3,
+            patientId: 3,
+            department: 'NEUR',
+            status: 'COMPLETED',
+            admittedAt: '2026-01-18',
+            notes: 'Ha segnalato vertigini notturne negli ultimi giorni.'
+          }
+        ];
       },
       error: () => {
         this.paymentsError = 'Impossibile caricare i ricoveri.';
@@ -1488,7 +1570,6 @@ export class ResourcePageComponent {
     this.admissionProposalForm = {
       appointmentId: this.completedDoctorAppointments[0]?.id ?? null,
       date: '',
-      bedId: null,
       reason: ''
     };
     this.showAdmissionProposalModal = true;
@@ -1499,6 +1580,16 @@ export class ResourcePageComponent {
     this.admissionProposalError = '';
   }
 
+  openAdmissionNoteModal(admission: AdmissionItem): void {
+    this.admissionNoteTarget = admission;
+    this.showAdmissionNoteModal = true;
+  }
+
+  closeAdmissionNoteModal(): void {
+    this.showAdmissionNoteModal = false;
+    this.admissionNoteTarget = null;
+  }
+
   submitAdmissionProposal(): void {
     if (!this.admissionProposalForm.appointmentId) {
       this.admissionProposalError = 'Seleziona una visita conclusa.';
@@ -1506,10 +1597,6 @@ export class ResourcePageComponent {
     }
     if (!this.admissionProposalForm.date) {
       this.admissionProposalError = 'Inserisci una data proposta per il ricovero.';
-      return;
-    }
-    if (!this.admissionProposalForm.bedId) {
-      this.admissionProposalError = 'Inserisci il letto proposto.';
       return;
     }
     if (!this.admissionProposalForm.reason.trim()) {
@@ -1528,7 +1615,6 @@ export class ResourcePageComponent {
       id: nextId,
       patientId: appointment.patientId,
       department,
-      bedId: this.admissionProposalForm.bedId,
       status: 'PROPOSED',
       admittedAt: this.admissionProposalForm.date,
       notes,
