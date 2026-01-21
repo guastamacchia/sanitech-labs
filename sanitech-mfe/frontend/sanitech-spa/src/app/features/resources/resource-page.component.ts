@@ -864,12 +864,12 @@ export class ResourcePageComponent {
 
   getPrescriptionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      ACTIVE: 'Attiva',
-      REJECTED: 'Rifiutata',
+      ACTIVE: 'In attesa di conferma',
+      PENDING: 'In attesa di conferma',
+      CONFIRMED: 'Confermato',
+      REJECTED: 'Rifiutato',
       SUSPENDED: 'Sospesa',
-      COMPLETED: 'Conclusa',
-      PENDING: 'In attesa',
-      CONFIRMED: 'Confermata'
+      COMPLETED: 'Conclusa'
     };
     return labels[status] ?? status;
   }
