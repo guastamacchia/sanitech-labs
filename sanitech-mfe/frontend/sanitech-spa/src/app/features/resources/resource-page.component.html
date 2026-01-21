@@ -171,6 +171,7 @@
                   <table class="table align-middle">
                     <thead>
                       <tr>
+                        <th>ID</th>
                         <th>Reparto</th>
                         <th>Paziente</th>
                         <th>Data e ora</th>
@@ -181,6 +182,7 @@
                     </thead>
                     <tbody>
                       <tr *ngFor="let appointment of doctorReceivedAppointments | slice:getPageSliceStart('appointmentsDoctor'):getPageSliceEnd('appointmentsDoctor')">
+                        <td>{{ appointment.id }}</td>
                         <td>{{ getDepartmentLabel(getDoctorById(appointment.doctorId)?.speciality || '-') }}</td>
                         <td>{{ getPatientLabel(appointment.patientId) }}</td>
                         <td>
@@ -209,7 +211,7 @@
                         </td>
                       </tr>
                       <tr *ngIf="!doctorReceivedAppointments.length">
-                        <td colspan="6" class="text-center text-muted">Nessun appuntamento ricevuto.</td>
+                        <td colspan="7" class="text-center text-muted">Nessun appuntamento ricevuto.</td>
                       </tr>
                     </tbody>
                   </table>

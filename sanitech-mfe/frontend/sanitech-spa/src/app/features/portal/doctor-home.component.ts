@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 type UpcomingVisit = {
+  id: number;
   department: string;
   patient: string;
   date: string;
@@ -22,6 +23,7 @@ type UpcomingVisit = {
 export class DoctorHomeComponent {
   upcomingVisits: UpcomingVisit[] = [
     {
+      id: 1041,
       department: 'Cardiologia',
       patient: 'Anna Conti',
       date: '12/05/2024',
@@ -31,6 +33,7 @@ export class DoctorHomeComponent {
       status: 'CONFIRMED'
     },
     {
+      id: 1047,
       department: 'Neurologia',
       patient: 'Luca Rinaldi',
       date: '13/05/2024',
@@ -40,6 +43,7 @@ export class DoctorHomeComponent {
       status: 'PENDING'
     },
     {
+      id: 1052,
       department: 'Oncologia',
       patient: 'Elena Greco',
       date: '14/05/2024',
