@@ -281,6 +281,7 @@ export class ResourcePageComponent {
     patientId: null as number | null,
     provider: 'LIVEKIT'
   };
+  showSlotModal = false;
   doctors: DoctorItem[] = [];
   patients: PatientItem[] = [];
   departments: DepartmentItem[] = [];
@@ -784,6 +785,13 @@ export class ResourcePageComponent {
     return this.appointments.filter((appointment) => appointment.status === 'CONFIRMED');
   }
 
+  get doctorReceivedAppointments(): SchedulingAppointment[] {
+    if (!this.isDoctor) {
+      return [];
+    }
+    return this.appointments.filter((appointment) => appointment.doctorId === this.currentDoctorId);
+  }
+
   get pendingPayments(): PaymentItem[] {
     const pending = this.payments.filter(
       (payment) => payment.status === 'PENDING' || payment.status === 'IN_ATTESA'
@@ -942,6 +950,7 @@ export class ResourcePageComponent {
         this.slotForm.time = '';
         this.slotForm.modality = 'IN_PERSON';
         this.slotForm.notes = '';
+        this.showSlotModal = false;
         this.isLoading = false;
       },
       error: () => {
@@ -949,6 +958,15 @@ export class ResourcePageComponent {
         this.isLoading = false;
       }
     });
+  }
+
+  openSlotModal(): void {
+    this.schedulingError = '';
+    this.showSlotModal = true;
+  }
+
+  closeSlotModal(): void {
+    this.showSlotModal = false;
   }
 
   confirmAppointment(appointment: SchedulingAppointment): void {
