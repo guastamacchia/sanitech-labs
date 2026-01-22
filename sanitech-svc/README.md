@@ -7,13 +7,13 @@ Questa cartella contiene i file **root** per avviare in locale (dev) l’intera 
 ## 1) Avvio rapido (locale)
 
 ```bash
-docker compose up -d --build
+docker compose -f ../infra/svc/docker-compose.yml up -d --build
 ```
 
 Attendi che tutti i container risultino `healthy`:
 
 ```bash
-docker compose ps
+docker compose -f ../infra/svc/docker-compose.yml ps
 ```
 
 ---
@@ -42,7 +42,7 @@ docker compose ps
 
 Questo compose importa automaticamente un realm **sanitech** da:
 
-`infra/keycloak/realm-export/sanitech-realm.json`
+`../infra/svc/keycloak/realm-export/sanitech-realm.json`
 
 Credenziali amministratore (dev):
 
@@ -78,7 +78,7 @@ bash scripts/smoke.sh
 ## 6) Shutdown
 
 ```bash
-docker compose down -v
+docker compose -f ../infra/svc/docker-compose.yml down -v
 ```
 
 ---
@@ -141,6 +141,6 @@ Variabili utili:
 - `MAVEN_ARGS` (opzionale): argomenti extra passati a Maven
 - `MVN` (opzionale): comando Maven da usare (default: `mvn` se disponibile, altrimenti `./svc/mvnw`)
 - `POM` (opzionale): path al POM aggregatore (default: `svc/pom.xml`)
-- `COMPOSE_FILE` (opzionale): path al `docker-compose.yml` (default: `infra/docker-compose.yml`)
+- `COMPOSE_FILE` (opzionale): path al `docker-compose.yml` (default: `../infra/svc/docker-compose.yml`)
 - `COMPOSE_INFRA_PORTS_FILE` (opzionale): override compose extra per porte infrastruttura
 - `COMPOSE_INFRA_SERVICES` (opzionale): lista servizi avviati da `compose-up-infra`

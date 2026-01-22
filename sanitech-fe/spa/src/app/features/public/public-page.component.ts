@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth/auth.service';
 
@@ -11,11 +11,6 @@ import { AuthService } from '../../core/auth/auth.service';
   templateUrl: './public-page.component.html'
 })
 export class PublicPageComponent {
-  credentials = {
-    email: '',
-    password: '',
-    role: 'ROLE_PATIENT'
-  };
   registrationForm = {
     firstName: '',
     lastName: '',
@@ -29,31 +24,18 @@ export class PublicPageComponent {
     subject: '',
     message: ''
   };
-  loginError = '';
   registrationSuccess = '';
   contactSuccess = '';
   activeAccessTab: 'login' | 'register' = 'login';
-  profiles = this.auth.mockProfiles;
 
-  constructor(public auth: AuthService, private router: Router) {}
+  constructor(public auth: AuthService) {}
 
-  submitLogin(): void {
-    this.loginError = '';
-    const success = this.auth.signInWithCredentials(
-      this.credentials.email,
-      this.credentials.password,
-      this.credentials.role
-    );
-    if (!success) {
-      this.loginError = 'Inserisci credenziali valide per completare l’accesso.';
-      return;
-    }
-    this.router.navigate(['/portal']);
+  login(): void {
+    this.auth.login();
   }
 
   setActiveAccessTab(tab: 'login' | 'register'): void {
     this.activeAccessTab = tab;
-    this.loginError = '';
     this.registrationSuccess = '';
   }
 

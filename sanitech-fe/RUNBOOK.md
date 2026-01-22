@@ -15,12 +15,12 @@ URL:
 - SPA pubblica/privata: http://localhost:4200
 
 ## Dockerfile
-- I Dockerfile legacy dei micro-frontend sono in `infra/dockerfiles/`.
+- I Dockerfile legacy dei micro-frontend sono in `../infra/fe/dockerfiles/`.
 - La SPA Angular può essere containerizzata separatamente (es. con Nginx) se richiesto.
 
 ## Layout
 - `spa`: SPA Angular (portale pubblico + area privata con ruoli).
-- `infra/dockerfiles/`: Dockerfile legacy dei micro-frontend statici rimossi.
+- `../infra/fe/dockerfiles/`: Dockerfile legacy dei micro-frontend statici rimossi.
 - `scripts/`: helper per up/down/logs/status.
 
 ## Note

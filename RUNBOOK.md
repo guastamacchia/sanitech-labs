@@ -7,6 +7,10 @@ Questo runbook riassume le azioni operative principali per l’ambiente di svilu
 - Java 21
 - Node.js (solo se si modifica la toolchain frontend)
 
+## Struttura infra
+- Infrastruttura backend condivisa: `infra/svc/`
+- Infrastruttura frontend: `infra/fe/`
+
 ## Backend (cartella `sanitech-svc`)
 - Avvio stack locale: `bash scripts/up.sh`
 - Spegnimento: `bash scripts/down.sh` (usa `REMOVE_VOLUMES=true` per pulire i volumi)
@@ -15,7 +19,7 @@ Questo runbook riassume le azioni operative principali per l’ambiente di svilu
 - Build/test aggregato: da `sanitech-svc/svc` eseguire `make build` o `make test` (usa `MODULES=...` per filtri)
 
 ## Frontend (cartella `sanitech-fe`)
-- Avvio micro-frontend statici: `bash scripts/up.sh` (oppure `docker compose -f infra/docker-compose.yml up -d --build`)
+- Avvio micro-frontend statici: `bash scripts/up.sh` (oppure `docker compose -f ../infra/fe/docker-compose.yml up -d --build`)
 - URL: shell `:4200`, paziente `:4301`, medico `:4302`, admin `:4303`
 
 ## Postman

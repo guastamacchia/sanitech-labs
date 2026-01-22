@@ -6,7 +6,7 @@ Nuova SPA:
 - `spa`
 
 Legacy (deprecated):
-- Dockerfile legacy in `infra/dockerfiles/` (asset statici rimossi).
+- Dockerfile legacy in `../infra/fe/dockerfiles/` (asset statici rimossi).
 
 ## Avvio rapido (presuppone backend su `http://localhost:8080`)
 
@@ -23,4 +23,4 @@ Altri comandi utili:
 - Stato: `bash scripts/status.sh`
 
 ## Dockerfile
-I Dockerfile legacy dei micro-frontend restano centralizzati in `infra/dockerfiles/`, ma la SPA Angular usa `spa` e può essere containerizzata con un Dockerfile dedicato se necessario.
+I Dockerfile legacy dei micro-frontend restano centralizzati in `../infra/fe/dockerfiles/`, ma la SPA Angular usa `spa` e può essere containerizzata con un Dockerfile dedicato se necessario.

@@ -21,12 +21,9 @@ const providers = [
       scrollPositionRestoration: 'enabled'
     })
   ),
-  provideHttpClient(withInterceptors([authInterceptor]))
+  provideHttpClient(withInterceptors([authInterceptor])),
+  importProvidersFrom(OAuthModule.forRoot())
 ];
-
-if (!environment.mockAuth) {
-  providers.push(importProvidersFrom(OAuthModule.forRoot()));
-}
 
 bootstrapApplication(AppComponent, {
   providers

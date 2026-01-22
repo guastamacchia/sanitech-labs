@@ -64,6 +64,6 @@ make env-print
 - Collezione ed environment: `postman/`
 
 ## Note operative
-- I Dockerfile per Prometheus/Grafana/Keycloak sono in `infra/`.
+- I Dockerfile per Prometheus/Grafana/Keycloak sono in `../infra/svc/`.
 - Ogni microservizio ha il proprio `infra/docker-compose.yml` e Makefile locale per run/build.
 - Gli script sotto `scripts/` sono utili per uno start/stop completo con opzioni extra (es. cleanup volumi), mentre i target `make compose-*` sono più rapidi per iterazioni locali.
