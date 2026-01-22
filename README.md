@@ -2,8 +2,8 @@
 
 Monorepo per la piattaforma Sanitech:
 
-- **Backend** (`sanitech-svc`): microservizi Spring Boot, compose infra (Keycloak, Kafka, Postgres, MinIO, Prometheus, Grafana), script helper e Postman.
-- **Frontend** (`sanitech-fe`): micro‑frontend statici Bootstrap (shell pubblica, aree Paziente/Medico/Admin) con compose dedicato.
+- **Backend** (`sanitech-svc`): microservizi Spring Boot, script helper e Postman. L'infrastruttura condivisa è in `infra/svc`.
+- **Frontend** (`sanitech-fe`): micro‑frontend statici Bootstrap (shell pubblica, aree Paziente/Medico/Admin). L'infrastruttura dedicata è in `infra/fe`.
 
 ## Avvio rapido
 
@@ -18,7 +18,7 @@ bash scripts/up.sh            # avvia tutto lo stack
 ### Frontend
 ```bash
 cd sanitech-fe
-docker compose -f infra/docker-compose.yml up -d --build
+docker compose -f ../infra/fe/docker-compose.yml up -d --build
 # shell:   http://localhost:4200
 # paziente http://localhost:4301
 # medico   http://localhost:4302
@@ -35,5 +35,6 @@ docker compose -f infra/docker-compose.yml up -d --build
 
 ## Documentazione operativa
 - Runbook generale: `RUNBOOK.md`
+- Manifest repository: `MANIFEST.md`
 - Dettagli backend: `sanitech-svc/svc/README.md` e `sanitech-svc/svc/RUNBOOK.md`
 - Frontend: `sanitech-fe/README.md`

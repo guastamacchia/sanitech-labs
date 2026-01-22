@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-COMPOSE_FILE="${COMPOSE_FILE:-${ROOT_DIR}/infra/docker-compose.yml}"
+INFRA_DIR="${INFRA_DIR:-${ROOT_DIR}/../infra/fe}"
+COMPOSE_FILE="${COMPOSE_FILE:-${INFRA_DIR}/docker-compose.yml}"
 COMPOSE="docker compose"
 
 if ! command -v docker >/dev/null 2>&1; then
