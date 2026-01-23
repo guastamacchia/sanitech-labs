@@ -63,6 +63,10 @@ spring.log
 
 # JVM crash logs
 hs_err_pid*
+*.log
+
+# Env files
+.env
 
 ############################
 # DOCKER
