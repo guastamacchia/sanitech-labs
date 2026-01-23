@@ -2,7 +2,7 @@
 set -uo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-SERVICE_DIR="${ROOT_DIR}/sanitech-svc/svc/svc-directory"
+SERVICE_DIR="${ROOT_DIR}/sanitech-svc/svc-directory"
 # ENV_FILE can be overridden with a path argument
 ENV_FILE="${1:-${SERVICE_DIR}/infra/env/env.remote}"
 

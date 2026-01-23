@@ -151,7 +151,7 @@ services:
   # =========================
   svc-gateway:
     build:
-      context: ../svc/svc-gateway
+      context: ../../sanitech-svc/svc-gateway
       dockerfile: infra/Dockerfile
     ports:
       - "8080:8080"
@@ -183,7 +183,7 @@ services:
 
   svc-directory:
     build:
-      context: ../svc/svc-directory
+      context: ../../sanitech-svc/svc-directory
       dockerfile: infra/Dockerfile
     ports:
       - "8082:8082"
@@ -200,7 +200,7 @@ services:
 
   svc-scheduling:
     build:
-      context: ../svc/svc-scheduling
+      context: ../../sanitech-svc/svc-scheduling
       dockerfile: infra/Dockerfile
     ports:
       - "8083:8083"
@@ -217,7 +217,7 @@ services:
 
   svc-admissions:
     build:
-      context: ../svc/svc-admissions
+      context: ../../sanitech-svc/svc-admissions
       dockerfile: infra/Dockerfile
     ports:
       - "8084:8084"
@@ -234,7 +234,7 @@ services:
 
   svc-consents:
     build:
-      context: ../svc/svc-consents
+      context: ../../sanitech-svc/svc-consents
       dockerfile: infra/Dockerfile
     ports:
       - "8085:8085"
@@ -251,7 +251,7 @@ services:
 
   svc-docs:
     build:
-      context: ../svc/svc-docs
+      context: ../../sanitech-svc/svc-docs
       dockerfile: infra/Dockerfile
     ports:
       - "8086:8086"
@@ -273,7 +273,7 @@ services:
 
   svc-notifications:
     build:
-      context: ../svc/svc-notifications
+      context: ../../sanitech-svc/svc-notifications
       dockerfile: infra/Dockerfile
     ports:
       - "8087:8087"
@@ -293,7 +293,7 @@ services:
 
   svc-audit:
     build:
-      context: ../svc/svc-audit
+      context: ../../sanitech-svc/svc-audit
       dockerfile: infra/Dockerfile
     ports:
       - "8088:8088"
@@ -310,7 +310,7 @@ services:
 
   svc-televisit:
     build:
-      context: ../svc/svc-televisit
+      context: ../../sanitech-svc/svc-televisit
       dockerfile: infra/Dockerfile
     ports:
       - "8089:8089"
@@ -330,7 +330,7 @@ services:
 
   svc-payments:
     build:
-      context: ../svc/svc-payments
+      context: ../../sanitech-svc/svc-payments
       dockerfile: infra/Dockerfile
     ports:
       - "8090:8090"
@@ -348,7 +348,7 @@ services:
 
   svc-prescribing:
     build:
-      context: ../svc/svc-prescribing
+      context: ../../sanitech-svc/svc-prescribing
       dockerfile: infra/Dockerfile
     ports:
       - "8091:8091"

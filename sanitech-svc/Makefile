@@ -1,8 +1,8 @@
 # Prefer Maven already installed on the host to avoid wrapper downloads when offline.
-SVC_DIR ?= svc
-INFRA_DIR ?= infra
-MVN ?= $(shell command -v mvn >/dev/null 2>&1 && echo mvn || echo ./$(SVC_DIR)/mvnw)
-POM ?= $(SVC_DIR)/pom.xml
+SVC_DIR ?= .
+INFRA_DIR ?= ../infra/svc
+MVN ?= $(shell command -v mvn >/dev/null 2>&1 && echo mvn || echo ./mvnw)
+POM ?= pom.xml
 MODULES ?=
 PROFILE ?=
 MAVEN_ARGS ?=
