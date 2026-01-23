@@ -102,10 +102,44 @@ I servizi di dominio producono eventi su tabella `outbox_events` nella stessa tr
 - OpenAPI per servizio: `/openapi/{service}`.
 
 ## Frontend
-- Micro‑frontend statici (Bootstrap) serviti da Docker Compose.
-- Porta e URL di riferimento sono nella sezione **Avvio rapido**.
+La nuova SPA Angular sostituisce i micro‑frontend statici (Bootstrap) per shell, paziente, medico e admin.
+
+Avvio rapido (presuppone backend su `http://localhost:8080`):
+```bash
+cd sanitech-fe
+npm install
+npm start
+# SPA: http://localhost:4200
+```
+
+Legacy (micro‑frontend statici via Docker Compose):
+```bash
+cd sanitech-fe
+docker compose -f ../infra/fe/docker-compose.yml up -d --build
+```
+
+Configurazioni ambiente (`sanitech-fe/src/environments/`):
+- `environment.ts` → local
+- `environment.staging.ts` → staging
+- `environment.remote.ts` → remote
+- `environment.prod.ts` → production
+
+Build specifici:
+```bash
+ng build --configuration=staging
+ng build --configuration=remote
+```
+
+Script utili:
+- Stop: `bash scripts/frontend/down.sh` (usa `REMOVE_VOLUMES=true` per eliminare i volumi)
+- Log: `bash scripts/frontend/logs.sh`
+- Stato: `bash scripts/frontend/status.sh`
+
+Layout:
+- `sanitech-fe/src`: sorgenti SPA Angular (portale pubblico + area privata con ruoli).
+- `infra/fe/dockerfiles/`: Dockerfile legacy dei micro‑frontend statici rimossi.
+- `scripts/frontend/`: helper per up/down/logs/status.
 
 ## Documentazione operativa
 - Runbook generale: `RUNBOOK.md`
 - Manifest repository: `MANIFEST.md`
-- Frontend: `sanitech-fe/README.md`
