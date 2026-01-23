@@ -21,7 +21,7 @@ URL:
 ## Layout
 - `spa`: SPA Angular (portale pubblico + area privata con ruoli).
 - `../infra/fe/dockerfiles/`: Dockerfile legacy dei micro-frontend statici rimossi.
-- `scripts/`: helper per up/down/logs/status.
+- `scripts/frontend/`: helper per up/down/logs/status.
 
 ## Note
 - Presuppone backend su http://localhost:8080 e Keycloak su http://localhost:8081.

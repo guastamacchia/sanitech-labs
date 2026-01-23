@@ -18,9 +18,9 @@ npm start
 ```
 
 Altri comandi utili:
-- Stop: `bash scripts/down.sh` (usa `REMOVE_VOLUMES=true` per eliminare i volumi)
-- Log: `bash scripts/logs.sh`
-- Stato: `bash scripts/status.sh`
+- Stop: `bash scripts/frontend/down.sh` (usa `REMOVE_VOLUMES=true` per eliminare i volumi)
+- Log: `bash scripts/frontend/logs.sh`
+- Stato: `bash scripts/frontend/status.sh`
 
 ## Dockerfile
 I Dockerfile legacy dei micro-frontend restano centralizzati in `../infra/fe/dockerfiles/`, ma la SPA Angular usa `spa` e può essere containerizzata con un Dockerfile dedicato se necessario.
