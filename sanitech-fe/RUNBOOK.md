@@ -6,7 +6,6 @@
 
 ## Avvio SPA Angular
 ```bash
-cd spa
 npm install
 npm start
 ```
@@ -19,7 +18,7 @@ URL:
 - La SPA Angular può essere containerizzata separatamente (es. con Nginx) se richiesto.
 
 ## Layout
-- `spa`: SPA Angular (portale pubblico + area privata con ruoli).
+- `src`: SPA Angular (portale pubblico + area privata con ruoli).
 - `../infra/fe/dockerfiles/`: Dockerfile legacy dei micro-frontend statici rimossi.
 - `scripts/frontend/`: helper per up/down/logs/status.
 

@@ -2,7 +2,7 @@
 set -uo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-SERVICE_DIR="${ROOT_DIR}/sanitech-svc/svc/svc-notifications"
+SERVICE_DIR="${ROOT_DIR}/sanitech-svc/svc-notifications"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${1:-${SERVICE_DIR}/infra/env/env.remote}"
 

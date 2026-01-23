@@ -3,7 +3,7 @@
 Monorepo della piattaforma **Sanitech**.
 
 - **Backend** (`sanitech-svc`): microservizi Spring Boot + script helper. L'infrastruttura condivisa è in `infra/svc`.
-- **Frontend** (`sanitech-fe`): micro‑frontend statici Bootstrap (shell pubblica, aree Paziente/Medico/Admin). L'infrastruttura dedicata è in `infra/fe`.
+- **Frontend** (`sanitech-fe`): SPA Angular; i micro‑frontend statici legacy sono in `infra/fe`.
 
 ## Prerequisiti
 - Docker / Docker Compose
@@ -23,17 +23,21 @@ bash scripts/backend/up.sh            # avvia tutto lo stack
 ### Frontend
 ```bash
 cd sanitech-fe
+npm install
+npm start
+# SPA: http://localhost:4200
+```
+
+Legacy (micro‑frontend statici via Docker Compose):
+```bash
+cd sanitech-fe
 docker compose -f ../infra/fe/docker-compose.yml up -d --build
-# shell:   http://localhost:4200
-# paziente http://localhost:4301
-# medico   http://localhost:4302
-# admin    http://localhost:4303
 ```
 
 ## Struttura repository
 - `infra/fe`: docker compose e configurazioni per i micro‑frontend.
 - `infra/svc`: docker compose e provisioning (Keycloak, Prometheus, Grafana, MinIO, Kafka, ecc.).
-- `sanitech-fe`: micro‑frontend e script di build/avvio.
+- `sanitech-fe`: SPA Angular e script di build/avvio.
 - `sanitech-svc`: microservizi backend, Makefile aggregatore e script di stack.
 - `scripts/`: script centralizzati per backend, frontend e smoke test dei servizi.
 
@@ -74,7 +78,7 @@ Variabili utili:
 - `PROFILE=local`
 - `MAVEN_ARGS=-DskipTests=false`
 - `MVN=mvn`
-- `POM=svc/pom.xml`
+- `POM=pom.xml`
 
 ## Backend: note funzionali
 

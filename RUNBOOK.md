@@ -30,6 +30,13 @@ make -C sanitech-svc env-print
 ### Frontend
 ```bash
 cd sanitech-fe
+npm install
+npm start
+```
+
+Legacy (micro‑frontend statici via Docker Compose):
+```bash
+cd sanitech-fe
 docker compose -f ../infra/fe/docker-compose.yml up -d --build
 ```
 
