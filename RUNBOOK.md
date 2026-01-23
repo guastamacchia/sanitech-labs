@@ -11,21 +11,20 @@ Questo runbook raccoglie le procedure operative principali per l’ambiente di s
 
 ### Backend (stack completo)
 ```bash
-cd sanitech-svc
-bash scripts/up.sh
-bash scripts/logs.sh     # log aggregati
-bash scripts/status.sh   # stato servizi
-bash scripts/down.sh     # stop (REMOVE_VOLUMES=true per pulire i volumi)
+bash scripts/backend/up.sh
+bash scripts/backend/logs.sh     # log aggregati
+bash scripts/backend/status.sh   # stato servizi
+bash scripts/backend/down.sh     # stop (REMOVE_VOLUMES=true per pulire i volumi)
 ```
 
 ### Backend (make compose)
-Da `sanitech-svc`:
+Da repository root:
 ```bash
-make compose-up
-make compose-up-infra
-make compose-down
-make compose-config
-make env-print
+make -C sanitech-svc compose-up
+make -C sanitech-svc compose-up-infra
+make -C sanitech-svc compose-down
+make -C sanitech-svc compose-config
+make -C sanitech-svc env-print
 ```
 
 ### Frontend
@@ -46,6 +45,11 @@ docker compose -f ../infra/fe/docker-compose.yml up -d --build
 - Liveness: `/actuator/health/liveness`
 - Readiness: `/actuator/health/readiness`
 - Metriche: `/actuator/prometheus`
+
+## Script di test
+- Backend stack: `scripts/backend/*`
+- Frontend stack: `scripts/frontend/*`
+- Smoke/loop per servizio: `scripts/services/<svc-name>/*`
 
 ## Runbook servizi backend
 

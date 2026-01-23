@@ -14,11 +14,10 @@ Monorepo della piattaforma **Sanitech**.
 
 ### Backend (stack completo)
 ```bash
-cd sanitech-svc
-bash scripts/up.sh            # avvia tutto lo stack
-# logs:   bash scripts/logs.sh
-# stop:   bash scripts/down.sh
-# stato:  bash scripts/status.sh
+bash scripts/backend/up.sh            # avvia tutto lo stack
+# logs:   bash scripts/backend/logs.sh
+# stop:   bash scripts/backend/down.sh
+# stato:  bash scripts/backend/status.sh
 ```
 
 ### Frontend
@@ -36,6 +35,7 @@ docker compose -f ../infra/fe/docker-compose.yml up -d --build
 - `infra/svc`: docker compose e provisioning (Keycloak, Prometheus, Grafana, MinIO, Kafka, ecc.).
 - `sanitech-fe`: micro‑frontend e script di build/avvio.
 - `sanitech-svc`: microservizi backend, Makefile aggregatore e script di stack.
+- `scripts/`: script centralizzati per backend, frontend e smoke test dei servizi.
 
 ## Backend: servizi e porte
 
