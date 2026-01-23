@@ -11,10 +11,10 @@ Questo runbook raccoglie le procedure operative principali per l’ambiente di s
 
 ### Backend (stack completo)
 ```bash
-bash scripts/backend/up.sh
-bash scripts/backend/logs.sh     # log aggregati
-bash scripts/backend/status.sh   # stato servizi
-bash scripts/backend/down.sh     # stop (REMOVE_VOLUMES=true per pulire i volumi)
+bash .script/backend/up.sh
+bash .script/backend/logs.sh     # log aggregati
+bash .script/backend/status.sh   # stato servizi
+bash .script/backend/down.sh     # stop (REMOVE_VOLUMES=true per pulire i volumi)
 ```
 
 ### Backend (make compose)
@@ -45,17 +45,17 @@ URL:
 Legacy (micro‑frontend statici via Docker Compose):
 ```bash
 cd sanitech-fe
-docker compose -f ../infra/fe/docker-compose.yml up -d --build
+docker compose -f ../.infra/fe/docker-compose.yml up -d --build
 ```
 
 Dockerfile:
-- I Dockerfile legacy dei micro‑frontend sono in `../infra/fe/dockerfiles/`.
+- I Dockerfile legacy dei micro‑frontend sono in `../.infra/fe/dockerfiles/`.
 - La SPA Angular può essere containerizzata separatamente (es. con Nginx) se richiesto.
 
 Layout:
 - `src`: SPA Angular (portale pubblico + area privata con ruoli).
-- `../infra/fe/dockerfiles/`: Dockerfile legacy dei micro‑frontend statici rimossi.
-- `scripts/frontend/`: helper per up/down/logs/status.
+- `../.infra/fe/dockerfiles/`: Dockerfile legacy dei micro‑frontend statici rimossi.
+- `.script/frontend/`: helper per up/down/logs/status.
 
 Note:
 - Presuppone backend su http://localhost:8080 e Keycloak su http://localhost:8081.
@@ -74,9 +74,9 @@ Note:
 - Metriche: `/actuator/prometheus`
 
 ## Script di test
-- Backend stack: `scripts/backend/*`
-- Frontend stack: `scripts/frontend/*`
-- Smoke/loop per servizio: `scripts/services/<svc-name>/*`
+- Backend stack: `.script/backend/*`
+- Frontend stack: `.script/frontend/*`
+- Smoke/loop per servizio: `.script/services/<svc-name>/*`
 
 ## Runbook servizi backend
 

@@ -2,8 +2,8 @@
 
 Monorepo della piattaforma **Sanitech**.
 
-- **Backend** (`sanitech-svc`): microservizi Spring Boot + script helper. L'infrastruttura condivisa è in `infra/svc`.
-- **Frontend** (`sanitech-fe`): SPA Angular; i micro‑frontend statici legacy sono in `infra/fe`.
+- **Backend** (`sanitech-svc`): microservizi Spring Boot + script helper. L'infrastruttura condivisa è in `.infra/svc`.
+- **Frontend** (`sanitech-fe`): SPA Angular; i micro‑frontend statici legacy sono in `.infra/fe`.
 
 ## Prerequisiti
 - Docker / Docker Compose
@@ -14,10 +14,10 @@ Monorepo della piattaforma **Sanitech**.
 
 ### Backend (stack completo)
 ```bash
-bash scripts/backend/up.sh            # avvia tutto lo stack
-# logs:   bash scripts/backend/logs.sh
-# stop:   bash scripts/backend/down.sh
-# stato:  bash scripts/backend/status.sh
+bash .script/backend/up.sh            # avvia tutto lo stack
+# logs:   bash .script/backend/logs.sh
+# stop:   bash .script/backend/down.sh
+# stato:  bash .script/backend/status.sh
 ```
 
 ### Frontend
@@ -31,15 +31,15 @@ npm start
 Legacy (micro‑frontend statici via Docker Compose):
 ```bash
 cd sanitech-fe
-docker compose -f ../infra/fe/docker-compose.yml up -d --build
+docker compose -f ../.infra/fe/docker-compose.yml up -d --build
 ```
 
 ## Struttura repository
-- `infra/fe`: docker compose e configurazioni per i micro‑frontend.
-- `infra/svc`: docker compose e provisioning (Keycloak, Prometheus, Grafana, MinIO, Kafka, ecc.).
+- `.infra/fe`: docker compose e configurazioni per i micro‑frontend.
+- `.infra/svc`: docker compose e provisioning (Keycloak, Prometheus, Grafana, MinIO, Kafka, ecc.).
 - `sanitech-fe`: SPA Angular e script di build/avvio.
 - `sanitech-svc`: microservizi backend, Makefile aggregatore e script di stack.
-- `scripts/`: script centralizzati per backend, frontend e smoke test dei servizi.
+- `.script/`: script centralizzati per backend, frontend e smoke test dei servizi.
 
 ## Backend: servizi e porte
 
@@ -115,7 +115,7 @@ npm start
 Legacy (micro‑frontend statici via Docker Compose):
 ```bash
 cd sanitech-fe
-docker compose -f ../infra/fe/docker-compose.yml up -d --build
+docker compose -f ../.infra/fe/docker-compose.yml up -d --build
 ```
 
 Configurazioni ambiente (`sanitech-fe/src/environments/`):
@@ -131,14 +131,14 @@ ng build --configuration=remote
 ```
 
 Script utili:
-- Stop: `bash scripts/frontend/down.sh` (usa `REMOVE_VOLUMES=true` per eliminare i volumi)
-- Log: `bash scripts/frontend/logs.sh`
-- Stato: `bash scripts/frontend/status.sh`
+- Stop: `bash .script/frontend/down.sh` (usa `REMOVE_VOLUMES=true` per eliminare i volumi)
+- Log: `bash .script/frontend/logs.sh`
+- Stato: `bash .script/frontend/status.sh`
 
 Layout:
 - `sanitech-fe/src`: sorgenti SPA Angular (portale pubblico + area privata con ruoli).
-- `infra/fe/dockerfiles/`: Dockerfile legacy dei micro‑frontend statici rimossi.
-- `scripts/frontend/`: helper per up/down/logs/status.
+- `.infra/fe/dockerfiles/`: Dockerfile legacy dei micro‑frontend statici rimossi.
+- `.script/frontend/`: helper per up/down/logs/status.
 
 ## Documentazione operativa
 - Runbook generale: `RUNBOOK.md`
