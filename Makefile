@@ -1,6 +1,6 @@
 # Prefer Maven already installed on the host to avoid wrapper downloads when offline.
 SVC_DIR ?= sanitech-svc
-INFRA_DIR ?= infra/svc
+INFRA_DIR ?= .infra/svc
 MVN ?= $(shell command -v mvn >/dev/null 2>&1 && echo mvn || echo ./$(SVC_DIR)/mvnw)
 POM ?= $(SVC_DIR)/pom.xml
 MODULES ?=
@@ -82,7 +82,7 @@ help:
 	@echo "  verify                mvn verify su aggregator"
 	@echo "  clean                 mvn clean su aggregator"
 	@echo ""
-	@echo "  compose-up            avvia FULL stack (infra/svc/docker-compose.yml)"
+	@echo "  compose-up            avvia FULL stack (.infra/svc/docker-compose.yml)"
 	@echo "  compose-up-infra      avvia solo infra (stack globale)"
 	@echo "  compose-down          stop + cleanup FULL stack"
 	@echo "  compose-down-infra    stop + cleanup infra (stack globale)"
