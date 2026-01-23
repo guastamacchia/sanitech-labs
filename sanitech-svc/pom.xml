@@ -10,7 +10,7 @@
 
     <!-- Parent aggregator multi-modulo -->
     <groupId>it.sanitech</groupId>
-    <artifactId>sanitect-svc</artifactId>
+    <artifactId>sanitech-svc</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
