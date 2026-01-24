@@ -192,6 +192,32 @@
       "optionalClientScopes": []
     },
     {
+      "clientId": "svc-gateway",
+      "name": "svc-gateway",
+      "secret": "svc-gateway-secret",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "*"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": []
+    },
+    {
       "clientId": "svc-notifications",
       "name": "svc-notifications",
       "secret": "svc-notifications-secret",
