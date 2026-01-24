@@ -66,7 +66,7 @@
         <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
 
         <!-- Proprietà usata dal filtering (@spring.active.profile@) -->
-        <spring.active.profile/>
+        <spring.active.profile>remote</spring.active.profile>
     </properties>
     <!-- Gestione centralizzata dipendenze e versioni -->
     <dependencyManagement>
@@ -275,6 +275,18 @@
             </activation>
             <properties>
                 <spring.active.profile>local</spring.active.profile>
+            </properties>
+        </profile>
+        <profile>
+            <id>remote</id>
+            <activation>
+                <property>
+                    <name>env.SPRING_PROFILES_ACTIVE</name>
+                    <value>remote</value>
+                </property>
+            </activation>
+            <properties>
+                <spring.active.profile>remote</spring.active.profile>
             </properties>
         </profile>
         <profile>

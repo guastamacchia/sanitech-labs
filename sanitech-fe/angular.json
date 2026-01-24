@@ -71,7 +71,7 @@
               ]
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "remote"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
@@ -84,9 +84,12 @@
             },
             "production": {
               "buildTarget": "sanitech-spa:build:production"
+            },
+            "remote": {
+              "buildTarget": "sanitech-spa:build:remote"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "remote"
         },
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
