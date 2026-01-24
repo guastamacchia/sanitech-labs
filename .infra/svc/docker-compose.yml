@@ -99,7 +99,7 @@ services:
     restart: on-failure
 
   livekit:
-    build: ./svc-televisit/livekit
+    build: ../livekit
     image: sanitech/livekit-server:${TELEVISIT_SPRING_PROFILES_ACTIVE}
     command: ["--config", "/etc/livekit/livekit.yaml"]
     ports:
