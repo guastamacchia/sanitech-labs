@@ -11,7 +11,8 @@
 
 ## Backend
 - `sanitech-svc/`: microservizi Spring Boot, Makefile e script di utilità.
-- `.infra/svc/`: infrastruttura condivisa backend (Keycloak, Kafka, Postgres, Prometheus, Grafana, MinIO) e file env.
+- `.infra/`: configurazioni centralizzate (Keycloak, Prometheus, Grafana, env).
+- `.infra/svc/`: docker compose per l'infrastruttura condivisa backend (Keycloak, Kafka, Postgres, Prometheus, Grafana, MinIO).
 
 ## Repository meta
 - `LICENSE`: licenza del progetto.

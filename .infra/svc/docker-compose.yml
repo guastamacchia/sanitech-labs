@@ -1,13 +1,13 @@
 services:
   keycloak:
-    build: ./keycloak
+    build: ../keycloak
     command: ["start-dev", "--http-port=8080", "--import-realm", "--hostname-strict=false"]
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HEALTH_ENABLED: ${KC_HEALTH_ENABLED}
     volumes:
-      - ./keycloak/realm-export:/opt/keycloak/data/import:ro
+      - ../keycloak/realm-export:/opt/keycloak/data/import:ro
     healthcheck:
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
       interval: 10s
@@ -49,7 +49,7 @@ services:
     image: mailhog/mailhog:v1.0.1
 
   prometheus:
-    build: ./prometheus
+    build: ../prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
@@ -59,7 +59,7 @@ services:
       - prometheus-data:/prometheus
 
   grafana:
-    build: ./grafana
+    build: ../grafana
     environment:
       GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
