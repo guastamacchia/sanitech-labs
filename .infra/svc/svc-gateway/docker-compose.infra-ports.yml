@@ -1,8 +1,0 @@
-services:
-  postgres:
-    ports:
-      - "5437:5432"
-  kafka:
-    ports:
-      - "9092:9092"
-      - "29092:29092"
