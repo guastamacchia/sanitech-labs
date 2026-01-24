@@ -1,6 +1,7 @@
 # Prefer Maven already installed on the host to avoid wrapper downloads when offline.
 SVC_DIR ?= sanitech-svc
 INFRA_DIR ?= .infra/svc
+ENV_DIR ?= .infra/env
 MVN ?= $(shell command -v mvn >/dev/null 2>&1 && echo mvn || echo ./$(SVC_DIR)/mvnw)
 POM ?= $(SVC_DIR)/pom.xml
 MODULES ?=
@@ -20,7 +21,7 @@ SERVICE_ENV ?= $(SERVICE_PROFILE)
 SERVICE_DIR ?= $(SVC_DIR)/$(SERVICE)
 SERVICE_COMPOSE_FILE ?= $(INFRA_DIR)/$(SERVICE)/docker-compose.yml
 SERVICE_COMPOSE_INFRA_FILE ?= $(INFRA_DIR)/$(SERVICE)/docker-compose.infra.yml
-SERVICE_ENV_FILE ?= $(INFRA_DIR)/$(SERVICE)/env/env.$(SERVICE_ENV)
+SERVICE_ENV_FILE ?= $(ENV_DIR)/env.$(SERVICE_ENV)
 SERVICE_DOCKERFILE ?= $(INFRA_DIR)/$(SERVICE)/Dockerfile
 IMAGE ?= sanitech/$(SVC_NAME):$(SERVICE_ENV)
 
@@ -30,7 +31,7 @@ IMAGE ?= sanitech/$(SVC_NAME):$(SERVICE_ENV)
 COMPOSE_FILE ?= $(INFRA_DIR)/docker-compose.yml
 COMPOSE_INFRA_PORTS_FILE ?= $(INFRA_DIR)/docker-compose.infra-ports.yml
 ENV ?= local
-COMPOSE_ENV_FILE ?= $(INFRA_DIR)/env/env.$(ENV)
+COMPOSE_ENV_FILE ?= $(ENV_DIR)/env.$(ENV)
 COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
 
 MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -61,6 +62,42 @@ SERVICE_SELECTOR = -pl $(SERVICE) -am
 # =====================================================
 include $(SERVICE_ENV_FILE)
 export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' $(SERVICE_ENV_FILE))
+
+# =====================================================
+# Mapping variabili environment specifiche per servizio
+# =====================================================
+SERVICE_PREFIX := $(strip $(if $(filter svc-admissions,$(SERVICE)),ADMISSIONS,\
+  $(if $(filter svc-audit,$(SERVICE)),AUDIT,\
+  $(if $(filter svc-consents,$(SERVICE)),CONSENTS,\
+  $(if $(filter svc-directory,$(SERVICE)),DIRECTORY,\
+  $(if $(filter svc-docs,$(SERVICE)),DOCS,\
+  $(if $(filter svc-gateway,$(SERVICE)),GATEWAY,\
+  $(if $(filter svc-notifications,$(SERVICE)),NOTIFICATIONS,\
+  $(if $(filter svc-payments,$(SERVICE)),PAYMENTS,\
+  $(if $(filter svc-prescribing,$(SERVICE)),PRESCRIBING,\
+  $(if $(filter svc-scheduling,$(SERVICE)),SCHEDULING,\
+  $(if $(filter svc-televisit,$(SERVICE)),TELEVISIT,))))))))))))
+
+SERVICE_ENV_KEYS := ADMISSIONS_URL AUDIT_URL CLUSTER_ID CONSENTS_BASE_URL CONSENTS_URL \
+  CORS_ALLOWED_ORIGINS DATABASE_HOST DATABASE_NAME DATABASE_PASSWORD DATABASE_PORT DATABASE_USER \
+  DB_URL DIRECTORY_URL DOCS_URL GF_SECURITY_ADMIN_PASSWORD GF_SECURITY_ADMIN_USER GRAFANA_URL \
+  KAFKA_ADVERTISED_HOST KAFKA_BOOTSTRAP_SERVERS KAFKA_HOST KAFKA_PORT KAFKA_PRODUCER_ACKS \
+  KAFKA_PRODUCER_LINGER_MS KAFKA_PRODUCER_RETRIES KC_HEALTH_ENABLED KEYCLOAK_ADMIN \
+  KEYCLOAK_ADMIN_PASSWORD KEYCLOAK_URL LIVEKIT_API_KEY LIVEKIT_API_SECRET LIVEKIT_CONSOLE_URL \
+  LIVEKIT_URL MAILHOG_URL MAILPIT_UI_AUTH MAIL_FROM MAIL_HOST MAIL_PORT MINIO_ROOT_PASSWORD \
+  MINIO_ROOT_USER MINIO_URL NOTIFICATIONS_URL OAUTH2_HOST OAUTH2_ISSUER_URI OAUTH2_PORT \
+  OAUTH2_REALM OAUTH2_SCHEME OPENAPI_ADMISSIONS_URL OPENAPI_AUDIT_URL OPENAPI_CONSENTS_URL \
+  OPENAPI_DIRECTORY_URL OPENAPI_DOCS_URL OPENAPI_NOTIFICATIONS_URL OPENAPI_PAYMENTS_URL \
+  OPENAPI_PRESCRIBING_URL OPENAPI_SCHEDULING_URL OPENAPI_TELEVISIT_URL PAYMENTS_URL \
+  PRESCRIBING_URL PROMETHEUS_URL RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXCONCURRENTCALLS \
+  RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXWAITDURATION \
+  RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITFORPERIOD \
+  RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITREFRESHPERIOD \
+  RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_TIMEOUTDURATION S3_ACCESS_KEY S3_BUCKET \
+  S3_ENDPOINT S3_REGION S3_SECRET_KEY SANITECH_PAYMENTS_WEBHOOK_SECRET SCHEDULING_URL \
+  SERVICE_URL SPRING_PROFILES_ACTIVE TELEVISIT_URL TESTCONTAINERS_DOCKER_HOST
+
+$(foreach key,$(SERVICE_ENV_KEYS),$(eval export $(key) := $($(SERVICE_PREFIX)_$(key))))
 
 .PHONY: build test verify clean \
 	docker-build docker-run compose-up compose-up-infra compose-down compose-down-infra compose-config \
