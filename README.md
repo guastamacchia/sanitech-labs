@@ -2,7 +2,7 @@
 
 Monorepo della piattaforma **Sanitech**.
 
-- **Backend** (`sanitech-svc`): microservizi Spring Boot + script helper. L'infrastruttura condivisa è in `.infra/svc`.
+- **Backend** (`sanitech-svc`): microservizi Spring Boot + script helper. Le configurazioni condivise sono in `.infra`, la compose in `.infra/svc`.
 - **Frontend** (`sanitech-fe`): SPA Angular; i micro‑frontend statici legacy sono in `.infra/fe`.
 
 ## Prerequisiti
@@ -36,7 +36,8 @@ docker compose -f ../.infra/fe/docker-compose.yml up -d --build
 
 ## Struttura repository
 - `.infra/fe`: docker compose e configurazioni per i micro‑frontend.
-- `.infra/svc`: docker compose e provisioning (Keycloak, Prometheus, Grafana, MinIO, Kafka, ecc.).
+- `.infra/`: configurazioni centralizzate (Keycloak, Prometheus, Grafana, env).
+- `.infra/svc`: docker compose per l'infrastruttura backend (Keycloak, Prometheus, Grafana, MinIO, Kafka, ecc.).
 - `sanitech-fe`: SPA Angular e script di build/avvio.
 - `sanitech-svc`: microservizi backend, Makefile aggregatore e script di stack.
 - `.script/`: script centralizzati per backend, frontend e smoke test dei servizi.
