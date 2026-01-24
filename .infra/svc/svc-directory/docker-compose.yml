@@ -9,12 +9,12 @@ services:
   postgres:
     build:
       context: ./postgres
-    image: sanitech/postgres-directory:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres-directory:${DIRECTORY_SPRING_PROFILES_ACTIVE}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
-      POSTGRES_DB: ${DATABASE_NAME}
-      POSTGRES_USER: ${DATABASE_USER}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DIRECTORY_DATABASE_NAME}
+      POSTGRES_USER: ${DIRECTORY_DATABASE_USER}
+      POSTGRES_PASSWORD: ${DIRECTORY_DATABASE_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -22,7 +22,7 @@ services:
       - sanitech_pgdata:/var/lib/postgresql/data
     healthcheck:
       # Verifica che il database sia pronto ad accettare connessioni
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DIRECTORY_DATABASE_USER} -d ${DIRECTORY_DATABASE_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -36,11 +36,11 @@ services:
   #
   # Listener:
   # - INTERNAL: per i container Docker (kafka:9092)
-  # - EXTERNAL: per accesso dall'host (${KAFKA_ADVERTISED_HOST}:29092)
+  # - EXTERNAL: per accesso dall'host (${DIRECTORY_KAFKA_ADVERTISED_HOST}:29092)
   kafka:
     build:
       context: ./kafka
-    image: sanitech/kafka-directory:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/kafka-directory:${DIRECTORY_SPRING_PROFILES_ACTIVE}
     ports:
       - "9092:9092"
       - "29092:29092"
@@ -62,13 +62,13 @@ services:
       # Listeners (INTERNAL/EXTERNAL/CONTROLLER)
       # =========================
       KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${KAFKA_ADVERTISED_HOST}:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://${DIRECTORY_KAFKA_ADVERTISED_HOST}:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       # =========================
       # KRaft storage
       # =========================
-      CLUSTER_ID: ${CLUSTER_ID}
+      CLUSTER_ID: ${DIRECTORY_CLUSTER_ID}
       # =========================
       # Single-node settings
       # =========================
@@ -94,17 +94,17 @@ services:
   keycloak:
     build:
       context: ./keycloak
-    image: sanitech/keycloak-directory:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/keycloak-directory:${DIRECTORY_SPRING_PROFILES_ACTIVE}
     environment:
       # =========================
       # Bootstrap admin user
       # =========================
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_ADMIN: ${DIRECTORY_KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${DIRECTORY_KEYCLOAK_ADMIN_PASSWORD}
       # =========================
       # Health endpoint
       # =========================
-      KC_HEALTH_ENABLED: ${KC_HEALTH_ENABLED}
+      KC_HEALTH_ENABLED: ${DIRECTORY_KC_HEALTH_ENABLED}
     ports:
       # Espone la console di amministrazione
       - "8081:8080"
@@ -126,7 +126,7 @@ services:
       dockerfile: infra/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-directory:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-directory:${DIRECTORY_SPRING_PROFILES_ACTIVE}
     depends_on:
       postgres:
         condition: service_healthy
@@ -134,8 +134,39 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
+    environment:
+      SPRING_PROFILES_ACTIVE: ${DIRECTORY_SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DIRECTORY_DATABASE_HOST}
+      DATABASE_PORT: ${DIRECTORY_DATABASE_PORT}
+      DATABASE_NAME: ${DIRECTORY_DATABASE_NAME}
+      DATABASE_USER: ${DIRECTORY_DATABASE_USER}
+      DATABASE_PASSWORD: ${DIRECTORY_DATABASE_PASSWORD}
+      KAFKA_HOST: ${DIRECTORY_KAFKA_HOST}
+      KAFKA_ADVERTISED_HOST: ${DIRECTORY_KAFKA_ADVERTISED_HOST}
+      KAFKA_PORT: ${DIRECTORY_KAFKA_PORT}
+      CLUSTER_ID: ${DIRECTORY_CLUSTER_ID}
+      KAFKA_PRODUCER_ACKS: ${DIRECTORY_KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${DIRECTORY_KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${DIRECTORY_KAFKA_PRODUCER_LINGER_MS}
+      KEYCLOAK_ADMIN: ${DIRECTORY_KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${DIRECTORY_KEYCLOAK_ADMIN_PASSWORD}
+      KC_HEALTH_ENABLED: ${DIRECTORY_KC_HEALTH_ENABLED}
+      OAUTH2_SCHEME: ${DIRECTORY_OAUTH2_SCHEME}
+      OAUTH2_HOST: ${DIRECTORY_OAUTH2_HOST}
+      OAUTH2_PORT: ${DIRECTORY_OAUTH2_PORT}
+      OAUTH2_REALM: ${DIRECTORY_OAUTH2_REALM}
+      CORS_ALLOWED_ORIGINS: ${DIRECTORY_CORS_ALLOWED_ORIGINS}
+      GF_SECURITY_ADMIN_USER: ${DIRECTORY_GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${DIRECTORY_GF_SECURITY_ADMIN_PASSWORD}
+      SERVICE_URL: ${DIRECTORY_SERVICE_URL}
+      KEYCLOAK_URL: ${DIRECTORY_KEYCLOAK_URL}
+      PROMETHEUS_URL: ${DIRECTORY_PROMETHEUS_URL}
+      GRAFANA_URL: ${DIRECTORY_GRAFANA_URL}
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITFORPERIOD: ${DIRECTORY_RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITFORPERIOD}
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITREFRESHPERIOD: ${DIRECTORY_RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_LIMITREFRESHPERIOD}
+      RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_TIMEOUTDURATION: ${DIRECTORY_RESILIENCE4J_RATELIMITER_INSTANCES_DIRECTORYAPI_TIMEOUTDURATION}
+      RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXCONCURRENTCALLS: ${DIRECTORY_RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXCONCURRENTCALLS}
+      RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXWAITDURATION: ${DIRECTORY_RESILIENCE4J_BULKHEAD_INSTANCES_DIRECTORYREAD_MAXWAITDURATION}
     ports:
       # Espone API REST sull'host.
       - "${PORT:-8082}:8082"
@@ -155,7 +186,7 @@ services:
   prometheus:
     build:
       context: ./prometheus
-    image: sanitech/prometheus-directory:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/prometheus-directory:${DIRECTORY_SPRING_PROFILES_ACTIVE}
     command:
       # File di configurazione statico di Prometheus.
       - "--config.file=/etc/prometheus/prometheus.yml"
@@ -181,12 +212,12 @@ services:
   grafana:
     build:
       context: ./grafana
-    image: sanitech/grafana-directory:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/grafana-directory:${DIRECTORY_SPRING_PROFILES_ACTIVE}
     depends_on:
       - prometheus
     environment:
-      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+      GF_SECURITY_ADMIN_USER: ${DIRECTORY_GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${DIRECTORY_GF_SECURITY_ADMIN_PASSWORD}
     ports:
       # Espone l'interfaccia web sull'host.
       - "3000:3000"
