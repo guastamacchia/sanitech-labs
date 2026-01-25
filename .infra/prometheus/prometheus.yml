@@ -30,6 +30,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-gateway).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-gateway:8080"
           - "host.docker.internal:8080"
           - "localhost:8080"
 
@@ -37,6 +40,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-directory).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-directory:8082"
           - "host.docker.internal:8082"
           - "localhost:8082"
 
@@ -44,6 +50,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-scheduling).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-scheduling:8083"
           - "host.docker.internal:8083"
           - "localhost:8083"
 
@@ -51,6 +60,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-admissions).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-admissions:8084"
           - "host.docker.internal:8084"
           - "localhost:8084"
 
@@ -58,6 +70,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-consents).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-consents:8085"
           - "host.docker.internal:8085"
           - "localhost:8085"
 
@@ -65,6 +80,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-docs).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-docs:8086"
           - "host.docker.internal:8086"
           - "localhost:8086"
 
@@ -72,6 +90,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-notifications).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-notifications:8087"
           - "host.docker.internal:8087"
           - "localhost:8087"
 
@@ -79,6 +100,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-audit).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-audit:8088"
           - "host.docker.internal:8088"
           - "localhost:8088"
 
@@ -86,6 +110,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-televisit).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-televisit:8089"
           - "host.docker.internal:8089"
           - "localhost:8089"
 
@@ -93,6 +120,9 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-payments).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-payments:8090"
           - "host.docker.internal:8090"
           - "localhost:8090"
 
@@ -100,5 +130,8 @@ scrape_configs:
     metrics_path: /actuator/prometheus
     static_configs:
       - targets:
+          # Prima destinazione: container docker compose (svc-prescribing).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-prescribing:8091"
           - "host.docker.internal:8091"
           - "localhost:8091"
