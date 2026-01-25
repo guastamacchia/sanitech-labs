@@ -468,11 +468,25 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
     ports:
       - "8080:8080"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${GATEWAY_DATABASE_NAME:-sanitech_gateway}
       DIRECTORY_URL: ${GATEWAY_DIRECTORY_URL:-http://svc-directory:8082}
       SCHEDULING_URL: ${GATEWAY_SCHEDULING_URL:-http://svc-scheduling:8083}
@@ -518,12 +532,26 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
     ports:
       # Espone API REST sull'host.
       - "8082:8082"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${DIRECTORY_DATABASE_NAME:-sanitech_directory}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
@@ -548,11 +576,25 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
     ports:
       - "8083:8083"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${SCHEDULING_DATABASE_NAME:-sanitech_scheduling}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
@@ -577,11 +619,25 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
     ports:
       - "8084:8084"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${ADMISSIONS_DATABASE_NAME:-sanitech_admissions}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
@@ -606,11 +662,25 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
     ports:
       - "8085:8085"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${CONSENTS_DATABASE_NAME:-sanitech_consents}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
@@ -637,12 +707,27 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
     ports:
       - "8086:8086"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${DOCS_DATABASE_NAME:-sanitech_docs}
+      S3_BUCKET: ${S3_BUCKET}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8086'"]
@@ -668,11 +753,25 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
     ports:
       - "8087:8087"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${NOTIFICATIONS_DATABASE_NAME:-sanitech_notifications}
       MAIL_HOST: ${NOTIFICATIONS_MAIL_HOST:-mailhog}
       MAIL_PORT: ${NOTIFICATIONS_MAIL_PORT:-1025}
@@ -704,11 +803,25 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
     ports:
       - "8088:8088"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${AUDIT_DATABASE_NAME:-sanitech_audit}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
@@ -735,11 +848,25 @@ services:
         condition: service_healthy
       livekit:
         condition: service_started
-    env_file:
-      - ${ENV_FILE}
     ports:
       - "8089:8089"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${TELEVISIT_DATABASE_NAME:-sanitech_televisit}
       LIVEKIT_URL: ${LIVEKIT_URL}
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
@@ -768,11 +895,25 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
     ports:
       - "8090:8090"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${PAYMENTS_DATABASE_NAME:-sanitech_payments}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
     healthcheck:
@@ -800,11 +941,25 @@ services:
         condition: service_healthy
       svc-consents:
         condition: service_healthy
-    env_file:
-      - ${ENV_FILE}
     ports:
       - "8091:8091"
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+      KAFKA_PORT: ${KAFKA_PORT}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_PRODUCER_ACKS: ${KAFKA_PRODUCER_ACKS}
+      KAFKA_PRODUCER_RETRIES: ${KAFKA_PRODUCER_RETRIES}
+      KAFKA_PRODUCER_LINGER_MS: ${KAFKA_PRODUCER_LINGER_MS}
+      OAUTH2_SCHEME: ${OAUTH2_SCHEME}
+      OAUTH2_HOST: ${OAUTH2_HOST}
+      OAUTH2_PORT: ${OAUTH2_PORT}
+      OAUTH2_REALM: ${OAUTH2_REALM}
+      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
       DATABASE_NAME: ${PRESCRIBING_DATABASE_NAME:-sanitech_prescribing}
       CONSENTS_BASE_URL: ${PRESCRIBING_CONSENTS_BASE_URL:-http://svc-consents:8085}
     healthcheck:
