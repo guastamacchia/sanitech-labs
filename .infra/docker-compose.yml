@@ -96,7 +96,9 @@ services:
   # Mailpit (SMTP + Web UI)
   # =========================
   mailhog:
-    image: axllent/mailpit:latest
+    build:
+      context: ./mailhog
+    image: sanitech/mailhog:${SPRING_PROFILES_ACTIVE}
     environment:
       MP_UI_AUTH: ${MAILPIT_UI_AUTH}
     ports:
@@ -114,7 +116,9 @@ services:
   # MinIO (S3-compatible)
   # =========================
   minio:
-    image: minio/minio:latest
+    build:
+      context: ./minio
+    image: sanitech/minio:${SPRING_PROFILES_ACTIVE}
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -134,7 +138,9 @@ services:
 
   # Inizializza bucket "sanitech-docs"
   minio-mc:
-    image: minio/mc:latest
+    build:
+      context: ./minio-mc
+    image: sanitech/minio-mc:${SPRING_PROFILES_ACTIVE}
     depends_on:
       minio:
         condition: service_healthy
