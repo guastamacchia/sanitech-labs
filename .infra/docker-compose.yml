@@ -21,6 +21,7 @@ services:
       # Health endpoint
       # =========================
       KC_HEALTH_ENABLED: ${KC_HEALTH_ENABLED}
+      # Avvio in modalità dev con DB embedded.
     ports:
       # Espone la console di amministrazione
       - "8081:8080"
