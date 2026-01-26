@@ -487,27 +487,27 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${GATEWAY_DATABASE_NAME:-sanitech_gateway}
-      DIRECTORY_URL: ${GATEWAY_DIRECTORY_URL:-http://svc-directory:8082}
-      SCHEDULING_URL: ${GATEWAY_SCHEDULING_URL:-http://svc-scheduling:8083}
-      ADMISSIONS_URL: ${GATEWAY_ADMISSIONS_URL:-http://svc-admissions:8084}
-      CONSENTS_URL: ${GATEWAY_CONSENTS_URL:-http://svc-consents:8085}
-      DOCS_URL: ${GATEWAY_DOCS_URL:-http://svc-docs:8086}
-      NOTIFICATIONS_URL: ${GATEWAY_NOTIFICATIONS_URL:-http://svc-notifications:8087}
-      AUDIT_URL: ${GATEWAY_AUDIT_URL:-http://svc-audit:8088}
-      TELEVISIT_URL: ${GATEWAY_TELEVISIT_URL:-http://svc-televisit:8089}
-      PAYMENTS_URL: ${GATEWAY_PAYMENTS_URL:-http://svc-payments:8090}
-      PRESCRIBING_URL: ${GATEWAY_PRESCRIBING_URL:-http://svc-prescribing:8091}
-      OPENAPI_DIRECTORY_URL: ${GATEWAY_OPENAPI_DIRECTORY_URL:-http://svc-directory:8082/v3/api-docs/directory}
-      OPENAPI_SCHEDULING_URL: ${GATEWAY_OPENAPI_SCHEDULING_URL:-http://svc-scheduling:8083/v3/api-docs/scheduling}
-      OPENAPI_ADMISSIONS_URL: ${GATEWAY_OPENAPI_ADMISSIONS_URL:-http://svc-admissions:8084/v3/api-docs/admissions}
-      OPENAPI_CONSENTS_URL: ${GATEWAY_OPENAPI_CONSENTS_URL:-http://svc-consents:8085/v3/api-docs/consents}
-      OPENAPI_DOCS_URL: ${GATEWAY_OPENAPI_DOCS_URL:-http://svc-docs:8086/v3/api-docs/docs}
-      OPENAPI_NOTIFICATIONS_URL: ${GATEWAY_OPENAPI_NOTIFICATIONS_URL:-http://svc-notifications:8087/v3/api-docs/notifications}
-      OPENAPI_AUDIT_URL: ${GATEWAY_OPENAPI_AUDIT_URL:-http://svc-audit:8088/v3/api-docs/audit}
-      OPENAPI_TELEVISIT_URL: ${GATEWAY_OPENAPI_TELEVISIT_URL:-http://svc-televisit:8089/v3/api-docs/televisit}
-      OPENAPI_PAYMENTS_URL: ${GATEWAY_OPENAPI_PAYMENTS_URL:-http://svc-payments:8090/v3/api-docs/payments}
-      OPENAPI_PRESCRIBING_URL: ${GATEWAY_OPENAPI_PRESCRIBING_URL:-http://svc-prescribing:8091/v3/api-docs/prescribing}
+      DATABASE_NAME: ${GATEWAY_DATABASE_NAME}
+      DIRECTORY_URL: ${GATEWAY_DIRECTORY_URL}
+      SCHEDULING_URL: ${GATEWAY_SCHEDULING_URL}
+      ADMISSIONS_URL: ${GATEWAY_ADMISSIONS_URL}
+      CONSENTS_URL: ${GATEWAY_CONSENTS_URL}
+      DOCS_URL: ${GATEWAY_DOCS_URL}
+      NOTIFICATIONS_URL: ${GATEWAY_NOTIFICATIONS_URL}
+      AUDIT_URL: ${GATEWAY_AUDIT_URL}
+      TELEVISIT_URL: ${GATEWAY_TELEVISIT_URL}
+      PAYMENTS_URL: ${GATEWAY_PAYMENTS_URL}
+      PRESCRIBING_URL: ${GATEWAY_PRESCRIBING_URL}
+      OPENAPI_DIRECTORY_URL: ${GATEWAY_OPENAPI_DIRECTORY_URL}
+      OPENAPI_SCHEDULING_URL: ${GATEWAY_OPENAPI_SCHEDULING_URL}
+      OPENAPI_ADMISSIONS_URL: ${GATEWAY_OPENAPI_ADMISSIONS_URL}
+      OPENAPI_CONSENTS_URL: ${GATEWAY_OPENAPI_CONSENTS_URL}
+      OPENAPI_DOCS_URL: ${GATEWAY_OPENAPI_DOCS_URL}
+      OPENAPI_NOTIFICATIONS_URL: ${GATEWAY_OPENAPI_NOTIFICATIONS_URL}
+      OPENAPI_AUDIT_URL: ${GATEWAY_OPENAPI_AUDIT_URL}
+      OPENAPI_TELEVISIT_URL: ${GATEWAY_OPENAPI_TELEVISIT_URL}
+      OPENAPI_PAYMENTS_URL: ${GATEWAY_OPENAPI_PAYMENTS_URL}
+      OPENAPI_PRESCRIBING_URL: ${GATEWAY_OPENAPI_PRESCRIBING_URL}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
@@ -552,7 +552,7 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${DIRECTORY_DATABASE_NAME:-sanitech_directory}
+      DATABASE_NAME: ${DIRECTORY_DATABASE_NAME}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8082'"]
@@ -595,7 +595,7 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${SCHEDULING_DATABASE_NAME:-sanitech_scheduling}
+      DATABASE_NAME: ${SCHEDULING_DATABASE_NAME}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8083'"]
@@ -638,7 +638,7 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${ADMISSIONS_DATABASE_NAME:-sanitech_admissions}
+      DATABASE_NAME: ${ADMISSIONS_DATABASE_NAME}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8084'"]
@@ -681,7 +681,7 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${CONSENTS_DATABASE_NAME:-sanitech_consents}
+      DATABASE_NAME: ${CONSENTS_DATABASE_NAME}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8085'"]
@@ -726,7 +726,7 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${DOCS_DATABASE_NAME:-sanitech_docs}
+      DATABASE_NAME: ${DOCS_DATABASE_NAME}
       S3_BUCKET: ${S3_BUCKET}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
@@ -772,14 +772,14 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${NOTIFICATIONS_DATABASE_NAME:-sanitech_notifications}
-      MAIL_HOST: ${NOTIFICATIONS_MAIL_HOST:-mailhog}
-      MAIL_PORT: ${NOTIFICATIONS_MAIL_PORT:-1025}
+      DATABASE_NAME: ${NOTIFICATIONS_DATABASE_NAME}
+      MAIL_HOST: ${NOTIFICATIONS_MAIL_HOST}
+      MAIL_PORT: ${NOTIFICATIONS_MAIL_PORT}
       MAIL_FROM: ${NOTIFICATIONS_MAIL_FROM}
       MAILPIT_UI_AUTH: ${MAILPIT_UI_AUTH}
       MAILHOG_URL: ${NOTIFICATIONS_MAILHOG_URL}
-      SMTP_HOST: ${NOTIFICATIONS_MAIL_HOST:-mailhog}
-      SMTP_PORT: ${NOTIFICATIONS_MAIL_PORT:-1025}
+      SMTP_HOST: ${NOTIFICATIONS_MAIL_HOST}
+      SMTP_PORT: ${NOTIFICATIONS_MAIL_PORT}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8087'"]
@@ -822,7 +822,7 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${AUDIT_DATABASE_NAME:-sanitech_audit}
+      DATABASE_NAME: ${AUDIT_DATABASE_NAME}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8088'"]
@@ -867,7 +867,7 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${TELEVISIT_DATABASE_NAME:-sanitech_televisit}
+      DATABASE_NAME: ${TELEVISIT_DATABASE_NAME}
       LIVEKIT_URL: ${LIVEKIT_URL}
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
@@ -914,7 +914,7 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${PAYMENTS_DATABASE_NAME:-sanitech_payments}
+      DATABASE_NAME: ${PAYMENTS_DATABASE_NAME}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
@@ -960,8 +960,8 @@ services:
       OAUTH2_PORT: ${OAUTH2_PORT}
       OAUTH2_REALM: ${OAUTH2_REALM}
       OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      DATABASE_NAME: ${PRESCRIBING_DATABASE_NAME:-sanitech_prescribing}
-      CONSENTS_BASE_URL: ${PRESCRIBING_CONSENTS_BASE_URL:-http://svc-consents:8085}
+      DATABASE_NAME: ${PRESCRIBING_DATABASE_NAME}
+      CONSENTS_BASE_URL: ${PRESCRIBING_CONSENTS_BASE_URL}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8091'"]
