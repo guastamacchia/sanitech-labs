@@ -7,5 +7,11 @@
 # - riduzione del rumore
 logging:
   level:
+    # Livello di default per tutte le librerie e framework.
+    # Mantenerlo a INFO per evitare overhead eccessivo.
     root: INFO
+
+    # Livello di logging per il dominio applicativo.
+    # In produzione NON aumentare oltre INFO
+    # se non per interventi temporanei e controllati.
     it.sanitech.notifications: INFO

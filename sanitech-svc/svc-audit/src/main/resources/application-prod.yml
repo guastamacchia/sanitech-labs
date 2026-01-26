@@ -1,18 +1,17 @@
-spring:
-  datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
-
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${OAUTH2_ISSUER_URI}
-
-  kafka:
-    bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
-
+# =========================
+# Profile: prod
+# =========================
+# Configurazioni specifiche per il profilo "prod".
+# Ottimizzate per ambienti di produzione:
+# - logging essenziale
+# - riduzione del rumore
 logging:
   level:
+    # Livello di default per tutte le librerie e framework.
+    # Mantenerlo a INFO per evitare overhead eccessivo.
     root: INFO
+
+    # Livello di logging per il dominio applicativo.
+    # In produzione NON aumentare oltre INFO
+    # se non per interventi temporanei e controllati.
+    it.sanitech.audit: INFO
