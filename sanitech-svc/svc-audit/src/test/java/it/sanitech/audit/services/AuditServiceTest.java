@@ -33,6 +33,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.slf4j.MDC;
 
 class AuditServiceTest {
 
@@ -71,7 +72,13 @@ class AuditServiceTest {
             );
         });
 
-        AuditEventDto result = service.recordFromApi(dto, auth, "10.0.0.1");
+        MDC.put("traceId", "trace-1");
+        AuditEventDto result;
+        try {
+            result = service.recordFromApi(dto, auth, "10.0.0.1");
+        } finally {
+            MDC.remove("traceId");
+        }
 
         assertThat(result.id()).isEqualTo(101L);
         assertThat(result.outcome()).isEqualTo(AppConstants.Audit.OUTCOME_SUCCESS);
