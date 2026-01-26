@@ -34,7 +34,7 @@ class OutboxKafkaPublisherTest {
         props.getPublisher().setEnabled(true);
         props.getPublisher().setBatchSize(100);
         props.getPublisher().setSendTimeoutMs(1000);
-        props.getPublisher().setTopic(AppConstants.Outbox.TOPIC_PAYMENTS_EVENTS);
+        props.getPublisher().setTopic("payments.events");
 
         OutboxEvent evt = OutboxEvent.newUnpublished(
                 AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT,
