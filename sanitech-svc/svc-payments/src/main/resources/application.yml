@@ -72,8 +72,8 @@ sanitech:
       secret: ${SANITECH_PAYMENTS_WEBHOOK_SECRET:change-me}
 
   outbox:
-    topic: ${OUTBOX_TOPIC:payments.events}
     publisher:
+      topic: ${OUTBOX_TOPIC:payments.events}
       enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 

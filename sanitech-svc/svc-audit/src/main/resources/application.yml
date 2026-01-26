@@ -117,8 +117,8 @@ sanitech:
       topics: ${AUDIT_INGESTION_TOPICS:directory.events,consents.events}
 
   outbox:
-    topic: ${OUTBOX_TOPIC:audit.events}
     publisher:
+      topic: ${OUTBOX_TOPIC:audit.events}
       enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 

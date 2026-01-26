@@ -152,8 +152,8 @@ sanitech:
   # Configurazione del pattern Outbox
   # per la pubblicazione affidabile di eventi.
   outbox:
-    topic: ${OUTBOX_TOPIC:directory.events}
     publisher:
+      topic: ${OUTBOX_TOPIC:directory.events}
       enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       # Frequenza del job di pubblicazione (ms).
       fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}

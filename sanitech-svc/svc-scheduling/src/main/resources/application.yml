@@ -115,8 +115,8 @@ sanitech:
     version: v1
 
   outbox:
-    topic: ${OUTBOX_TOPIC:scheduling.events}
     publisher:
+      topic: ${OUTBOX_TOPIC:scheduling.events}
       enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
