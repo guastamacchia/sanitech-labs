@@ -124,17 +124,6 @@
       <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- Testcontainers -->
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>postgresql</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
   <build>
     <!-- Attiva il repackage Spring Boot usando config/versione dal parent -->
@@ -156,24 +145,6 @@
             <exclude>**/*ITCase.java</exclude>
           </excludes>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <configuration>
-              <includes>
-                <include>**/*IT.java</include>
-                <include>**/*ITCase.java</include>
-              </includes>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

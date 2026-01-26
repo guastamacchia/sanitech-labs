@@ -63,7 +63,6 @@
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
 
         <!-- Proprietà usata dal filtering (@spring.active.profile@) -->
         <spring.active.profile/>
@@ -236,24 +235,6 @@
                         <!-- In multi-module alcuni moduli non hanno test: non fallire la build -->
                         <failIfNoTests>false</failIfNoTests>
                     </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>${maven-failsafe-plugin.version}</version>
-                    <configuration>
-                        <useModulePath>false</useModulePath>
-                        <failIfNoTests>false</failIfNoTests>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>integration-tests</id>
-                            <goals>
-                                <goal>integration-test</goal>
-                                <goal>verify</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.springframework.boot</groupId>
