@@ -63,6 +63,7 @@
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+        <bytebuddy.experimental>true</bytebuddy.experimental>
 
         <!-- Proprietà usata dal filtering (@spring.active.profile@) -->
         <spring.active.profile/>
@@ -232,6 +233,7 @@
                     <version>${maven-surefire-plugin.version}</version>
                     <configuration>
                         <useModulePath>false</useModulePath>
+                        <argLine>-Dnet.bytebuddy.experimental=${bytebuddy.experimental}</argLine>
                         <!-- In multi-module alcuni moduli non hanno test: non fallire la build -->
                         <failIfNoTests>false</failIfNoTests>
                     </configuration>
