@@ -8,7 +8,6 @@ import it.sanitech.outbox.persistence.OutboxRepository;
 import it.sanitech.outbox.publisher.OutboxKafkaPublisher;
 import it.sanitech.outbox.publisher.OutboxKafkaSender;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
@@ -49,8 +48,8 @@ class OutboxKafkaPublisherTest {
                 .build();
 
         doAnswer(invocation -> {
-            TransactionCallbackWithoutResult callback = invocation.getArgument(0);
-            callback.doInTransaction(null);
+            java.util.function.Consumer<?> callback = invocation.getArgument(0);
+            callback.accept(null);
             return null;
         }).when(tx).executeWithoutResult(any());
 
