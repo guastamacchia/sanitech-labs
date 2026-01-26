@@ -17,8 +17,7 @@ import reactor.core.publisher.Mono;
         controllers = OpenApiProxyController.class,
         excludeAutoConfiguration = {
                 org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration.class,
-                org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration.class,
-                org.springframework.boot.autoconfigure.security.reactive.ReactiveOAuth2ResourceServerAutoConfiguration.class
+                org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration.class
         }
 )
 class OpenApiProxyControllerTest {
