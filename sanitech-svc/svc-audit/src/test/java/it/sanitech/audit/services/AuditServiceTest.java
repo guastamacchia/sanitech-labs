@@ -30,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
@@ -168,7 +169,7 @@ class AuditServiceTest {
                 .build();
 
         Page<AuditEvent> page = new PageImpl<>(List.of(event), PageRequest.of(0, 20), 1);
-        when(repository.findAll(any(), any(Pageable.class))).thenReturn(page);
+        when(repository.findAll(Mockito.<Specification<AuditEvent>>any(), any(Pageable.class))).thenReturn(page);
         when(mapper.toDto(event)).thenReturn(new AuditEventDto(
                 event.getId(),
                 event.getOccurredAt(),
@@ -196,6 +197,6 @@ class AuditServiceTest {
         );
 
         assertThat(result.getContent()).hasSize(1);
-        verify(repository).findAll(any(), any(Pageable.class));
+        verify(repository).findAll(Mockito.<Specification<AuditEvent>>any(), any(Pageable.class));
     }
 }
