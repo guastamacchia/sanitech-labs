@@ -4,7 +4,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -66,7 +65,7 @@ class ConsentControllerTest {
                         .param("patientId", "1")
                         .param("doctorId", "2")
                         .param("scope", "RECORDS")
-                        .with(authentication(auth)))
+                        .principal(auth))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.allowed").value(true));
     }
@@ -89,7 +88,7 @@ class ConsentControllerTest {
 
         JwtAuthenticationToken auth = patientAuth(77L);
 
-        mockMvc.perform(get(path).with(authentication(auth)))
+        mockMvc.perform(get(path).principal(auth))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(10));
     }
@@ -113,7 +112,7 @@ class ConsentControllerTest {
         JwtAuthenticationToken auth = patientAuth(77L);
 
         mockMvc.perform(post(path)
-                        .with(authentication(auth))
+                        .principal(auth)
                         .contentType("application/json")
                         .content("{" +
                                 "\"doctorId\":12," +
@@ -130,7 +129,7 @@ class ConsentControllerTest {
 
         JwtAuthenticationToken auth = patientAuth(77L);
 
-        mockMvc.perform(delete(path).with(authentication(auth)))
+        mockMvc.perform(delete(path).principal(auth))
                 .andExpect(status().isOk());
 
         verify(consentService).revokeForPatient(77L, 12L, ConsentScope.DOCS);
