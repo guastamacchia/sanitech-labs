@@ -1,41 +1,17 @@
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          # In produzione impostare via env (es. https://auth.sanitech.it/realms/sanitech)
-          issuer-uri: ${OAUTH2_ISSUER_URI}
-
-sanitech:
-  gateway:
-    services:
-      directory: ${DIRECTORY_URL}
-      scheduling: ${SCHEDULING_URL}
-      admissions: ${ADMISSIONS_URL}
-      consents: ${CONSENTS_URL}
-      docs: ${DOCS_URL}
-      notifications: ${NOTIFICATIONS_URL}
-      audit: ${AUDIT_URL}
-      televisit: ${TELEVISIT_URL}
-      payments: ${PAYMENTS_URL}
-      prescribing: ${PRESCRIBING_URL}
-
-    openapi:
-      targets:
-        directory: ${OPENAPI_DIRECTORY_URL}
-        scheduling: ${OPENAPI_SCHEDULING_URL}
-        admissions: ${OPENAPI_ADMISSIONS_URL}
-        consents: ${OPENAPI_CONSENTS_URL}
-        docs: ${OPENAPI_DOCS_URL}
-        notifications: ${OPENAPI_NOTIFICATIONS_URL}
-        audit: ${OPENAPI_AUDIT_URL}
-        televisit: ${OPENAPI_TELEVISIT_URL}
-        payments: ${OPENAPI_PAYMENTS_URL}
-        prescribing: ${OPENAPI_PRESCRIBING_URL}
-
+# =========================
+# Profile: prod
+# =========================
+# Configurazioni specifiche per il profilo "prod".
+# Ottimizzate per ambienti di produzione:
+# - logging essenziale
+# - riduzione del rumore
 logging:
   level:
+    # Livello di default per tutte le librerie e framework.
+    # Mantenerlo a INFO per evitare overhead eccessivo.
     root: INFO
-  pattern:
-    # Log testuale (no JSON), con traceId se presente.
-    console: "%d{ISO8601} %-5level [%X{traceId:-}] %logger{36} - %msg%n"
+
+    # Livello di logging per il dominio applicativo.
+    # In produzione NON aumentare oltre INFO
+    # se non per interventi temporanei e controllati.
+    it.sanitech.gateway: INFO
