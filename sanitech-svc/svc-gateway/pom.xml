@@ -12,6 +12,10 @@
   <name>Sanitech - svc-gateway</name>
   <description>Sanitech API Gateway (Spring Cloud Gateway)</description>
   <dependencies>
+    <dependency>
+      <groupId>it.sanitech</groupId>
+      <artifactId>commons-libraries</artifactId>
+    </dependency>
     <!-- Reactive Gateway -->
     <dependency>
       <groupId>org.springframework.cloud</groupId>
@@ -39,6 +43,12 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+    <!-- Config metadata per IDE (opzionale) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
     </dependency>
     <!-- Swagger UI hosted by gateway, specs fetched from downstream services -->
     <dependency>
