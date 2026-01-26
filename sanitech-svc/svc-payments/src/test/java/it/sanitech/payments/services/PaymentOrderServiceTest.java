@@ -97,11 +97,11 @@ class PaymentOrderServiceTest {
 
         PaymentOrderService service = new PaymentOrderService(repository, mapper, publisher, accessGuard);
 
-        JwtAuthenticationToken auth = JwtAuthenticationToken.withTokenValue("token")
+        Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "none")
                 .claim("sub", "user")
-                .authorities(new SimpleGrantedAuthority(AppConstants.Security.ROLE_PATIENT))
                 .build();
+        JwtAuthenticationToken auth = new JwtAuthenticationToken(jwt, java.util.List.of(new SimpleGrantedAuthority(AppConstants.Security.ROLE_PATIENT)));
 
         assertThat(service.listForCurrentUser(org.springframework.data.domain.PageRequest.of(0, 5), auth).getTotalElements())
                 .isZero();
