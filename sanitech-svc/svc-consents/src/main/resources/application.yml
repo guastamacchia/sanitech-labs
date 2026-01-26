@@ -1,124 +1,96 @@
+# =========================
+# Server
+# =========================
 server:
-  # Porta HTTP del microservizio
-  port: 8085
+  port: ${SERVER_PORT:8085}
 
+# =========================
+# Spring Application
+# =========================
 spring:
   application:
-    # Nome applicativo (utile per log/metriche)
-    name: svc-consents
+    name: "@project.artifactId@"
+  profiles:
+    active: "@spring.active.profile@"
 
+  # =========================
+  # Database (PostgreSQL)
+  # =========================
   datasource:
-    # In locale: DB Postgres dedicato al servizio.
-    # In produzione: sovrascrivere tramite variabile DB_URL.
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/sanitech_consents}
-    username: ${DB_USER:sanitech}
-    password: ${DB_PASSWORD:sanitech}
+    url: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT:5432}/${DATABASE_NAME}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
 
+  # =========================
+  # JPA / Hibernate
+  # =========================
   jpa:
+    open-in-view: false
     hibernate:
-      # Il DDL è gestito esclusivamente da Flyway: Hibernate deve solo validare.
       ddl-auto: validate
     properties:
-      hibernate.format_sql: true
+      hibernate:
+        default_batch_fetch_size: 50
+        show_sql: false
+        format_sql: false
 
+  # =========================
+  # Flyway
+  # =========================
   flyway:
     enabled: true
     locations: classpath:db/migration
 
+  # =========================
+  # Security / OAuth2 Resource Server
+  # =========================
   security:
     oauth2:
       resourceserver:
         jwt:
-          # URI dell’issuer OIDC (Keycloak).
-          # Deve combaciare con realm configurato.
-          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8081/realms/sanitech}
+          jwk-set-uri: ${OAUTH2_SCHEME}://${OAUTH2_HOST}:${OAUTH2_PORT}/realms/${OAUTH2_REALM}/protocol/openid-connect/certs
 
+  # =========================
+  # Kafka
+  # =========================
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
     producer:
-      # Serializzazione: inviamo il payload JSON come stringa.
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      retries: ${KAFKA_PRODUCER_RETRIES:10}
       properties:
-        acks: all
-        retries: 5
-        retry.backoff.ms: 200
-        delivery.timeout.ms: 120000
+        acks: ${KAFKA_PRODUCER_ACKS:all}
+        linger.ms: ${KAFKA_PRODUCER_LINGER_MS:5}
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "health,info,metrics,prometheus"
-  endpoint:
-    health:
-      probes:
-        enabled: true
-
-# Resilience4j
-resilience4j:
-  retry:
-    instances:
-      outboxPublish:
-        maxAttempts: 3
-        waitDuration: 500ms
-        enableExponentialBackoff: true
-        exponentialBackoffMultiplier: 2.0
-        retryExceptions:
-          - org.apache.kafka.common.errors.TimeoutException
-          - org.apache.kafka.common.errors.NetworkException
-          - org.springframework.kafka.KafkaException
-
-  ratelimiter:
-    instances:
-      consentsApi:
-        # Limite per singola istanza (adattare in prod con gateway o Redis).
-        limitForPeriod: 60
-        limitRefreshPeriod: 1s
-        timeoutDuration: 0
-
-  bulkhead:
-    instances:
-      consentsRead:
-        maxConcurrentCalls: 50
-        maxWaitDuration: 0
-
+# =========================
+# Sanitech Commons
+# =========================
 sanitech:
   cors:
     enabled: true
-    # Pattern di path su cui applicare CORS (utile se la UI chiama direttamente il servizio).
     path-patterns:
-      - /api/**
-
-    # Origini autorizzate (in dev aggiungere localhost:4200 se necessario).
+      - "/api/**"
     allowed-origins:
-      - ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
-
+      - "${CORS_ALLOWED_ORIGINS}"
     allowed-methods:
-      - GET
-      - POST
-      - PUT
-      - PATCH
-      - DELETE
-      - OPTIONS
-
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "PATCH"
+      - "DELETE"
+      - "OPTIONS"
     allowed-headers:
-      - Authorization
-      - Content-Type
-      - Accept
-      - Origin
-      - X-Requested-With
-      - X-Request-Id
-
+      - "Authorization"
+      - "Content-Type"
+      - "Accept"
+      - "Origin"
+      - "X-Requested-With"
+      - "X-Request-Id"
     exposed-headers:
-      - Location
-      - X-Request-Id
-
-    # Se true, il browser può inviare cookie/authorization in cross-site.
-    # Nota: non compatibile con origini wildcard.
+      - "Location"
+      - "X-Request-Id"
     allow-credentials: false
-
-    # Cache del preflight (OPTIONS) in secondi.
     max-age: 3600
 
   security:
@@ -143,10 +115,26 @@ sanitech:
   outbox:
     topic: ${OUTBOX_TOPIC:consents.events}
     publisher:
-      # Delay tra un ciclo e l'altro di pubblicazione eventi outbox.
       enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
+# =========================
+# Management / Actuator
+# =========================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# =========================
+# OpenAPI / Swagger
+# =========================
 springdoc:
   api-docs:
     enabled: true
@@ -158,3 +146,40 @@ springdoc:
     tagsSorter: alpha
   default-produces-media-type: application/json
   default-consumes-media-type: application/json
+
+# =========================
+# Resilience4j
+# =========================
+resilience4j:
+  retry:
+    instances:
+      outboxPublish:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2.0
+        retryExceptions:
+          - org.apache.kafka.common.errors.TimeoutException
+          - org.apache.kafka.common.errors.NetworkException
+          - org.springframework.kafka.KafkaException
+
+  ratelimiter:
+    instances:
+      consentsApi:
+        limitForPeriod: 60
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+
+  bulkhead:
+    instances:
+      consentsRead:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 0
+
+# =========================
+# Logging
+# =========================
+logging:
+  level:
+    root: INFO
+    it.sanitech: DEBUG

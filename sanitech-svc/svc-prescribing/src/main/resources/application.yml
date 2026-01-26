@@ -1,62 +1,80 @@
+# =========================
+# Server
+# =========================
 server:
-  port: ${PORT:8091}
+  port: ${SERVER_PORT:8091}
 
+# =========================
+# Spring Application
+# =========================
 spring:
   application:
-    name: svc-prescribing
+    name: "@project.artifactId@"
+  profiles:
+    active: "@spring.active.profile@"
 
-  # Datasource Postgres (runtime). In locale, usa .infra/docker-compose.yml (porta 5443).
+  # =========================
+  # Database (PostgreSQL)
+  # =========================
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5443/sanitech_prescribing}
-    username: ${DB_USER:sanitech}
-    password: ${DB_PASSWORD:sanitech}
+    url: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT:5432}/${DATABASE_NAME}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
 
+  # =========================
+  # JPA / Hibernate
+  # =========================
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: none # Schema gestito da Flyway (db/migration)
+      ddl-auto: validate
     properties:
       hibernate:
-        format_sql: true
+        default_batch_fetch_size: 50
+        show_sql: false
+        format_sql: false
         jdbc:
           time_zone: UTC
 
+  # =========================
+  # Flyway
+  # =========================
   flyway:
     enabled: true
     locations: classpath:db/migration
 
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-
+  # =========================
+  # Security / OAuth2 Resource Server
+  # =========================
   security:
     oauth2:
       resourceserver:
         jwt:
-          # Issuer URI di Keycloak (realm Sanitech). In produzione via environment.
-          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8081/realms/sanitech}
+          jwk-set-uri: ${OAUTH2_SCHEME}://${OAUTH2_HOST}:${OAUTH2_PORT}/realms/${OAUTH2_REALM}/protocol/openid-connect/certs
 
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
+  # =========================
+  # Kafka
+  # =========================
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      retries: ${KAFKA_PRODUCER_RETRIES:10}
+      properties:
+        acks: ${KAFKA_PRODUCER_ACKS:all}
+        linger.ms: ${KAFKA_PRODUCER_LINGER_MS:5}
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,prometheus
-  endpoint:
-    health:
-      probes:
-        enabled: true
-
-# Config CORS: per default non abilitiamo origini, così il servizio è "closed by default".
+# =========================
+# Sanitech Commons
+# =========================
 sanitech:
   cors:
     enabled: true
     path-patterns:
       - /api/**
     allowed-origins:
-      - ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+      - "${CORS_ALLOWED_ORIGINS}"
     allowed-methods:
       - "GET"
       - "POST"
@@ -92,16 +110,40 @@ sanitech:
 
   integrations:
     consents:
-      # Base URL di svc-consents (in locale può essere esposto da un altro compose/root).
       base-url: ${CONSENTS_BASE_URL:http://localhost:8085}
 
   outbox:
     topic: ${OUTBOX_TOPIC:prescribing.events}
     publisher:
-      # Frequenza (ms) del job che pubblica gli eventi Outbox verso Kafka.
       enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
+# =========================
+# Management / Actuator
+# =========================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# =========================
+# OpenAPI / Swagger
+# =========================
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+# =========================
+# Resilience4j
+# =========================
 resilience4j:
   ratelimiter:
     instances:
@@ -144,7 +186,10 @@ resilience4j:
         slowCallRateThreshold: 50
         slowCallDurationThreshold: 2s
 
+# =========================
+# Logging
+# =========================
 logging:
   level:
     root: INFO
-    it.sanitech.prescribing: INFO
+    it.sanitech: DEBUG

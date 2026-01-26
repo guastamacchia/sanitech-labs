@@ -1,117 +1,102 @@
+# =========================
+# Server
+# =========================
+# Configurazione del server HTTP embedded (Tomcat).
 server:
-  # Porta HTTP del microservizio Admissions (ricoveri + posti letto)
-  port: 8084
+  port: ${SERVER_PORT:8084}
 
+# =========================
+# Spring Application
+# =========================
+# Configurazione base dell'applicazione Spring Boot.
 spring:
   application:
-    # Nome logico dell'applicazione (utile per log/metriche)
-    name: svc-admissions
+    # Nome logico del microservizio.
+    # Usato per logging, metriche e tracing.
+    name: "@project.artifactId@"
+  profiles:
+    active: "@spring.active.profile@"
 
+  # =========================
+  # Database (PostgreSQL)
+  # =========================
   datasource:
-    # URL JDBC PostgreSQL. In Docker/K8s tipicamente arriva via env (DB_URL).
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/sanitech_admissions}
-    username: ${DB_USER:sanitech}
-    password: ${DB_PASSWORD:sanitech}
+    url: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT:5432}/${DATABASE_NAME}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
 
+  # =========================
+  # JPA / Hibernate
+  # =========================
   jpa:
+    open-in-view: false
     hibernate:
-      # Il modello viene validato contro lo schema Flyway (non generato a runtime).
       ddl-auto: validate
     properties:
-      hibernate.format_sql: true
+      hibernate:
+        default_batch_fetch_size: 50
+        show_sql: false
+        format_sql: false
 
+  # =========================
+  # Flyway
+  # =========================
   flyway:
     enabled: true
     locations: classpath:db/migration
 
+  # =========================
+  # Security / OAuth2 Resource Server
+  # =========================
   security:
     oauth2:
       resourceserver:
         jwt:
-          # Issuer OIDC di Keycloak. Deve combaciare con realm configurato.
-          issuer-uri: ${OAUTH2_ISSUER_URI:http://localhost:8081/realms/sanitech}
+          jwk-set-uri: ${OAUTH2_SCHEME}://${OAUTH2_HOST}:${OAUTH2_PORT}/realms/${OAUTH2_REALM}/protocol/openid-connect/certs
 
+  # =========================
+  # Kafka
+  # =========================
   kafka:
-    # Bootstrap servers (in prod sostituire con cluster reale)
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
     producer:
-      # Serializer base: inviamo payload JSON come stringa.
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      retries: ${KAFKA_PRODUCER_RETRIES:10}
       properties:
-        # Conferma di scrittura dai replica in-sync
-        acks: all
-        # Retry lato producer Kafka (oltre ai retry applicativi Resilience4j)
-        retries: 5
-        # Backoff tra i retry lato Kafka (ms)
-        retry.backoff.ms: 200
-        # Tempo massimo complessivo di consegna
-        delivery.timeout.ms: 120000
+        acks: ${KAFKA_PRODUCER_ACKS:all}
+        linger.ms: ${KAFKA_PRODUCER_LINGER_MS:5}
 
-management:
-  endpoints:
-    web:
-      # Endpoints esposti: health/metrics/prometheus per osservabilità.
-      exposure:
-        include: "health,info,metrics,prometheus"
-  endpoint:
-    health:
-      probes:
-        # Abilita readiness/liveness probes (K8s)
-        enabled: true
-
-# Resilience4j
-resilience4j:
-  retry:
-    instances:
-      outboxPublish:
-        # 1 + 2 retry = 3 tentativi complessivi per evento
-        maxAttempts: 3
-        # Attesa iniziale tra tentativi
-        waitDuration: 500ms
-        # Backoff esponenziale (500ms, 1000ms, 2000ms, ...)
-        enableExponentialBackoff: true
-        exponentialBackoffMultiplier: 2.0
-        # Eccezioni su cui applicare retry
-        retryExceptions:
-          - org.apache.kafka.common.errors.TimeoutException
-          - org.apache.kafka.common.errors.NetworkException
-          - org.springframework.kafka.KafkaException
-
-  ratelimiter:
-    instances:
-      admissionsApi:
-        # Limite di richieste per intervallo per singola istanza
-        limitForPeriod: 60
-        limitRefreshPeriod: 1s
-        # Se non c'è permesso immediato, fail-fast (HTTP 429)
-        timeoutDuration: 0
-
-  bulkhead:
-    instances:
-      admissionsRead:
-        # Protezione da saturazione thread su chiamate di lettura
-        maxConcurrentCalls: 50
-        maxWaitDuration: 0
-
+# =========================
+# Sanitech Commons
+# =========================
 sanitech:
   cors:
     enabled: true
-    # Pattern di path su cui applicare il filtro CORS.
     path-patterns:
-      - /api/**
-    # Origini autorizzate (no wildcard se allow-credentials=true).
+      - "/api/**"
     allowed-origins:
-      - ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
-    # Metodi HTTP permessi nelle richieste CORS.
-    allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
-    # Header ammessi nella richiesta CORS.
-    allowed-headers: [Authorization, Content-Type, Accept, Origin, X-Requested-With, X-Request-Id]
-    # Header che il client è autorizzato a leggere.
-    exposed-headers: [Location, Content-Disposition, X-Request-Id, X-Total-Count]
-    # Se true consente cookie/Authorization cross-site (richiede origini esplicite).
+      - "${CORS_ALLOWED_ORIGINS}"
+    allowed-methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "PATCH"
+      - "DELETE"
+      - "OPTIONS"
+    allowed-headers:
+      - "Authorization"
+      - "Content-Type"
+      - "Accept"
+      - "Origin"
+      - "X-Requested-With"
+      - "X-Request-Id"
+    exposed-headers:
+      - "Location"
+      - "Content-Disposition"
+      - "X-Request-Id"
+      - "X-Total-Count"
     allow-credentials: false
-    # Cache del preflight (OPTIONS) in secondi.
     max-age: 3600
 
   security:
@@ -137,13 +122,28 @@ sanitech:
     topic: ${OUTBOX_TOPIC:admissions.events}
     publisher:
       enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
-      # Flush periodico degli eventi non pubblicati.
       fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
+# =========================
+# Management / Actuator
+# =========================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# =========================
+# OpenAPI / Swagger
+# =========================
 springdoc:
   api-docs:
     enabled: true
-    # http://localhost:8084/v3/api-docs/admissions
     path: /v3/api-docs
   swagger-ui:
     enabled: true
@@ -153,3 +153,40 @@ springdoc:
     use-root-path: false
   default-produces-media-type: application/json
   default-consumes-media-type: application/json
+
+# =========================
+# Resilience4j
+# =========================
+resilience4j:
+  retry:
+    instances:
+      outboxPublish:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2.0
+        retryExceptions:
+          - org.apache.kafka.common.errors.TimeoutException
+          - org.apache.kafka.common.errors.NetworkException
+          - org.springframework.kafka.KafkaException
+
+  ratelimiter:
+    instances:
+      admissionsApi:
+        limitForPeriod: 60
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+
+  bulkhead:
+    instances:
+      admissionsRead:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 0
+
+# =========================
+# Logging
+# =========================
+logging:
+  level:
+    root: INFO
+    it.sanitech: DEBUG
