@@ -47,6 +47,7 @@ class AuditControllerTest {
 
     @Test
     void recordPassesClientIpAndReturnsDto() throws Exception {
+        String path = AppConstants.ApiPath.API_BASE + AppConstants.ApiPath.AUDIT_EVENTS;
         AuditEventDto dto = new AuditEventDto(
                 10L,
                 Instant.parse("2024-01-01T00:00:00Z"),
@@ -65,7 +66,7 @@ class AuditControllerTest {
 
         Authentication auth = new TestingAuthenticationToken("alice", "pwd", "ROLE_ADMIN");
 
-        mockMvc.perform(post(AppConstants.ApiPath.AUDIT_EVENTS)
+        mockMvc.perform(post(path)
                         .principal(auth)
                         .header("X-Forwarded-For", "203.0.113.10")
                         .contentType("application/json")
@@ -84,6 +85,7 @@ class AuditControllerTest {
 
     @Test
     void searchReturnsPagedResults() throws Exception {
+        String path = AppConstants.ApiPath.API_BASE + AppConstants.ApiPath.AUDIT_EVENTS;
         AuditEventDto dto = new AuditEventDto(
                 11L,
                 Instant.parse("2024-01-02T00:00:00Z"),
@@ -102,7 +104,7 @@ class AuditControllerTest {
         when(auditService.search(any(), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(page);
 
-        mockMvc.perform(get(AppConstants.ApiPath.AUDIT_EVENTS)
+        mockMvc.perform(get(path)
                         .param("actorId", "svc-directory")
                         .param("action", "SYNC")
                         .param("outcome", "SUCCESS"))
@@ -116,6 +118,7 @@ class AuditControllerTest {
 
     @Test
     void getReturnsEvent() throws Exception {
+        String path = AppConstants.ApiPath.API_BASE + AppConstants.ApiPath.AUDIT_EVENTS + "/12";
         AuditEventDto dto = new AuditEventDto(
                 12L,
                 Instant.parse("2024-01-03T00:00:00Z"),
@@ -132,7 +135,7 @@ class AuditControllerTest {
         );
         when(auditService.getById(12L)).thenReturn(dto);
 
-        mockMvc.perform(get(AppConstants.ApiPath.AUDIT_EVENTS + "/12"))
+        mockMvc.perform(get(path))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.action").value("UPDATE"));
     }
