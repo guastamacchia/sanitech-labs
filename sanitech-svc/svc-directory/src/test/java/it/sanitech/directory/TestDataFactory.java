@@ -16,13 +16,12 @@ import it.sanitech.directory.services.dto.update.DepartmentUpdateDto;
 import it.sanitech.directory.services.dto.update.DoctorUpdateDto;
 import it.sanitech.directory.services.dto.update.PatientUpdateDto;
 import it.sanitech.directory.services.dto.update.SpecializationUpdateDto;
+import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
+@NoArgsConstructor
 public final class TestDataFactory {
-
-    private TestDataFactory() {
-    }
 
     public static PatientCreateDto patientCreateDto() {
         return new PatientCreateDto(

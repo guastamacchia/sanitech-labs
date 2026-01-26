@@ -1,6 +1,0 @@
-# Profilo "local": override utili per sviluppo locale.
-spring:
-  jpa:
-    properties:
-      hibernate:
-        show_sql: false
