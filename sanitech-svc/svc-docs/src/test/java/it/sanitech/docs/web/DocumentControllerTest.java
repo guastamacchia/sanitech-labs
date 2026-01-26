@@ -97,7 +97,7 @@ class DocumentControllerTest {
                 null,
                 Instant.parse("2024-01-01T00:00:00Z")
         );
-        when(documentService.getMetadata(docId, any(Authentication.class))).thenReturn(dto);
+        when(documentService.getMetadata(eq(docId), any(Authentication.class))).thenReturn(dto);
 
         Authentication auth = new TestingAuthenticationToken("admin", "pwd", "ROLE_ADMIN");
 
