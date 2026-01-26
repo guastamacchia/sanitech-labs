@@ -103,7 +103,7 @@ class AdminNotificationControllerTest {
                                 "\"channel\":\"IN_APP\"," +
                                 "\"subject\":\"Subject\"," +
                                 "\"body\":\"Body\"" +
-                                "}]")
+                                "}]"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(21));
     }
