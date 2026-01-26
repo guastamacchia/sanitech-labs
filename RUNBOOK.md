@@ -103,7 +103,7 @@ Note:
 
 **Azioni**
 - Verificare `DB_URL/DB_USER/DB_PASSWORD` e versione Postgres.
-- Controllare `KAFKA_BOOTSTRAP_SERVERS` e log del publisher.
+- Controllare `KAFKA_HOST`/`KAFKA_PORT` e log del publisher.
 - Tuning `resilience4j.ratelimiter.instances.directoryApi`.
 
 **Smoke test manuale**
@@ -132,7 +132,7 @@ Note:
 - Errori di connessione DB/Kafka.
 
 **Azioni**
-- Verificare `DB_*` e `KAFKA_BOOTSTRAP_SERVERS`.
+- Verificare `DB_*` e `KAFKA_HOST`/`KAFKA_PORT`.
 - Controllare job outbox e log di retry/backoff.
 
 ### svc-consents
@@ -171,7 +171,7 @@ LIMIT 100;
 **Azioni**
 - Verificare `DB_*` e versioni schema.
 - Controllare `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`.
-- Verificare `KAFKA_BOOTSTRAP_SERVERS` e log outbox.
+- Verificare `KAFKA_HOST`/`KAFKA_PORT` e log outbox.
 - Controllare token JWT (ruolo, claim `pid`, consent check) e `CONSENTS_BASE_URL`.
 
 **Verifica bucket MinIO**
@@ -186,7 +186,7 @@ mc ls local/${S3_BUCKET:-sanitech-docs}
 - Email non inviate.
 
 **Azioni**
-- Verificare `KAFKA_BOOTSTRAP_SERVERS` e stato `outbox_events`.
+- Verificare `KAFKA_HOST`/`KAFKA_PORT` e stato `outbox_events`.
 - Controllare configurazione SMTP (`spring.mail.*`) e MailHog (`http://localhost:8025`).
 
 **Query utili**
@@ -205,7 +205,7 @@ ORDER BY created_at ASC;
 - API audit risponde 403.
 
 **Azioni**
-- Verificare `KAFKA_BOOTSTRAP_SERVERS`, `AUDIT_INGESTION_TOPICS`, `sanitech.audit.ingestion.enabled`.
+- Verificare `KAFKA_HOST`/`KAFKA_PORT`, `AUDIT_INGESTION_TOPICS`, `sanitech.audit.ingestion.enabled`.
 - Token con `ROLE_ADMIN` o scope `audit.write`/`audit.read`.
 
 **Query utili**
@@ -251,7 +251,7 @@ LIMIT 100;
 
 **Azioni**
 - Verificare `OAUTH2_ISSUER_URI`, ruoli token e claim `pid` (PATIENT).
-- Controllare `KAFKA_BOOTSTRAP_SERVERS` e log outbox.
+- Controllare `KAFKA_HOST`/`KAFKA_PORT` e log outbox.
 - Verificare header `X-Webhook-Secret` e `SANITECH_PAYMENTS_WEBHOOK_SECRET`.
 
 ### svc-prescribing
@@ -262,5 +262,5 @@ LIMIT 100;
 **Azioni**
 - Verificare token (ruolo `DOCTOR`, scope `prescriptions.write`, claim `DEPT_*`).
 - Controllare `CONSENTS_BASE_URL`, rete e log di `svc-consents`.
-- Verificare `KAFKA_BOOTSTRAP_SERVERS` e job outbox.
+- Verificare `KAFKA_HOST`/`KAFKA_PORT` e job outbox.
 - Controllare credenziali `DB_*` e `spring.flyway.enabled`.
