@@ -20,6 +20,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
@@ -166,7 +168,8 @@ class DoctorServiceTest {
         Doctor doctor = TestDataFactory.doctorEntity(3L, "Marco", "Rossi", "marco.rossi@email.it");
         DoctorDto mappedDto = TestDataFactory.doctorDto(3L, "Marco", "Rossi", "marco.rossi@email.it");
 
-        when(doctorRepository.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(doctor)));
+        when(doctorRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(doctor)));
         when(doctorMapper.toDto(doctor)).thenReturn(mappedDto);
 
         var result = doctorService.search("Rossi", "CARD", "CARDIO", 0, 20, null);
