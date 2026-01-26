@@ -15,6 +15,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,7 +56,7 @@ class OutboxKafkaPublisherTest {
         publisher.publishBatch();
 
         verify(sender).sendSync(props.getPublisher().getTopic(), evt, props.getPublisher().getSendTimeoutMs());
-        verify(repo).markPublished(List.of(1L), any());
+        verify(repo).markPublished(eq(List.of(1L)), any());
         assertThat(evt.isPublished()).isFalse();
 
         double count = meter.find("sanitech.outbox.published").counter().count();
