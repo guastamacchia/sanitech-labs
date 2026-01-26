@@ -13,7 +13,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-@WebFluxTest(OpenApiProxyController.class)
+@WebFluxTest(
+        controllers = OpenApiProxyController.class,
+        excludeAutoConfiguration = {
+                org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration.class,
+                org.springframework.boot.autoconfigure.security.reactive.ReactiveOAuth2ResourceServerAutoConfiguration.class
+        }
+)
 class OpenApiProxyControllerTest {
 
     @Autowired
