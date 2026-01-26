@@ -113,8 +113,8 @@ sanitech:
       base-url: ${CONSENTS_BASE_URL:http://localhost:8085}
 
   outbox:
-    topic: ${OUTBOX_TOPIC:prescribing.events}
     publisher:
+      topic: ${OUTBOX_TOPIC:prescribing.events}
       enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 

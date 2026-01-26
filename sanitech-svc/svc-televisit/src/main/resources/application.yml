@@ -106,8 +106,8 @@ sanitech:
       - /actuator/prometheus
 
   outbox:
-    topic: ${OUTBOX_TOPIC:televisit.events}
     publisher:
+      topic: ${OUTBOX_TOPIC:televisit.events}
       enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
