@@ -1,0 +1,177 @@
+package it.sanitech.directory;
+
+import it.sanitech.directory.repositories.entities.Department;
+import it.sanitech.directory.repositories.entities.Doctor;
+import it.sanitech.directory.repositories.entities.Patient;
+import it.sanitech.directory.repositories.entities.Specialization;
+import it.sanitech.directory.services.dto.DepartmentDto;
+import it.sanitech.directory.services.dto.DoctorDto;
+import it.sanitech.directory.services.dto.PatientDto;
+import it.sanitech.directory.services.dto.SpecializationDto;
+import it.sanitech.directory.services.dto.create.DepartmentCreateDto;
+import it.sanitech.directory.services.dto.create.DoctorCreateDto;
+import it.sanitech.directory.services.dto.create.PatientCreateDto;
+import it.sanitech.directory.services.dto.create.SpecializationCreateDto;
+import it.sanitech.directory.services.dto.update.DepartmentUpdateDto;
+import it.sanitech.directory.services.dto.update.DoctorUpdateDto;
+import it.sanitech.directory.services.dto.update.PatientUpdateDto;
+import it.sanitech.directory.services.dto.update.SpecializationUpdateDto;
+
+import java.util.Set;
+
+public final class TestDataFactory {
+
+    private TestDataFactory() {
+    }
+
+    public static PatientCreateDto patientCreateDto() {
+        return new PatientCreateDto(
+                "Mario",
+                "Rossi",
+                "nome.cognome@email.it",
+                "+39 333 123 4567",
+                Set.of("CARD")
+        );
+    }
+
+    public static PatientCreateDto patientCreateDtoWithMixedCaseEmail() {
+        return new PatientCreateDto(
+                "Mario",
+                "Rossi",
+                "Nome.Cognome@Email.it",
+                "+39 333 123 4567",
+                Set.of("card")
+        );
+    }
+
+    public static PatientUpdateDto patientUpdateDto() {
+        return new PatientUpdateDto(
+                "Maria",
+                "Rossi",
+                "maria.rossi@email.it",
+                "+39 333 123 9999",
+                null
+        );
+    }
+
+    public static PatientUpdateDto patientUpdateDtoWithWhitespace() {
+        return new PatientUpdateDto(
+                " Maria ",
+                "Rossi",
+                "Nuova.Email@Email.it",
+                " 333 444 555 ",
+                null
+        );
+    }
+
+    public static PatientDto patientDto(long id, String firstName, String lastName, String email, String phone) {
+        return new PatientDto(
+                id,
+                firstName,
+                lastName,
+                email,
+                phone,
+                Set.of()
+        );
+    }
+
+    public static Department cardiologyDepartment() {
+        return Department.builder()
+                .id(10L)
+                .code("CARD")
+                .name("Cardiologia")
+                .build();
+    }
+
+    public static DepartmentDto departmentDto(long id, String code, String name) {
+        return new DepartmentDto(id, code, name);
+    }
+
+    public static DepartmentCreateDto departmentCreateDto() {
+        return new DepartmentCreateDto("card", "Cardiologia");
+    }
+
+    public static DepartmentUpdateDto departmentUpdateDto() {
+        return new DepartmentUpdateDto("Cardiologia interventistica");
+    }
+
+    public static Specialization cardiologySpecialization() {
+        return Specialization.builder()
+                .id(20L)
+                .code("CARDIO")
+                .name("Cardiologia clinica")
+                .build();
+    }
+
+    public static SpecializationDto specializationDto(long id, String code, String name) {
+        return new SpecializationDto(id, code, name);
+    }
+
+    public static SpecializationCreateDto specializationCreateDto() {
+        return new SpecializationCreateDto("cardio", "Cardiologia clinica");
+    }
+
+    public static SpecializationUpdateDto specializationUpdateDto() {
+        return new SpecializationUpdateDto("Cardiologia interventistica");
+    }
+
+    public static Patient patientEntity(long id, String firstName, String lastName, String email, String phone) {
+        return Patient.builder()
+                .id(id)
+                .firstName(firstName)
+                .lastName(lastName)
+                .email(email)
+                .phone(phone)
+                .build();
+    }
+
+    public static Doctor doctorEntity(long id, String firstName, String lastName, String email) {
+        return Doctor.builder()
+                .id(id)
+                .firstName(firstName)
+                .lastName(lastName)
+                .email(email)
+                .build();
+    }
+
+    public static DoctorDto doctorDto(long id, String firstName, String lastName, String email) {
+        return new DoctorDto(
+                id,
+                firstName,
+                lastName,
+                email,
+                Set.of(),
+                Set.of()
+        );
+    }
+
+    public static DoctorCreateDto doctorCreateDto() {
+        return new DoctorCreateDto(
+                "Luca",
+                "Bianchi",
+                "luca.bianchi@email.it",
+                Set.of("CARD"),
+                Set.of("CARDIO")
+        );
+    }
+
+    public static DoctorCreateDto doctorCreateDtoWithMixedCaseEmail() {
+        return new DoctorCreateDto(
+                "Luca",
+                "Bianchi",
+                "Luca.Bianchi@Email.it",
+                Set.of("card"),
+                Set.of("cardio")
+        );
+    }
+
+    public static DoctorUpdateDto doctorUpdateDto() {
+        return new DoctorUpdateDto(
+                " Luca ",
+                "Bianchi",
+                "Nuova.Email@Email.it",
+                Set.of("CARD"),
+                Set.of("CARDIO")
+        );
+    }
+}
