@@ -226,6 +226,13 @@ class PaymentOrderServiceTest {
 
         when(repository.findById(44L)).thenReturn(Optional.of(order));
         when(repository.save(any(PaymentOrder.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        Mockito.doAnswer(invocation -> {
+            PaymentUpdateDto update = invocation.getArgument(0);
+            PaymentOrder target = invocation.getArgument(1);
+            target.setStatus(update.status());
+            target.setProviderReference(update.providerReference());
+            return null;
+        }).when(mapper).patch(any(PaymentUpdateDto.class), any(PaymentOrder.class));
         when(mapper.toDto(any(PaymentOrder.class))).thenAnswer(invocation -> {
             PaymentOrder saved = invocation.getArgument(0);
             return new PaymentOrderDto(
