@@ -337,7 +337,7 @@ services:
     image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
-      POSTGRES_DB: ${GATAWAY_DATABASE_NAME}
+      POSTGRES_DB: ${GATEWAY_DATABASE_NAME}
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
@@ -345,7 +345,7 @@ services:
       - pg-gateway-data:/var/lib/postgresql/data
     healthcheck:
       # Verifica che il database sia pronto ad accettare connessioni
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${GATAWAY_DATABASE_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${GATEWAY_DATABASE_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 10

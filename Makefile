@@ -1,6 +1,6 @@
 # Prefer Maven already installed on the host to avoid wrapper downloads when offline.
 SVC_DIR ?= sanitech-svc
-INFRA_DIR ?= .infra/svc
+INFRA_DIR ?= .infra
 ENV_DIR ?= .infra/env
 MVN ?= $(shell command -v mvn >/dev/null 2>&1 && echo mvn || echo ./$(SVC_DIR)/mvnw)
 POM ?= $(SVC_DIR)/pom.xml
@@ -13,14 +13,9 @@ MAVEN_ARGS ?=
 # Servizi (singolo microservizio)
 # =====================================================
 SERVICE ?= svc-directory
-ARTIFACT_ID ?= $(SERVICE)
-SVC_NAME ?= $(ARTIFACT_ID)
 SERVICE_PROFILE ?= remote
 SERVICE_ENV ?= $(SERVICE_PROFILE)
 
-SERVICE_DIR ?= $(SVC_DIR)/$(SERVICE)
-SERVICE_COMPOSE_FILE ?= $(INFRA_DIR)/$(SERVICE)/docker-compose.yml
-SERVICE_COMPOSE_INFRA_FILE ?= $(INFRA_DIR)/$(SERVICE)/docker-compose.infra.yml
 SERVICE_ENV_FILE ?= $(ENV_DIR)/env.$(SERVICE_ENV)
 
 # =====================================================
@@ -31,11 +26,8 @@ ENV ?= local
 COMPOSE_ENV_FILE ?= $(ENV_DIR)/env.$(ENV)
 COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
 
-MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 COMPOSE_FILE := $(abspath $(COMPOSE_FILE))
 COMPOSE_ENV_FILE := $(abspath $(COMPOSE_ENV_FILE))
-SERVICE_COMPOSE_FILE := $(abspath $(SERVICE_COMPOSE_FILE))
-SERVICE_COMPOSE_INFRA_FILE := $(abspath $(SERVICE_COMPOSE_INFRA_FILE))
 SERVICE_ENV_FILE := $(abspath $(SERVICE_ENV_FILE))
 
 ifeq (,$(wildcard $(COMPOSE_ENV_FILE)))
@@ -99,12 +91,8 @@ export $(SERVICE_ENV_KEYS)
 .PHONY: build test verify clean \
 	compose-up compose-up-infra compose-down compose-down-infra compose-config \
 	svc-build svc-test svc-run \
-	svc-compose-up svc-compose-down svc-compose-config \
-	svc-infra-up svc-infra-down svc-infra-config \
 	env-print help
 
-export ARTIFACT_ID
-export SVC_NAME
 export SERVICE_PROFILE
 export SERVICE_ENV
 
@@ -117,7 +105,7 @@ help:
 	@echo "  MODULE=<mod>          seleziona un singolo modulo backend"
 	@echo "  MODULES=<mod1,mod2>   seleziona moduli backend multipli"
 	@echo ""
-	@echo "  compose-up            avvia FULL stack (.infra/svc/docker-compose.yml)"
+	@echo "  compose-up            avvia FULL stack (.infra/docker-compose.yml)"
 	@echo "  compose-up-infra      avvia solo infra (stack globale)"
 	@echo "  compose-down          stop + cleanup FULL stack"
 	@echo "  compose-down-infra    stop + cleanup infra (stack globale)"
@@ -127,12 +115,6 @@ help:
 	@echo "  svc-build             mvn clean package (skipTests) sul servizio"
 	@echo "  svc-test              mvn test sul servizio"
 	@echo "  svc-run               avvia Spring Boot (SPRING_PROFILES_ACTIVE=$(SERVICE_PROFILE))"
-	@echo "  svc-compose-up        avvia stack del servizio"
-	@echo "  svc-compose-down      stop + cleanup stack del servizio"
-	@echo "  svc-compose-config    stampa config stack del servizio"
-	@echo "  svc-infra-up           avvia solo infra del servizio"
-	@echo "  svc-infra-down         stop + cleanup infra del servizio"
-	@echo "  svc-infra-config       stampa config infra del servizio"
 	@echo ""
 	@echo "  env-print             stampa contesto risolto"
 
@@ -184,30 +166,6 @@ compose-down-infra:
 compose-config:
 	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) config
 
-# =====================================================
-# Docker Compose — stack servizio
-# =====================================================
-svc-compose-up: svc-build
-	$(DOCKER_COMPOSE) -f $(SERVICE_COMPOSE_FILE) --env-file $(SERVICE_ENV_FILE) up -d --build
-
-svc-compose-down:
-	$(DOCKER_COMPOSE) -f $(SERVICE_COMPOSE_FILE) --env-file $(SERVICE_ENV_FILE) down -v --remove-orphans
-
-svc-compose-config:
-	$(DOCKER_COMPOSE) -f $(SERVICE_COMPOSE_FILE) --env-file $(SERVICE_ENV_FILE) config
-
-# =====================================================
-# Docker Compose — INFRA ONLY (servizio)
-# =====================================================
-svc-infra-up:
-	$(DOCKER_COMPOSE) -f $(SERVICE_COMPOSE_INFRA_FILE) --env-file $(SERVICE_ENV_FILE) up -d --build
-
-svc-infra-down:
-	$(DOCKER_COMPOSE) -f $(SERVICE_COMPOSE_INFRA_FILE) --env-file $(SERVICE_ENV_FILE) down -v --remove-orphans
-
-svc-infra-config:
-	$(DOCKER_COMPOSE) -f $(SERVICE_COMPOSE_INFRA_FILE) --env-file $(SERVICE_ENV_FILE) config
-
 env-print:
 	@echo "SVC_DIR=$(SVC_DIR)"
 	@echo "INFRA_DIR=$(INFRA_DIR)"
@@ -218,11 +176,6 @@ env-print:
 	@echo "MODULE=$(MODULE)"
 	@echo "MODULES=$(MODULES)"
 	@echo "SERVICE=$(SERVICE)"
-	@echo "SERVICE_DIR=$(SERVICE_DIR)"
-	@echo "ARTIFACT_ID=$(ARTIFACT_ID)"
-	@echo "SVC_NAME=$(SVC_NAME)"
 	@echo "SERVICE_PROFILE=$(SERVICE_PROFILE)"
 	@echo "SERVICE_ENV=$(SERVICE_ENV)"
 	@echo "SERVICE_ENV_FILE=$(SERVICE_ENV_FILE)"
-	@echo "SERVICE_COMPOSE_FILE=$(SERVICE_COMPOSE_FILE)"
-	@echo "SERVICE_COMPOSE_INFRA_FILE=$(SERVICE_COMPOSE_INFRA_FILE)"
