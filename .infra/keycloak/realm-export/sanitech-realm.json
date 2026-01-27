@@ -28,12 +28,22 @@
         "post.logout.redirect.uris": "http://localhost:4200 http://localhost:4200/* http://localhost:8080 http://localhost:8080/*"
       },
       "redirectUris": [
-        "http://localhost:4200/*"
+        "http://localhost:4200",
+        "http://localhost:4200/*",
+        "http://localhost:8080",
+        "http://localhost:8080/*"
       ],
       "webOrigins": [
         "http://localhost:4200",
         "http://localhost:8080"
-      ]
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": []
     },
     {
       "clientId": "svc-directory",
