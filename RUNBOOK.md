@@ -3,7 +3,7 @@
 Questo runbook raccoglie le procedure operative principali per l’ambiente di sviluppo e i check più comuni sui servizi backend.
 
 ## Prerequisiti
-- Docker / Docker Compose
+- Docker / Docker Compose (con plugin Buildx per build locali)
 - Java 21
 - Node.js (solo se si modifica la toolchain frontend)
 

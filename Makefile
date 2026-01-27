@@ -142,10 +142,10 @@ svc-run:
 # Docker Compose
 # =====================================================
 compose-up: build
-	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build
+	@set -a; . $(ENV_FILE); set +a; $(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build
 
 compose-up-infra:
-	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build $(COMPOSE_INFRA_SERVICES)
+	@set -a; . $(ENV_FILE); set +a; $(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build $(COMPOSE_INFRA_SERVICES)
 
 compose-down:
 	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) down -v
@@ -154,7 +154,7 @@ compose-down-infra:
 	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) down -v
 
 compose-config:
-	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) config
+	@set -a; . $(ENV_FILE); set +a; $(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) config
 
 env-print:
 	@echo "SVC_DIR=$(SVC_DIR)"
