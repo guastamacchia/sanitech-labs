@@ -10,7 +10,7 @@ services:
   keycloak:
     build:
       context: ./keycloak
-    image: sanitech/keycloak:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-keycloak
     environment:
       # =========================
       # Bootstrap admin user
@@ -46,7 +46,7 @@ services:
   kafka:
     build:
       context: ./kafka
-    image: sanitech/kafka:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-kafka
     ports:
       - "9092:9092"
       - "29092:29092"
@@ -97,9 +97,7 @@ services:
   # Mailpit (SMTP + Web UI)
   # =========================
   mailhog:
-    build:
-      context: ./mailhog
-    image: sanitech/mailhog:${SPRING_PROFILES_ACTIVE:-local}
+    image: axllent/mailpit:latest
     environment:
       MP_UI_AUTH: ${MAILPIT_UI_AUTH}
     ports:
@@ -117,9 +115,7 @@ services:
   # MinIO (S3-compatible)
   # =========================
   minio:
-    build:
-      context: ./minio
-    image: sanitech/minio:${SPRING_PROFILES_ACTIVE:-local}
+    image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -139,9 +135,7 @@ services:
 
   # Inizializza bucket "sanitech-docs"
   minio-mc:
-    build:
-      context: ./minio-mc
-    image: sanitech/minio-mc:${SPRING_PROFILES_ACTIVE:-local}
+    image: minio/mc:latest
     depends_on:
       minio:
         condition: service_healthy
@@ -163,7 +157,7 @@ services:
   livekit:
     build:
       context: ./livekit
-    image: sanitech/livekit-server:${SPRING_PROFILES_ACTIVE:-local}
+    image: sanitech-livekit-server:${SPRING_PROFILES_ACTIVE:-local}
     command: ["--config", "/etc/livekit/livekit.yaml"]
     ports:
       - "7880:7880"
@@ -178,7 +172,7 @@ services:
   prometheus:
     build:
       context: ./prometheus
-    image: sanitech/prometheus:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-prometheus
     command:
       # File di configurazione statico di Prometheus.
       - --config.file=/etc/prometheus/prometheus.yml
@@ -207,7 +201,7 @@ services:
   grafana:
     build:
       context: ./grafana
-    image: sanitech/grafana:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-grafana
     depends_on:
       - prometheus
     environment:
@@ -232,9 +226,7 @@ services:
   # Postgres (one per service)
   # =========================
   pg-directory:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${DIRECTORY_DATABASE_NAME}
@@ -252,9 +244,7 @@ services:
     restart: unless-stopped
 
   pg-scheduling:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${SCHEDULING_DATABASE_NAME}
@@ -272,9 +262,7 @@ services:
     restart: unless-stopped
 
   pg-admissions:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${ADMISSIONS_DATABASE_NAME}
@@ -292,9 +280,7 @@ services:
     restart: unless-stopped
 
   pg-consents:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${CONSENTS_DATABASE_NAME}
@@ -312,9 +298,7 @@ services:
     restart: unless-stopped
 
   pg-docs:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${DOCS_DATABASE_NAME}
@@ -332,9 +316,7 @@ services:
     restart: unless-stopped
 
   pg-gateway:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${GATEWAY_DATABASE_NAME}
@@ -352,9 +334,7 @@ services:
     restart: unless-stopped
 
   pg-notifications:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${NOTIFICATIONS_DATABASE_NAME}
@@ -372,9 +352,7 @@ services:
     restart: unless-stopped
 
   pg-audit:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${AUDIT_DATABASE_NAME}
@@ -392,9 +370,7 @@ services:
     restart: unless-stopped
 
   pg-televisit:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${TELEVISIT_DATABASE_NAME}
@@ -412,9 +388,7 @@ services:
     restart: unless-stopped
 
   pg-payments:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${PAYMENTS_DATABASE_NAME}
@@ -432,9 +406,7 @@ services:
     restart: unless-stopped
 
   pg-prescribing:
-    build:
-      context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
+    image: postgres:16
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${PRESCRIBING_DATABASE_NAME}
