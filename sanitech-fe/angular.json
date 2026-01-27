@@ -61,14 +61,6 @@
                   "with": "src/environments/environment.staging.ts"
                 }
               ]
-            },
-            "remote": {
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.remote.ts"
-                }
-              ]
             }
           },
           "defaultConfiguration": "development"

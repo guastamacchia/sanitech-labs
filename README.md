@@ -22,7 +22,7 @@ bash .script/backend/up.sh            # avvia tutto lo stack
 
 Per usare un file env diverso da quello locale:
 ```bash
-ENV=remote make compose-up-infra
+ENV=staging make compose-up-infra
 ```
 
 ### Frontend
@@ -113,13 +113,11 @@ npm start
 Configurazioni ambiente (`sanitech-fe/src/environments/`):
 - `environment.ts` → local
 - `environment.staging.ts` → staging
-- `environment.remote.ts` → remote
 - `environment.prod.ts` → production
 
 Build specifici:
 ```bash
 ng build --configuration=staging
-ng build --configuration=remote
 ```
 
 Script utili:
