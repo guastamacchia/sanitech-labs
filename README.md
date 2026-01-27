@@ -2,8 +2,8 @@
 
 Monorepo della piattaforma **Sanitech**.
 
-- **Backend** (`sanitech-svc`): microservizi Spring Boot + script helper. Le configurazioni condivise sono in `.infra`, la compose in `.infra/svc`.
-- **Frontend** (`sanitech-fe`): SPA Angular; i micro‑frontend statici legacy sono in `.infra/fe`.
+- **Backend** (`sanitech-svc`): microservizi Spring Boot + script helper. Le configurazioni condivise sono in `.infra`, la compose in `.infra/docker-compose.yml`.
+- **Frontend** (`sanitech-fe`): SPA Angular.
 
 ## Prerequisiti
 - Docker / Docker Compose
@@ -28,16 +28,8 @@ npm start
 # SPA: http://localhost:4200
 ```
 
-Legacy (micro‑frontend statici via Docker Compose):
-```bash
-cd sanitech-fe
-docker compose -f ../.infra/fe/docker-compose.yml up -d --build
-```
-
 ## Struttura repository
-- `.infra/fe`: docker compose e configurazioni per i micro‑frontend.
-- `.infra/`: configurazioni centralizzate (Keycloak, Prometheus, Grafana, env).
-- `.infra/svc`: docker compose per l'infrastruttura backend (Keycloak, Prometheus, Grafana, MinIO, Kafka, ecc.).
+- `.infra/`: configurazioni centralizzate e docker compose per l'infrastruttura backend.
 - `sanitech-fe`: SPA Angular e script di build/avvio.
 - `sanitech-svc`: microservizi backend, Makefile aggregatore e script di stack.
 - `.script/`: script centralizzati per backend, frontend e smoke test dei servizi.
@@ -113,12 +105,6 @@ npm start
 # SPA: http://localhost:4200
 ```
 
-Legacy (micro‑frontend statici via Docker Compose):
-```bash
-cd sanitech-fe
-docker compose -f ../.infra/fe/docker-compose.yml up -d --build
-```
-
 Configurazioni ambiente (`sanitech-fe/src/environments/`):
 - `environment.ts` → local
 - `environment.staging.ts` → staging
@@ -138,7 +124,6 @@ Script utili:
 
 Layout:
 - `sanitech-fe/src`: sorgenti SPA Angular (portale pubblico + area privata con ruoli).
-- `.infra/fe/dockerfiles/`: Dockerfile legacy dei micro‑frontend statici rimossi.
 - `.script/frontend/`: helper per up/down/logs/status.
 
 ## Documentazione operativa
