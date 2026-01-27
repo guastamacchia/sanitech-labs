@@ -8,13 +8,27 @@
         "name": "dept-claim",
         "providerId": "oidc-usermodel-attribute-mapper",
         "config": {
-          "user.attribute": "dept",
-          "claim.name": "dept",
-          "jsonType.label": "String",
-          "multivalued": "true",
-          "id.token.claim": "true",
-          "access.token.claim": "true",
-          "userinfo.token.claim": "true"
+          "user.attribute": [
+            "dept"
+          ],
+          "claim.name": [
+            "dept"
+          ],
+          "jsonType.label": [
+            "String"
+          ],
+          "multivalued": [
+            "true"
+          ],
+          "id.token.claim": [
+            "true"
+          ],
+          "access.token.claim": [
+            "true"
+          ],
+          "userinfo.token.claim": [
+            "true"
+          ]
         }
       }
     ]
