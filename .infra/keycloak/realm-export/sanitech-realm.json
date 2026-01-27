@@ -25,7 +25,7 @@
       "standardFlowEnabled": true,
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:4200/* http://localhost:8080/*"
+        "post.logout.redirect.uris": "http://localhost:4200 http://localhost:4200/* http://localhost:8080 http://localhost:8080/*"
       },
       "redirectUris": [
         "http://localhost:4200/*"
@@ -343,7 +343,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "admin",
+          "value": "qwerty",
           "temporary": false
         }
       ],
@@ -352,14 +352,14 @@
       ],
       "emailVerified": true,
       "firstName": "Admin",
-      "lastName": "User",
+      "lastName": "Admin",
       "createdTimestamp": 1704067200000,
       "requiredActions": []
     },
     {
-      "username": "drrossi",
+      "username": "rossi",
       "enabled": true,
-      "email": "drrossi@sanitech.example",
+      "email": "rossi@sanitech.example",
       "attributes": {
         "dept": [
           "HEART",
@@ -369,29 +369,33 @@
       "credentials": [
         {
           "type": "password",
-          "value": "password",
+          "value": "qwerty",
           "temporary": false
         }
       ],
       "realmRoles": [
         "ROLE_DOCTOR"
       ],
+      "firstName": "Mario",
+      "lastName": "Rossi",
       "createdTimestamp": 1704067200000
     },
     {
-      "username": "annaconti",
+      "username": "conti",
       "enabled": true,
-      "email": "anna.conti@sanitech.example",
+      "email": "conti@sanitech.example",
       "credentials": [
         {
           "type": "password",
-          "value": "password",
+          "value": "qwerty",
           "temporary": false
         }
       ],
       "realmRoles": [
         "ROLE_PATIENT"
       ],
+      "firstName": "Anna",
+      "lastName": "Conti",
       "createdTimestamp": 1704067200000
     }
   ]

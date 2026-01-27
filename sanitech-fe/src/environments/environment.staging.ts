@@ -5,5 +5,5 @@ export const environment = {
   keycloakUrl: 'http://10.211.55.23:8081',
   realm: 'sanitech',
   clientId: 'sanitech-spa',
-  scope: 'openid profile email'
+  scope: 'openid profile email roles'
 };

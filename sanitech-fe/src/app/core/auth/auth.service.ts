@@ -2,7 +2,7 @@ import { Injectable, Optional } from '@angular/core';
 import { AuthConfig, OAuthService } from 'angular-oauth2-oidc';
 import { environment } from '../../../environments/environment';
 
-const redirectBase = `${window.location.origin}/`;
+const redirectBase = window.location.origin;
 
 const authConfig: AuthConfig = {
   issuer: `${environment.keycloakUrl}/realms/${environment.realm}`,
