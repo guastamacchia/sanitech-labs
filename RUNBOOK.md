@@ -3,7 +3,7 @@
 Questo runbook raccoglie le procedure operative principali per l’ambiente di sviluppo e i check più comuni sui servizi backend.
 
 ## Prerequisiti
-- Docker / Docker Compose
+- Docker / Docker Compose (con plugin Buildx per build locali)
 - Java 21
 - Node.js (solo se si modifica la toolchain frontend)
 
@@ -22,6 +22,7 @@ Da repository root:
 ```bash
 make -C sanitech-svc compose-up
 make -C sanitech-svc compose-up-infra
+COMPOSE_BUILD=0 make -C sanitech-svc compose-up-infra   # salta il build immagini se manca buildx
 make -C sanitech-svc compose-down
 make -C sanitech-svc compose-config
 make -C sanitech-svc env-print
