@@ -7,7 +7,7 @@ MODULE ?=
 MODULES ?=
 PROFILE ?=
 MAVEN_ARGS ?=
-ENV ?= remote
+ENV ?= local
 
 # =====================================================
 # Servizi (singolo microservizio)

@@ -20,6 +20,11 @@ bash .script/backend/up.sh            # avvia tutto lo stack
 # stato:  bash .script/backend/status.sh
 ```
 
+Per usare un file env diverso da quello locale:
+```bash
+ENV=remote make compose-up-infra
+```
+
 ### Frontend
 ```bash
 cd sanitech-fe
