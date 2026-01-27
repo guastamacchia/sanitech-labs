@@ -14,28 +14,20 @@ MAVEN_ARGS ?=
 # =====================================================
 SERVICE ?= svc-directory
 SERVICE_PROFILE ?= remote
-SERVICE_ENV ?= $(SERVICE_PROFILE)
-
-SERVICE_ENV_FILE ?= $(ENV_DIR)/env.$(SERVICE_ENV)
 
 # =====================================================
 # Docker Compose
 # =====================================================
 COMPOSE_FILE ?= $(INFRA_DIR)/docker-compose.yml
 ENV ?= local
-COMPOSE_ENV_FILE ?= $(ENV_DIR)/env.$(ENV)
+ENV_FILE ?= $(ENV_DIR)/env.$(ENV)
 COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
 
 COMPOSE_FILE := $(abspath $(COMPOSE_FILE))
-COMPOSE_ENV_FILE := $(abspath $(COMPOSE_ENV_FILE))
-SERVICE_ENV_FILE := $(abspath $(SERVICE_ENV_FILE))
+ENV_FILE := $(abspath $(ENV_FILE))
 
-ifeq (,$(wildcard $(COMPOSE_ENV_FILE)))
-$(error Env file non trovato: $(COMPOSE_ENV_FILE))
-endif
-
-ifeq (,$(wildcard $(SERVICE_ENV_FILE)))
-$(error Env file non trovato: $(SERVICE_ENV_FILE))
+ifeq (,$(wildcard $(ENV_FILE)))
+$(error Env file non trovato: $(ENV_FILE))
 endif
 
 DOCKER_COMPOSE := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo "docker compose")
@@ -48,8 +40,8 @@ SERVICE_SELECTOR = -pl $(SERVICE) -am
 # =====================================================
 # Caricamento variabili dal file .env per comandi host (svc-*)
 # =====================================================
-include $(SERVICE_ENV_FILE)
-export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' $(SERVICE_ENV_FILE))
+include $(ENV_FILE)
+export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' $(ENV_FILE))
 
 # =====================================================
 # Mapping variabili environment specifiche per servizio
@@ -94,7 +86,6 @@ export $(SERVICE_ENV_KEYS)
 	env-print help
 
 export SERVICE_PROFILE
-export SERVICE_ENV
 
 help:
 	@echo "Target disponibili (root):"
@@ -152,30 +143,28 @@ svc-run:
 # Docker Compose
 # =====================================================
 compose-up: build
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) up -d --build
+	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build
 
 compose-up-infra:
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) up -d $(COMPOSE_INFRA_SERVICES)
+	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build $(COMPOSE_INFRA_SERVICES)
 
 compose-down:
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) down -v
+	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) down -v
 
 compose-down-infra:
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) down -v
+	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) down -v
 
 compose-config:
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) config
+	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) config
 
 env-print:
 	@echo "SVC_DIR=$(SVC_DIR)"
 	@echo "INFRA_DIR=$(INFRA_DIR)"
 	@echo "COMPOSE_FILE=$(COMPOSE_FILE)"
-	@echo "COMPOSE_ENV_FILE=$(COMPOSE_ENV_FILE)"
 	@echo "ENV=$(ENV)"
+	@echo "ENV_FILE=$(ENV_FILE)"
 	@echo "COMPOSE_INFRA_SERVICES=$(COMPOSE_INFRA_SERVICES)"
 	@echo "MODULE=$(MODULE)"
 	@echo "MODULES=$(MODULES)"
 	@echo "SERVICE=$(SERVICE)"
 	@echo "SERVICE_PROFILE=$(SERVICE_PROFILE)"
-	@echo "SERVICE_ENV=$(SERVICE_ENV)"
-	@echo "SERVICE_ENV_FILE=$(SERVICE_ENV_FILE)"
