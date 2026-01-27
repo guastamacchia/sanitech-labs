@@ -15,7 +15,6 @@ MAVEN_ARGS ?=
 SERVICE ?= svc-directory
 ARTIFACT_ID ?= $(SERVICE)
 SVC_NAME ?= $(ARTIFACT_ID)
-PORT ?= 8082
 SERVICE_PROFILE ?= remote
 SERVICE_ENV ?= $(SERVICE_PROFILE)
 
@@ -23,8 +22,6 @@ SERVICE_DIR ?= $(SVC_DIR)/$(SERVICE)
 SERVICE_COMPOSE_FILE ?= $(INFRA_DIR)/$(SERVICE)/docker-compose.yml
 SERVICE_COMPOSE_INFRA_FILE ?= $(INFRA_DIR)/$(SERVICE)/docker-compose.infra.yml
 SERVICE_ENV_FILE ?= $(ENV_DIR)/env.$(SERVICE_ENV)
-SERVICE_DOCKERFILE ?= $(INFRA_DIR)/$(SERVICE)/Dockerfile
-IMAGE ?= sanitech/$(SVC_NAME):$(SERVICE_ENV)
 
 # =====================================================
 # Docker Compose
@@ -40,7 +37,6 @@ COMPOSE_ENV_FILE := $(abspath $(COMPOSE_ENV_FILE))
 SERVICE_COMPOSE_FILE := $(abspath $(SERVICE_COMPOSE_FILE))
 SERVICE_COMPOSE_INFRA_FILE := $(abspath $(SERVICE_COMPOSE_INFRA_FILE))
 SERVICE_ENV_FILE := $(abspath $(SERVICE_ENV_FILE))
-SERVICE_DOCKERFILE := $(abspath $(SERVICE_DOCKERFILE))
 
 ifeq (,$(wildcard $(COMPOSE_ENV_FILE)))
 $(error Env file non trovato: $(COMPOSE_ENV_FILE))
@@ -101,9 +97,8 @@ $(foreach key,$(SERVICE_ENV_KEYS),$(eval $(key) := $($(SERVICE_PREFIX)_$(key))))
 export $(SERVICE_ENV_KEYS)
 
 .PHONY: build test verify clean \
-	docker-build docker-run compose-up compose-up-infra compose-down compose-down-infra compose-config \
+	compose-up compose-up-infra compose-down compose-down-infra compose-config \
 	svc-build svc-test svc-run \
-	svc-docker-build svc-docker-run \
 	svc-compose-up svc-compose-down svc-compose-config \
 	svc-infra-up svc-infra-down svc-infra-config \
 	env-print help
@@ -132,8 +127,6 @@ help:
 	@echo "  svc-build             mvn clean package (skipTests) sul servizio"
 	@echo "  svc-test              mvn test sul servizio"
 	@echo "  svc-run               avvia Spring Boot (SPRING_PROFILES_ACTIVE=$(SERVICE_PROFILE))"
-	@echo "  svc-docker-build      build immagine microservizio"
-	@echo "  svc-docker-run        run immagine microservizio"
 	@echo "  svc-compose-up        avvia stack del servizio"
 	@echo "  svc-compose-down      stop + cleanup stack del servizio"
 	@echo "  svc-compose-config    stampa config stack del servizio"
@@ -174,14 +167,8 @@ svc-run:
 	SPRING_PROFILES_ACTIVE=$(SERVICE_PROFILE) $(MVN) -f $(POM) $(SERVICE_SELECTOR) $(MAVEN_ARGS) spring-boot:run
 
 # =====================================================
-# Docker / Compose
+# Docker Compose
 # =====================================================
-docker-build: build
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) build
-
-docker-run:
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) up -d
-
 compose-up: build
 	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) up -d --build
 
@@ -196,15 +183,6 @@ compose-down-infra:
 
 compose-config:
 	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) config
-
-# =====================================================
-# Docker (singolo servizio)
-# =====================================================
-svc-docker-build: svc-build
-	docker build -f $(SERVICE_DOCKERFILE) -t $(IMAGE) $(SERVICE_DIR)
-
-svc-docker-run:
-	docker run --rm --env-file $(SERVICE_ENV_FILE) -p $(PORT):$(PORT) $(IMAGE)
 
 # =====================================================
 # Docker Compose — stack servizio
@@ -248,6 +226,3 @@ env-print:
 	@echo "SERVICE_ENV_FILE=$(SERVICE_ENV_FILE)"
 	@echo "SERVICE_COMPOSE_FILE=$(SERVICE_COMPOSE_FILE)"
 	@echo "SERVICE_COMPOSE_INFRA_FILE=$(SERVICE_COMPOSE_INFRA_FILE)"
-	@echo "SERVICE_DOCKERFILE=$(SERVICE_DOCKERFILE)"
-	@echo "IMAGE=$(IMAGE)"
-	@echo "PORT=$(PORT)"
