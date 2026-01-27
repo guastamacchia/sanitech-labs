@@ -7,12 +7,10 @@
 
 ## Frontend
 - `sanitech-fe/`: SPA Angular e script di supporto.
-- `.infra/fe/`: Docker Compose e asset infrastrutturali dedicati al frontend.
 
 ## Backend
 - `sanitech-svc/`: microservizi Spring Boot, Makefile e script di utilità.
-- `.infra/`: configurazioni centralizzate (Keycloak, Prometheus, Grafana, env).
-- `.infra/svc/`: docker compose per l'infrastruttura condivisa backend (Keycloak, Kafka, Postgres, Prometheus, Grafana, MinIO).
+- `.infra/`: configurazioni centralizzate e Docker Compose (`docker-compose.yml`) per l'infrastruttura backend.
 
 ## Repository meta
 - `LICENSE`: licenza del progetto.

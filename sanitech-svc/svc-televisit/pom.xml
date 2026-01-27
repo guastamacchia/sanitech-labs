@@ -141,6 +141,16 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>it.sanitech.televisit.TelevisitApplication</mainClass>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -149,10 +159,6 @@
           <includes>
             <include>**/*Test.java</include>
           </includes>
-          <excludes>
-            <exclude>**/*IT.java</exclude>
-            <exclude>**/*ITCase.java</exclude>
-          </excludes>
         </configuration>
       </plugin>
     </plugins>
