@@ -2,11 +2,15 @@ import { Injectable, Optional } from '@angular/core';
 import { AuthConfig, OAuthService } from 'angular-oauth2-oidc';
 import { environment } from '../../../environments/environment';
 
+const redirectBase = window.location.origin;
+
 const authConfig: AuthConfig = {
   issuer: `${environment.keycloakUrl}/realms/${environment.realm}`,
   clientId: environment.clientId,
   scope: environment.scope,
   responseType: 'code',
+  redirectUri: redirectBase,
+  postLogoutRedirectUri: redirectBase,
   strictDiscoveryDocumentValidation: false,
   showDebugInformation: !environment.production,
   requireHttps: environment.production
