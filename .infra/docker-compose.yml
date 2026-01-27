@@ -97,6 +97,7 @@ services:
   # =========================
   mailhog:
     image: axllent/mailpit:latest
+    container_name: sanitech-mailhog
     environment:
       MP_UI_AUTH: ${MAILPIT_UI_AUTH}
     ports:
@@ -115,6 +116,7 @@ services:
   # =========================
   minio:
     image: minio/minio:latest
+    container_name: sanitech-minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -135,6 +137,7 @@ services:
   # Inizializza bucket "sanitech-docs"
   minio-mc:
     image: minio/mc:latest
+    container_name: sanitech-minio-mc
     depends_on:
       minio:
         condition: service_healthy
@@ -157,6 +160,7 @@ services:
     build:
       context: ./livekit
     image: sanitech-livekit-server:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-livekit
     command: ["--config", "/etc/livekit/livekit.yaml"]
     ports:
       - "7880:7880"
@@ -226,6 +230,7 @@ services:
   # =========================
   pg-directory:
     image: postgres:16
+    container_name: sanitech-pg-directory
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${DIRECTORY_DATABASE_NAME}
@@ -244,6 +249,7 @@ services:
 
   pg-scheduling:
     image: postgres:16
+    container_name: sanitech-pg-scheduling
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${SCHEDULING_DATABASE_NAME}
@@ -262,6 +268,7 @@ services:
 
   pg-admissions:
     image: postgres:16
+    container_name: sanitech-pg-admissions
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${ADMISSIONS_DATABASE_NAME}
@@ -280,6 +287,7 @@ services:
 
   pg-consents:
     image: postgres:16
+    container_name: sanitech-pg-consents
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${CONSENTS_DATABASE_NAME}
@@ -298,6 +306,7 @@ services:
 
   pg-docs:
     image: postgres:16
+    container_name: sanitech-pg-docs
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${DOCS_DATABASE_NAME}
@@ -316,6 +325,7 @@ services:
 
   pg-gateway:
     image: postgres:16
+    container_name: sanitech-pg-gateway
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${GATEWAY_DATABASE_NAME}
@@ -334,6 +344,7 @@ services:
 
   pg-notifications:
     image: postgres:16
+    container_name: sanitech-pg-notifications
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${NOTIFICATIONS_DATABASE_NAME}
@@ -352,6 +363,7 @@ services:
 
   pg-audit:
     image: postgres:16
+    container_name: sanitech-pg-audit
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${AUDIT_DATABASE_NAME}
@@ -370,6 +382,7 @@ services:
 
   pg-televisit:
     image: postgres:16
+    container_name: sanitech-pg-televisit
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${TELEVISIT_DATABASE_NAME}
@@ -388,6 +401,7 @@ services:
 
   pg-payments:
     image: postgres:16
+    container_name: sanitech-pg-payments
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${PAYMENTS_DATABASE_NAME}
@@ -406,6 +420,7 @@ services:
 
   pg-prescribing:
     image: postgres:16
+    container_name: sanitech-pg-prescribing
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${PRESCRIBING_DATABASE_NAME}
@@ -432,6 +447,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-gateway:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-gateway
     depends_on:
       pg-gateway:
         condition: service_healthy
@@ -495,6 +511,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-directory:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-directory
     depends_on:
       pg-directory:
         condition: service_healthy
@@ -538,6 +555,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-scheduling:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-scheduling
     depends_on:
       pg-scheduling:
         condition: service_healthy
@@ -580,6 +598,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-admissions:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-admissions
     depends_on:
       pg-admissions:
         condition: service_healthy
@@ -622,6 +641,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-consents:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-consents
     depends_on:
       pg-consents:
         condition: service_healthy
@@ -664,6 +684,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-docs:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-docs
     depends_on:
       pg-docs:
         condition: service_healthy
@@ -709,6 +730,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-notifications:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-notifications
     depends_on:
       pg-notifications:
         condition: service_healthy
@@ -760,6 +782,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-audit:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-audit
     depends_on:
       pg-audit:
         condition: service_healthy
@@ -802,6 +825,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-televisit:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-televisit
     depends_on:
       pg-televisit:
         condition: service_healthy
@@ -850,6 +874,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-payments:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-payments
     depends_on:
       pg-payments:
         condition: service_healthy
@@ -893,6 +918,7 @@ services:
       args:
         JAR_FILE: target/*.jar
     image: sanitech/svc-prescribing:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-svc-prescribing
     depends_on:
       pg-prescribing:
         condition: service_healthy
