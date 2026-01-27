@@ -4,6 +4,7 @@ INFRA_DIR ?= .infra/svc
 ENV_DIR ?= .infra/env
 MVN ?= $(shell command -v mvn >/dev/null 2>&1 && echo mvn || echo ./$(SVC_DIR)/mvnw)
 POM ?= $(SVC_DIR)/pom.xml
+MODULE ?=
 MODULES ?=
 PROFILE ?=
 MAVEN_ARGS ?=
@@ -29,14 +30,12 @@ IMAGE ?= sanitech/$(SVC_NAME):$(SERVICE_ENV)
 # Docker Compose
 # =====================================================
 COMPOSE_FILE ?= $(INFRA_DIR)/docker-compose.yml
-COMPOSE_INFRA_PORTS_FILE ?= $(INFRA_DIR)/docker-compose.infra-ports.yml
 ENV ?= local
 COMPOSE_ENV_FILE ?= $(ENV_DIR)/env.$(ENV)
 COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
 
 MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 COMPOSE_FILE := $(abspath $(COMPOSE_FILE))
-COMPOSE_INFRA_PORTS_FILE := $(abspath $(COMPOSE_INFRA_PORTS_FILE))
 COMPOSE_ENV_FILE := $(abspath $(COMPOSE_ENV_FILE))
 SERVICE_COMPOSE_FILE := $(abspath $(SERVICE_COMPOSE_FILE))
 SERVICE_COMPOSE_INFRA_FILE := $(abspath $(SERVICE_COMPOSE_INFRA_FILE))
@@ -53,7 +52,8 @@ endif
 
 DOCKER_COMPOSE := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo "docker compose")
 
-MODULE_SELECTOR = $(if $(strip $(MODULES)),-pl $(MODULES) -am,)
+EFFECTIVE_MODULES := $(strip $(if $(MODULE),$(MODULE),$(MODULES)))
+MODULE_SELECTOR = $(if $(EFFECTIVE_MODULES),-pl $(EFFECTIVE_MODULES) -am,)
 PROFILE_SELECTOR = $(if $(strip $(PROFILE)),-P $(PROFILE),)
 SERVICE_SELECTOR = -pl $(SERVICE) -am
 
@@ -97,7 +97,7 @@ SERVICE_ENV_KEYS := ADMISSIONS_URL AUDIT_URL CLUSTER_ID CONSENTS_BASE_URL CONSEN
   S3_ENDPOINT S3_REGION S3_SECRET_KEY SANITECH_PAYMENTS_WEBHOOK_SECRET SCHEDULING_URL \
   SERVICE_URL SPRING_PROFILES_ACTIVE TELEVISIT_URL TESTCONTAINERS_DOCKER_HOST
 
-$(foreach key,$(SERVICE_ENV_KEYS),$(eval export $(key) := $($(SERVICE_PREFIX)_$(key))))
+$(foreach key,$(SERVICE_ENV_KEYS),$(eval $(key) := $($(SERVICE_PREFIX)_$(key)))$(eval export $(key)))
 
 .PHONY: build test verify clean \
 	docker-build docker-run compose-up compose-up-infra compose-down compose-down-infra compose-config \
@@ -118,6 +118,8 @@ help:
 	@echo "  test                  mvn test su aggregator"
 	@echo "  verify                mvn verify su aggregator"
 	@echo "  clean                 mvn clean su aggregator"
+	@echo "  MODULE=<mod>          seleziona un singolo modulo backend"
+	@echo "  MODULES=<mod1,mod2>   seleziona moduli backend multipli"
 	@echo ""
 	@echo "  compose-up            avvia FULL stack (.infra/svc/docker-compose.yml)"
 	@echo "  compose-up-infra      avvia solo infra (stack globale)"
@@ -180,19 +182,19 @@ docker-run:
 	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) up -d
 
 compose-up: build
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) up -d --build
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) up -d --build
 
 compose-up-infra:
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) up -d $(COMPOSE_INFRA_SERVICES)
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) up -d $(COMPOSE_INFRA_SERVICES)
 
 compose-down:
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) down -v
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) down -v
 
 compose-down-infra:
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) down -v
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) down -v
 
 compose-config:
-	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) $(if $(strip $(COMPOSE_INFRA_PORTS_FILE)),-f $(COMPOSE_INFRA_PORTS_FILE),) config
+	$(DOCKER_COMPOSE) --env-file $(COMPOSE_ENV_FILE) -f $(COMPOSE_FILE) config
 
 # =====================================================
 # Docker (singolo servizio)
@@ -231,10 +233,11 @@ env-print:
 	@echo "SVC_DIR=$(SVC_DIR)"
 	@echo "INFRA_DIR=$(INFRA_DIR)"
 	@echo "COMPOSE_FILE=$(COMPOSE_FILE)"
-	@echo "COMPOSE_INFRA_PORTS_FILE=$(COMPOSE_INFRA_PORTS_FILE)"
 	@echo "COMPOSE_ENV_FILE=$(COMPOSE_ENV_FILE)"
 	@echo "ENV=$(ENV)"
 	@echo "COMPOSE_INFRA_SERVICES=$(COMPOSE_INFRA_SERVICES)"
+	@echo "MODULE=$(MODULE)"
+	@echo "MODULES=$(MODULES)"
 	@echo "SERVICE=$(SERVICE)"
 	@echo "SERVICE_DIR=$(SERVICE_DIR)"
 	@echo "ARTIFACT_ID=$(ARTIFACT_ID)"
