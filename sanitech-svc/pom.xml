@@ -248,9 +248,6 @@
                             <goals>
                                 <goal>repackage</goal>
                             </goals>
-                            <configuration>
-                                <skipIfNoMainClass>true</skipIfNoMainClass>
-                            </configuration>
                         </execution>
                     </executions>
                 </plugin>
