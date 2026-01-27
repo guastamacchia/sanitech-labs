@@ -12,15 +12,6 @@
       },
       {
         "name": "ROLE_PATIENT"
-      },
-      {
-        "name": "ADMIN"
-      },
-      {
-        "name": "DOCTOR"
-      },
-      {
-        "name": "PATIENT"
       }
     ]
   },
@@ -34,7 +25,7 @@
       "standardFlowEnabled": true,
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:4200/*##http://localhost:8080/*"
+        "post.logout.redirect.uris": "http://localhost:4200/* http://localhost:8080/*"
       },
       "redirectUris": [
         "http://localhost:4200/*",
@@ -42,6 +33,24 @@
       ],
       "webOrigins": [
         "*"
+      ]
+    },
+    {
+      "clientId": "sanitech-spa",
+      "name": "Sanitech SPA",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*"
+      },
+      "redirectUris": [
+        "http://localhost:4200/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4200"
       ]
     },
     {
@@ -357,8 +366,7 @@
         }
       ],
       "realmRoles": [
-        "ROLE_ADMIN",
-        "ADMIN"
+        "ROLE_ADMIN"
       ],
       "emailVerified": true,
       "firstName": "Admin",
@@ -385,7 +393,8 @@
       ],
       "realmRoles": [
         "ROLE_DOCTOR"
-      ]
+      ],
+      "createdTimestamp": 1704067200000
     },
     {
       "username": "annaconti",
@@ -400,32 +409,8 @@
       ],
       "realmRoles": [
         "ROLE_PATIENT"
-      ]
-    },
-    {
-      "username": "doctor",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "doctor@sanitech.local",
-      "firstName": "Doctor",
-      "lastName": "User",
-      "createdTimestamp": 1704067200000,
-      "requiredActions": [],
-      "realmRoles": [
-        "DOCTOR"
       ],
-      "attributes": {
-        "dept": [
-          "CARDIO"
-        ]
-      },
-      "credentials": [
-        {
-          "type": "password",
-          "value": "doctor",
-          "temporary": false
-        }
-      ]
+      "createdTimestamp": 1704067200000
     }
   ]
 }
