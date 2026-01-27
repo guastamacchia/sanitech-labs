@@ -21,6 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -235,16 +236,20 @@ public class PaymentOrderService {
     }
 
     private void publishStatusChanged(PaymentOrder order) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("paymentId", order.getId());
+        payload.put("status", order.getStatus().name());
+        if (order.getProvider() != null) {
+            payload.put("provider", order.getProvider());
+        }
+        if (order.getProviderReference() != null) {
+            payload.put("providerReference", order.getProviderReference());
+        }
         domainEventPublisher.publish(
                 AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT,
                 String.valueOf(order.getId()),
                 AppConstants.Outbox.EVT_STATUS_CHANGED,
-                Map.of(
-                        "paymentId", order.getId(),
-                        "status", order.getStatus().name(),
-                        "provider", order.getProvider(),
-                        "providerReference", order.getProviderReference()
-                )
+                payload
         );
     }
 
