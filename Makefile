@@ -13,12 +13,9 @@ MAVEN_ARGS ?=
 # Servizi (singolo microservizio)
 # =====================================================
 SERVICE ?= svc-directory
-ARTIFACT_ID ?= $(SERVICE)
-SVC_NAME ?= $(ARTIFACT_ID)
 SERVICE_PROFILE ?= remote
 SERVICE_ENV ?= $(SERVICE_PROFILE)
 
-SERVICE_DIR ?= $(SVC_DIR)/$(SERVICE)
 SERVICE_ENV_FILE ?= $(ENV_DIR)/env.$(SERVICE_ENV)
 
 # =====================================================
@@ -29,7 +26,6 @@ ENV ?= local
 COMPOSE_ENV_FILE ?= $(ENV_DIR)/env.$(ENV)
 COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
 
-MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 COMPOSE_FILE := $(abspath $(COMPOSE_FILE))
 COMPOSE_ENV_FILE := $(abspath $(COMPOSE_ENV_FILE))
 SERVICE_ENV_FILE := $(abspath $(SERVICE_ENV_FILE))
@@ -97,8 +93,6 @@ export $(SERVICE_ENV_KEYS)
 	svc-build svc-test svc-run \
 	env-print help
 
-export ARTIFACT_ID
-export SVC_NAME
 export SERVICE_PROFILE
 export SERVICE_ENV
 
@@ -182,9 +176,6 @@ env-print:
 	@echo "MODULE=$(MODULE)"
 	@echo "MODULES=$(MODULES)"
 	@echo "SERVICE=$(SERVICE)"
-	@echo "SERVICE_DIR=$(SERVICE_DIR)"
-	@echo "ARTIFACT_ID=$(ARTIFACT_ID)"
-	@echo "SVC_NAME=$(SVC_NAME)"
 	@echo "SERVICE_PROFILE=$(SERVICE_PROFILE)"
 	@echo "SERVICE_ENV=$(SERVICE_ENV)"
 	@echo "SERVICE_ENV_FILE=$(SERVICE_ENV_FILE)"
