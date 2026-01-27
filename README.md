@@ -6,7 +6,7 @@ Monorepo della piattaforma **Sanitech**.
 - **Frontend** (`sanitech-fe`): SPA Angular.
 
 ## Prerequisiti
-- Docker / Docker Compose (con plugin Buildx per build locali)
+- Docker / Docker Compose (Buildx opzionale; utile per build multi-arch)
 - Java 21
 - Node.js (solo se si modifica la toolchain frontend)
 
@@ -18,6 +18,11 @@ bash .script/backend/up.sh            # avvia tutto lo stack
 # logs:   bash .script/backend/logs.sh
 # stop:   bash .script/backend/down.sh
 # stato:  bash .script/backend/status.sh
+```
+
+Per usare un file env diverso da quello locale:
+```bash
+ENV=remote make compose-up-infra
 ```
 
 ### Frontend
