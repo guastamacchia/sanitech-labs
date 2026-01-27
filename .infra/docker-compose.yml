@@ -44,8 +44,7 @@ services:
   # - INTERNAL: per i container Docker (kafka:9092)
   # - EXTERNAL: per accesso dall'host (${KAFKA_ADVERTISED_HOST}:29092)
   kafka:
-    build:
-      context: ./kafka
+    image: confluentinc/cp-kafka:7.7.1
     container_name: sanitech-kafka
     ports:
       - "9092:9092"

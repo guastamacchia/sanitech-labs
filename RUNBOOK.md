@@ -23,7 +23,7 @@ Da repository root:
 make -C sanitech-svc compose-up
 make -C sanitech-svc compose-up-infra
 COMPOSE_BUILD=0 make -C sanitech-svc compose-up-infra   # salta il build immagini se vuoi usare immagini già disponibili
-ENV=remote make -C sanitech-svc compose-up-infra        # usa il file .infra/env/env.remote
+ENV=staging make -C sanitech-svc compose-up-infra       # usa il file .infra/env/env.staging
 make -C sanitech-svc compose-down
 make -C sanitech-svc compose-config
 make -C sanitech-svc env-print
