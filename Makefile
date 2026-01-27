@@ -97,7 +97,7 @@ SERVICE_ENV_KEYS := ADMISSIONS_URL AUDIT_URL CLUSTER_ID CONSENTS_BASE_URL CONSEN
   S3_ENDPOINT S3_REGION S3_SECRET_KEY SANITECH_PAYMENTS_WEBHOOK_SECRET SCHEDULING_URL \
   SERVICE_URL SPRING_PROFILES_ACTIVE TELEVISIT_URL TESTCONTAINERS_DOCKER_HOST
 
-$(foreach key,$(SERVICE_ENV_KEYS),$(eval export $(key) := $($(SERVICE_PREFIX)_$(key))))
+$(foreach key,$(SERVICE_ENV_KEYS),$(eval $(key) := $($(SERVICE_PREFIX)_$(key)))$(eval export $(key)))
 
 .PHONY: build test verify clean \
 	docker-build docker-run compose-up compose-up-infra compose-down compose-down-infra compose-config \
