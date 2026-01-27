@@ -144,10 +144,6 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
-                    <excludes>
-                        <exclude>**/*IT.java</exclude>
-                        <exclude>**/*ITCase.java</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
