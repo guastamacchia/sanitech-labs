@@ -42,19 +42,8 @@ npm start
 URL:
 - SPA pubblica/privata: http://localhost:4200
 
-Legacy (micro‑frontend statici via Docker Compose):
-```bash
-cd sanitech-fe
-docker compose -f ../.infra/fe/docker-compose.yml up -d --build
-```
-
-Dockerfile:
-- I Dockerfile legacy dei micro‑frontend sono in `../.infra/fe/dockerfiles/`.
-- La SPA Angular può essere containerizzata separatamente (es. con Nginx) se richiesto.
-
 Layout:
 - `src`: SPA Angular (portale pubblico + area privata con ruoli).
-- `../.infra/fe/dockerfiles/`: Dockerfile legacy dei micro‑frontend statici rimossi.
 - `.script/frontend/`: helper per up/down/logs/status.
 
 Note:
