@@ -26,6 +26,7 @@ import org.mockito.Mockito;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -144,7 +145,7 @@ class SlotServiceTest {
                 .endAt(Instant.parse("2024-01-01T10:30:00Z"))
                 .status(SlotStatus.AVAILABLE)
                 .build();
-        when(repository.findAll(any(), any(PageRequest.class)))
+        when(repository.findAll(any(Specification.class), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 1), 1));
         when(mapper.toDto(any(Slot.class))).thenAnswer(invocation -> toDto(invocation.getArgument(0)));
 

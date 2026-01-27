@@ -19,7 +19,6 @@ import it.sanitech.scheduling.services.dto.create.SlotCreateDto;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -89,8 +88,7 @@ class SlotAdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(20));
 
-        ArgumentCaptor<List<SlotCreateDto>> captor = ArgumentCaptor.forClass(List.class);
-        verify(slotService).createSlotsBulk(captor.capture(), eq(auth));
+        verify(slotService).createSlotsBulk(eq(request), eq(auth));
     }
 
     @Test
