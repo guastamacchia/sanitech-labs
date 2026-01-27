@@ -17,25 +17,6 @@
   },
   "clients": [
     {
-      "clientId": "sanitech-web",
-      "name": "Sanitech Web (Dev)",
-      "protocol": "openid-connect",
-      "publicClient": true,
-      "directAccessGrantsEnabled": true,
-      "standardFlowEnabled": true,
-      "attributes": {
-        "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:4200/* http://localhost:8080/*"
-      },
-      "redirectUris": [
-        "http://localhost:4200/*",
-        "http://localhost:8080/*"
-      ],
-      "webOrigins": [
-        "*"
-      ]
-    },
-    {
       "clientId": "sanitech-spa",
       "name": "Sanitech SPA",
       "protocol": "openid-connect",
