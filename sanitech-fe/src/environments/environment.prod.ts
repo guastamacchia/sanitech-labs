@@ -5,6 +5,6 @@ export const environment = {
   gatewayUrl: 'https://gateway.sanitech.tld',
   keycloakUrl: 'https://auth.sanitech.tld',
   realm: 'sanitech',
-  clientId: 'sanitech-web',
+  clientId: 'sanitech-spa',
   scope: 'openid profile email'
 };
