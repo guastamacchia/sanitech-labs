@@ -21,7 +21,8 @@ SERVICE_PROFILE ?= $(ENV)
 COMPOSE_FILE ?= $(INFRA_DIR)/docker-compose.yml
 ENV_FILE ?= $(ENV_DIR)/env.$(ENV)
 COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
-COMPOSE_BUILD ?= 1
+COMPOSE_BUILD_DEFAULT := $(shell command -v docker >/dev/null 2>&1 && docker buildx version >/dev/null 2>&1 && echo 1 || echo 0)
+COMPOSE_BUILD ?= $(COMPOSE_BUILD_DEFAULT)
 
 COMPOSE_FILE := $(abspath $(COMPOSE_FILE))
 ENV_FILE := $(abspath $(ENV_FILE))
@@ -96,7 +97,7 @@ help:
 	@echo "  clean                 mvn clean su aggregator"
 	@echo "  MODULE=<mod>          seleziona un singolo modulo backend"
 	@echo "  MODULES=<mod1,mod2>   seleziona moduli backend multipli"
-	@echo "  COMPOSE_BUILD=0       disabilita build immagini compose (usa --no-build)"
+	@echo "  COMPOSE_BUILD=0       disabilita build immagini compose (auto: $(COMPOSE_BUILD_DEFAULT))"
 	@echo ""
 	@echo "  compose-up            avvia FULL stack (.infra/docker-compose.yml)"
 	@echo "  compose-up-infra      avvia solo infra (stack globale)"
