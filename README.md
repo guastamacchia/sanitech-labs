@@ -6,7 +6,7 @@ Monorepo della piattaforma **Sanitech**.
 - **Frontend** (`sanitech-fe`): SPA Angular.
 
 ## Prerequisiti
-- Docker / Docker Compose (con plugin Buildx per build locali)
+- Docker / Docker Compose (Buildx opzionale; utile per build multi-arch)
 - Java 21
 - Node.js (solo se si modifica la toolchain frontend)
 
