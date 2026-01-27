@@ -22,6 +22,7 @@ Da repository root:
 ```bash
 make -C sanitech-svc compose-up
 make -C sanitech-svc compose-up-infra
+COMPOSE_BUILD=0 make -C sanitech-svc compose-up-infra   # salta il build immagini se manca buildx
 make -C sanitech-svc compose-down
 make -C sanitech-svc compose-config
 make -C sanitech-svc env-print
