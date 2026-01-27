@@ -1,4 +1,3 @@
-# Prefer Maven already installed on the host to avoid wrapper downloads when offline.
 SVC_DIR ?= sanitech-svc
 INFRA_DIR ?= .infra
 ENV_DIR ?= .infra/env
@@ -8,18 +7,18 @@ MODULE ?=
 MODULES ?=
 PROFILE ?=
 MAVEN_ARGS ?=
+ENV ?= remote
 
 # =====================================================
 # Servizi (singolo microservizio)
 # =====================================================
 SERVICE ?= svc-directory
-SERVICE_PROFILE ?= remote
+SERVICE_PROFILE ?= $(ENV)
 
 # =====================================================
 # Docker Compose
 # =====================================================
 COMPOSE_FILE ?= $(INFRA_DIR)/docker-compose.yml
-ENV ?= local
 ENV_FILE ?= $(ENV_DIR)/env.$(ENV)
 COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
 
