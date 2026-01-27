@@ -25,7 +25,12 @@
       "standardFlowEnabled": true,
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:4200 http://localhost:4200/* http://localhost:8080 http://localhost:8080/*"
+        "post.logout.redirect.uris": [
+          "http://localhost:4200",
+          "http://localhost:4200/*",
+          "http://localhost:8080",
+          "http://localhost:8080/*"
+        ]
       },
       "redirectUris": [
         "http://localhost:4200",
@@ -386,6 +391,7 @@
       "realmRoles": [
         "ROLE_DOCTOR"
       ],
+      "emailVerified": true,
       "firstName": "Mario",
       "lastName": "Rossi",
       "createdTimestamp": 1704067200000
@@ -404,6 +410,7 @@
       "realmRoles": [
         "ROLE_PATIENT"
       ],
+      "emailVerified": true,
       "firstName": "Anna",
       "lastName": "Conti",
       "createdTimestamp": 1704067200000
