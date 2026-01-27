@@ -21,6 +21,7 @@ SERVICE_PROFILE ?= $(ENV)
 COMPOSE_FILE ?= $(INFRA_DIR)/docker-compose.yml
 ENV_FILE ?= $(ENV_DIR)/env.$(ENV)
 COMPOSE_INFRA_SERVICES ?= pg-directory pg-scheduling pg-admissions pg-consents pg-docs pg-notifications pg-audit pg-televisit pg-payments pg-prescribing kafka keycloak prometheus grafana minio mailhog
+COMPOSE_BUILD ?= 1
 
 COMPOSE_FILE := $(abspath $(COMPOSE_FILE))
 ENV_FILE := $(abspath $(ENV_FILE))
@@ -30,6 +31,7 @@ $(error Env file non trovato: $(ENV_FILE))
 endif
 
 DOCKER_COMPOSE := $(shell command -v docker-compose >/dev/null 2>&1 && echo docker-compose || echo "docker compose")
+COMPOSE_BUILD_FLAG := $(if $(filter 1 true yes,$(COMPOSE_BUILD)),--build,--no-build)
 
 EFFECTIVE_MODULES := $(strip $(if $(MODULE),$(MODULE),$(MODULES)))
 MODULE_SELECTOR = $(if $(EFFECTIVE_MODULES),-pl $(EFFECTIVE_MODULES) -am,)
@@ -94,6 +96,7 @@ help:
 	@echo "  clean                 mvn clean su aggregator"
 	@echo "  MODULE=<mod>          seleziona un singolo modulo backend"
 	@echo "  MODULES=<mod1,mod2>   seleziona moduli backend multipli"
+	@echo "  COMPOSE_BUILD=0       disabilita build immagini compose (usa --no-build)"
 	@echo ""
 	@echo "  compose-up            avvia FULL stack (.infra/docker-compose.yml)"
 	@echo "  compose-up-infra      avvia solo infra (stack globale)"
@@ -142,10 +145,10 @@ svc-run:
 # Docker Compose
 # =====================================================
 compose-up: build
-	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build
+	@set -a; . $(ENV_FILE); set +a; $(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d $(COMPOSE_BUILD_FLAG)
 
 compose-up-infra:
-	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d --build $(COMPOSE_INFRA_SERVICES)
+	@set -a; . $(ENV_FILE); set +a; $(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d $(COMPOSE_BUILD_FLAG) $(COMPOSE_INFRA_SERVICES)
 
 compose-down:
 	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) down -v
@@ -154,7 +157,7 @@ compose-down-infra:
 	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) down -v
 
 compose-config:
-	$(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) config
+	@set -a; . $(ENV_FILE); set +a; $(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) config
 
 env-print:
 	@echo "SVC_DIR=$(SVC_DIR)"
