@@ -10,7 +10,7 @@ services:
   keycloak:
     build:
       context: ./keycloak
-    image: sanitech/keycloak:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/keycloak:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # =========================
       # Bootstrap admin user
@@ -46,7 +46,7 @@ services:
   kafka:
     build:
       context: ./kafka
-    image: sanitech/kafka:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/kafka:${SPRING_PROFILES_ACTIVE:-local}
     ports:
       - "9092:9092"
       - "29092:29092"
@@ -99,7 +99,7 @@ services:
   mailhog:
     build:
       context: ./mailhog
-    image: sanitech/mailhog:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/mailhog:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       MP_UI_AUTH: ${MAILPIT_UI_AUTH}
     ports:
@@ -119,7 +119,7 @@ services:
   minio:
     build:
       context: ./minio
-    image: sanitech/minio:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/minio:${SPRING_PROFILES_ACTIVE:-local}
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -141,7 +141,7 @@ services:
   minio-mc:
     build:
       context: ./minio-mc
-    image: sanitech/minio-mc:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/minio-mc:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       minio:
         condition: service_healthy
@@ -163,7 +163,7 @@ services:
   livekit:
     build:
       context: ./livekit
-    image: sanitech/livekit-server:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/livekit-server:${SPRING_PROFILES_ACTIVE:-local}
     command: ["--config", "/etc/livekit/livekit.yaml"]
     ports:
       - "7880:7880"
@@ -178,7 +178,7 @@ services:
   prometheus:
     build:
       context: ./prometheus
-    image: sanitech/prometheus:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/prometheus:${SPRING_PROFILES_ACTIVE:-local}
     command:
       # File di configurazione statico di Prometheus.
       - --config.file=/etc/prometheus/prometheus.yml
@@ -207,7 +207,7 @@ services:
   grafana:
     build:
       context: ./grafana
-    image: sanitech/grafana:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/grafana:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       - prometheus
     environment:
@@ -234,7 +234,7 @@ services:
   pg-directory:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${DIRECTORY_DATABASE_NAME}
@@ -254,7 +254,7 @@ services:
   pg-scheduling:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${SCHEDULING_DATABASE_NAME}
@@ -274,7 +274,7 @@ services:
   pg-admissions:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${ADMISSIONS_DATABASE_NAME}
@@ -294,7 +294,7 @@ services:
   pg-consents:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${CONSENTS_DATABASE_NAME}
@@ -314,7 +314,7 @@ services:
   pg-docs:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${DOCS_DATABASE_NAME}
@@ -334,7 +334,7 @@ services:
   pg-gateway:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${GATEWAY_DATABASE_NAME}
@@ -354,7 +354,7 @@ services:
   pg-notifications:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${NOTIFICATIONS_DATABASE_NAME}
@@ -374,7 +374,7 @@ services:
   pg-audit:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${AUDIT_DATABASE_NAME}
@@ -394,7 +394,7 @@ services:
   pg-televisit:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${TELEVISIT_DATABASE_NAME}
@@ -414,7 +414,7 @@ services:
   pg-payments:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${PAYMENTS_DATABASE_NAME}
@@ -434,7 +434,7 @@ services:
   pg-prescribing:
     build:
       context: ./postgres
-    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/postgres:${SPRING_PROFILES_ACTIVE:-local}
     environment:
       # Mapping tecnico richiesto dall'immagine Postgres.
       POSTGRES_DB: ${PRESCRIBING_DATABASE_NAME}
@@ -460,7 +460,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-gateway:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-gateway:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-gateway:
         condition: service_healthy
@@ -471,7 +471,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
@@ -523,7 +523,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-directory:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-directory:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-directory:
         condition: service_healthy
@@ -535,7 +535,7 @@ services:
       # Espone API REST sull'host.
       - "8082:8082"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
@@ -566,7 +566,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-scheduling:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-scheduling:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-scheduling:
         condition: service_healthy
@@ -577,7 +577,7 @@ services:
     ports:
       - "8083:8083"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
@@ -608,7 +608,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-admissions:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-admissions:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-admissions:
         condition: service_healthy
@@ -619,7 +619,7 @@ services:
     ports:
       - "8084:8084"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
@@ -650,7 +650,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-consents:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-consents:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-consents:
         condition: service_healthy
@@ -661,7 +661,7 @@ services:
     ports:
       - "8085:8085"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
@@ -692,7 +692,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-docs:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-docs:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-docs:
         condition: service_healthy
@@ -705,7 +705,7 @@ services:
     ports:
       - "8086:8086"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
@@ -737,7 +737,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-notifications:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-notifications:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-notifications:
         condition: service_healthy
@@ -750,7 +750,7 @@ services:
     ports:
       - "8087:8087"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
@@ -788,7 +788,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-audit:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-audit:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-audit:
         condition: service_healthy
@@ -799,7 +799,7 @@ services:
     ports:
       - "8088:8088"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
@@ -830,7 +830,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-televisit:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-televisit:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-televisit:
         condition: service_healthy
@@ -843,7 +843,7 @@ services:
     ports:
       - "8089:8089"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
@@ -878,7 +878,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-payments:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-payments:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-payments:
         condition: service_healthy
@@ -889,7 +889,7 @@ services:
     ports:
       - "8090:8090"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
@@ -921,7 +921,7 @@ services:
       dockerfile: src/main/docker/Dockerfile
       args:
         JAR_FILE: target/*.jar
-    image: sanitech/svc-prescribing:${SPRING_PROFILES_ACTIVE}
+    image: sanitech/svc-prescribing:${SPRING_PROFILES_ACTIVE:-local}
     depends_on:
       pg-prescribing:
         condition: service_healthy
@@ -934,7 +934,7 @@ services:
     ports:
       - "8091:8091"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       DATABASE_HOST: ${DATABASE_HOST}
       DATABASE_PORT: ${DATABASE_PORT}
       DATABASE_USER: ${DATABASE_USER}
