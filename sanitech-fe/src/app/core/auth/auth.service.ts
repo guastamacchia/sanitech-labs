@@ -2,11 +2,15 @@ import { Injectable, Optional } from '@angular/core';
 import { AuthConfig, OAuthService } from 'angular-oauth2-oidc';
 import { environment } from '../../../environments/environment';
 
+const redirectBase = window.location.origin;
+
 const authConfig: AuthConfig = {
   issuer: `${environment.keycloakUrl}/realms/${environment.realm}`,
   clientId: environment.clientId,
   scope: environment.scope,
   responseType: 'code',
+  redirectUri: redirectBase,
+  postLogoutRedirectUri: redirectBase,
   strictDiscoveryDocumentValidation: false,
   showDebugInformation: !environment.production,
   requireHttps: environment.production
@@ -45,18 +49,26 @@ export class AuthService {
     return (this.oauth.getIdentityClaims() as Record<string, unknown>) ?? {};
   }
 
+  private get accessTokenClaims(): Record<string, unknown> {
+    return this.decodeJwt(this.oauth.getAccessToken());
+  }
+
   get displayName(): string {
     return (this.identityClaims['name'] as string) || (this.identityClaims['preferred_username'] as string) || 'Utente';
   }
 
   hasRole(role: string): boolean {
-    const realmAccess = this.identityClaims['realm_access'] as { roles?: string[] } | undefined;
+    const realmAccess =
+      (this.accessTokenClaims['realm_access'] as { roles?: string[] } | undefined) ||
+      (this.identityClaims['realm_access'] as { roles?: string[] } | undefined);
     const roles = realmAccess?.roles ?? [];
     return roles.includes(role);
   }
 
   get roleLabel(): string {
-    const realmAccess = this.identityClaims['realm_access'] as { roles?: string[] } | undefined;
+    const realmAccess =
+      (this.accessTokenClaims['realm_access'] as { roles?: string[] } | undefined) ||
+      (this.identityClaims['realm_access'] as { roles?: string[] } | undefined);
     const role = realmAccess?.roles?.[0];
     if (!role) {
       return '';
@@ -78,5 +90,27 @@ export class AuthService {
       throw new Error('OAuthService non configurato');
     }
     return this.oauthService;
+  }
+
+  private decodeJwt(token: string): Record<string, unknown> {
+    if (!token) {
+      return {};
+    }
+    const payload = token.split('.')[1];
+    if (!payload) {
+      return {};
+    }
+    try {
+      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const json = decodeURIComponent(
+        atob(normalized)
+          .split('')
+          .map((char) => `%${`00${char.charCodeAt(0).toString(16)}`.slice(-2)}`)
+          .join('')
+      );
+      return JSON.parse(json) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
   }
 }
