@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import it.sanitech.commons.exception.GlobalExceptionHandler;
 import it.sanitech.scheduling.repositories.entities.SlotStatus;
 import it.sanitech.scheduling.repositories.entities.VisitMode;
@@ -43,7 +44,7 @@ class SlotAdminControllerTest {
     @MockBean
     private SlotService slotService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @Test
     void createReturnsDto() throws Exception {

@@ -190,6 +190,7 @@ class AppointmentServiceTest {
     private static JwtAuthenticationToken adminAuth() {
         Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "none")
+                .claim("sub", "admin")
                 .build();
         return new JwtAuthenticationToken(jwt, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
     }
