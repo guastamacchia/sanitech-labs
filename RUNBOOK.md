@@ -29,8 +29,7 @@ make -C sanitech-svc compose-config
 make -C sanitech-svc env-print
 ```
 
-Nota: se hai `DOCKER_HOST` settata nel tuo shell environment e vuoi usare il motore Docker locale,
-assicurati che `DOCKER_HOST` sia vuota o usa `ENV=local` (che la azzera).
+
 
 ### Frontend
 Prerequisiti:
