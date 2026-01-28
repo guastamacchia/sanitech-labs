@@ -136,9 +136,9 @@ export const directoryEndpoints = [
     path: '/api/doctors'
   },
   {
-    label: 'Crea medico',
+    label: 'Admin: crea medico',
     method: 'POST',
-    path: '/api/doctors',
+    path: '/api/admin/doctors',
     payload: '{"firstName": "Mario", "lastName": "Rossi", "speciality": "CARD"}'
   },
   {
@@ -147,9 +147,9 @@ export const directoryEndpoints = [
     path: '/api/patients'
   },
   {
-    label: 'Crea paziente',
+    label: 'Admin: crea paziente',
     method: 'POST',
-    path: '/api/patients',
+    path: '/api/admin/patients',
     payload: '{"firstName": "Anna", "lastName": "Conti", "email": "anna.conti@sanitech.example"}'
   },
   {
