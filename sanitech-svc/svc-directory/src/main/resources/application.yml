@@ -151,6 +151,7 @@ sanitech:
       - /actuator/info
       - /actuator/metrics/**
       - /actuator/prometheus
+      - /api/public/patients
   openapi:
     enabled: true
     group: directory

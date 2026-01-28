@@ -131,6 +131,17 @@ public class PatientService {
         return patientMapper.toDto(saved);
     }
 
+    public PatientDto createPublic(PatientCreateDto dto) {
+        PatientCreateDto sanitized = new PatientCreateDto(
+                dto.firstName(),
+                dto.lastName(),
+                dto.email(),
+                dto.phone(),
+                Set.of()
+        );
+        return create(sanitized, null);
+    }
+
     public PatientDto patch(Long id, PatientUpdateDto dto, Authentication auth) {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
         String previousEmail = entity.getEmail();
