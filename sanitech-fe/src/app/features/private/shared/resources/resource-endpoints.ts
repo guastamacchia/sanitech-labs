@@ -224,6 +224,6 @@ export const auditEndpoints = [
   {
     label: 'Audit trail',
     method: 'GET',
-    path: '/api/audit'
+    path: '/api/audit/events'
   }
 ];
