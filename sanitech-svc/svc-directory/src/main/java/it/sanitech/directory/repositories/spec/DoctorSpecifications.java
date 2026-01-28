@@ -16,7 +16,7 @@ import java.util.List;
  *
  * <p>
  * Produce {@link Specification} componibili per nome/cognome/email e per filtri su reparto e
- * specializzazione, mantenendo la query distinct per gestire le join many-to-many.
+ * specializzazione.
  * </p>
  */
 public final class DoctorSpecifications {
@@ -25,8 +25,6 @@ public final class DoctorSpecifications {
 
     public static Specification<Doctor> search(String q, String departmentCode, String specializationCode) {
         return (root, query, cb) -> {
-            query.distinct(true);
-
             List<Predicate> predicates = new ArrayList<>();
 
             if (q != null && !q.isBlank()) {
@@ -39,12 +37,12 @@ public final class DoctorSpecifications {
             }
 
             if (departmentCode != null && !departmentCode.isBlank()) {
-                Join<Doctor, Department> dep = root.join("departments", JoinType.INNER);
+                Join<Doctor, Department> dep = root.join("department", JoinType.INNER);
                 predicates.add(cb.equal(cb.upper(dep.get("code")), departmentCode.trim().toUpperCase()));
             }
 
             if (specializationCode != null && !specializationCode.isBlank()) {
-                Join<Doctor, Specialization> spec = root.join("specializations", JoinType.INNER);
+                Join<Doctor, Specialization> spec = root.join("specialization", JoinType.INNER);
                 predicates.add(cb.equal(cb.upper(spec.get("code")), specializationCode.trim().toUpperCase()));
             }
 

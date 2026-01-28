@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Service applicativo per la gestione dei medici.
@@ -65,21 +64,21 @@ public class DoctorService {
             throw new IllegalArgumentException("Esiste già un medico con email '" + email + "'.");
         }
 
-        Set<String> deptCodes = normalizeCodes(dto.departmentCodes());
-        Set<String> specCodes = normalizeCodes(dto.specializationCodes());
+        String deptCode = normalizeCode(dto.departmentCode(), "Reparto obbligatorio.");
+        String specCode = normalizeCode(dto.specializationCode(), "Specializzazione obbligatoria.");
 
         // ABAC: se l'utente non è admin, deve avere DEPT_* per tutti i reparti richiesti.
-        deptGuard.checkCanManageAll(deptCodes, auth);
+        deptGuard.checkCanManageAll(Set.of(deptCode), auth);
 
-        Set<Department> departments = resolveDepartments(deptCodes);
-        Set<Specialization> specializations = resolveSpecializations(specCodes);
+        Department department = resolveDepartment(deptCode);
+        Specialization specialization = resolveSpecialization(specCode);
 
         Doctor entity = Doctor.builder()
                 .firstName(dto.firstName().trim())
                 .lastName(dto.lastName().trim())
                 .email(email)
-                .departments(departments)
-                .specializations(specializations)
+                .department(department)
+                .specialization(specialization)
                 .build();
 
         Doctor saved = doctorRepository.save(entity);
@@ -93,8 +92,8 @@ public class DoctorService {
                         "firstName", saved.getFirstName(),
                         "lastName", saved.getLastName(),
                         "email", saved.getEmail(),
-                        "departments", deptCodes,
-                        "specializations", specCodes
+                        "departmentCode", deptCode,
+                        "specializationCode", specCode
                 )
         );
 
@@ -119,16 +118,16 @@ public class DoctorService {
         entity.setLastName(entity.getLastName().trim());
         entity.setEmail(normalizeEmail(entity.getEmail()));
 
-        // Reparti e specializzazioni: se presenti nel DTO, sostituiscono l'insieme corrente.
-        if (Objects.nonNull(dto.departmentCodes())) {
-            Set<String> deptCodes = normalizeCodes(dto.departmentCodes());
-            deptGuard.checkCanManageAll(deptCodes, auth);
-            entity.setDepartments(resolveDepartments(deptCodes));
+        // Reparto e specializzazione: se presenti nel DTO, sostituiscono il valore corrente.
+        if (Objects.nonNull(dto.departmentCode())) {
+            String deptCode = normalizeCode(dto.departmentCode(), "Reparto non valido.");
+            deptGuard.checkCanManageAll(Set.of(deptCode), auth);
+            entity.setDepartment(resolveDepartment(deptCode));
         }
 
-        if (Objects.nonNull(dto.specializationCodes())) {
-            Set<String> specCodes = normalizeCodes(dto.specializationCodes());
-            entity.setSpecializations(resolveSpecializations(specCodes));
+        if (Objects.nonNull(dto.specializationCode())) {
+            String specCode = normalizeCode(dto.specializationCode(), "Specializzazione non valida.");
+            entity.setSpecialization(resolveSpecialization(specCode));
         }
 
         Doctor saved = doctorRepository.save(entity);
@@ -142,8 +141,8 @@ public class DoctorService {
                         "firstName", saved.getFirstName(),
                         "lastName", saved.getLastName(),
                         "email", saved.getEmail(),
-                        "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet()),
-                        "specializations", saved.getSpecializations().stream().map(Specialization::getCode).collect(Collectors.toSet())
+                        "departmentCode", saved.getDepartment().getCode(),
+                        "specializationCode", saved.getSpecialization().getCode()
                 )
         );
 
@@ -185,32 +184,14 @@ public class DoctorService {
         return result.map(doctorMapper::toDto);
     }
 
-    private Set<Department> resolveDepartments(Set<String> deptCodes) {
-        List<Department> found = departmentRepository.findByCodeIn(deptCodes);
-        Set<String> foundCodes = found.stream().map(Department::getCode).collect(Collectors.toSet());
-
-        Set<String> missing = deptCodes.stream()
-                .filter(c -> !foundCodes.contains(c))
-                .collect(Collectors.toSet());
-
-        if (!missing.isEmpty()) {
-            throw new IllegalArgumentException("Reparti non validi: " + String.join(",", missing));
-        }
-        return new HashSet<>(found);
+    private Department resolveDepartment(String deptCode) {
+        return departmentRepository.findByCodeIgnoreCase(deptCode)
+                .orElseThrow(() -> new IllegalArgumentException("Reparto non valido: " + deptCode));
     }
 
-    private Set<Specialization> resolveSpecializations(Set<String> specCodes) {
-        List<Specialization> found = specializationRepository.findByCodeIn(specCodes);
-        Set<String> foundCodes = found.stream().map(Specialization::getCode).collect(Collectors.toSet());
-
-        Set<String> missing = specCodes.stream()
-                .filter(c -> !foundCodes.contains(c))
-                .collect(Collectors.toSet());
-
-        if (!missing.isEmpty()) {
-            throw new IllegalArgumentException("Specializzazioni non valide: " + String.join(",", missing));
-        }
-        return new HashSet<>(found);
+    private Specialization resolveSpecialization(String specCode) {
+        return specializationRepository.findByCodeIgnoreCase(specCode)
+                .orElseThrow(() -> new IllegalArgumentException("Specializzazione non valida: " + specCode));
     }
 
     private String normalizeEmail(String email) {
@@ -218,13 +199,14 @@ public class DoctorService {
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
-    private Set<String> normalizeCodes(Set<String> codes) {
-        if (Objects.isNull(codes) || codes.isEmpty()) return Set.of();
-        return codes.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .map(s -> s.toUpperCase(Locale.ROOT))
-                .collect(Collectors.toSet());
+    private String normalizeCode(String code, String errorMessage) {
+        if (Objects.isNull(code)) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+        String normalized = code.trim().toUpperCase(Locale.ROOT);
+        if (normalized.isBlank()) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+        return normalized;
     }
 }

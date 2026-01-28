@@ -3,16 +3,12 @@ package it.sanitech.directory.repositories.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
-
 /**
  * Entità Medico (Directory).
  *
  * <p>
  * Rappresenta i dati anagrafici del medico e le relazioni con reparti e specializzazioni.
- * Le associazioni many-to-many sono gestite tramite tabelle ponte dedicate e la mail è
- * vincolata a unicità per evitare duplicazioni anagrafiche.
+ * Ogni medico è associato a un singolo reparto e a una singola specializzazione.
  * </p>
  */
 @Entity
@@ -40,23 +36,13 @@ public class Doctor {
     @Column(nullable = false, length = 200)
     private String email;
 
-    /** Reparti di competenza/appartenenza del medico. */
-    @Builder.Default
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "doctor_departments",
-            joinColumns = @JoinColumn(name = "doctor_id"),
-            inverseJoinColumns = @JoinColumn(name = "department_id")
-    )
-    private Set<Department> departments = new HashSet<>();
+    /** Reparto di competenza/appartenenza del medico. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
 
-    /** Specializzazioni del medico. */
-    @Builder.Default
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "doctor_specializations",
-            joinColumns = @JoinColumn(name = "doctor_id"),
-            inverseJoinColumns = @JoinColumn(name = "specialization_id")
-    )
-    private Set<Specialization> specializations = new HashSet<>();
+    /** Specializzazione del medico. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "specialization_id", nullable = false)
+    private Specialization specialization;
 }
