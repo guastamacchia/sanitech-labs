@@ -10,6 +10,8 @@ import it.sanitech.directory.repositories.entities.Doctor;
 import it.sanitech.directory.repositories.entities.Specialization;
 import it.sanitech.directory.repositories.spec.DoctorSpecifications;
 import it.sanitech.commons.security.DeptGuard;
+import it.sanitech.directory.integrations.keycloak.KeycloakAdminClient;
+import it.sanitech.directory.integrations.keycloak.KeycloakUserSyncRequest;
 import it.sanitech.directory.services.dto.DoctorDto;
 import it.sanitech.directory.services.dto.create.DoctorCreateDto;
 import it.sanitech.directory.services.dto.update.DoctorUpdateDto;
@@ -50,6 +52,7 @@ public class DoctorService {
     private final DoctorMapper doctorMapper;
     private final DomainEventPublisher eventPublisher;
     private final DeptGuard deptGuard;
+    private final KeycloakAdminClient keycloakAdminClient;
 
     @Transactional(readOnly = true)
     public DoctorDto get(Long id) {
@@ -83,6 +86,14 @@ public class DoctorService {
 
         Doctor saved = doctorRepository.save(entity);
 
+        keycloakAdminClient.syncUser(new KeycloakUserSyncRequest(
+                saved.getEmail(),
+                saved.getFirstName(),
+                saved.getLastName(),
+                null,
+                true
+        ));
+
         eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 String.valueOf(saved.getId()),
@@ -102,6 +113,7 @@ public class DoctorService {
 
     public DoctorDto patch(Long id, DoctorUpdateDto dto, Authentication auth) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
+        String previousEmail = entity.getEmail();
 
         if (Objects.nonNull(dto.email()) && !dto.email().isBlank()) {
             String email = normalizeEmail(dto.email());
@@ -132,6 +144,17 @@ public class DoctorService {
 
         Doctor saved = doctorRepository.save(entity);
 
+        if (!previousEmail.equalsIgnoreCase(saved.getEmail())) {
+            keycloakAdminClient.disableUser(previousEmail);
+        }
+        keycloakAdminClient.syncUser(new KeycloakUserSyncRequest(
+                saved.getEmail(),
+                saved.getFirstName(),
+                saved.getLastName(),
+                null,
+                true
+        ));
+
         eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 String.valueOf(saved.getId()),
@@ -151,6 +174,7 @@ public class DoctorService {
 
     public void delete(Long id) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
+        keycloakAdminClient.disableUser(entity.getEmail());
         doctorRepository.delete(entity);
 
         eventPublisher.publish(

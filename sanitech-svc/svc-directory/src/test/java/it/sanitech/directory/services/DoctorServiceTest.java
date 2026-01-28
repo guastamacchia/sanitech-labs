@@ -2,6 +2,7 @@ package it.sanitech.directory.services;
 
 import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.directory.TestDataFactory;
+import it.sanitech.directory.integrations.keycloak.KeycloakAdminClient;
 import it.sanitech.directory.repositories.DepartmentRepository;
 import it.sanitech.directory.repositories.DoctorRepository;
 import it.sanitech.directory.repositories.SpecializationRepository;
@@ -55,6 +56,9 @@ class DoctorServiceTest {
     @Mock
     private DeptGuard deptGuard;
 
+    @Mock
+    private KeycloakAdminClient keycloakAdminClient;
+
     @InjectMocks
     private DoctorService doctorService;
 
@@ -90,6 +94,7 @@ class DoctorServiceTest {
         assertThat(entity.getSpecialization()).isEqualTo(specialization);
         assertThat(result).isEqualTo(mappedDto);
         verify(deptGuard).checkCanManageAll(Set.of("CARD"), null);
+        verify(keycloakAdminClient).syncUser(any());
         verify(eventPublisher).publish(eq("DOCTOR"), eq("11"), eq("DOCTOR_CREATED"), any());
     }
 
@@ -134,6 +139,8 @@ class DoctorServiceTest {
         assertThat(entity.getSpecialization()).isEqualTo(specialization);
         assertThat(result).isEqualTo(mappedDto);
         verify(deptGuard).checkCanManageAll(Set.of("CARD"), null);
+        verify(keycloakAdminClient).disableUser("vecchia@email.it");
+        verify(keycloakAdminClient).syncUser(any());
         verify(eventPublisher).publish(eq("DOCTOR"), eq("9"), eq("DOCTOR_UPDATED"), any());
     }
 
@@ -145,6 +152,7 @@ class DoctorServiceTest {
 
         doctorService.delete(4L);
 
+        verify(keycloakAdminClient).disableUser("paola.neri@email.it");
         verify(doctorRepository).delete(existing);
         verify(eventPublisher).publish(eq("DOCTOR"), eq("4"), eq("DOCTOR_DELETED"), any());
     }
