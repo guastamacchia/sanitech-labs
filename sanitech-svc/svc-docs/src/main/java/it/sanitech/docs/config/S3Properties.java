@@ -38,4 +38,12 @@ public class S3Properties {
 
     /** Se true, crea automaticamente il bucket se non esiste (solo per ambienti controllati). */
     private boolean autoCreateBucket = true;
+
+    /**
+     * Se true, un errore di inizializzazione del bucket blocca l'avvio dell'applicazione.
+     * <p>
+     * In ambienti locali è spesso preferibile loggare l'errore e continuare.
+     * </p>
+     */
+    private boolean failOnInitError = true;
 }
