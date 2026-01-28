@@ -108,27 +108,6 @@ export class AuthService {
     } catch {
       // Ignore storage access errors
     }
-    this.clearCookies();
-  }
-
-  private clearCookies(): void {
-    const cookieEntries = document.cookie ? document.cookie.split(';') : [];
-    const hostname = window.location.hostname;
-    const domains = hostname.includes('.') ? [hostname, `.${hostname}`] : [hostname];
-    const paths = ['/', '/auth'];
-
-    for (const entry of cookieEntries) {
-      const name = entry.split('=')[0]?.trim();
-      if (!name) {
-        continue;
-      }
-      for (const path of paths) {
-        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path}`;
-        for (const domain of domains) {
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path};domain=${domain}`;
-        }
-      }
-    }
   }
 
   private decodeJwt(token: string): Record<string, unknown> {
