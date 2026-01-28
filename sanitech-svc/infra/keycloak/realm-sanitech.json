@@ -1,0 +1,40 @@
+{
+  "realm": "sanitech",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "svc-directory",
+      "name": "svc-directory service account",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "secret": "svc-directory-secret"
+    }
+  ],
+  "clientScopeMappings": {},
+  "clientScopes": [],
+  "roles": {
+    "realm": [],
+    "client": {
+      "realm-management": []
+    }
+  },
+  "clientsPermissions": {},
+  "users": [
+    {
+      "username": "service-account-svc-directory",
+      "enabled": true,
+      "serviceAccountClientId": "svc-directory",
+      "realmRoles": [],
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users"
+        ]
+      }
+    }
+  ]
+}
