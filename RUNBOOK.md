@@ -63,7 +63,7 @@ Note:
 
 ## Configurazione host vs container (OIDC)
 - **Host (browser/CLI)**: Keycloak è raggiungibile da `http://localhost:8081`.
-- **Container backend**: usare il service name Docker `keycloak` (es. `OAUTH2_HOST=keycloak`, `OAUTH2_ISSUER_URI=http://keycloak:8081/realms/sanitech`).
+- **Container backend**: usare il service name Docker `keycloak` e la porta interna 8080 (es. `OAUTH2_HOST=keycloak`, `OAUTH2_ISSUER_URI=http://keycloak:8080/realms/sanitech`).
 - `OAUTH2_HOST`/`OAUTH2_PORT` vengono usati per comporre il `jwk-set-uri` dei servizi (incluso `svc-gateway`).
 
 ## Health & osservabilità
