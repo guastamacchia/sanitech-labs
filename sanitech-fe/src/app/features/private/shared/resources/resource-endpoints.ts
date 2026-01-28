@@ -160,7 +160,7 @@ export const directoryEndpoints = [
   {
     label: 'Specialità',
     method: 'GET',
-    path: '/api/specialities'
+    path: '/api/specializations'
   },
   {
     label: 'Admin doctors',
