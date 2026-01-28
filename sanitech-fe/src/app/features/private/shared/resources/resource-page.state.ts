@@ -58,6 +58,10 @@ interface PaymentItem {
   receiptName?: string;
 }
 
+interface PaymentPage {
+  content: PaymentItem[];
+}
+
 interface AdmissionItem {
   id: number;
   patientId: number;
@@ -78,6 +82,10 @@ interface NotificationItem {
   notes: string;
   status: string;
   sentAt: string;
+}
+
+interface NotificationPage {
+  content: NotificationItem[];
 }
 
 interface PrescriptionItem {
@@ -1467,9 +1475,13 @@ export class ResourcePageState {
     this.isLoading = true;
     this.paymentsError = '';
     this.paymentsSuccess = '';
-    this.api.request<PaymentItem[]>('GET', '/api/payments').subscribe({
+    this.api.request<PaymentItem[] | PaymentPage>('GET', '/api/payments').subscribe({
       next: (payments) => {
-        this.payments = payments;
+        if (Array.isArray(payments)) {
+          this.payments = payments;
+        } else {
+          this.payments = payments?.content ?? [];
+        }
         this.isLoading = false;
       },
       error: () => {
@@ -1729,9 +1741,13 @@ export class ResourcePageState {
   loadNotifications(): void {
     this.isLoading = true;
     this.notificationsError = '';
-    this.api.request<NotificationItem[]>('GET', '/api/notifications').subscribe({
+    this.api.request<NotificationItem[] | NotificationPage>('GET', '/api/notifications').subscribe({
       next: (notifications) => {
-        this.notifications = notifications;
+        if (Array.isArray(notifications)) {
+          this.notifications = notifications;
+        } else {
+          this.notifications = notifications?.content ?? [];
+        }
         this.isLoading = false;
       },
       error: () => {
