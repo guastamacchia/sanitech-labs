@@ -41,6 +41,10 @@ export class AuthService {
     return this.oauth.getAccessToken();
   }
 
+  getAccessTokenClaim(name: string): unknown {
+    return this.accessTokenClaims[name];
+  }
+
   get isAuthenticated(): boolean {
     return this.oauth.hasValidAccessToken();
   }

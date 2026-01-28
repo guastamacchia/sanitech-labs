@@ -499,14 +499,21 @@ export class ResourcePageState {
         this.isLoading = false;
       }
     });
-    this.api.request<SchedulingAppointment[] | PagedResponse<SchedulingAppointment>>('GET', '/api/appointments').subscribe({
-      next: (appointments) => {
-        this.appointments = this.normalizeList(appointments);
-      },
-      error: () => {
-        this.schedulingError = 'Impossibile caricare gli appuntamenti.';
+    if (this.hasSchedulingAppointmentsAccess) {
+      this.api.request<SchedulingAppointment[] | PagedResponse<SchedulingAppointment>>('GET', '/api/appointments').subscribe({
+        next: (appointments) => {
+          this.appointments = this.normalizeList(appointments);
+        },
+        error: () => {
+          this.schedulingError = 'Impossibile caricare gli appuntamenti.';
+        }
+      });
+    } else {
+      this.appointments = [];
+      if (this.isDoctor || this.isPatient) {
+        this.schedulingError = 'Autenticazione mancante per caricare gli appuntamenti.';
       }
-    });
+    }
     this.api.request<DoctorItem[] | PagedResponse<DoctorApiItem>>('GET', '/api/doctors').subscribe({
       next: (doctors) => {
         this.doctors = this.normalizeDoctorList(doctors);
@@ -2414,6 +2421,19 @@ export class ResourcePageState {
         speciality
       };
     });
+  }
+
+  private get hasSchedulingAppointmentsAccess(): boolean {
+    if (this.isAdmin) {
+      return true;
+    }
+    if (this.isDoctor) {
+      return Number.isFinite(Number(this.auth.getAccessTokenClaim('did')));
+    }
+    if (this.isPatient) {
+      return Number.isFinite(Number(this.auth.getAccessTokenClaim('pid')));
+    }
+    return false;
   }
 
   openDoctorModal(): void {
