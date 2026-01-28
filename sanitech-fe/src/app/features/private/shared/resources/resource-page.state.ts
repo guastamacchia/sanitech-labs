@@ -107,6 +107,16 @@ interface DoctorItem {
   speciality: string;
 }
 
+interface DoctorApiItem {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  speciality?: string;
+  departments?: Array<{ code: string; name: string }>;
+  specializations?: Array<{ code: string; name: string }>;
+}
+
 interface PatientItem {
   id: number;
   firstName: string;
@@ -129,6 +139,10 @@ interface AuditItem {
   action: string;
   actor: string;
   timestamp: string;
+}
+
+interface PagedResponse<T> {
+  content?: T[];
 }
 
 export class ResourcePageState {
@@ -477,9 +491,9 @@ export class ResourcePageState {
         this.schedulingError = 'Impossibile caricare gli appuntamenti.';
       }
     });
-    this.api.request<DoctorItem[]>('GET', '/api/doctors').subscribe({
+    this.api.request<DoctorItem[] | PagedResponse<DoctorApiItem>>('GET', '/api/doctors').subscribe({
       next: (doctors) => {
-        this.doctors = doctors;
+        this.doctors = this.normalizeDoctorList(doctors);
       },
       error: () => {
         this.schedulingError = 'Impossibile caricare i medici.';
@@ -504,9 +518,9 @@ export class ResourcePageState {
   }
 
   loadDoctors(): void {
-    this.api.request<DoctorItem[]>('GET', '/api/doctors').subscribe({
+    this.api.request<DoctorItem[] | PagedResponse<DoctorApiItem>>('GET', '/api/doctors').subscribe({
       next: (doctors) => {
-        this.doctors = doctors;
+        this.doctors = this.normalizeDoctorList(doctors);
       },
       error: () => {
         this.directoryError = 'Impossibile caricare i medici.';
@@ -2303,17 +2317,18 @@ export class ResourcePageState {
   }
 
   loadPatients(): void {
-    this.api.request<PatientItem[]>('GET', '/api/patients').subscribe({
+    this.api.request<PatientItem[] | PagedResponse<PatientItem>>('GET', '/api/patients').subscribe({
       next: (patients) => {
-        this.patients = patients;
-        if (!this.prescriptionForm.patientId && patients.length) {
-          this.prescriptionForm.patientId = patients[0].id;
+        const normalizedPatients = this.normalizeList(patients);
+        this.patients = normalizedPatients;
+        if (!this.prescriptionForm.patientId && normalizedPatients.length) {
+          this.prescriptionForm.patientId = normalizedPatients[0].id;
         }
-        if (!this.docForm.patientId && patients.length) {
-          this.docForm.patientId = patients[0].id;
+        if (!this.docForm.patientId && normalizedPatients.length) {
+          this.docForm.patientId = normalizedPatients[0].id;
         }
-        if (!this.televisitForm.patientId && patients.length) {
-          this.televisitForm.patientId = patients[0].id;
+        if (!this.televisitForm.patientId && normalizedPatients.length) {
+          this.televisitForm.patientId = normalizedPatients[0].id;
         }
       },
       error: () => {
@@ -2391,9 +2406,9 @@ export class ResourcePageState {
   loadDirectory(): void {
     this.isLoading = true;
     this.directoryError = '';
-    this.api.request<DoctorItem[]>('GET', '/api/admin/doctors').subscribe({
+    this.api.request<DoctorItem[] | PagedResponse<DoctorApiItem>>('GET', '/api/admin/doctors').subscribe({
       next: (doctors) => {
-        this.doctors = doctors;
+        this.doctors = this.normalizeDoctorList(doctors);
         this.isLoading = false;
       },
       error: () => {
@@ -2401,9 +2416,9 @@ export class ResourcePageState {
         this.isLoading = false;
       }
     });
-    this.api.request<PatientItem[]>('GET', '/api/admin/patients').subscribe({
+    this.api.request<PatientItem[] | PagedResponse<PatientItem>>('GET', '/api/admin/patients').subscribe({
       next: (patients) => {
-        this.patients = patients;
+        this.patients = this.normalizeList(patients);
       },
       error: () => {
         this.directoryError = 'Impossibile caricare i pazienti.';
@@ -2424,6 +2439,33 @@ export class ResourcePageState {
       error: () => {
         this.directoryError = 'Impossibile caricare le specialità.';
       }
+    });
+  }
+
+  private normalizeList<T>(data?: T[] | PagedResponse<T>): T[] {
+    if (!data) {
+      return [];
+    }
+    if (Array.isArray(data)) {
+      return data;
+    }
+    return data.content ?? [];
+  }
+
+  private normalizeDoctorList(data?: DoctorItem[] | PagedResponse<DoctorApiItem>): DoctorItem[] {
+    return this.normalizeList(data).map((doctor) => {
+      const apiDoctor = doctor as DoctorApiItem;
+      const speciality =
+        apiDoctor.speciality ??
+        apiDoctor.specializations?.[0]?.code ??
+        apiDoctor.departments?.[0]?.code ??
+        '';
+      return {
+        id: apiDoctor.id,
+        firstName: apiDoctor.firstName,
+        lastName: apiDoctor.lastName,
+        speciality
+      };
     });
   }
 
