@@ -155,16 +155,26 @@ public class KeycloakAdminClient {
         form.add("client_id", properties.clientId());
         form.add("client_secret", properties.clientSecret());
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
-        ResponseEntity<KeycloakTokenResponse> response = keycloakRestTemplate.exchange(
-                tokenUrl,
-                HttpMethod.POST,
-                entity,
-                KeycloakTokenResponse.class
-        );
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new KeycloakSyncException("Errore ottenimento token Keycloak: " + response.getStatusCode());
+        try {
+            ResponseEntity<KeycloakTokenResponse> response = keycloakRestTemplate.exchange(
+                    tokenUrl,
+                    HttpMethod.POST,
+                    entity,
+                    KeycloakTokenResponse.class
+            );
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                throw new KeycloakSyncException("Errore ottenimento token Keycloak: " + response.getStatusCode());
+            }
+            return response.getBody().accessToken();
+        } catch (HttpClientErrorException ex) {
+            throw new KeycloakSyncException(
+                    "Errore ottenimento token Keycloak: " + ex.getStatusCode()
+                            + " (clientId=" + properties.clientId()
+                            + ", realm=" + properties.realm()
+                            + ", url=" + tokenUrl + ")",
+                    ex
+            );
         }
-        return response.getBody().accessToken();
     }
 
     private record KeycloakTokenResponse(@JsonProperty("access_token") String accessToken) {}
