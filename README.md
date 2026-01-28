@@ -27,9 +27,7 @@ ENV=staging make compose-up-infra
 
 ### Frontend
 ```bash
-cd sanitech-fe
-npm install
-npm start
+bash .script/frontend/up.sh
 # SPA: http://localhost:4200
 ```
 
@@ -104,9 +102,7 @@ La nuova SPA Angular sostituisce i micro‑frontend statici (Bootstrap) per shel
 
 Avvio rapido (presuppone backend su `http://localhost:8080`):
 ```bash
-cd sanitech-fe
-npm install
-npm start
+bash .script/frontend/up.sh
 # SPA: http://localhost:4200
 ```
 
@@ -124,6 +120,10 @@ Script utili:
 - Stop: `bash .script/frontend/down.sh` (usa `REMOVE_VOLUMES=true` per eliminare i volumi)
 - Log: `bash .script/frontend/logs.sh`
 - Stato: `bash .script/frontend/status.sh`
+
+Stack Docker:
+- Compose: `.infra/fe/docker-compose.yml`
+- Build multi-stage: `sanitech-fe/Dockerfile` (dist `sanitech-spa`, Nginx con fallback SPA)
 
 Layout:
 - `sanitech-fe/src`: sorgenti SPA Angular (portale pubblico + area privata con ruoli).

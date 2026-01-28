@@ -18,7 +18,7 @@ fi
 
 services=("$@")
 if [ ${#services[@]} -eq 0 ]; then
-  services=(shell mfe-patient mfe-doctor mfe-admin)
+  services=(sanitech-fe)
 fi
 
 echo "[frontend:logs] seguo servizi: ${services[*]}"

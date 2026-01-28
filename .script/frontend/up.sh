@@ -17,8 +17,7 @@ if [ ! -f "${COMPOSE_FILE}" ]; then
 fi
 
 echo "[frontend:up] usando compose file: ${COMPOSE_FILE}"
-${COMPOSE} -f "${COMPOSE_FILE}" pull
-${COMPOSE} -f "${COMPOSE_FILE}" up -d "$@"
+${COMPOSE} -f "${COMPOSE_FILE}" up -d --build "$@"
 
 echo "[frontend:up] servizi attivi:"
 ${COMPOSE} -f "${COMPOSE_FILE}" ps
