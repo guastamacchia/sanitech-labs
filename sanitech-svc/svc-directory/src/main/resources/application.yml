@@ -102,6 +102,13 @@ spring:
 # Sanitech Commons
 # =========================
 sanitech:
+  keycloak:
+    admin:
+      server-url: ${KEYCLOAK_ADMIN_URL:${OAUTH2_SCHEME}://${OAUTH2_HOST}:${OAUTH2_PORT}}
+      realm: ${KEYCLOAK_ADMIN_REALM:${OAUTH2_REALM}}
+      client-id: ${KEYCLOAK_ADMIN_CLIENT_ID}
+      client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
+      token-path: ${KEYCLOAK_ADMIN_TOKEN_PATH:/realms/{realm}/protocol/openid-connect/token}
   cors:
     enabled: true
     # Path su cui applicare CORS.
@@ -225,6 +232,11 @@ resilience4j:
       outboxPublish:
         maxAttempts: 5
         waitDuration: 200ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      keycloakSync:
+        maxAttempts: 3
+        waitDuration: 500ms
         enableExponentialBackoff: true
         exponentialBackoffMultiplier: 2
 
