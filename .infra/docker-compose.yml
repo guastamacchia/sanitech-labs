@@ -984,8 +984,6 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_healthy
-      svc-consents:
-        condition: service_healthy
     ports:
       - "8091:8091"
     environment:
