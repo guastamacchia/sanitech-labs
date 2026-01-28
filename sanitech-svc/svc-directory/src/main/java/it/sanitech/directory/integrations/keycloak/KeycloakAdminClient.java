@@ -1,20 +1,14 @@
 package it.sanitech.directory.integrations.keycloak;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,7 +19,7 @@ public class KeycloakAdminClient {
 
     private static final String PHONE_ATTR = "phone";
 
-    private final RestTemplate keycloakRestTemplate;
+    private final Keycloak keycloak;
     private final KeycloakAdminProperties properties;
 
     @Retry(name = "keycloakSync")
@@ -35,7 +29,12 @@ public class KeycloakAdminClient {
             try {
                 createUser(request);
                 return;
-            } catch (HttpClientErrorException.Conflict ex) {
+            } catch (RuntimeException ex) {
+                if (!(ex instanceof WebApplicationException webException)
+                        || webException.getResponse() == null
+                        || webException.getResponse().getStatus() != Response.Status.CONFLICT.getStatusCode()) {
+                    throw toSyncException("Errore creazione utente Keycloak.", ex);
+                }
                 existing = findUserByEmail(request.email());
                 if (existing == null) {
                     throw new KeycloakSyncException("Conflitto durante la creazione utente Keycloak.", ex);
@@ -63,119 +62,78 @@ public class KeycloakAdminClient {
     }
 
     private void createUser(KeycloakUserSyncRequest request) {
-        KeycloakUserRepresentation payload = toRepresentation(request);
-        HttpHeaders headers = bearerHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<KeycloakUserRepresentation> entity = new HttpEntity<>(payload, headers);
-        ResponseEntity<Void> response = keycloakRestTemplate.exchange(
-                adminUsersUrl(),
-                HttpMethod.POST,
-                entity,
-                Void.class
-        );
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new KeycloakSyncException("Errore creazione utente Keycloak: " + response.getStatusCode());
+        UserRepresentation payload = toRepresentation(request);
+        try (Response response = usersResource().create(payload)) {
+            if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+                throw new WebApplicationException(response);
+            }
         }
     }
 
     private void updateUser(String userId, KeycloakUserSyncRequest request) {
-        KeycloakUserRepresentation payload = toRepresentation(request);
-        HttpHeaders headers = bearerHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<KeycloakUserRepresentation> entity = new HttpEntity<>(payload, headers);
-        ResponseEntity<Void> response = keycloakRestTemplate.exchange(
-                adminUsersUrl() + "/" + userId,
-                HttpMethod.PUT,
-                entity,
-                Void.class
-        );
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new KeycloakSyncException("Errore aggiornamento utente Keycloak: " + response.getStatusCode());
+        UserRepresentation payload = toRepresentation(request);
+        try {
+            usersResource().get(userId).update(payload);
+        } catch (RuntimeException ex) {
+            throw toSyncException("Errore aggiornamento utente Keycloak.", ex);
         }
     }
 
     private KeycloakUserRepresentation findUserByEmail(String email) {
-        HttpHeaders headers = bearerHeaders();
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-        String url = UriComponentsBuilder.fromHttpUrl(adminUsersUrl())
-                .queryParam("email", email)
-                .queryParam("exact", true)
-                .toUriString();
-        ResponseEntity<KeycloakUserRepresentation[]> response = keycloakRestTemplate.exchange(
-                url,
-                HttpMethod.GET,
-                entity,
-                KeycloakUserRepresentation[].class
-        );
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            return null;
-        }
-        for (KeycloakUserRepresentation rep : response.getBody()) {
-            if (rep != null && Objects.equals(email, rep.email())) {
-                return rep;
+        try {
+            List<UserRepresentation> users = usersResource().searchByEmail(email, true);
+            if (users == null || users.isEmpty()) {
+                return null;
             }
+            for (UserRepresentation rep : users) {
+                if (rep != null && Objects.equals(email, rep.getEmail())) {
+                    return fromRepresentation(rep);
+                }
+            }
+            return users.get(0) != null ? fromRepresentation(users.get(0)) : null;
+        } catch (RuntimeException ex) {
+            throw toSyncException("Errore ricerca utente Keycloak.", ex);
         }
-        return response.getBody().length > 0 ? response.getBody()[0] : null;
     }
 
-    private KeycloakUserRepresentation toRepresentation(KeycloakUserSyncRequest request) {
+    private UserRepresentation toRepresentation(KeycloakUserSyncRequest request) {
         Map<String, List<String>> attributes = Map.of(
                 PHONE_ATTR,
                 request.phone() == null ? List.of() : List.of(request.phone())
         );
+        UserRepresentation representation = new UserRepresentation();
+        representation.setEmail(request.email());
+        representation.setUsername(request.email());
+        representation.setFirstName(request.firstName());
+        representation.setLastName(request.lastName());
+        representation.setEnabled(request.enabled());
+        representation.setAttributes(attributes);
+        return representation;
+    }
+
+    private KeycloakUserRepresentation fromRepresentation(UserRepresentation rep) {
         return new KeycloakUserRepresentation(
-                null,
-                request.email(),
-                request.email(),
-                request.firstName(),
-                request.lastName(),
-                request.enabled(),
-                attributes
+                rep.getId(),
+                rep.getUsername(),
+                rep.getEmail(),
+                rep.getFirstName(),
+                rep.getLastName(),
+                rep.isEnabled(),
+                rep.getAttributes()
         );
     }
 
-    private String adminUsersUrl() {
-        return properties.serverUrl() + "/admin/realms/" + properties.realm() + "/users";
+    private UsersResource usersResource() {
+        return keycloak.realm(properties.realm()).users();
     }
 
-    private HttpHeaders bearerHeaders() {
-        String token = obtainToken();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        return headers;
-    }
-
-    private String obtainToken() {
-        String tokenUrl = properties.serverUrl() + properties.tokenPath().replace("{realm}", properties.realm());
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("grant_type", "client_credentials");
-        form.add("client_id", properties.clientId());
-        form.add("client_secret", properties.clientSecret());
-        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
-        try {
-            ResponseEntity<KeycloakTokenResponse> response = keycloakRestTemplate.exchange(
-                    tokenUrl,
-                    HttpMethod.POST,
-                    entity,
-                    KeycloakTokenResponse.class
-            );
-            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-                throw new KeycloakSyncException("Errore ottenimento token Keycloak: " + response.getStatusCode());
+    private KeycloakSyncException toSyncException(String message, RuntimeException ex) {
+        if (ex instanceof WebApplicationException webException) {
+            Response response = webException.getResponse();
+            if (response != null) {
+                return new KeycloakSyncException(message + " (status=" + response.getStatus() + ")", ex);
             }
-            return response.getBody().accessToken();
-        } catch (HttpClientErrorException ex) {
-            throw new KeycloakSyncException(
-                    "Errore ottenimento token Keycloak: " + ex.getStatusCode()
-                            + " (clientId=" + properties.clientId()
-                            + ", realm=" + properties.realm()
-                            + ", url=" + tokenUrl + ")",
-                    ex
-            );
         }
+        return new KeycloakSyncException(message, ex);
     }
-
-    private record KeycloakTokenResponse(@JsonProperty("access_token") String accessToken) {}
 }
