@@ -42,8 +42,14 @@ public class BucketInitializer {
             s3.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
             log.info("Bucket creato: {}", bucket);
         } catch (Exception ex) {
-            // Fail-fast: se lo storage non è disponibile, l'app non può funzionare correttamente.
-            throw new IllegalStateException("Impossibile verificare/creare il bucket S3/MinIO: " + bucket, ex);
+            if (props.isFailOnInitError()) {
+                // Fail-fast: se lo storage non è disponibile, l'app non può funzionare correttamente.
+                throw new IllegalStateException("Impossibile verificare/creare il bucket S3/MinIO: " + bucket, ex);
+            }
+            log.warn(
+                    "Impossibile verificare/creare il bucket S3/MinIO: {}. Avvio senza storage disponibile.",
+                    bucket,
+                    ex);
         }
     }
 }
