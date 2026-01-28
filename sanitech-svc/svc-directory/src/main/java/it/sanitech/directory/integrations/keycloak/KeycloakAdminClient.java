@@ -4,11 +4,13 @@ import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Component;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -66,6 +68,15 @@ public class KeycloakAdminClient {
         try (Response response = usersResource().create(payload)) {
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 throw new WebApplicationException(response);
+            }
+            String userId = extractUserId(response.getLocation());
+            if (userId == null) {
+                throw new KeycloakSyncException("Impossibile recuperare l'ID utente Keycloak dalla location.");
+            }
+            try {
+                usersResource().get(userId).resetPassword(buildInitialPassword());
+            } catch (RuntimeException ex) {
+                throw toSyncException("Errore impostazione password utente Keycloak.", ex);
             }
         }
     }
@@ -125,6 +136,29 @@ public class KeycloakAdminClient {
 
     private UsersResource usersResource() {
         return keycloak.realm(properties.realm()).users();
+    }
+
+    private String extractUserId(URI location) {
+        if (location == null) {
+            return null;
+        }
+        String path = location.getPath();
+        if (path == null) {
+            return null;
+        }
+        int lastSlash = path.lastIndexOf('/');
+        if (lastSlash < 0 || lastSlash + 1 >= path.length()) {
+            return null;
+        }
+        return path.substring(lastSlash + 1);
+    }
+
+    private CredentialRepresentation buildInitialPassword() {
+        CredentialRepresentation credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue("qwerty");
+        credential.setTemporary(false);
+        return credential;
     }
 
     private KeycloakSyncException toSyncException(String message, RuntimeException ex) {
