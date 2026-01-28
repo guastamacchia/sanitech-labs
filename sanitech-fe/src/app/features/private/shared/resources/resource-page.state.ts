@@ -1514,10 +1514,6 @@ export class ResourcePageState {
   }
 
   loadAdmissions(): void {
-    if (this.isPatient) {
-      this.admissions = [];
-      return;
-    }
     this.api.request<AdmissionItem[] | PagedResponse<AdmissionItem>>('GET', '/api/admissions').subscribe({
       next: (admissions) => {
         this.admissions = this.normalizeList(admissions);
@@ -1950,6 +1946,13 @@ export class ResourcePageState {
   }
 
   loadPrescriptions(): void {
+    const patientClaim = this.auth.getAccessTokenClaim('pid') ?? this.auth.identityClaims['pid'];
+    if (this.isPatient && !Number.isFinite(Number(patientClaim))) {
+      this.prescribingError = 'Profilo paziente non valido: manca l\'identificativo nel token.';
+      this.prescriptions = [];
+      this.isLoading = false;
+      return;
+    }
     this.isLoading = true;
     this.prescribingError = '';
     this.api.request<PrescriptionItem[] | PagedResponse<PrescriptionItem>>('GET', '/api/prescriptions').subscribe({
