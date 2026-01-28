@@ -110,6 +110,7 @@ class DoctorServiceTest {
         assertThat(syncEvent.lastName()).isEqualTo("Bianchi");
         assertThat(syncEvent.phone()).isNull();
         assertThat(syncEvent.enabled()).isTrue();
+        assertThat(syncEvent.roleToAssign()).isEqualTo("ROLE_DOCTOR");
         assertThat(syncEvent.previousEmail()).isNull();
 
         verify(eventPublisher).publish(eq("DOCTOR"), eq("11"), eq("DOCTOR_CREATED"), any());
@@ -167,6 +168,7 @@ class DoctorServiceTest {
         assertThat(syncEvent.lastName()).isEqualTo("Bianchi");
         assertThat(syncEvent.phone()).isNull();
         assertThat(syncEvent.enabled()).isTrue();
+        assertThat(syncEvent.roleToAssign()).isNull();
         assertThat(syncEvent.previousEmail()).isEqualTo("vecchia@email.it");
 
         verify(eventPublisher).publish(eq("DOCTOR"), eq("9"), eq("DOCTOR_UPDATED"), any());

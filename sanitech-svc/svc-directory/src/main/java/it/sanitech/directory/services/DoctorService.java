@@ -45,6 +45,7 @@ import java.util.*;
 public class DoctorService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final String DOCTOR_ROLE = "ROLE_DOCTOR";
 
     private final DoctorRepository doctorRepository;
     private final DepartmentRepository departmentRepository;
@@ -111,6 +112,7 @@ public class DoctorService {
                 saved.getLastName(),
                 saved.getPhone(),
                 true,
+                DOCTOR_ROLE,
                 null
         ));
 
@@ -173,6 +175,7 @@ public class DoctorService {
                 saved.getLastName(),
                 saved.getPhone(),
                 true,
+                null,
                 previousEmail
         ));
 

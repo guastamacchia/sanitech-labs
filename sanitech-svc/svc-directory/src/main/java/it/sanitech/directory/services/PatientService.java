@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 public class PatientService {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final String PATIENT_ROLE = "ROLE_PATIENT";
 
     private final PatientRepository patientRepository;
     private final DepartmentRepository departmentRepository;
@@ -125,6 +126,7 @@ public class PatientService {
                 saved.getLastName(),
                 saved.getPhone(),
                 true,
+                PATIENT_ROLE,
                 null
         ));
 
@@ -196,6 +198,7 @@ public class PatientService {
                 saved.getLastName(),
                 saved.getPhone(),
                 true,
+                null,
                 previousEmail
         ));
 

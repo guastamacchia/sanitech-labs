@@ -8,6 +8,7 @@ public record KeycloakUserSyncEvent(
         String lastName,
         String phone,
         boolean enabled,
+        String roleToAssign,
         String previousEmail
 ) {
 }
