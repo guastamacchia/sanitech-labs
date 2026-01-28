@@ -2398,20 +2398,41 @@
                   </div>
                   <div class="modal-body">
                     <form (ngSubmit)="submitDoctor()" #doctorFormRef="ngForm">
-                      <div class="mb-3">
-                        <label class="form-label">Nome</label>
-                        <input class="form-control" type="text" name="doctorFirstName" [(ngModel)]="doctorForm.firstName" required />
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Cognome</label>
-                        <input class="form-control" type="text" name="doctorLastName" [(ngModel)]="doctorForm.lastName" required />
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Specialità</label>
-                        <select class="form-select" name="doctorSpeciality" [(ngModel)]="doctorForm.speciality" required>
-                          <option value="CARD">Cardiologia</option>
-                          <option value="NEURO">Neurologia</option>
-                        </select>
+                      <div class="row g-3">
+                        <div class="col-md-6">
+                          <label class="form-label">Nome</label>
+                          <input class="form-control" type="text" name="doctorFirstName" [(ngModel)]="doctorForm.firstName" required />
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Cognome</label>
+                          <input class="form-control" type="text" name="doctorLastName" [(ngModel)]="doctorForm.lastName" required />
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Email</label>
+                          <input class="form-control" type="email" name="doctorEmail" [(ngModel)]="doctorForm.email" required />
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Telefono</label>
+                          <input class="form-control" type="tel" name="doctorPhone" [(ngModel)]="doctorForm.phone" />
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Reparto</label>
+                          <select class="form-select" name="doctorDepartment" [(ngModel)]="doctorForm.departmentCode" required>
+                            <option value="" disabled>Seleziona un reparto</option>
+                            <option *ngFor="let department of departments" [value]="department.code">
+                              {{ department.name }}
+                            </option>
+                          </select>
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Specializzazione</label>
+                          <select class="form-select" name="doctorSpecialization" [(ngModel)]="doctorForm.specializationCode" required>
+                            <option value="" disabled>Seleziona una specializzazione</option>
+                            <option *ngFor="let speciality of specialities" [value]="speciality.code">
+                              {{ speciality.name }}
+                            </option>
+                          </select>
+                        </div>
                       </div>
                       <div class="alert alert-danger py-2" *ngIf="directoryError">{{ directoryError }}</div>
                       <div class="d-flex justify-content-end gap-2">
@@ -2446,17 +2467,23 @@
                   </div>
                   <div class="modal-body">
                     <form (ngSubmit)="submitPatient()" #patientFormRef="ngForm">
-                      <div class="mb-3">
-                        <label class="form-label">Nome</label>
-                        <input class="form-control" type="text" name="patientFirstName" [(ngModel)]="patientForm.firstName" required />
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Cognome</label>
-                        <input class="form-control" type="text" name="patientLastName" [(ngModel)]="patientForm.lastName" required />
-                      </div>
-                      <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input class="form-control" type="email" name="patientEmail" [(ngModel)]="patientForm.email" required />
+                      <div class="row g-3">
+                        <div class="col-md-6">
+                          <label class="form-label">Nome</label>
+                          <input class="form-control" type="text" name="patientFirstName" [(ngModel)]="patientForm.firstName" required />
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Cognome</label>
+                          <input class="form-control" type="text" name="patientLastName" [(ngModel)]="patientForm.lastName" required />
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Email</label>
+                          <input class="form-control" type="email" name="patientEmail" [(ngModel)]="patientForm.email" required />
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Telefono (opzionale)</label>
+                          <input class="form-control" type="tel" name="patientPhone" [(ngModel)]="patientForm.phone" />
+                        </div>
                       </div>
                       <div class="alert alert-danger py-2" *ngIf="directoryError">{{ directoryError }}</div>
                       <div class="d-flex justify-content-end gap-2">
