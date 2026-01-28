@@ -1950,6 +1950,12 @@ export class ResourcePageState {
   }
 
   loadPrescriptions(): void {
+    if (this.isPatient && !Number.isFinite(Number(this.auth.getAccessTokenClaim('pid')))) {
+      this.prescribingError = 'Profilo paziente non valido: manca l\'identificativo nel token.';
+      this.prescriptions = [];
+      this.isLoading = false;
+      return;
+    }
     this.isLoading = true;
     this.prescribingError = '';
     this.api.request<PrescriptionItem[] | PagedResponse<PrescriptionItem>>('GET', '/api/prescriptions').subscribe({
