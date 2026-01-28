@@ -17,13 +17,19 @@ public class KeycloakAdminConfiguration {
         String authRealm = StringUtils.hasText(properties.authRealm())
                 ? properties.authRealm()
                 : properties.realm();
+        boolean useClientCredentials = OAuth2Constants.CLIENT_CREDENTIALS.equals(properties.grantType())
+                || !StringUtils.hasText(properties.username())
+                || !StringUtils.hasText(properties.password());
         KeycloakBuilder builder = KeycloakBuilder.builder()
                 .serverUrl(properties.serverUrl())
                 .realm(authRealm)
                 .clientId(properties.clientId())
-                .username(properties.username())
-                .password(properties.password())
-                .grantType(OAuth2Constants.PASSWORD);
+                .grantType(useClientCredentials ? OAuth2Constants.CLIENT_CREDENTIALS : OAuth2Constants.PASSWORD);
+
+        if (!useClientCredentials) {
+            builder.username(properties.username())
+                    .password(properties.password());
+        }
 
         if (StringUtils.hasText(properties.clientSecret())) {
             builder.clientSecret(properties.clientSecret());
