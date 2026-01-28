@@ -171,6 +171,52 @@ export const directoryEndpoints = [
     label: 'Admin patients',
     method: 'GET',
     path: '/api/admin/patients'
+  },
+  {
+    label: 'Admin departments',
+    method: 'GET',
+    path: '/api/admin/departments'
+  },
+  {
+    label: 'Admin department',
+    method: 'POST',
+    path: '/api/admin/departments',
+    payload: '{"code": "CARD", "name": "Cardiologia"}'
+  },
+  {
+    label: 'Admin department',
+    method: 'PUT',
+    path: '/api/admin/departments',
+    payload: '{"id": 3, "code": "CARD", "name": "Cardiologia interventistica"}'
+  },
+  {
+    label: 'Admin department',
+    method: 'DELETE',
+    path: '/api/admin/departments',
+    payload: '{"id": 3}'
+  },
+  {
+    label: 'Admin specializations',
+    method: 'GET',
+    path: '/api/admin/specializations'
+  },
+  {
+    label: 'Admin specialization',
+    method: 'POST',
+    path: '/api/admin/specializations',
+    payload: '{"code": "NEUR", "name": "Neurologia"}'
+  },
+  {
+    label: 'Admin specialization',
+    method: 'PUT',
+    path: '/api/admin/specializations',
+    payload: '{"id": 5, "code": "NEUR", "name": "Neurologia pediatrica"}'
+  },
+  {
+    label: 'Admin specialization',
+    method: 'DELETE',
+    path: '/api/admin/specializations',
+    payload: '{"id": 5}'
   }
 ];
 
