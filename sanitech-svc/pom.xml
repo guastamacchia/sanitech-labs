@@ -48,8 +48,8 @@
         <maven.compiler.parameters>true</maven.compiler.parameters>
 
         <!-- BOM -->
-        <spring-boot.version>3.3.4</spring-boot.version>
-        <spring-cloud.version>2023.0.4</spring-cloud.version>
+        <spring-boot.version>3.4.1</spring-boot.version>
+        <spring-cloud.version>2024.0.1</spring-cloud.version>
 
         <!-- Versioni librerie non sempre coperte dai BOM -->
         <springdoc.version>2.6.0</springdoc.version>
