@@ -17,16 +17,30 @@ public class KeycloakAdminConfiguration {
         String authRealm = StringUtils.hasText(properties.authRealm())
                 ? properties.authRealm()
                 : properties.realm();
+        String grantType = StringUtils.hasText(properties.grantType())
+                ? properties.grantType()
+                : OAuth2Constants.PASSWORD;
+
         KeycloakBuilder builder = KeycloakBuilder.builder()
                 .serverUrl(properties.serverUrl())
                 .realm(authRealm)
                 .clientId(properties.clientId())
-                .username(properties.username())
-                .password(properties.password())
-                .grantType(OAuth2Constants.PASSWORD);
+                .grantType(grantType);
 
-        if (StringUtils.hasText(properties.clientSecret())) {
+        if (OAuth2Constants.CLIENT_CREDENTIALS.equals(grantType)) {
+            if (!StringUtils.hasText(properties.clientSecret())) {
+                throw new IllegalStateException("clientSecret required with grant_type=client_credentials");
+            }
             builder.clientSecret(properties.clientSecret());
+        } else {
+            if (!StringUtils.hasText(properties.username()) || !StringUtils.hasText(properties.password())) {
+                throw new IllegalStateException("username/password required with grant_type=password");
+            }
+            builder.username(properties.username());
+            builder.password(properties.password());
+            if (StringUtils.hasText(properties.clientSecret())) {
+                builder.clientSecret(properties.clientSecret());
+            }
         }
 
         return builder.build();
