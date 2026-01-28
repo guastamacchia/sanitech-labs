@@ -25,12 +25,7 @@
       "standardFlowEnabled": true,
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": [
-          "http://localhost:4200",
-          "http://localhost:4200/*",
-          "http://localhost:8080",
-          "http://localhost:8080/*"
-        ]
+        "post.logout.redirect.uris": "http://localhost:4200\nhttp://localhost:4200/*\nhttp://localhost:8080\nhttp://localhost:8080/*"
       },
       "redirectUris": [
         "http://localhost:4200",
