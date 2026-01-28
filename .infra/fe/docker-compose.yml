@@ -1,0 +1,7 @@
+services:
+  sanitech-fe:
+    build:
+      context: ../../sanitech-fe
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
