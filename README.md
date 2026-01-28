@@ -98,6 +98,7 @@ I servizi di dominio producono eventi su tabella `outbox_events` nella stessa tr
 - Swagger UI: `/swagger-ui/index.html` oppure `/swagger.html` (locked‑down).
 - OpenAPI aggregata: `/openapi/merged`.
 - OpenAPI per servizio: `/openapi/{service}`.
+- CORS: impostare `SANITECH_CORS_ALLOWED_ORIGINS` con una lista di origin separati da virgola (es. `http://localhost:4200,http://localhost:8080`).
 
 ## Frontend
 La nuova SPA Angular sostituisce i micro‑frontend statici (Bootstrap) per shell, paziente, medico e admin.
