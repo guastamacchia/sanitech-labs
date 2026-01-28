@@ -34,6 +34,7 @@ export class AuthService {
   }
 
   logout(): void {
+    this.clearClientState();
     this.oauth.logOut();
   }
 
@@ -94,6 +95,14 @@ export class AuthService {
       throw new Error('OAuthService non configurato');
     }
     return this.oauthService;
+  }
+
+  private clearClientState(): void {
+    try {
+      localStorage.clear();
+    } catch {
+      // Ignore storage access errors
+    }
   }
 
   private decodeJwt(token: string): Record<string, unknown> {
