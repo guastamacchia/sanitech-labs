@@ -14,6 +14,13 @@ export class AppComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.auth.loadDiscovery();
+    if (this.auth.isAuthenticated) {
+      const currentUrl = this.router.url;
+      const isPublicRoute = currentUrl === '/' || !currentUrl.startsWith('/portal');
+      if (isPublicRoute) {
+        await this.router.navigate(['/portal']);
+      }
+    }
   }
 
   logout(): void {
