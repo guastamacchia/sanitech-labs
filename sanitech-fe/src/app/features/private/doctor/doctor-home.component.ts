@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/auth/auth.service';
 
 type UpcomingVisit = {
   id: number;
@@ -22,18 +23,11 @@ type SchedulingAppointment = {
   patientId: number;
   doctorId: number;
   slotId: number;
-  reason: string;
+  departmentCode: string;
+  mode: 'IN_PERSON' | 'TELEVISIT';
+  startAt: string;
+  endAt: string;
   status: string;
-};
-
-type SchedulingSlot = {
-  id: number;
-  doctorId: number;
-  date: string;
-  time: string;
-  status: string;
-  modality: 'IN_PERSON' | 'REMOTE';
-  notes?: string;
 };
 
 type DoctorItem = {
@@ -72,7 +66,10 @@ export class DoctorHomeComponent {
   pageSize = 5;
   currentPage = 1;
 
-  constructor(private api: ApiService) {
+  constructor(
+    private api: ApiService,
+    private auth: AuthService
+  ) {
     this.loadUpcomingVisits();
   }
 
@@ -97,13 +94,16 @@ export class DoctorHomeComponent {
   }
 
   private loadUpcomingVisits(): void {
+    const doctorId = this.getDoctorIdClaim();
+    if (!doctorId) {
+      this.upcomingVisits = [];
+      this.resetPagination();
+      return;
+    }
     forkJoin({
       appointments: this.api
-        .request<SchedulingAppointment[] | PagedResponse<SchedulingAppointment>>('GET', '/api/appointments')
+        .request<SchedulingAppointment[] | PagedResponse<SchedulingAppointment>>('GET', `/api/appointments?doctorId=${doctorId}`)
         .pipe(catchError(() => of([] as SchedulingAppointment[]))),
-      slots: this.api
-        .request<SchedulingSlot[] | PagedResponse<SchedulingSlot>>('GET', '/api/slots')
-        .pipe(catchError(() => of([] as SchedulingSlot[]))),
       doctors: this.api
         .request<DoctorItem[] | PagedResponse<DoctorItem>>('GET', '/api/doctors')
         .pipe(catchError(() => of([] as DoctorItem[]))),
@@ -111,29 +111,26 @@ export class DoctorHomeComponent {
         .request<PatientItem[] | PagedResponse<PatientItem>>('GET', '/api/patients')
         .pipe(catchError(() => of([] as PatientItem[]))),
       departments: this.api.request<DepartmentItem[]>('GET', '/api/departments').pipe(catchError(() => of([] as DepartmentItem[])))
-    }).subscribe(({ appointments, slots, doctors, patients, departments }) => {
+    }).subscribe(({ appointments, doctors, patients, departments }) => {
       const appointmentList = this.normalizeList(appointments);
-      const slotList = this.normalizeList(slots);
       const doctorList = this.normalizeList(doctors);
       const patientList = this.normalizeList(patients);
-      const currentDoctorId = doctorList[0]?.id;
 
       this.upcomingVisits = appointmentList
-        .filter((appointment) => appointment.status)
-        .filter((appointment) => (currentDoctorId ? appointment.doctorId === currentDoctorId : true))
+        .filter((appointment) => appointment.status === 'BOOKED')
         .map((appointment) => {
-          const slot = slotList.find((item) => item.id === appointment.slotId);
-          const doctor = doctorList.find((item) => item.id === appointment.doctorId);
           const patient = patientList.find((item) => item.id === appointment.patientId);
+          const appointmentDate = this.getDateLabel(appointment.startAt);
+          const appointmentTime = this.getTimeLabel(appointment.startAt);
           return {
             id: appointment.id,
-            department: this.getDepartmentLabel(doctor?.speciality, departments),
+            department: this.getDepartmentLabel(appointment.departmentCode, departments),
             patient: patient ? `${patient.firstName} ${patient.lastName}` : `Paziente ${appointment.patientId}`,
-            date: slot?.date ? this.formatDate(slot.date) : '-',
-            time: slot?.time ?? '-',
-            modality: this.getModalityLabel(slot?.modality),
-            reason: appointment.reason || '-',
-            status: appointment.status === 'CONFIRMED' ? 'CONFIRMED' : 'PENDING'
+            date: appointmentDate,
+            time: appointmentTime,
+            modality: this.getModalityLabel(appointment.mode),
+            reason: '-',
+            status: 'CONFIRMED'
           };
         });
 
@@ -151,11 +148,11 @@ export class DoctorHomeComponent {
     return data.content ?? [];
   }
 
-  private getModalityLabel(modality?: SchedulingSlot['modality']): string {
+  private getModalityLabel(modality?: SchedulingAppointment['mode']): string {
     if (!modality) {
       return '-';
     }
-    return modality === 'REMOTE' ? 'Da remoto' : 'In presenza';
+    return modality === 'TELEVISIT' ? 'Da remoto' : 'In presenza';
   }
 
   private getDepartmentLabel(code: string | undefined, departments: DepartmentItem[]): string {
@@ -184,5 +181,35 @@ export class DoctorHomeComponent {
     const day = String(parsed.getDate()).padStart(2, '0');
     const month = String(parsed.getMonth() + 1).padStart(2, '0');
     return `${day}/${month}/${parsed.getFullYear()}`;
+  }
+
+  private getDateLabel(value: string): string {
+    if (!value) {
+      return '-';
+    }
+    return this.formatDate(value);
+  }
+
+  private getTimeLabel(value: string): string {
+    if (!value) {
+      return '-';
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return '-';
+    }
+    return `${String(parsed.getHours()).padStart(2, '0')}:${String(parsed.getMinutes()).padStart(2, '0')}`;
+  }
+
+  private getDoctorIdClaim(): number | null {
+    const claim = this.auth.getAccessTokenClaim('did');
+    if (typeof claim === 'number') {
+      return claim;
+    }
+    if (typeof claim === 'string') {
+      const parsed = Number(claim);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+    return null;
   }
 }
