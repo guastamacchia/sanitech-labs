@@ -485,7 +485,7 @@ export class ResourcePageState {
         this.schedulingError = 'Impossibile caricare i medici.';
       }
     });
-    this.api.request<SpecialityItem[]>('GET', '/api/specialities').subscribe({
+    this.api.request<SpecialityItem[]>('GET', '/api/specializations').subscribe({
       next: (specialities) => {
         this.specialities = specialities;
       },
@@ -2417,7 +2417,7 @@ export class ResourcePageState {
         this.directoryError = 'Impossibile caricare i reparti.';
       }
     });
-    this.api.request<SpecialityItem[]>('GET', '/api/specialities').subscribe({
+    this.api.request<SpecialityItem[]>('GET', '/api/specializations').subscribe({
       next: (specialities) => {
         this.specialities = specialities;
       },
