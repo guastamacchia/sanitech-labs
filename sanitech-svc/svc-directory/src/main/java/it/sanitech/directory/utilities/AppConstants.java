@@ -34,6 +34,7 @@ public class AppConstants {
     public static class ApiPath {
         public static final String API = "/api";
         public static final String ADMIN = API + "/admin";
+        public static final String PUBLIC = API + "/public";
 
         public static final String DOCTORS = API + "/doctors";
         public static final String PATIENTS = API + "/patients";
@@ -44,6 +45,8 @@ public class AppConstants {
         public static final String ADMIN_PATIENTS = ADMIN + "/patients";
         public static final String ADMIN_DEPARTMENTS = ADMIN + "/departments";
         public static final String ADMIN_SPECIALIZATIONS = ADMIN + "/specializations";
+
+        public static final String PUBLIC_PATIENTS = PUBLIC + "/patients";
     }
 
     /**

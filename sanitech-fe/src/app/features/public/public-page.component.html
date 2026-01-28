@@ -114,6 +114,7 @@
                     required />
                 </div>
                 <div class="alert alert-success py-2 mb-3" *ngIf="registrationSuccess">{{ registrationSuccess }}</div>
+                <div class="alert alert-danger py-2 mb-3" *ngIf="registrationError">{{ registrationError }}</div>
                 <button class="btn btn-outline-primary w-100" type="submit" [disabled]="registrationFormRef.invalid">
                   Invia richiesta
                 </button>
