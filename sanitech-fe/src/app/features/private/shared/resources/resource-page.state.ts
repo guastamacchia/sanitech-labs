@@ -113,6 +113,10 @@ interface DoctorItem {
   firstName: string;
   lastName: string;
   speciality: string;
+  email?: string;
+  phone?: string;
+  department?: string;
+  specialization?: string;
 }
 
 interface DoctorApiItem {
@@ -120,6 +124,7 @@ interface DoctorApiItem {
   firstName: string;
   lastName: string;
   email?: string;
+  phone?: string;
   speciality?: string;
   departments?: Array<{ code: string; name: string }>;
   specializations?: Array<{ code: string; name: string }>;
@@ -130,6 +135,7 @@ interface PatientItem {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
 }
 
 interface DepartmentItem {
@@ -2426,16 +2432,18 @@ export class ResourcePageState {
   private normalizeDoctorList(data?: DoctorItem[] | PagedResponse<DoctorApiItem>): DoctorItem[] {
     return this.normalizeList(data).map((doctor) => {
       const apiDoctor = doctor as DoctorApiItem;
-      const speciality =
-        apiDoctor.speciality ??
-        apiDoctor.specializations?.[0]?.code ??
-        apiDoctor.departments?.[0]?.code ??
-        '';
+      const department = apiDoctor.departments?.[0]?.code ?? '';
+      const specialization = apiDoctor.specializations?.[0]?.code ?? apiDoctor.speciality ?? '';
+      const speciality = apiDoctor.speciality ?? specialization ?? department ?? '';
       return {
         id: apiDoctor.id,
         firstName: apiDoctor.firstName,
         lastName: apiDoctor.lastName,
-        speciality
+        speciality,
+        email: apiDoctor.email,
+        phone: apiDoctor.phone,
+        department,
+        specialization
       };
     });
   }
