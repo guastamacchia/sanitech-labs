@@ -115,8 +115,6 @@ interface DoctorItem {
   speciality: string;
   email?: string;
   phone?: string;
-  department?: string;
-  specialization?: string;
 }
 
 interface DoctorApiItem {
@@ -349,6 +347,10 @@ export class ResourcePageState {
   directoryError = '';
   showDoctorModal = false;
   showPatientModal = false;
+  showEditDoctorModal = false;
+  showEditPatientModal = false;
+  editDoctorTarget: DoctorItem | null = null;
+  editPatientTarget: PatientItem | null = null;
   doctorForm = {
     firstName: '',
     lastName: '',
@@ -360,6 +362,14 @@ export class ResourcePageState {
   patientForm = {
     firstName: '',
     lastName: '',
+    email: '',
+    phone: ''
+  };
+  editDoctorForm = {
+    email: '',
+    phone: ''
+  };
+  editPatientForm = {
     email: '',
     phone: ''
   };
@@ -2445,9 +2455,7 @@ export class ResourcePageState {
         lastName: apiDoctor.lastName,
         speciality,
         email: apiDoctor.email,
-        phone: apiDoctor.phone,
-        department,
-        specialization
+        phone: apiDoctor.phone
       };
     });
   }
@@ -2488,6 +2496,38 @@ export class ResourcePageState {
 
   closePatientModal(): void {
     this.showPatientModal = false;
+    this.directoryError = '';
+  }
+
+  openEditDoctorModal(doctor: DoctorItem): void {
+    this.directoryError = '';
+    this.editDoctorTarget = doctor;
+    this.editDoctorForm.email = doctor.email ?? '';
+    this.editDoctorForm.phone = doctor.phone ?? '';
+    this.showEditDoctorModal = true;
+  }
+
+  closeEditDoctorModal(): void {
+    this.showEditDoctorModal = false;
+    this.editDoctorTarget = null;
+    this.editDoctorForm.email = '';
+    this.editDoctorForm.phone = '';
+    this.directoryError = '';
+  }
+
+  openEditPatientModal(patient: PatientItem): void {
+    this.directoryError = '';
+    this.editPatientTarget = patient;
+    this.editPatientForm.email = patient.email ?? '';
+    this.editPatientForm.phone = patient.phone ?? '';
+    this.showEditPatientModal = true;
+  }
+
+  closeEditPatientModal(): void {
+    this.showEditPatientModal = false;
+    this.editPatientTarget = null;
+    this.editPatientForm.email = '';
+    this.editPatientForm.phone = '';
     this.directoryError = '';
   }
 
@@ -2555,6 +2595,112 @@ export class ResourcePageState {
       },
       error: () => {
         this.directoryError = 'Impossibile creare il paziente.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  submitEditDoctor(): void {
+    if (!this.editDoctorTarget) {
+      return;
+    }
+    const email = this.editDoctorForm.email.trim();
+    const phone = this.editDoctorForm.phone.trim();
+    if (!email && !phone) {
+      this.directoryError = 'Inserisci almeno un contatto tra email o telefono.';
+      return;
+    }
+    this.isLoading = true;
+    this.directoryError = '';
+    this.api
+      .request<DoctorItem>('PATCH', `/api/admin/doctors/${this.editDoctorTarget.id}`, {
+        email,
+        phone
+      })
+      .subscribe({
+        next: (doctor) => {
+          this.doctors = this.doctors.map((item) =>
+            item.id === this.editDoctorTarget?.id
+              ? {
+                  ...item,
+                  ...doctor,
+                  email: doctor.email ?? email,
+                  phone: doctor.phone ?? phone
+                }
+              : item
+          );
+          this.closeEditDoctorModal();
+          this.isLoading = false;
+        },
+        error: () => {
+          this.directoryError = 'Impossibile aggiornare i contatti del medico.';
+          this.isLoading = false;
+        }
+      });
+  }
+
+  submitEditPatient(): void {
+    if (!this.editPatientTarget) {
+      return;
+    }
+    const email = this.editPatientForm.email.trim();
+    const phone = this.editPatientForm.phone.trim();
+    if (!email && !phone) {
+      this.directoryError = 'Inserisci almeno un contatto tra email o telefono.';
+      return;
+    }
+    this.isLoading = true;
+    this.directoryError = '';
+    this.api
+      .request<PatientItem>('PATCH', `/api/admin/patients/${this.editPatientTarget.id}`, {
+        email,
+        phone
+      })
+      .subscribe({
+        next: (patient) => {
+          this.patients = this.patients.map((item) =>
+            item.id === this.editPatientTarget?.id
+              ? {
+                  ...item,
+                  ...patient,
+                  email: patient.email ?? email,
+                  phone: patient.phone ?? phone
+                }
+              : item
+          );
+          this.closeEditPatientModal();
+          this.isLoading = false;
+        },
+        error: () => {
+          this.directoryError = 'Impossibile aggiornare i contatti del paziente.';
+          this.isLoading = false;
+        }
+      });
+  }
+
+  disableDoctorAccess(doctor: DoctorItem): void {
+    this.isLoading = true;
+    this.directoryError = '';
+    this.api.request<void>('PATCH', `/api/admin/doctors/${doctor.id}/disable`).subscribe({
+      next: () => {
+        this.isLoading = false;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile disabilitare l’accesso del medico.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  disablePatientAccess(patient: PatientItem): void {
+    this.isLoading = true;
+    this.directoryError = '';
+    this.api.request<void>('PATCH', `/api/admin/patients/${patient.id}/disable`).subscribe({
+      next: () => {
+        this.isLoading = false;
+      },
+      error: () => {
+        this.directoryError = 'Impossibile disabilitare l’accesso del paziente.';
         this.isLoading = false;
       }
     });

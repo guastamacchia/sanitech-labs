@@ -2281,6 +2281,7 @@
         <ng-container *ngIf="mode === 'admin-directory'; else adminAuditLayout">
           <div class="row g-4">
             <div class="col-12">
+              <div class="alert alert-danger py-2" *ngIf="directoryError">{{ directoryError }}</div>
               <div class="card card-glass mb-4">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
@@ -2301,10 +2302,7 @@
                           <th>ID</th>
                           <th>Nome</th>
                           <th>Cognome</th>
-                          <th>Reparto</th>
-                          <th>Specializzazione</th>
-                          <th>Email</th>
-                          <th>Telefono</th>
+                          <th>Specialità</th>
                           <th>Azioni</th>
                         </tr>
                       </thead>
@@ -2313,16 +2311,30 @@
                           <td>{{ doctor.id }}</td>
                           <td>{{ doctor.firstName }}</td>
                           <td>{{ doctor.lastName }}</td>
-                          <td>{{ getDepartmentLabel(doctor.department || doctor.speciality || '-') }}</td>
-                          <td>{{ getSpecialityLabel(doctor.specialization || doctor.speciality || '-') }}</td>
-                          <td>{{ doctor.email || '-' }}</td>
-                          <td>{{ doctor.phone || '-' }}</td>
+                          <td>{{ doctor.speciality }}</td>
                           <td>
-                            <span class="text-muted">-</span>
+                            <div class="d-flex gap-2">
+                              <button
+                                class="btn btn-outline-primary btn-sm"
+                                type="button"
+                                aria-label="Modifica contatti medico"
+                                title="Modifica contatti"
+                                (click)="openEditDoctorModal(doctor)">
+                                ✏️
+                              </button>
+                              <button
+                                class="btn btn-outline-danger btn-sm"
+                                type="button"
+                                aria-label="Disabilita accesso medico"
+                                title="Disabilita accesso"
+                                (click)="disableDoctorAccess(doctor)">
+                                🚫
+                              </button>
+                            </div>
                           </td>
                         </tr>
                         <tr *ngIf="!doctors.length">
-                          <td colspan="8" class="text-center text-muted">Nessun medico registrato.</td>
+                          <td colspan="5" class="text-center text-muted">Nessun medico registrato.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -2352,7 +2364,6 @@
                           <th>Nome</th>
                           <th>Cognome</th>
                           <th>Email</th>
-                          <th>Telefono</th>
                           <th>Azioni</th>
                         </tr>
                       </thead>
@@ -2362,13 +2373,29 @@
                           <td>{{ patient.firstName }}</td>
                           <td>{{ patient.lastName }}</td>
                           <td>{{ patient.email }}</td>
-                          <td>{{ patient.phone || '-' }}</td>
                           <td>
-                            <span class="text-muted">-</span>
+                            <div class="d-flex gap-2">
+                              <button
+                                class="btn btn-outline-primary btn-sm"
+                                type="button"
+                                aria-label="Modifica contatti paziente"
+                                title="Modifica contatti"
+                                (click)="openEditPatientModal(patient)">
+                                ✏️
+                              </button>
+                              <button
+                                class="btn btn-outline-danger btn-sm"
+                                type="button"
+                                aria-label="Disabilita accesso paziente"
+                                title="Disabilita accesso"
+                                (click)="disablePatientAccess(patient)">
+                                🚫
+                              </button>
+                            </div>
                           </td>
                         </tr>
                         <tr *ngIf="!patients.length">
-                          <td colspan="6" class="text-center text-muted">Nessun paziente registrato.</td>
+                          <td colspan="5" class="text-center text-muted">Nessun paziente registrato.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -2490,6 +2517,110 @@
                         <button class="btn btn-outline-secondary" type="button" (click)="closePatientModal()">Annulla</button>
                         <button class="btn btn-primary" type="submit" [disabled]="patientFormRef.invalid || isLoading">
                           {{ isLoading ? 'Salvataggio...' : 'Registra paziente' }}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="showEditDoctorModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeEditDoctorModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="adminEditDoctorModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="adminEditDoctorModalTitle">Modifica contatti medico</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeEditDoctorModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="text-muted mb-3" *ngIf="editDoctorTarget">
+                      {{ editDoctorTarget.firstName }} {{ editDoctorTarget.lastName }}
+                    </p>
+                    <form (ngSubmit)="submitEditDoctor()" #editDoctorFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input
+                          class="form-control"
+                          type="email"
+                          name="editDoctorEmail"
+                          [(ngModel)]="editDoctorForm.email" />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Telefono</label>
+                        <input
+                          class="form-control"
+                          type="tel"
+                          name="editDoctorPhone"
+                          [(ngModel)]="editDoctorForm.phone" />
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="directoryError">{{ directoryError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeEditDoctorModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="isLoading">
+                          {{ isLoading ? 'Salvataggio...' : 'Salva contatti' }}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="showEditPatientModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeEditPatientModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="adminEditPatientModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="adminEditPatientModalTitle">Modifica contatti paziente</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeEditPatientModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="text-muted mb-3" *ngIf="editPatientTarget">
+                      {{ editPatientTarget.firstName }} {{ editPatientTarget.lastName }}
+                    </p>
+                    <form (ngSubmit)="submitEditPatient()" #editPatientFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input
+                          class="form-control"
+                          type="email"
+                          name="editPatientEmail"
+                          [(ngModel)]="editPatientForm.email" />
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">Telefono</label>
+                        <input
+                          class="form-control"
+                          type="tel"
+                          name="editPatientPhone"
+                          [(ngModel)]="editPatientForm.phone" />
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="directoryError">{{ directoryError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeEditPatientModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="isLoading">
+                          {{ isLoading ? 'Salvataggio...' : 'Salva contatti' }}
                         </button>
                       </div>
                     </form>
