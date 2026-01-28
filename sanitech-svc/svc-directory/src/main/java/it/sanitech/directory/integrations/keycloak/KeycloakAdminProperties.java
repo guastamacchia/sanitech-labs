@@ -11,5 +11,7 @@ public record KeycloakAdminProperties(
         @NotBlank String realm,
         @NotBlank String clientId,
         @NotBlank String clientSecret,
+        @NotBlank String username,
+        @NotBlank String password,
         @NotBlank String tokenPath
 ) {}

@@ -29,9 +29,11 @@ public class KeycloakAdminClient {
             try {
                 createUser(request);
                 return;
-            } catch (WebApplicationException ex) {
-                if (ex.getResponse() == null || ex.getResponse().getStatus() != Response.Status.CONFLICT.getStatusCode()) {
-                    throw new KeycloakSyncException("Errore creazione utente Keycloak.", ex);
+            } catch (RuntimeException ex) {
+                if (!(ex instanceof WebApplicationException webException)
+                        || webException.getResponse() == null
+                        || webException.getResponse().getStatus() != Response.Status.CONFLICT.getStatusCode()) {
+                    throw toSyncException("Errore creazione utente Keycloak.", ex);
                 }
                 existing = findUserByEmail(request.email());
                 if (existing == null) {
@@ -72,8 +74,8 @@ public class KeycloakAdminClient {
         UserRepresentation payload = toRepresentation(request);
         try {
             usersResource().get(userId).update(payload);
-        } catch (WebApplicationException ex) {
-            throw new KeycloakSyncException("Errore aggiornamento utente Keycloak.", ex);
+        } catch (RuntimeException ex) {
+            throw toSyncException("Errore aggiornamento utente Keycloak.", ex);
         }
     }
 
@@ -89,8 +91,8 @@ public class KeycloakAdminClient {
                 }
             }
             return users.get(0) != null ? fromRepresentation(users.get(0)) : null;
-        } catch (WebApplicationException ex) {
-            throw new KeycloakSyncException("Errore ricerca utente Keycloak.", ex);
+        } catch (RuntimeException ex) {
+            throw toSyncException("Errore ricerca utente Keycloak.", ex);
         }
     }
 
@@ -123,5 +125,15 @@ public class KeycloakAdminClient {
 
     private UsersResource usersResource() {
         return keycloak.realm(properties.realm()).users();
+    }
+
+    private KeycloakSyncException toSyncException(String message, RuntimeException ex) {
+        if (ex instanceof WebApplicationException webException) {
+            Response response = webException.getResponse();
+            if (response != null) {
+                return new KeycloakSyncException(message + " (status=" + response.getStatus() + ")", ex);
+            }
+        }
+        return new KeycloakSyncException(message, ex);
     }
 }
