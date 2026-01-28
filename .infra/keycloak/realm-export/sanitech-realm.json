@@ -47,9 +47,9 @@
       "secret": "svc-directory-secret",
       "protocol": "openid-connect",
       "publicClient": false,
-      "serviceAccountsEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "standardFlowEnabled": true,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
       "redirectUris": [
         "*"
       ],
@@ -57,6 +57,7 @@
         "+"
       ],
       "attributes": {
+        "client_credentials.use_refresh_token": "false",
         "post.logout.redirect.uris": "*"
       },
       "defaultClientScopes": [
@@ -361,6 +362,17 @@
       "lastName": "Admin",
       "createdTimestamp": 1704067200000,
       "requiredActions": []
+    },
+    {
+      "username": "service-account-svc-directory",
+      "enabled": true,
+      "serviceAccountClientId": "svc-directory",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users"
+        ]
+      }
     },
     {
       "username": "rossi",
