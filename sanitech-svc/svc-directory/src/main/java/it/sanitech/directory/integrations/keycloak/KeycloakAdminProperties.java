@@ -2,6 +2,7 @@ package it.sanitech.directory.integrations.keycloak;
 
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.lang.Nullable;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
@@ -10,6 +11,8 @@ public record KeycloakAdminProperties(
         @NotBlank String serverUrl,
         @NotBlank String realm,
         @NotBlank String clientId,
-        @NotBlank String clientSecret,
+        @Nullable String clientSecret,
+        @NotBlank String username,
+        @NotBlank String password,
         @NotBlank String tokenPath
 ) {}
