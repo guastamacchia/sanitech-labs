@@ -13,7 +13,8 @@ public record KeycloakAdminProperties(
         @NotBlank String realm,
         @NotBlank String clientId,
         @Nullable String clientSecret,
-        @NotBlank String username,
-        @NotBlank String password,
+        @Nullable String username,
+        @Nullable String password,
+        @Nullable String grantType,
         @NotBlank String tokenPath
 ) {}
