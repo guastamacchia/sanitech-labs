@@ -506,7 +506,7 @@ export class ResourcePageState {
       error: () => {
         this.schedulingError = 'Impossibile caricare gli appuntamenti.';
       }
-    }
+    });
     this.api.request<DoctorItem[] | PagedResponse<DoctorApiItem>>('GET', '/api/doctors').subscribe({
       next: (doctors) => {
         this.doctors = this.normalizeDoctorList(doctors);
