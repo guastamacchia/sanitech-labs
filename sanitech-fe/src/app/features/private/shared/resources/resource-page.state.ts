@@ -346,12 +346,16 @@ export class ResourcePageState {
   doctorForm = {
     firstName: '',
     lastName: '',
-    speciality: 'CARD'
+    email: '',
+    phone: '',
+    departmentCode: '',
+    specializationCode: ''
   };
   patientForm = {
     firstName: '',
     lastName: '',
-    email: ''
+    email: '',
+    phone: ''
   };
   auditEvents: AuditItem[] = [];
   auditError = '';
@@ -2455,6 +2459,12 @@ export class ResourcePageState {
 
   openDoctorModal(): void {
     this.directoryError = '';
+    if (!this.doctorForm.departmentCode && this.departments.length) {
+      this.doctorForm.departmentCode = this.departments[0].code;
+    }
+    if (!this.doctorForm.specializationCode && this.specialities.length) {
+      this.doctorForm.specializationCode = this.specialities[0].code;
+    }
     this.showDoctorModal = true;
   }
 
@@ -2474,8 +2484,14 @@ export class ResourcePageState {
   }
 
   submitDoctor(): void {
-    if (!this.doctorForm.firstName.trim() || !this.doctorForm.lastName.trim()) {
-      this.directoryError = 'Inserisci nome e cognome del medico.';
+    if (
+      !this.doctorForm.firstName.trim() ||
+      !this.doctorForm.lastName.trim() ||
+      !this.doctorForm.email.trim() ||
+      !this.doctorForm.departmentCode ||
+      !this.doctorForm.specializationCode
+    ) {
+      this.directoryError = 'Inserisci nome, cognome, email, reparto e specializzazione del medico.';
       return;
     }
     this.isLoading = true;
@@ -2483,12 +2499,19 @@ export class ResourcePageState {
     this.api.request<DoctorItem>('POST', '/api/admin/doctors', {
       firstName: this.doctorForm.firstName,
       lastName: this.doctorForm.lastName,
-      speciality: this.doctorForm.speciality
+      email: this.doctorForm.email,
+      phone: this.doctorForm.phone?.trim() || undefined,
+      departmentCodes: [this.doctorForm.departmentCode],
+      specializationCodes: [this.doctorForm.specializationCode]
     }).subscribe({
       next: (doctor) => {
         this.doctors = [...this.doctors, doctor];
         this.doctorForm.firstName = '';
         this.doctorForm.lastName = '';
+        this.doctorForm.email = '';
+        this.doctorForm.phone = '';
+        this.doctorForm.departmentCode = this.departments[0]?.code ?? '';
+        this.doctorForm.specializationCode = this.specialities[0]?.code ?? '';
         this.closeDoctorModal();
         this.isLoading = false;
       },
@@ -2509,13 +2532,16 @@ export class ResourcePageState {
     this.api.request<PatientItem>('POST', '/api/admin/patients', {
       firstName: this.patientForm.firstName,
       lastName: this.patientForm.lastName,
-      email: this.patientForm.email
+      email: this.patientForm.email,
+      phone: this.patientForm.phone?.trim() || undefined,
+      departmentCodes: []
     }).subscribe({
       next: (patient) => {
         this.patients = [...this.patients, patient];
         this.patientForm.firstName = '';
         this.patientForm.lastName = '';
         this.patientForm.email = '';
+        this.patientForm.phone = '';
         this.closePatientModal();
         this.isLoading = false;
       },
