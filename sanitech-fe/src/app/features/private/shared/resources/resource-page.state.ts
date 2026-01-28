@@ -141,6 +141,14 @@ interface AuditItem {
   timestamp: string;
 }
 
+interface AuditEventResponse {
+  id: number;
+  action: string;
+  actorType: string;
+  actorId: string;
+  occurredAt: string;
+}
+
 interface PagedResponse<T> {
   content?: T[];
 }
@@ -2545,9 +2553,15 @@ export class ResourcePageState {
   loadAudit(): void {
     this.isLoading = true;
     this.auditError = '';
-    this.api.request<AuditItem[]>('GET', '/api/audit').subscribe({
-      next: (events) => {
-        this.auditEvents = events;
+    this.api.request<PagedResponse<AuditEventResponse>>('GET', '/api/audit/events').subscribe({
+      next: (response) => {
+        const events = response.content ?? [];
+        this.auditEvents = events.map((event) => ({
+          id: event.id,
+          action: event.action,
+          actor: `${event.actorType} ${event.actorId}`.trim(),
+          timestamp: event.occurredAt
+        }));
         this.isLoading = false;
       },
       error: () => {

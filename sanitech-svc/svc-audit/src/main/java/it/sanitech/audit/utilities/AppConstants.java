@@ -20,7 +20,7 @@ public class AppConstants {
     @UtilityClass
     public static class ApiPath {
         public static final String API_BASE = "/api";
-        public static final String AUDIT_EVENTS = API_BASE + "/audit/events";
+        public static final String AUDIT_EVENTS = "/audit/events";
     }
 
     @UtilityClass
