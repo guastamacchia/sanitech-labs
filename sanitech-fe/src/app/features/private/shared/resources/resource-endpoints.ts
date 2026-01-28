@@ -119,12 +119,12 @@ export const televisitEndpoints = [
   {
     label: 'Lista sessioni',
     method: 'GET',
-    path: '/api/televisit'
+    path: '/api/televisits'
   },
   {
     label: 'Avvia sessione',
     method: 'POST',
-    path: '/api/televisit',
+    path: '/api/televisits',
     payload: '{"appointmentId": 22, "provider": "LIVEKIT"}'
   }
 ];
