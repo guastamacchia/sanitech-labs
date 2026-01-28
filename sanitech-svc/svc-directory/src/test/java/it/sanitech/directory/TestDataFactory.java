@@ -139,8 +139,8 @@ public final class TestDataFactory {
                 firstName,
                 lastName,
                 email,
-                Set.of(),
-                Set.of()
+                null,
+                null
         );
     }
 
@@ -149,8 +149,8 @@ public final class TestDataFactory {
                 "Luca",
                 "Bianchi",
                 "luca.bianchi@email.it",
-                Set.of("CARD"),
-                Set.of("CARDIO")
+                "CARD",
+                "CARDIO"
         );
     }
 
@@ -159,8 +159,8 @@ public final class TestDataFactory {
                 "Luca",
                 "Bianchi",
                 "Luca.Bianchi@Email.it",
-                Set.of("card"),
-                Set.of("cardio")
+                "card",
+                "cardio"
         );
     }
 
@@ -169,8 +169,8 @@ public final class TestDataFactory {
                 " Luca ",
                 "Bianchi",
                 "Nuova.Email@Email.it",
-                Set.of("CARD"),
-                Set.of("CARDIO")
+                "CARD",
+                "CARDIO"
         );
     }
 }
