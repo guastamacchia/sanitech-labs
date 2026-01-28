@@ -9,6 +9,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "sanitech.keycloak.admin")
 public record KeycloakAdminProperties(
         @NotBlank String serverUrl,
+        @Nullable String authRealm,
         @NotBlank String realm,
         @NotBlank String clientId,
         @Nullable String clientSecret,

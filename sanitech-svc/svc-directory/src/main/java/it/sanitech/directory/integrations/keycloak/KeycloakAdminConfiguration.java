@@ -14,9 +14,12 @@ public class KeycloakAdminConfiguration {
 
     @Bean(destroyMethod = "close")
     public Keycloak keycloak(KeycloakAdminProperties properties) {
+        String authRealm = StringUtils.hasText(properties.authRealm())
+                ? properties.authRealm()
+                : properties.realm();
         KeycloakBuilder builder = KeycloakBuilder.builder()
                 .serverUrl(properties.serverUrl())
-                .realm(properties.realm())
+                .realm(authRealm)
                 .clientId(properties.clientId())
                 .username(properties.username())
                 .password(properties.password())

@@ -105,6 +105,7 @@ sanitech:
   keycloak:
     admin:
       server-url: ${KEYCLOAK_ADMIN_URL:${OAUTH2_SCHEME}://${OAUTH2_HOST}:${OAUTH2_PORT}}
+      auth-realm: ${KEYCLOAK_ADMIN_AUTH_REALM:}
       realm: ${KEYCLOAK_ADMIN_REALM:${OAUTH2_REALM}}
       client-id: ${KEYCLOAK_ADMIN_CLIENT_ID}
       client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
