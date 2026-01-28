@@ -6,6 +6,7 @@ import org.keycloak.admin.client.KeycloakBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 
 @Configuration
 @EnableConfigurationProperties(KeycloakAdminProperties.class)
@@ -13,14 +14,18 @@ public class KeycloakAdminConfiguration {
 
     @Bean(destroyMethod = "close")
     public Keycloak keycloak(KeycloakAdminProperties properties) {
-        return KeycloakBuilder.builder()
+        KeycloakBuilder builder = KeycloakBuilder.builder()
                 .serverUrl(properties.serverUrl())
                 .realm(properties.realm())
                 .clientId(properties.clientId())
-                .clientSecret(properties.clientSecret())
                 .username(properties.username())
                 .password(properties.password())
-                .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
-                .build();
+                .grantType(OAuth2Constants.PASSWORD);
+
+        if (StringUtils.hasText(properties.clientSecret())) {
+            builder.clientSecret(properties.clientSecret());
+        }
+
+        return builder.build();
     }
 }
