@@ -63,7 +63,7 @@ public class KeycloakAdminClient {
         UserRepresentation payload = toRepresentation(request);
         try (Response response = usersResource().create(payload)) {
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
-                throw new KeycloakSyncException("Errore creazione utente Keycloak: " + response.getStatus());
+                throw new WebApplicationException(response);
             }
         }
     }
