@@ -80,6 +80,10 @@ interface NotificationItem {
   sentAt: string;
 }
 
+interface NotificationPage {
+  content: NotificationItem[];
+}
+
 interface PrescriptionItem {
   id: number;
   patientId: number;
@@ -1729,9 +1733,13 @@ export class ResourcePageState {
   loadNotifications(): void {
     this.isLoading = true;
     this.notificationsError = '';
-    this.api.request<NotificationItem[]>('GET', '/api/notifications').subscribe({
+    this.api.request<NotificationItem[] | NotificationPage>('GET', '/api/notifications').subscribe({
       next: (notifications) => {
-        this.notifications = notifications;
+        if (Array.isArray(notifications)) {
+          this.notifications = notifications;
+        } else {
+          this.notifications = notifications?.content ?? [];
+        }
         this.isLoading = false;
       },
       error: () => {
