@@ -58,6 +58,10 @@ interface PaymentItem {
   receiptName?: string;
 }
 
+interface PaymentPage {
+  content: PaymentItem[];
+}
+
 interface AdmissionItem {
   id: number;
   patientId: number;
@@ -1471,9 +1475,13 @@ export class ResourcePageState {
     this.isLoading = true;
     this.paymentsError = '';
     this.paymentsSuccess = '';
-    this.api.request<PaymentItem[]>('GET', '/api/payments').subscribe({
+    this.api.request<PaymentItem[] | PaymentPage>('GET', '/api/payments').subscribe({
       next: (payments) => {
-        this.payments = payments;
+        if (Array.isArray(payments)) {
+          this.payments = payments;
+        } else {
+          this.payments = payments?.content ?? [];
+        }
         this.isLoading = false;
       },
       error: () => {
