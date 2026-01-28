@@ -4,7 +4,6 @@ import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import it.sanitech.commons.exception.DepartmentAccessDeniedException;
 import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.directory.integrations.keycloak.KeycloakAdminClient;
-import it.sanitech.directory.integrations.keycloak.KeycloakUserSyncRequest;
 import it.sanitech.directory.repositories.DepartmentRepository;
 import it.sanitech.directory.repositories.PatientRepository;
 import it.sanitech.directory.repositories.entities.Department;
@@ -14,11 +13,13 @@ import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.directory.services.dto.PatientDto;
 import it.sanitech.directory.services.dto.create.PatientCreateDto;
 import it.sanitech.directory.services.dto.update.PatientUpdateDto;
+import it.sanitech.directory.services.events.KeycloakUserSyncEvent;
 import it.sanitech.directory.services.mapper.PatientMapper;
 import it.sanitech.directory.utilities.AppConstants;
 import it.sanitech.commons.utilities.PageableUtils;
 import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.outbox.core.DomainEventPublisher;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.security.core.Authentication;
@@ -49,6 +50,7 @@ public class PatientService {
 
     private final PatientMapper patientMapper;
     private final DomainEventPublisher eventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final DeptGuard deptGuard;
     private final KeycloakAdminClient keycloakAdminClient;
 
@@ -101,14 +103,6 @@ public class PatientService {
 
         Patient saved = patientRepository.save(entity);
 
-        keycloakAdminClient.syncUser(new KeycloakUserSyncRequest(
-                saved.getEmail(),
-                saved.getFirstName(),
-                saved.getLastName(),
-                saved.getPhone(),
-                true
-        ));
-
         eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.PATIENT,
                 String.valueOf(saved.getId()),
@@ -122,6 +116,17 @@ public class PatientService {
                         "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
                 )
         );
+
+        applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
+                AppConstants.Outbox.AggregateType.PATIENT,
+                saved.getId(),
+                saved.getEmail(),
+                saved.getFirstName(),
+                saved.getLastName(),
+                saved.getPhone(),
+                true,
+                null
+        ));
 
         return patientMapper.toDto(saved);
     }
@@ -158,17 +163,6 @@ public class PatientService {
 
         Patient saved = patientRepository.save(entity);
 
-        if (!previousEmail.equalsIgnoreCase(saved.getEmail())) {
-            keycloakAdminClient.disableUser(previousEmail);
-        }
-        keycloakAdminClient.syncUser(new KeycloakUserSyncRequest(
-                saved.getEmail(),
-                saved.getFirstName(),
-                saved.getLastName(),
-                saved.getPhone(),
-                true
-        ));
-
         eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.PATIENT,
                 String.valueOf(saved.getId()),
@@ -182,6 +176,17 @@ public class PatientService {
                         "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
                 )
         );
+
+        applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
+                AppConstants.Outbox.AggregateType.PATIENT,
+                saved.getId(),
+                saved.getEmail(),
+                saved.getFirstName(),
+                saved.getLastName(),
+                saved.getPhone(),
+                true,
+                previousEmail
+        ));
 
         return patientMapper.toDto(saved);
     }
