@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * Gestore delle eccezioni specifiche per i ricoveri.
  */
-@RestControllerAdvice("admissionsGlobalExceptionHandler")
-public class GlobalExceptionHandler {
+@RestControllerAdvice
+public class AdmissionsGlobalExceptionHandler {
 
     @ExceptionHandler(NoBedAvailableException.class)
     public ResponseEntity<ProblemDetails> noBeds(NoBedAvailableException ex, HttpServletRequest request) {
