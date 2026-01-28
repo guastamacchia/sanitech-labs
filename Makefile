@@ -145,7 +145,7 @@ svc-run:
 # =====================================================
 # Docker Compose
 # =====================================================
-compose-up: build
+compose-up:
 	@set -a; . $(ENV_FILE); set +a; $(DOCKER_COMPOSE) --env-file $(ENV_FILE) -f $(COMPOSE_FILE) up -d $(COMPOSE_BUILD_FLAG)
 
 compose-up-infra:
