@@ -15,6 +15,6 @@ public record KeycloakAdminProperties(
         @Nullable String clientSecret,
         @Nullable String username,
         @Nullable String password,
-        @Nullable String grantType,
-        @NotBlank String tokenPath
+        @NotBlank String tokenPath,
+        @Nullable String grantType
 ) {}
