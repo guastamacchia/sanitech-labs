@@ -103,11 +103,6 @@ export class AuthService {
     } catch {
       // Ignore storage access errors
     }
-    try {
-      sessionStorage.clear();
-    } catch {
-      // Ignore storage access errors
-    }
   }
 
   private decodeJwt(token: string): Record<string, unknown> {
