@@ -2,9 +2,11 @@ package it.sanitech.directory.integrations.keycloak;
 
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +19,7 @@ import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class KeycloakAdminClient {
 
     private static final String PHONE_ATTR = "phone";
@@ -29,7 +32,8 @@ public class KeycloakAdminClient {
         KeycloakUserRepresentation existing = findUserByEmail(request.email());
         if (existing == null) {
             try {
-                createUser(request);
+                String userId = createUser(request);
+                assignRealmRoleIfRequested(userId, request.roleToAssign());
                 return;
             } catch (RuntimeException ex) {
                 if (!(ex instanceof WebApplicationException webException)
@@ -59,11 +63,12 @@ public class KeycloakAdminClient {
                 existing.attributes() != null && existing.attributes().containsKey(PHONE_ATTR)
                         ? existing.attributes().get(PHONE_ATTR).stream().findFirst().orElse(null)
                         : null,
-                false
+                false,
+                null
         ));
     }
 
-    private void createUser(KeycloakUserSyncRequest request) {
+    private String createUser(KeycloakUserSyncRequest request) {
         UserRepresentation payload = toRepresentation(request);
         try (Response response = usersResource().create(payload)) {
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
@@ -78,6 +83,7 @@ public class KeycloakAdminClient {
             } catch (RuntimeException ex) {
                 throw toSyncException("Errore impostazione password utente Keycloak.", ex);
             }
+            return userId;
         }
     }
 
@@ -136,6 +142,34 @@ public class KeycloakAdminClient {
 
     private UsersResource usersResource() {
         return keycloak.realm(properties.realm()).users();
+    }
+
+    private void assignRealmRoleIfRequested(String userId, String roleName) {
+        if (roleName == null || roleName.isBlank()) {
+            return;
+        }
+        RoleRepresentation role;
+        try {
+            role = keycloak.realm(properties.realm()).roles().get(roleName).toRepresentation();
+        } catch (WebApplicationException ex) {
+            Response response = ex.getResponse();
+            if (response != null && response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+                log.warn("Ruolo Keycloak '{}' non trovato; utente {} non aggiornato con ruolo.", roleName, userId);
+                return;
+            }
+            throw toSyncException("Errore recupero ruolo Keycloak '" + roleName + "'.", ex);
+        } catch (RuntimeException ex) {
+            throw toSyncException("Errore recupero ruolo Keycloak '" + roleName + "'.", ex);
+        }
+        if (role == null) {
+            log.warn("Ruolo Keycloak '{}' non trovato; utente {} non aggiornato con ruolo.", roleName, userId);
+            return;
+        }
+        try {
+            usersResource().get(userId).roles().realmLevel().add(List.of(role));
+        } catch (RuntimeException ex) {
+            throw toSyncException("Errore assegnazione ruolo Keycloak '" + roleName + "'.", ex);
+        }
     }
 
     private String extractUserId(URI location) {

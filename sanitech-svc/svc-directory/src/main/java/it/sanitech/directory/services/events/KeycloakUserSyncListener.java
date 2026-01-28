@@ -26,7 +26,8 @@ public class KeycloakUserSyncListener {
                     event.firstName(),
                     event.lastName(),
                     event.phone(),
-                    event.enabled()
+                    event.enabled(),
+                    event.roleToAssign()
             ));
         } catch (Exception ex) {
             log.error(

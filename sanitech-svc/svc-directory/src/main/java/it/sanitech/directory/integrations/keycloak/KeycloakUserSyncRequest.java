@@ -5,5 +5,6 @@ public record KeycloakUserSyncRequest(
         String firstName,
         String lastName,
         String phone,
-        boolean enabled
+        boolean enabled,
+        String roleToAssign
 ) {}

@@ -107,6 +107,7 @@ class PatientServiceTest {
         assertThat(syncEvent.lastName()).isEqualTo("Rossi");
         assertThat(syncEvent.phone()).isEqualTo("+39 333 123 4567");
         assertThat(syncEvent.enabled()).isTrue();
+        assertThat(syncEvent.roleToAssign()).isEqualTo("ROLE_PATIENT");
         assertThat(syncEvent.previousEmail()).isNull();
 
         verify(eventPublisher).publish(eq("PATIENT"), eq("1"), eq("PATIENT_CREATED"), any());
@@ -171,6 +172,7 @@ class PatientServiceTest {
         assertThat(syncEvent.lastName()).isEqualTo("Rossi");
         assertThat(syncEvent.phone()).isEqualTo("333 444 555");
         assertThat(syncEvent.enabled()).isTrue();
+        assertThat(syncEvent.roleToAssign()).isNull();
         assertThat(syncEvent.previousEmail()).isEqualTo("vecchia@email.it");
 
         verify(eventPublisher).publish(eq("PATIENT"), eq("7"), eq("PATIENT_UPDATED"), any());
