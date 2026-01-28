@@ -489,9 +489,9 @@ export class ResourcePageState {
   loadScheduling(): void {
     this.isLoading = true;
     this.schedulingError = '';
-    this.api.request<SchedulingSlot[]>('GET', '/api/slots').subscribe({
+    this.api.request<SchedulingSlot[] | PagedResponse<SchedulingSlot>>('GET', '/api/slots').subscribe({
       next: (slots) => {
-        this.slots = slots;
+        this.slots = this.normalizeList(slots);
         this.isLoading = false;
       },
       error: () => {
@@ -506,7 +506,7 @@ export class ResourcePageState {
       error: () => {
         this.schedulingError = 'Impossibile caricare gli appuntamenti.';
       }
-    });
+    }
     this.api.request<DoctorItem[] | PagedResponse<DoctorApiItem>>('GET', '/api/doctors').subscribe({
       next: (doctors) => {
         this.doctors = this.normalizeDoctorList(doctors);
@@ -2435,6 +2435,19 @@ export class ResourcePageState {
         speciality
       };
     });
+  }
+
+  private get hasSchedulingAppointmentsAccess(): boolean {
+    if (this.isAdmin) {
+      return true;
+    }
+    if (this.isDoctor) {
+      return Number.isFinite(Number(this.auth.getAccessTokenClaim('did')));
+    }
+    if (this.isPatient) {
+      return Number.isFinite(Number(this.auth.getAccessTokenClaim('pid')));
+    }
+    return false;
   }
 
   openDoctorModal(): void {
