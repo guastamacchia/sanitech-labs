@@ -27,6 +27,12 @@ public final class AuthUtils {
     public static Optional<Long> patientId(Authentication auth) {
         JwtAuthenticationToken jwt = requireJwt(auth);
         Object claim = jwt.getToken().getClaims().get(AppConstants.Security.CLAIM_PATIENT_ID);
+        if (claim == null) {
+            claim = jwt.getToken().getClaims().get("patientId");
+        }
+        if (claim == null) {
+            claim = jwt.getToken().getClaims().get("patient_id");
+        }
 
         if (claim instanceof Number n) {
             return Optional.of(n.longValue());
