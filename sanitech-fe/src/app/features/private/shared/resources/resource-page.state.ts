@@ -1489,9 +1489,9 @@ export class ResourcePageState {
         this.isLoading = false;
       }
     });
-    this.api.request<AdmissionItem[]>('GET', '/api/admissions').subscribe({
+    this.api.request<AdmissionItem[] | PagedResponse<AdmissionItem>>('GET', '/api/admissions').subscribe({
       next: (admissions) => {
-        this.admissions = admissions;
+        this.admissions = this.normalizeList(admissions);
       },
       error: () => {
         this.paymentsError = 'Impossibile caricare i ricoveri.';
@@ -1500,86 +1500,9 @@ export class ResourcePageState {
   }
 
   loadAdmissions(): void {
-    this.api.request<AdmissionItem[]>('GET', '/api/admissions').subscribe({
+    this.api.request<AdmissionItem[] | PagedResponse<AdmissionItem>>('GET', '/api/admissions').subscribe({
       next: (admissions) => {
-        if (admissions.length) {
-          this.admissions = admissions;
-          return;
-        }
-        this.admissions = [
-          {
-            id: 1,
-            patientId: 1,
-            department: 'CARD',
-            bedId: 12,
-            status: 'PROPOSED',
-            admittedAt: '2026-08-12',
-            notes: 'Il paziente segnala dolore toracico intermittente.',
-            appointmentId: 3
-          },
-          {
-            id: 2,
-            patientId: 2,
-            department: 'DERM',
-            bedId: 4,
-            status: 'CONFIRMED',
-            admittedAt: '2026-07-28',
-            notes: 'Chiede chiarimenti sulla terapia topica.'
-          },
-          {
-            id: 3,
-            patientId: 3,
-            department: 'NEUR',
-            status: 'COMPLETED',
-            admittedAt: '2026-06-18',
-            notes: 'Ha segnalato vertigini notturne negli ultimi giorni.'
-          },
-          {
-            id: 4,
-            patientId: 1,
-            department: 'ORTO',
-            bedId: 7,
-            status: 'CONFIRMED',
-            admittedAt: '2026-09-05',
-            notes: 'Ricovero programmato per intervento al ginocchio.'
-          },
-          {
-            id: 5,
-            patientId: 1,
-            department: 'CARD',
-            bedId: 9,
-            status: 'COMPLETED',
-            admittedAt: '2026-10-21',
-            notes: 'Dimesso con indicazioni di follow-up cardiologico.'
-          },
-          {
-            id: 7,
-            patientId: 1,
-            department: 'PNEU',
-            bedId: 5,
-            status: 'CONFIRMED',
-            admittedAt: '2026-11-14',
-            notes: 'Monitoraggio post-riacutizzazione bronchiale.'
-          },
-          {
-            id: 8,
-            patientId: 1,
-            department: 'GASTRO',
-            bedId: 16,
-            status: 'COMPLETED',
-            admittedAt: '2026-12-02',
-            notes: 'Dimesso con dieta controllata e terapia domiciliare.'
-          },
-          {
-            id: 6,
-            patientId: 2,
-            department: 'PNEU',
-            bedId: 11,
-            status: 'PROPOSED',
-            admittedAt: '2027-01-15',
-            notes: 'In attesa di conferma per monitoraggio respiratorio.'
-          }
-        ];
+        this.admissions = this.normalizeList(admissions);
       },
       error: () => {
         this.paymentsError = 'Impossibile caricare i ricoveri.';
@@ -2364,9 +2287,9 @@ export class ResourcePageState {
   loadTelevisits(): void {
     this.isLoading = true;
     this.televisitError = '';
-    this.api.request<TelevisitItem[]>('GET', '/api/televisit').subscribe({
+    this.api.request<TelevisitItem[] | PagedResponse<TelevisitItem>>('GET', '/api/televisits').subscribe({
       next: (televisits) => {
-        this.televisits = televisits;
+        this.televisits = this.normalizeList(televisits);
         this.isLoading = false;
       },
       error: () => {
@@ -2396,7 +2319,7 @@ export class ResourcePageState {
       return;
     }
     const patientId = this.isDoctor ? appointment?.patientId ?? null : this.televisitForm.patientId;
-    this.api.request<TelevisitItem>('POST', '/api/televisit', {
+    this.api.request<TelevisitItem>('POST', '/api/televisits', {
       appointmentId,
       patientId,
       provider: this.televisitForm.provider

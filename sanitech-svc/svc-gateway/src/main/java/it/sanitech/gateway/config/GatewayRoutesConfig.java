@@ -111,7 +111,7 @@ public class GatewayRoutesConfig {
                 // Televisit
                 // =========================
                 .route(AppConstants.Services.TELEVISIT, r -> r
-                        .path("/api/televisit/**")
+                        .path("/api/televisits/**")
                         .filters(f -> standardFilters(f, AppConstants.Services.TELEVISIT))
                         .uri(services.getTelevisit())
                 )
