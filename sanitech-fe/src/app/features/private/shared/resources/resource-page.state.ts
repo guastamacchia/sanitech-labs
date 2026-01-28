@@ -1514,10 +1514,6 @@ export class ResourcePageState {
   }
 
   loadAdmissions(): void {
-    if (this.isPatient) {
-      this.admissions = [];
-      return;
-    }
     this.api.request<AdmissionItem[] | PagedResponse<AdmissionItem>>('GET', '/api/admissions').subscribe({
       next: (admissions) => {
         this.admissions = this.normalizeList(admissions);
