@@ -44,8 +44,10 @@ public class GatewayRoutesConfig {
                                 "/api/patients/**",
                                 "/api/departments/**",
                                 "/api/specialities/**",
+                                "/api/specializations/**",
                                 "/api/admin/doctors/**",
-                                "/api/admin/patients/**"
+                                "/api/admin/patients/**",
+                                "/api/admin/specializations/**"
                         )
                         .filters(f -> standardFilters(f, AppConstants.Services.DIRECTORY))
                         .uri(services.getDirectory())
