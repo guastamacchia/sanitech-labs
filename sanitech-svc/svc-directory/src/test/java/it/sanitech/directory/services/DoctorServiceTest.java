@@ -12,6 +12,7 @@ import it.sanitech.directory.repositories.entities.Specialization;
 import it.sanitech.directory.services.dto.DoctorDto;
 import it.sanitech.directory.services.dto.create.DoctorCreateDto;
 import it.sanitech.directory.services.dto.update.DoctorUpdateDto;
+import it.sanitech.directory.services.events.KeycloakUserSyncEvent;
 import it.sanitech.directory.services.mapper.DoctorMapper;
 import it.sanitech.outbox.core.DomainEventPublisher;
 import org.junit.jupiter.api.Test;
@@ -98,7 +99,19 @@ class DoctorServiceTest {
         assertThat(entity.getSpecialization()).isEqualTo(specialization);
         assertThat(result).isEqualTo(mappedDto);
         verify(deptGuard).checkCanManageAll(Set.of("CARD"), null);
-        verify(keycloakAdminClient).syncUser(any());
+
+        ArgumentCaptor<KeycloakUserSyncEvent> eventCaptor = ArgumentCaptor.forClass(KeycloakUserSyncEvent.class);
+        verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+        KeycloakUserSyncEvent syncEvent = eventCaptor.getValue();
+        assertThat(syncEvent.aggregateType()).isEqualTo("DOCTOR");
+        assertThat(syncEvent.aggregateId()).isEqualTo(11L);
+        assertThat(syncEvent.email()).isEqualTo("luca.bianchi@email.it");
+        assertThat(syncEvent.firstName()).isEqualTo("Luca");
+        assertThat(syncEvent.lastName()).isEqualTo("Bianchi");
+        assertThat(syncEvent.phone()).isNull();
+        assertThat(syncEvent.enabled()).isTrue();
+        assertThat(syncEvent.previousEmail()).isNull();
+
         verify(eventPublisher).publish(eq("DOCTOR"), eq("11"), eq("DOCTOR_CREATED"), any());
     }
 
@@ -143,8 +156,19 @@ class DoctorServiceTest {
         assertThat(entity.getSpecialization()).isEqualTo(specialization);
         assertThat(result).isEqualTo(mappedDto);
         verify(deptGuard).checkCanManageAll(Set.of("CARD"), null);
-        verify(keycloakAdminClient).disableUser("vecchia@email.it");
-        verify(keycloakAdminClient).syncUser(any());
+
+        ArgumentCaptor<KeycloakUserSyncEvent> eventCaptor = ArgumentCaptor.forClass(KeycloakUserSyncEvent.class);
+        verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+        KeycloakUserSyncEvent syncEvent = eventCaptor.getValue();
+        assertThat(syncEvent.aggregateType()).isEqualTo("DOCTOR");
+        assertThat(syncEvent.aggregateId()).isEqualTo(9L);
+        assertThat(syncEvent.email()).isEqualTo("nuova.email@email.it");
+        assertThat(syncEvent.firstName()).isEqualTo("Luca");
+        assertThat(syncEvent.lastName()).isEqualTo("Bianchi");
+        assertThat(syncEvent.phone()).isNull();
+        assertThat(syncEvent.enabled()).isTrue();
+        assertThat(syncEvent.previousEmail()).isEqualTo("vecchia@email.it");
+
         verify(eventPublisher).publish(eq("DOCTOR"), eq("9"), eq("DOCTOR_UPDATED"), any());
     }
 
