@@ -2302,7 +2302,10 @@
                           <th>ID</th>
                           <th>Nome</th>
                           <th>Cognome</th>
-                          <th>Specialità</th>
+                          <th>Reparto</th>
+                          <th>Specializzazione</th>
+                          <th>Email</th>
+                          <th>Telefono</th>
                           <th>Azioni</th>
                         </tr>
                       </thead>
@@ -2311,7 +2314,10 @@
                           <td>{{ doctor.id }}</td>
                           <td>{{ doctor.firstName }}</td>
                           <td>{{ doctor.lastName }}</td>
-                          <td>{{ doctor.speciality }}</td>
+                          <td>{{ getDepartmentLabel(doctor.departmentCode || doctor.speciality || '-') }}</td>
+                          <td>{{ getSpecialityLabel(doctor.specializationCode || doctor.speciality || '-') }}</td>
+                          <td>{{ doctor.email || '-' }}</td>
+                          <td>{{ doctor.phone || '-' }}</td>
                           <td>
                             <div class="d-flex gap-2">
                               <button
@@ -2334,7 +2340,7 @@
                           </td>
                         </tr>
                         <tr *ngIf="!doctors.length">
-                          <td colspan="5" class="text-center text-muted">Nessun medico registrato.</td>
+                          <td colspan="9" class="text-center text-muted">Nessun medico registrato.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -2364,6 +2370,7 @@
                           <th>Nome</th>
                           <th>Cognome</th>
                           <th>Email</th>
+                          <th>Telefono</th>
                           <th>Azioni</th>
                         </tr>
                       </thead>
@@ -2373,6 +2380,7 @@
                           <td>{{ patient.firstName }}</td>
                           <td>{{ patient.lastName }}</td>
                           <td>{{ patient.email }}</td>
+                          <td>{{ patient.phone || '-' }}</td>
                           <td>
                             <div class="d-flex gap-2">
                               <button
@@ -2395,7 +2403,7 @@
                           </td>
                         </tr>
                         <tr *ngIf="!patients.length">
-                          <td colspan="5" class="text-center text-muted">Nessun paziente registrato.</td>
+                          <td colspan="6" class="text-center text-muted">Nessun paziente registrato.</td>
                         </tr>
                       </tbody>
                     </table>

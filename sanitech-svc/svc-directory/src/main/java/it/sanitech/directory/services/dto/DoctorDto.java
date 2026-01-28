@@ -21,6 +21,9 @@ public record DoctorDto(
         /** Indirizzo email univoco del medico. */
         String email,
 
+        /** Numero di telefono del medico (opzionale). */
+        String phone,
+
         /** Codice del reparto associato al medico. */
         String departmentCode,
 

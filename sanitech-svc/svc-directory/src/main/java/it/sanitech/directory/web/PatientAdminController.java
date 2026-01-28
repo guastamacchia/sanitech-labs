@@ -54,4 +54,9 @@ public class PatientAdminController {
     public void delete(@PathVariable Long id) {
         patientService.delete(id);
     }
+
+    @PatchMapping("/{id}/disable")
+    public void disable(@PathVariable Long id) {
+        patientService.disableAccess(id);
+    }
 }

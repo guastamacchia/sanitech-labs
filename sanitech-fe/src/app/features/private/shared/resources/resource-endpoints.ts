@@ -139,7 +139,7 @@ export const directoryEndpoints = [
     label: 'Admin: crea medico',
     method: 'POST',
     path: '/api/admin/doctors',
-    payload: '{"firstName": "Mario", "lastName": "Rossi", "speciality": "CARD"}'
+    payload: '{"firstName": "Mario", "lastName": "Rossi", "email": "mario.rossi@sanitech.it", "phone": "+39 333 000 000", "departmentCode": "CARD", "specializationCode": "CARDIO"}'
   },
   {
     label: 'Lista pazienti',

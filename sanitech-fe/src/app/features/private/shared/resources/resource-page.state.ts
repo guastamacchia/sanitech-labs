@@ -113,6 +113,8 @@ interface DoctorItem {
   firstName: string;
   lastName: string;
   speciality: string;
+  departmentCode?: string;
+  specializationCode?: string;
   email?: string;
   phone?: string;
 }
@@ -124,6 +126,8 @@ interface DoctorApiItem {
   email?: string;
   phone?: string;
   speciality?: string;
+  departmentCode?: string;
+  specializationCode?: string;
   departments?: Array<{ code: string; name: string }>;
   specializations?: Array<{ code: string; name: string }>;
 }
@@ -860,6 +864,10 @@ export class ResourcePageState {
   }
 
   getDepartmentLabel(code: string): string {
+    const department = this.departments.find((item) => item.code === code);
+    if (department) {
+      return department.name;
+    }
     const labels: Record<string, string> = {
       CARD: 'Cardiologia',
       NEURO: 'Neurologia',
@@ -917,7 +925,8 @@ export class ResourcePageState {
       return this.slots.filter(
         (slot) =>
           slot.status === 'AVAILABLE' &&
-          this.getDoctorById(slot.doctorId)?.speciality === this.bookingForm.department
+          (this.getDoctorById(slot.doctorId)?.departmentCode || this.getDoctorById(slot.doctorId)?.speciality) ===
+            this.bookingForm.department
       );
     }
     return this.slots.filter((slot) => slot.status === 'AVAILABLE');
@@ -1076,7 +1085,7 @@ export class ResourcePageState {
   }
 
   get currentDoctorDepartment(): string {
-    return this.doctors[0]?.speciality ?? '';
+    return this.doctors[0]?.departmentCode ?? this.doctors[0]?.speciality ?? '';
   }
 
   getDoctorById(doctorId: number): DoctorItem | undefined {
@@ -1108,7 +1117,7 @@ export class ResourcePageState {
     if (!appointment) {
       return '-';
     }
-    return this.getDepartmentLabel(this.getDoctorById(appointment.doctorId)?.speciality || '-');
+    return this.getDepartmentLabel(this.getDoctorById(appointment.doctorId)?.departmentCode || this.getDoctorById(appointment.doctorId)?.speciality || '-');
   }
 
   getTelevisitPatientLabel(televisit: TelevisitItem): string {
@@ -1659,7 +1668,11 @@ export class ResourcePageState {
       this.admissionProposalError = 'Visita non trovata.';
       return;
     }
-    const department = this.getDoctorById(appointment.doctorId)?.speciality || this.currentDoctorDepartment || 'CARD';
+    const department =
+      this.getDoctorById(appointment.doctorId)?.departmentCode ||
+      this.getDoctorById(appointment.doctorId)?.speciality ||
+      this.currentDoctorDepartment ||
+      'CARD';
     const nextId = Math.max(0, ...this.admissions.map((item) => item.id)) + 1;
     const notes = `Proposta da visita ${appointment.id}: ${appointment.reason}. ${this.admissionProposalForm.reason}`;
     const proposal: AdmissionItem = {
@@ -2446,14 +2459,23 @@ export class ResourcePageState {
   private normalizeDoctorList(data?: DoctorItem[] | PagedResponse<DoctorApiItem>): DoctorItem[] {
     return this.normalizeList(data).map((doctor) => {
       const apiDoctor = doctor as DoctorApiItem;
-      const department = apiDoctor.departments?.[0]?.code ?? '';
-      const specialization = apiDoctor.specializations?.[0]?.code ?? apiDoctor.speciality ?? '';
+      const department =
+        apiDoctor.departmentCode ??
+        apiDoctor.departments?.[0]?.code ??
+        '';
+      const specialization =
+        apiDoctor.specializationCode ??
+        apiDoctor.specializations?.[0]?.code ??
+        apiDoctor.speciality ??
+        '';
       const speciality = apiDoctor.speciality ?? specialization ?? department ?? '';
       return {
         id: apiDoctor.id,
         firstName: apiDoctor.firstName,
         lastName: apiDoctor.lastName,
         speciality,
+        departmentCode: department || undefined,
+        specializationCode: specialization || undefined,
         email: apiDoctor.email,
         phone: apiDoctor.phone
       };
@@ -2549,8 +2571,8 @@ export class ResourcePageState {
       lastName: this.doctorForm.lastName,
       email: this.doctorForm.email,
       phone: this.doctorForm.phone?.trim() || undefined,
-      departmentCodes: [this.doctorForm.departmentCode],
-      specializationCodes: [this.doctorForm.specializationCode]
+      departmentCode: this.doctorForm.departmentCode,
+      specializationCode: this.doctorForm.specializationCode
     }).subscribe({
       next: (doctor) => {
         this.doctors = [...this.doctors, doctor];
