@@ -725,7 +725,18 @@ export class ResourcePageState {
 
   getSpecialityLabel(code: string): string {
     const speciality = this.specialities.find((item) => item.code === code);
-    return speciality ? speciality.name : code;
+    const labels: Record<string, string> = {
+      CARDIO: 'Cardiologia',
+      CARDIOLOGY: 'Cardiologia',
+      DIABETOLOGY: 'Diabetologia',
+      PNEUMOLOGY: 'Pneumologia',
+      NEURO: 'Neurologia',
+      DERM: 'Dermatologia',
+      ORTHO: 'Ortopedia',
+      PNEUMO: 'Pneumologia'
+    };
+    const label = speciality?.name ?? labels[code] ?? code;
+    return this.toUpperCamelCase(label);
   }
 
   get portalHomeLabel(): string {
@@ -865,17 +876,27 @@ export class ResourcePageState {
 
   getDepartmentLabel(code: string): string {
     const department = this.departments.find((item) => item.code === code);
-    if (department) {
-      return department.name;
-    }
     const labels: Record<string, string> = {
       CARD: 'Cardiologia',
       NEURO: 'Neurologia',
       DERM: 'Dermatologia',
       ORTHO: 'Ortopedia',
-      PNEUMO: 'Pneumologia'
+      PNEUMO: 'Pneumologia',
+      HEART: 'Cardiologia',
+      METAB: 'Metabolismo',
+      RESP: 'Pneumologia'
     };
-    return labels[code] ?? code;
+    const label = department?.name ?? labels[code] ?? code;
+    return this.toUpperCamelCase(label);
+  }
+
+  private toUpperCamelCase(value: string): string {
+    const trimmed = value?.trim();
+    if (!trimmed) {
+      return value;
+    }
+    const lower = trimmed.toLowerCase();
+    return `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
   }
 
   get confirmedAppointments(): SchedulingAppointment[] {
