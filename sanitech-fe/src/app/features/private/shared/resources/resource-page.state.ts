@@ -499,9 +499,9 @@ export class ResourcePageState {
         this.isLoading = false;
       }
     });
-    this.api.request<SchedulingAppointment[]>('GET', '/api/appointments').subscribe({
+    this.api.request<SchedulingAppointment[] | PagedResponse<SchedulingAppointment>>('GET', '/api/appointments').subscribe({
       next: (appointments) => {
-        this.appointments = appointments;
+        this.appointments = this.normalizeList(appointments);
       },
       error: () => {
         this.schedulingError = 'Impossibile caricare gli appuntamenti.';
@@ -1384,9 +1384,9 @@ export class ResourcePageState {
   loadDocs(): void {
     this.isLoading = true;
     this.docsError = '';
-    this.api.request<DocumentItem[]>('GET', '/api/docs').subscribe({
+    this.api.request<DocumentItem[] | PagedResponse<DocumentItem>>('GET', '/api/docs').subscribe({
       next: (docs) => {
-        this.documents = [...docs];
+        this.documents = this.normalizeList(docs);
         this.isLoading = false;
       },
       error: () => {
@@ -1394,7 +1394,12 @@ export class ResourcePageState {
         this.isLoading = false;
       }
     });
-    this.api.request<ConsentItem[]>('GET', '/api/consents').subscribe({
+    const consentsPath = this.getConsentsPath();
+    if (!consentsPath) {
+      this.consents = [];
+      return;
+    }
+    this.api.request<ConsentItem[]>('GET', consentsPath).subscribe({
       next: (consents) => {
         this.consents = [...consents];
       },
@@ -1443,6 +1448,11 @@ export class ResourcePageState {
   }
 
   submitConsent(): void {
+    const consentsPath = this.getConsentsPath();
+    if (!consentsPath) {
+      this.docsError = 'Operazione non disponibile per il profilo corrente.';
+      return;
+    }
     this.isLoading = true;
     this.docsError = '';
     const payload: Record<string, unknown> = {
@@ -1452,7 +1462,7 @@ export class ResourcePageState {
     if (this.editingConsentId) {
       payload['id'] = this.editingConsentId;
     }
-    this.api.request<ConsentItem>('POST', '/api/consents', payload).subscribe({
+    this.api.request<ConsentItem>('POST', consentsPath, payload).subscribe({
       next: (consent) => {
         if (this.editingConsentId) {
           this.consents = this.consents.map((item) =>
@@ -1489,17 +1499,25 @@ export class ResourcePageState {
         this.isLoading = false;
       }
     });
-    this.api.request<AdmissionItem[] | PagedResponse<AdmissionItem>>('GET', '/api/admissions').subscribe({
-      next: (admissions) => {
-        this.admissions = this.normalizeList(admissions);
-      },
-      error: () => {
-        this.paymentsError = 'Impossibile caricare i ricoveri.';
-      }
-    });
+    if (!this.isPatient) {
+      this.api.request<AdmissionItem[] | PagedResponse<AdmissionItem>>('GET', '/api/admissions').subscribe({
+        next: (admissions) => {
+          this.admissions = this.normalizeList(admissions);
+        },
+        error: () => {
+          this.paymentsError = 'Impossibile caricare i ricoveri.';
+        }
+      });
+    } else {
+      this.admissions = [];
+    }
   }
 
   loadAdmissions(): void {
+    if (this.isPatient) {
+      this.admissions = [];
+      return;
+    }
     this.api.request<AdmissionItem[] | PagedResponse<AdmissionItem>>('GET', '/api/admissions').subscribe({
       next: (admissions) => {
         this.admissions = this.normalizeList(admissions);
@@ -1934,9 +1952,9 @@ export class ResourcePageState {
   loadPrescriptions(): void {
     this.isLoading = true;
     this.prescribingError = '';
-    this.api.request<PrescriptionItem[]>('GET', '/api/prescriptions').subscribe({
+    this.api.request<PrescriptionItem[] | PagedResponse<PrescriptionItem>>('GET', '/api/prescriptions').subscribe({
       next: (prescriptions) => {
-        this.prescriptions = prescriptions;
+        this.prescriptions = this.normalizeList(prescriptions);
         this.isLoading = false;
       },
       error: () => {
@@ -2264,6 +2282,9 @@ export class ResourcePageState {
   }
 
   loadPatients(): void {
+    if (this.isPatient) {
+      return;
+    }
     this.api.request<PatientItem[] | PagedResponse<PatientItem>>('GET', '/api/patients').subscribe({
       next: (patients) => {
         const normalizedPatients = this.normalizeList(patients);
@@ -2514,5 +2535,12 @@ export class ResourcePageState {
     this.televisitError = '';
     this.loadTelevisits();
     this.loadAdmissions();
+  }
+
+  private getConsentsPath(): string | null {
+    if (this.isPatient) {
+      return '/api/consents/me';
+    }
+    return null;
   }
 }

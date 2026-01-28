@@ -497,7 +497,7 @@
                     <button class="btn btn-outline-secondary btn-sm" (click)="loadDocs()" [disabled]="isLoading">
                       Aggiorna
                     </button>
-                    <button class="btn btn-primary btn-sm" type="button" (click)="openDocumentModal()">
+                    <button class="btn btn-primary btn-sm" type="button" (click)="openDocumentModal()" *ngIf="!isPatient">
                       Carica documento
                     </button>
                   </div>
@@ -571,7 +571,7 @@
                     <button class="btn btn-outline-secondary btn-sm" type="button" (click)="loadDocs()" [disabled]="isLoading">
                       Aggiorna
                     </button>
-                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="openConsentModal()" *ngIf="!isDoctor">
+                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="openConsentModal()" *ngIf="isPatient">
                       Registra consenso
                     </button>
                   </div>
@@ -594,7 +594,7 @@
                         <th>Tipo</th>
                         <th>Accettato</th>
                         <th>Data firma</th>
-                        <th *ngIf="!isDoctor">Azioni</th>
+                        <th *ngIf="isPatient">Azioni</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -603,7 +603,7 @@
                         <td>{{ getConsentTypeLabel(consent.consentType) }}</td>
                         <td>{{ consent.accepted ? 'Si' : 'No' }}</td>
                         <td>{{ formatDate(consent.signedAt) }}</td>
-                        <td *ngIf="!isDoctor">
+                        <td *ngIf="isPatient">
                           <button
                             class="btn btn-outline-danger btn-sm"
                             type="button"
