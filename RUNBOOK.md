@@ -61,6 +61,11 @@ Note:
 - MailHog: `http://localhost:8025`
 - LiveKit: `http://localhost:7880` (console `http://localhost:7881`)
 
+## Configurazione host vs container (OIDC)
+- **Host (browser/CLI)**: Keycloak è raggiungibile da `http://localhost:8081`.
+- **Container backend**: usare il service name Docker `keycloak` (es. `OAUTH2_HOST=keycloak`, `OAUTH2_ISSUER_URI=http://keycloak:8081/realms/sanitech`).
+- `OAUTH2_HOST`/`OAUTH2_PORT` vengono usati per comporre il `jwk-set-uri` dei servizi (incluso `svc-gateway`).
+
 ## Health & osservabilità
 - Liveness: `/actuator/health/liveness`
 - Readiness: `/actuator/health/readiness`
