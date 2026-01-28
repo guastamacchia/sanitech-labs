@@ -5,6 +5,6 @@ export const environment = {
   gatewayUrl: 'http://localhost:8080',
   keycloakUrl: 'http://localhost:8081',
   realm: 'sanitech',
-  clientId: 'sanitech-web',
-  scope: 'openid profile email'
+  clientId: 'sanitech-spa',
+  scope: 'openid profile email roles'
 };

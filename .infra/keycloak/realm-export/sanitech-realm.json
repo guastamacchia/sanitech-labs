@@ -12,37 +12,43 @@
       },
       {
         "name": "ROLE_PATIENT"
-      },
-      {
-        "name": "ADMIN"
-      },
-      {
-        "name": "DOCTOR"
-      },
-      {
-        "name": "PATIENT"
       }
     ]
   },
   "clients": [
     {
-      "clientId": "sanitech-web",
-      "name": "Sanitech Web (Dev)",
+      "clientId": "sanitech-spa",
+      "name": "Sanitech SPA",
       "protocol": "openid-connect",
       "publicClient": true,
       "directAccessGrantsEnabled": true,
       "standardFlowEnabled": true,
       "attributes": {
-        "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:4200/*##http://localhost:8080/*"
+        "pkce.code.challenge.method": "S256"
       },
-      "redirectUris": [
+      "postLogoutRedirectUris": [
+        "http://localhost:4200",
         "http://localhost:4200/*",
+        "http://localhost:8080",
+        "http://localhost:8080/*"
+      ],
+      "redirectUris": [
+        "http://localhost:4200",
+        "http://localhost:4200/*",
+        "http://localhost:8080",
         "http://localhost:8080/*"
       ],
       "webOrigins": [
-        "*"
-      ]
+        "http://localhost:4200",
+        "http://localhost:8080"
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": []
     },
     {
       "clientId": "svc-directory",
@@ -352,24 +358,23 @@
       "credentials": [
         {
           "type": "password",
-          "value": "admin",
+          "value": "qwerty",
           "temporary": false
         }
       ],
       "realmRoles": [
-        "ROLE_ADMIN",
-        "ADMIN"
+        "ROLE_ADMIN"
       ],
       "emailVerified": true,
       "firstName": "Admin",
-      "lastName": "User",
+      "lastName": "Admin",
       "createdTimestamp": 1704067200000,
       "requiredActions": []
     },
     {
-      "username": "drrossi",
+      "username": "rossi",
       "enabled": true,
-      "email": "drrossi@sanitech.example",
+      "email": "rossi@sanitech.example",
       "attributes": {
         "dept": [
           "HEART",
@@ -379,53 +384,36 @@
       "credentials": [
         {
           "type": "password",
-          "value": "password",
+          "value": "qwerty",
           "temporary": false
         }
       ],
       "realmRoles": [
         "ROLE_DOCTOR"
-      ]
+      ],
+      "emailVerified": true,
+      "firstName": "Mario",
+      "lastName": "Rossi",
+      "createdTimestamp": 1704067200000
     },
     {
-      "username": "annaconti",
+      "username": "conti",
       "enabled": true,
-      "email": "anna.conti@sanitech.example",
+      "email": "conti@sanitech.example",
       "credentials": [
         {
           "type": "password",
-          "value": "password",
+          "value": "qwerty",
           "temporary": false
         }
       ],
       "realmRoles": [
         "ROLE_PATIENT"
-      ]
-    },
-    {
-      "username": "doctor",
-      "enabled": true,
-      "emailVerified": true,
-      "email": "doctor@sanitech.local",
-      "firstName": "Doctor",
-      "lastName": "User",
-      "createdTimestamp": 1704067200000,
-      "requiredActions": [],
-      "realmRoles": [
-        "DOCTOR"
       ],
-      "attributes": {
-        "dept": [
-          "CARDIO"
-        ]
-      },
-      "credentials": [
-        {
-          "type": "password",
-          "value": "doctor",
-          "temporary": false
-        }
-      ]
+      "emailVerified": true,
+      "firstName": "Anna",
+      "lastName": "Conti",
+      "createdTimestamp": 1704067200000
     }
   ]
 }
