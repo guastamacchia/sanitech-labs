@@ -64,8 +64,8 @@ class DoctorServiceTest {
         Department department = TestDataFactory.cardiologyDepartment();
         Specialization specialization = TestDataFactory.cardiologySpecialization();
         Doctor saved = TestDataFactory.doctorEntity(11L, "Luca", "Bianchi", "luca.bianchi@email.it");
-        saved.setDepartments(Set.of(department));
-        saved.setSpecializations(Set.of(specialization));
+        saved.setDepartment(department);
+        saved.setSpecialization(specialization);
         DoctorDto mappedDto = TestDataFactory.doctorDto(
                 11L,
                 "Luca",
@@ -74,8 +74,8 @@ class DoctorServiceTest {
         );
 
         when(doctorRepository.existsByEmailIgnoreCase("luca.bianchi@email.it")).thenReturn(false);
-        when(departmentRepository.findByCodeIn(Set.of("CARD"))).thenReturn(List.of(department));
-        when(specializationRepository.findByCodeIn(Set.of("CARDIO"))).thenReturn(List.of(specialization));
+        when(departmentRepository.findByCodeIgnoreCase("CARD")).thenReturn(Optional.of(department));
+        when(specializationRepository.findByCodeIgnoreCase("CARDIO")).thenReturn(Optional.of(specialization));
         when(doctorRepository.save(any(Doctor.class))).thenReturn(saved);
         when(doctorMapper.toDto(saved)).thenReturn(mappedDto);
 
@@ -86,8 +86,8 @@ class DoctorServiceTest {
         Doctor entity = captor.getValue();
 
         assertThat(entity.getEmail()).isEqualTo("luca.bianchi@email.it");
-        assertThat(entity.getDepartments()).contains(department);
-        assertThat(entity.getSpecializations()).contains(specialization);
+        assertThat(entity.getDepartment()).isEqualTo(department);
+        assertThat(entity.getSpecialization()).isEqualTo(specialization);
         assertThat(result).isEqualTo(mappedDto);
         verify(deptGuard).checkCanManageAll(Set.of("CARD"), null);
         verify(eventPublisher).publish(eq("DOCTOR"), eq("11"), eq("DOCTOR_CREATED"), any());
@@ -100,8 +100,8 @@ class DoctorServiceTest {
         Specialization specialization = TestDataFactory.cardiologySpecialization();
         Doctor existing = TestDataFactory.doctorEntity(9L, " Luca ", " Bianchi ", "vecchia@email.it");
         Doctor saved = TestDataFactory.doctorEntity(9L, "Luca", "Bianchi", "nuova.email@email.it");
-        saved.setDepartments(Set.of(department));
-        saved.setSpecializations(Set.of(specialization));
+        saved.setDepartment(department);
+        saved.setSpecialization(specialization);
         DoctorDto mappedDto = TestDataFactory.doctorDto(
                 9L,
                 "Luca",
@@ -110,8 +110,8 @@ class DoctorServiceTest {
         );
 
         when(doctorRepository.findById(9L)).thenReturn(Optional.of(existing));
-        when(departmentRepository.findByCodeIn(Set.of("CARD"))).thenReturn(List.of(department));
-        when(specializationRepository.findByCodeIn(Set.of("CARDIO"))).thenReturn(List.of(specialization));
+        when(departmentRepository.findByCodeIgnoreCase("CARD")).thenReturn(Optional.of(department));
+        when(specializationRepository.findByCodeIgnoreCase("CARDIO")).thenReturn(Optional.of(specialization));
         doAnswer(invocation -> {
             DoctorUpdateDto update = invocation.getArgument(0);
             Doctor entity = invocation.getArgument(1);
@@ -130,8 +130,8 @@ class DoctorServiceTest {
         Doctor entity = captor.getValue();
 
         assertThat(entity.getEmail()).isEqualTo("nuova.email@email.it");
-        assertThat(entity.getDepartments()).contains(department);
-        assertThat(entity.getSpecializations()).contains(specialization);
+        assertThat(entity.getDepartment()).isEqualTo(department);
+        assertThat(entity.getSpecialization()).isEqualTo(specialization);
         assertThat(result).isEqualTo(mappedDto);
         verify(deptGuard).checkCanManageAll(Set.of("CARD"), null);
         verify(eventPublisher).publish(eq("DOCTOR"), eq("9"), eq("DOCTOR_UPDATED"), any());

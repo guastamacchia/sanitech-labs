@@ -9,20 +9,20 @@ import org.mapstruct.*;
  * Mapper MapStruct per {@link Doctor}.
  *
  * <p>
- * Le collezioni (reparti/specializzazioni) vengono gestite nel Service:
- * in patch/update si evita di farle modificare automaticamente per non introdurre
- * semantiche ambigue (merge vs replace).
+ * Le relazioni con reparto/specializzazione vengono gestite nel Service:
+ * in patch/update si evita di farle modificare automaticamente.
  * </p>
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
-        uses = {DepartmentMapper.class, SpecializationMapper.class},
         unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface DoctorMapper {
 
+    @Mapping(target = "departmentCode", source = "department.code")
+    @Mapping(target = "specializationCode", source = "specialization.code")
     DoctorDto toDto(Doctor entity);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "departments", ignore = true)
-    @Mapping(target = "specializations", ignore = true)
+    @Mapping(target = "department", ignore = true)
+    @Mapping(target = "specialization", ignore = true)
     void updateEntity(DoctorUpdateDto dto, @MappingTarget Doctor entity);
 }

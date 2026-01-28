@@ -1,13 +1,10 @@
 package it.sanitech.directory.services.dto;
 
-import java.util.Set;
-
 /**
  * DTO utilizzato per esporre i dati anagrafici del medico verso i controller REST.
  *
  * <p>
- * Include i riferimenti ai reparti e alle specializzazioni associati, già risolti
- * e pronti per la serializzazione in risposta.
+ * Include i riferimenti al reparto e alla specializzazione associati (codici).
  * </p>
  */
 public record DoctorDto(
@@ -24,10 +21,10 @@ public record DoctorDto(
         /** Indirizzo email univoco del medico. */
         String email,
 
-        /** Reparti associati al medico. */
-        Set<DepartmentDto> departments,
+        /** Codice del reparto associato al medico. */
+        String departmentCode,
 
-        /** Specializzazioni associate al medico. */
-        Set<SpecializationDto> specializations
+        /** Codice della specializzazione associata al medico. */
+        String specializationCode
 
 ) {}
