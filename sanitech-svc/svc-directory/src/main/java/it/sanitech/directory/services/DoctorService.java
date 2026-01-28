@@ -11,15 +11,16 @@ import it.sanitech.directory.repositories.entities.Specialization;
 import it.sanitech.directory.repositories.spec.DoctorSpecifications;
 import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.directory.integrations.keycloak.KeycloakAdminClient;
-import it.sanitech.directory.integrations.keycloak.KeycloakUserSyncRequest;
 import it.sanitech.directory.services.dto.DoctorDto;
 import it.sanitech.directory.services.dto.create.DoctorCreateDto;
 import it.sanitech.directory.services.dto.update.DoctorUpdateDto;
+import it.sanitech.directory.services.events.KeycloakUserSyncEvent;
 import it.sanitech.directory.services.mapper.DoctorMapper;
 import it.sanitech.directory.utilities.AppConstants;
 import it.sanitech.commons.utilities.PageableUtils;
 import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.outbox.core.DomainEventPublisher;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.security.core.Authentication;
@@ -51,6 +52,7 @@ public class DoctorService {
 
     private final DoctorMapper doctorMapper;
     private final DomainEventPublisher eventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final DeptGuard deptGuard;
     private final KeycloakAdminClient keycloakAdminClient;
 
@@ -87,14 +89,6 @@ public class DoctorService {
 
         Doctor saved = doctorRepository.save(entity);
 
-        keycloakAdminClient.syncUser(new KeycloakUserSyncRequest(
-                saved.getEmail(),
-                saved.getFirstName(),
-                saved.getLastName(),
-                saved.getPhone(),
-                true
-        ));
-
         eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 String.valueOf(saved.getId()),
@@ -108,6 +102,17 @@ public class DoctorService {
                         "specializationCode", specCode
                 )
         );
+
+        applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
+                AppConstants.Outbox.AggregateType.DOCTOR,
+                saved.getId(),
+                saved.getEmail(),
+                saved.getFirstName(),
+                saved.getLastName(),
+                saved.getPhone(),
+                true,
+                null
+        ));
 
         return doctorMapper.toDto(saved);
     }
@@ -146,17 +151,6 @@ public class DoctorService {
 
         Doctor saved = doctorRepository.save(entity);
 
-        if (!previousEmail.equalsIgnoreCase(saved.getEmail())) {
-            keycloakAdminClient.disableUser(previousEmail);
-        }
-        keycloakAdminClient.syncUser(new KeycloakUserSyncRequest(
-                saved.getEmail(),
-                saved.getFirstName(),
-                saved.getLastName(),
-                saved.getPhone(),
-                true
-        ));
-
         eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 String.valueOf(saved.getId()),
@@ -170,6 +164,17 @@ public class DoctorService {
                         "specializationCode", saved.getSpecialization().getCode()
                 )
         );
+
+        applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
+                AppConstants.Outbox.AggregateType.DOCTOR,
+                saved.getId(),
+                saved.getEmail(),
+                saved.getFirstName(),
+                saved.getLastName(),
+                saved.getPhone(),
+                true,
+                previousEmail
+        ));
 
         return doctorMapper.toDto(saved);
     }
