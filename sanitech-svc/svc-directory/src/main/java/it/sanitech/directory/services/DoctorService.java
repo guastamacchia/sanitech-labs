@@ -80,6 +80,7 @@ public class DoctorService {
                 .firstName(dto.firstName().trim())
                 .lastName(dto.lastName().trim())
                 .email(email)
+                .phone(normalizePhone(dto.phone()))
                 .department(department)
                 .specialization(specialization)
                 .build();
@@ -90,7 +91,7 @@ public class DoctorService {
                 saved.getEmail(),
                 saved.getFirstName(),
                 saved.getLastName(),
-                null,
+                saved.getPhone(),
                 true
         ));
 
@@ -129,6 +130,7 @@ public class DoctorService {
         entity.setFirstName(entity.getFirstName().trim());
         entity.setLastName(entity.getLastName().trim());
         entity.setEmail(normalizeEmail(entity.getEmail()));
+        entity.setPhone(normalizePhone(entity.getPhone()));
 
         // Reparto e specializzazione: se presenti nel DTO, sostituiscono il valore corrente.
         if (Objects.nonNull(dto.departmentCode())) {
@@ -151,7 +153,7 @@ public class DoctorService {
                 saved.getEmail(),
                 saved.getFirstName(),
                 saved.getLastName(),
-                null,
+                saved.getPhone(),
                 true
         ));
 
@@ -183,6 +185,11 @@ public class DoctorService {
                 AppConstants.Outbox.EventType.DOCTOR_DELETED,
                 Map.of("id", id)
         );
+    }
+
+    public void disableAccess(Long id) {
+        Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
+        keycloakAdminClient.disableUser(entity.getEmail());
     }
 
     /**
@@ -221,6 +228,14 @@ public class DoctorService {
     private String normalizeEmail(String email) {
         if (Objects.isNull(email)) throw new IllegalArgumentException("Email obbligatoria.");
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizePhone(String phone) {
+        if (Objects.isNull(phone)) {
+            return null;
+        }
+        String normalized = phone.trim();
+        return normalized.isBlank() ? null : normalized;
     }
 
     private String normalizeCode(String code, String errorMessage) {

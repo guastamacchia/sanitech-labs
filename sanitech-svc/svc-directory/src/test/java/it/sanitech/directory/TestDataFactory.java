@@ -140,6 +140,7 @@ public final class TestDataFactory {
                 lastName,
                 email,
                 null,
+                null,
                 null
         );
     }
@@ -149,6 +150,7 @@ public final class TestDataFactory {
                 "Luca",
                 "Bianchi",
                 "luca.bianchi@email.it",
+                null,
                 "CARD",
                 "CARDIO"
         );
@@ -159,6 +161,7 @@ public final class TestDataFactory {
                 "Luca",
                 "Bianchi",
                 "Luca.Bianchi@Email.it",
+                null,
                 "card",
                 "cardio"
         );
@@ -169,6 +172,7 @@ public final class TestDataFactory {
                 " Luca ",
                 "Bianchi",
                 "Nuova.Email@Email.it",
+                null,
                 "CARD",
                 "CARDIO"
         );

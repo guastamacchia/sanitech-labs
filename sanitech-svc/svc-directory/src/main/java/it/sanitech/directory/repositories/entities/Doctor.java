@@ -36,6 +36,10 @@ public class Doctor {
     @Column(nullable = false, length = 200)
     private String email;
 
+    /** Telefono (opzionale). */
+    @Column(length = 50)
+    private String phone;
+
     /** Reparto di competenza/appartenenza del medico. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "department_id", nullable = false)

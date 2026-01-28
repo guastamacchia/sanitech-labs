@@ -199,6 +199,11 @@ public class PatientService {
         );
     }
 
+    public void disableAccess(Long id) {
+        Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
+        keycloakAdminClient.disableUser(entity.getEmail());
+    }
+
     @Transactional(readOnly = true)
     @Bulkhead(name = "directoryRead", type = Bulkhead.Type.SEMAPHORE)
     public Page<PatientDto> searchAdmin(String q, String departmentCode, int page, int size, String[] sort) {

@@ -23,6 +23,9 @@ public record DoctorUpdateDto(
         @Email
         String email,
 
+        /** Numero di telefono del medico (opzionale). */
+        String phone,
+
         /** Codice reparto (opzionale). Se presente, sostituisce il valore corrente. */
         String departmentCode,
 

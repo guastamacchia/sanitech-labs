@@ -26,6 +26,9 @@ public record DoctorCreateDto(
         @NotBlank
         String email,
 
+        /** Numero di telefono del medico (opzionale). */
+        String phone,
+
         /** Codice del reparto associato al medico. */
         @NotBlank
         String departmentCode,
