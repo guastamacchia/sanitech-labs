@@ -1,0 +1,263 @@
+# =========================
+# Server
+# =========================
+# Configurazione del server HTTP embedded (Tomcat).
+server:
+  port: ${SERVER_PORT:8082}
+
+# =========================
+# Spring Application
+# =========================
+# Configurazione base dell'applicazione Spring Boot.
+spring:
+  application:
+    # Nome logico del microservizio.
+    # Usato per logging, metriche e tracing.
+    name: "@project.artifactId@"
+  profiles:
+    active: "@spring.active.profile@"
+
+  # =========================
+  # Database (PostgreSQL)
+  # =========================
+  # Database relazionale usato dal microservizio.
+  # La connessione è configurata interamente via
+  # variabili d'ambiente per supportare Docker e locale.
+  #
+  # NOTE:
+  # - In Docker usare il nome del servizio (es. postgres)
+  # - In locale usare localhost
+  datasource:
+    url: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT:5432}/${DATABASE_NAME}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+
+  # =========================
+  # JPA / Hibernate
+  # =========================
+  # Configurazione ORM.
+  # Lo schema NON viene gestito da Hibernate ma da Flyway.
+  jpa:
+    # Disabilita Open Session in View.
+    # Evita accessi al DB fuori dal layer applicativo.
+    open-in-view: false
+    hibernate:
+      # Valida lo schema esistente senza modificarlo.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        # Ottimizzazione per ridurre il numero di query
+        # in presenza di collezioni lazy.
+        default_batch_fetch_size: 50
+        # Disabilita il logging delle query SQL.
+        show_sql: false
+        format_sql: false
+
+  # =========================
+  # Flyway
+  # =========================
+  # Gestione delle migrazioni di schema versionate.
+  # Le migrazioni vengono applicate automaticamente all'avvio.
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  # =========================
+  # Security / OAuth2 Resource Server
+  # =========================
+  # Il microservizio espone API protette tramite JWT.
+  # I token sono validati interrogando il realm Keycloak.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Endpoint JWK del realm.
+          # Composto via variabili d'ambiente per
+          # supportare Docker, locale e ambienti remoti.
+          jwk-set-uri: ${OAUTH2_SCHEME}://${OAUTH2_HOST}:${OAUTH2_PORT}/realms/${OAUTH2_REALM}/protocol/openid-connect/certs
+
+  # =========================
+  # Kafka
+  # =========================
+  # Message broker usato per comunicazioni asincrone/event-driven.
+  # Il broker viene risolto tramite variabili d'ambiente:
+  # - Docker: nome del servizio (kafka:9092)
+  # - Locale: localhost + porta esposta
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
+    producer:
+      # Serializzazione dei messaggi come String (JSON).
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # Numero massimo di retry in caso di errore.
+      retries: ${KAFKA_PRODUCER_RETRIES:10}
+      properties:
+        # "all" garantisce durabilità del messaggio
+        # (leader + repliche).
+        acks: ${KAFKA_PRODUCER_ACKS:all}
+        # Tempo di attesa per batching (ms).
+        linger.ms: ${KAFKA_PRODUCER_LINGER_MS:5}
+
+# =========================
+# Sanitech Commons
+# =========================
+sanitech:
+  captcha:
+    enabled: ${CAPTCHA_ENABLED:false}
+    secret-key: ${CAPTCHA_SECRET_KEY:}
+    verify-url: ${CAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}
+    score-threshold: ${CAPTCHA_SCORE_THRESHOLD:0.5}
+  keycloak:
+    admin:
+      server-url: ${KEYCLOAK_ADMIN_URL:${OAUTH2_SCHEME}://${OAUTH2_HOST}:${OAUTH2_PORT}}
+      auth-realm: ${KEYCLOAK_ADMIN_AUTH_REALM:}
+      realm: ${KEYCLOAK_ADMIN_REALM:${OAUTH2_REALM}}
+      client-id: svc-directory
+      client-secret: svc-directory-secret
+      # Per client confidential usare grant-type client_credentials
+      # e impostare client-id/client-secret (senza username/password).
+      grant-type: client_credentials
+      username: ${KEYCLOAK_ADMIN_USERNAME:}
+      password: ${KEYCLOAK_ADMIN_PASSWORD:}
+      # Password iniziale per gli utenti creati (temporanea, l'utente dovrà cambiarla al primo login).
+      initial-password: ${KEYCLOAK_INITIAL_PASSWORD:qwerty}
+  cors:
+    enabled: true
+    # Path su cui applicare CORS.
+    path-patterns:
+      - "/api/**"
+
+    # Origini ammesse (definite via env).
+    allowed-origins:
+      - ${SANITECH_CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+    allowed-methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "PATCH"
+      - "DELETE"
+      - "OPTIONS"
+
+    allowed-headers:
+      - "*"
+
+    exposed-headers:
+      - "Location"
+
+    allow-credentials: false
+    max-age: 3600
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+      - /api/public/patients
+  openapi:
+    enabled: true
+    group: directory
+    packages-to-scan:
+      - it.sanitech.directory.web
+    title: Sanitech — Directory API
+    version: v1
+
+  # =========================
+  # Outbox
+  # =========================
+  # Configurazione del pattern Outbox
+  # per la pubblicazione affidabile di eventi.
+  outbox:
+    publisher:
+      topic: ${OUTBOX_TOPIC:directory.events}
+      enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
+      # Frequenza del job di pubblicazione (ms).
+      fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
+
+# =========================
+# Management / Actuator
+# =========================
+# Endpoint tecnici per monitoring e osservabilità.
+management:
+  endpoints:
+    web:
+      exposure:
+        # Endpoint esposti via HTTP.
+        include: health,info,prometheus,metrics
+
+  endpoint:
+    health:
+      probes:
+        # Abilita readiness e liveness probes.
+        # Necessario per Docker e Kubernetes.
+        enabled: true
+
+# =========================
+# OpenAPI / Swagger
+# =========================
+# Documentazione automatica delle API REST.
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+# =========================
+# Resilience4j
+# =========================
+# Pattern di resilienza applicati ai flussi critici.
+resilience4j:
+
+  # =========================
+  # Rate Limiter
+  # =========================
+  # Protegge gli endpoint pubblici
+  # da overload e abusi.
+  ratelimiter:
+    instances:
+      directoryApi:
+        # Numero massimo di richieste per finestra temporale.
+        limitForPeriod: 10
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+
+  # =========================
+  # Bulkhead
+  # =========================
+  # Limita la concorrenza verso risorse critiche (database).
+  bulkhead:
+    instances:
+      directoryRead:
+        maxConcurrentCalls: 25
+        maxWaitDuration: 0
+
+  # =========================
+  # Retry
+  # =========================
+  # Gestione dei retry per operazioni non idempotenti
+  # (es. pubblicazione eventi Kafka).
+  retry:
+    instances:
+      outboxPublish:
+        maxAttempts: 5
+        waitDuration: 200ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      keycloakSync:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+
+# =========================
+# Logging
+# =========================
+# Configurazione dei livelli di log.
+logging:
+  level:
+    root: INFO
+    it.sanitech: DEBUG

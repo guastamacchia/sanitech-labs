@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Root POM (aggregator) multi-modulo.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Parent aggregator multi-modulo -->
+    <groupId>it.sanitech</groupId>
+    <artifactId>sanitech-svc</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <!-- Elenco moduli -->
+    <modules>
+        <module>libs/commons-libraries</module>
+        <module>libs/outbox-event-management</module>
+
+        <module>svc-directory</module>
+        <module>svc-gateway</module>
+        <module>svc-scheduling</module>
+        <module>svc-consents</module>
+        <module>svc-docs</module>
+        <module>svc-prescribing</module>
+        <module>svc-notifications</module>
+        <module>svc-audit</module>
+        <module>svc-televisit</module>
+        <module>svc-payments</module>
+        <module>svc-admissions</module>
+    </modules>
+
+    <properties>
+        <!-- Toolchain -->
+        <java.version>21</java.version>
+
+        <!-- Versione minima di Maven accettata (enforced via maven-enforcer-plugin) -->
+        <maven.min.version>3.9.6</maven.min.version>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- Compiler -->
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <!-- parameters=true: mantiene i nomi dei parametri -->
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+
+        <!-- BOM -->
+        <spring-boot.version>3.4.1</spring-boot.version>
+        <spring-cloud.version>2024.0.1</spring-cloud.version>
+
+        <!-- Versioni librerie non sempre coperte dai BOM -->
+        <springdoc.version>2.6.0</springdoc.version>
+        <logstash.version>7.4</logstash.version>
+        <lombok.version>1.18.42</lombok.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
+        <resilience4j.version>2.2.0</resilience4j.version>
+
+        <!-- Versioni plugin -->
+        <maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
+        <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
+        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+        <bytebuddy.experimental>true</bytebuddy.experimental>
+
+        <!-- Proprietà usata dal filtering (@spring.active.profile@) -->
+        <spring.active.profile/>
+    </properties>
+    <!-- Gestione centralizzata dipendenze e versioni -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Librerie interne versionate come la release del root -->
+            <dependency>
+                <groupId>it.sanitech</groupId>
+                <artifactId>commons-libraries</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>it.sanitech</groupId>
+                <artifactId>outbox-event-management</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- BOM Spring Boot -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- BOM Spring Cloud -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Librerie extra -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-spring-boot3</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-micrometer</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            <!-- MapStruct -->
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <!-- Lombok -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <build>
+        <!-- Filtra solo application*.yml con delimitatore @ per non interferire con ${...} di Spring -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>application*.yml</include>
+                </includes>
+            </resource>
+            <!-- Tutte le altre risorse non filtrate -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>application*.yml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+                <inherited>false</inherited>
+            </plugin>
+        </plugins>
+        <!-- Plugin management per eredità pulita sui moduli -->
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>enforce-toolchain</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules>
+                                    <requireMavenVersion>
+                                        <version>[${maven.min.version},)</version>
+                                    </requireMavenVersion>
+                                    <requireJavaVersion>
+                                        <version>[${java.version},)</version>
+                                    </requireJavaVersion>
+                                    <!--
+                                      Utile su progetti multi-modulo per evitare “version drift”.
+                                    -->
+                                    <banDuplicatePomDependencyVersions/>
+                                </rules>
+                                <fail>true</fail>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <!-- Compiler: Java 21 + annotation processing (Lombok/MapStruct) -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                    <configuration>
+                        <release>${maven.compiler.release}</release>
+                        <parameters>${maven.compiler.parameters}</parameters>
+                        <compilerArgs>
+                            <!-- evita warning di API rimosse/obsolete che su alcune dipendenze possono “sporcare” la build -->
+                            <arg>-Xlint:-removal</arg>
+                        </compilerArgs>
+                        <!-- Annotation processors centralizzati -->
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                            <path>
+                                <groupId>org.mapstruct</groupId>
+                                <artifactId>mapstruct-processor</artifactId>
+                                <version>${mapstruct.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
+                <!-- Resources plugin: delimiter '@' per filtering mirato -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${maven-resources-plugin.version}</version>
+                    <configuration>
+                        <delimiters>
+                            <delimiter>@</delimiter>
+                        </delimiters>
+                        <useDefaultDelimiters>false</useDefaultDelimiters>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                    <configuration>
+                        <useModulePath>false</useModulePath>
+                        <argLine>-Dnet.bytebuddy.experimental=${bytebuddy.experimental}</argLine>
+                        <!-- In multi-module alcuni moduli non hanno test: non fallire la build -->
+                        <failIfNoTests>false</failIfNoTests>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+    <!-- Profili Maven attivati da variabile d'ambiente SPRING_PROFILES_ACTIVE -->
+    <profiles>
+        <profile>
+            <id>local</id>
+            <activation>
+                <property>
+                    <name>env.SPRING_PROFILES_ACTIVE</name>
+                    <value>local</value>
+                </property>
+            </activation>
+            <properties>
+                <spring.active.profile>local</spring.active.profile>
+            </properties>
+        </profile>
+        <profile>
+            <id>staging</id>
+            <activation>
+                <property>
+                    <name>env.SPRING_PROFILES_ACTIVE</name>
+                    <value>staging</value>
+                </property>
+            </activation>
+            <properties>
+                <spring.active.profile>staging</spring.active.profile>
+            </properties>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <activation>
+                <property>
+                    <name>env.SPRING_PROFILES_ACTIVE</name>
+                    <value>prod</value>
+                </property>
+            </activation>
+            <properties>
+                <spring.active.profile>prod</spring.active.profile>
+            </properties>
+        </profile>
+    </profiles>
+</project>

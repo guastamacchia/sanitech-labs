@@ -1,0 +1,137 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Scrape dei servizi backend in esecuzione nella compose.
+  - job_name: backend-services
+    metrics_path: /actuator/prometheus
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - "svc-gateway:8080"
+          - "svc-directory:8082"
+          - "svc-scheduling:8083"
+          - "svc-admissions:8084"
+          - "svc-consents:8085"
+          - "svc-docs:8086"
+          - "svc-notifications:8087"
+          - "svc-audit:8088"
+          - "svc-televisit:8089"
+          - "svc-payments:8090"
+          - "svc-prescribing:8091"
+
+  # Target host/local per i servizi in esecuzione fuori dalla compose.
+  - job_name: svc-gateway
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-gateway).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-gateway:8080"
+          - "host.docker.internal:8080"
+          - "localhost:8080"
+
+  - job_name: svc-directory
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-directory).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-directory:8082"
+          - "host.docker.internal:8082"
+          - "localhost:8082"
+
+  - job_name: svc-scheduling
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-scheduling).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-scheduling:8083"
+          - "host.docker.internal:8083"
+          - "localhost:8083"
+
+  - job_name: svc-admissions
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-admissions).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-admissions:8084"
+          - "host.docker.internal:8084"
+          - "localhost:8084"
+
+  - job_name: svc-consents
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-consents).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-consents:8085"
+          - "host.docker.internal:8085"
+          - "localhost:8085"
+
+  - job_name: svc-docs
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-docs).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-docs:8086"
+          - "host.docker.internal:8086"
+          - "localhost:8086"
+
+  - job_name: svc-notifications
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-notifications).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-notifications:8087"
+          - "host.docker.internal:8087"
+          - "localhost:8087"
+
+  - job_name: svc-audit
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-audit).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-audit:8088"
+          - "host.docker.internal:8088"
+          - "localhost:8088"
+
+  - job_name: svc-televisit
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-televisit).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-televisit:8089"
+          - "host.docker.internal:8089"
+          - "localhost:8089"
+
+  - job_name: svc-payments
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-payments).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-payments:8090"
+          - "host.docker.internal:8090"
+          - "localhost:8090"
+
+  - job_name: svc-prescribing
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          # Prima destinazione: container docker compose (svc-prescribing).
+          # Destinazioni aggiuntive per ambienti in cui il servizio gira sull'host.
+          - "svc-prescribing:8091"
+          - "host.docker.internal:8091"
+          - "localhost:8091"

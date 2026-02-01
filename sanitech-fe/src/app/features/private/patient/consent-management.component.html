@@ -1,0 +1,475 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a routerLink="/portal/patient">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Gestione consensi</li>
+        </ol>
+      </nav>
+      <h2 class="mb-1 fw-bold">Gestione consensi ai medici</h2>
+      <p class="text-muted mb-0">Gestisci i consensi per l'accesso ai tuoi dati clinici da parte dei medici</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary" (click)="refresh()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise me-1"></i>
+        Aggiorna
+      </button>
+      <button class="btn btn-primary" (click)="openGrantModal()">
+        <i class="bi bi-plus-circle me-1"></i>
+        Concedi nuovo consenso
+      </button>
+    </div>
+  </div>
+
+  <!-- Alert messages -->
+  <div class="alert alert-success alert-dismissible fade show" *ngIf="successMessage" role="alert">
+    <i class="bi bi-check-circle me-2"></i>
+    {{ successMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
+  </div>
+
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="loadError" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ loadError }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="loadError = ''"></button>
+  </div>
+
+  <!-- Loading spinner -->
+  <div class="text-center py-5" *ngIf="isLoading && doctorConsents.length === 0">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Caricamento...</span>
+    </div>
+    <p class="text-muted mt-2">Caricamento consensi...</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-check-circle text-success fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ activeConsentsCount }}</h3>
+              <small class="text-muted">Consensi attivi</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-person-badge text-primary fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ doctorsWithConsent }}</h3>
+              <small class="text-muted">Medici autorizzati</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-x-circle text-secondary fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ revokedConsentsCount }}</h3>
+              <small class="text-muted">Consensi revocati</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Box -->
+  <div class="alert alert-info border-0 mb-4" role="alert">
+    <div class="d-flex">
+      <i class="bi bi-info-circle fs-5 me-3 mt-1"></i>
+      <div>
+        <h6 class="alert-heading mb-1">Come funziona il consenso?</h6>
+        <p class="mb-0 small">
+          Concedendo il consenso a un medico, gli permetti di accedere ai tuoi dati clinici in base all'ambito selezionato.
+          Puoi revocare il consenso in qualsiasi momento: da quel momento il medico non potra' piu' visualizzare i tuoi dati.
+          La revoca e' immediata e irreversibile per le sessioni attive.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card card-glass border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small text-muted">Filtra per stato</label>
+          <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
+            <option value="ALL">Tutti gli stati</option>
+            <option value="GRANTED">Solo attivi</option>
+            <option value="REVOKED">Solo revocati</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small text-muted">Filtra per ambito</label>
+          <select class="form-select" [(ngModel)]="scopeFilter" (ngModelChange)="currentPage = 1">
+            <option value="ALL">Tutti gli ambiti</option>
+            <option value="DOCS">Documenti clinici</option>
+            <option value="PRESCRIPTIONS">Prescrizioni</option>
+            <option value="TELEVISIT">Televisite</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small text-muted">Risultati per pagina</label>
+          <select class="form-select" [(ngModel)]="pageSize" (ngModelChange)="currentPage = 1">
+            <option [ngValue]="5">5</option>
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consents Table -->
+  <div class="card card-glass border-0 shadow-sm">
+    <div class="card-header bg-transparent border-bottom">
+      <h5 class="mb-0 fw-semibold">
+        <i class="bi bi-shield-check me-2"></i>
+        Elenco consensi
+        <span class="badge bg-secondary ms-2">{{ filteredConsents.length }}</span>
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Medico</th>
+              <th>Ambito</th>
+              <th>Stato</th>
+              <th>Data concessione</th>
+              <th>Scadenza</th>
+              <th class="text-end pe-4">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let consent of paginatedConsents" [class.table-secondary]="consent.status === 'REVOKED'">
+              <td class="ps-4">
+                <div class="d-flex align-items-center">
+                  <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
+                    <i class="bi bi-person text-primary"></i>
+                  </div>
+                  <div>
+                    <div class="fw-semibold">{{ consent.doctorName }}</div>
+                    <small class="text-muted">{{ consent.doctorSpecialty }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <i [class]="getScopeIcon(consent.scope) + ' me-2 text-muted'"></i>
+                  <span>{{ getScopeLabel(consent.scope) }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getStatusBadgeClass(consent)">
+                  {{ getStatusLabel(consent) }}
+                </span>
+              </td>
+              <td>
+                <small>{{ formatDate(consent.grantedAt) }}</small>
+              </td>
+              <td>
+                <small [class.text-danger]="consent.expiresAt && (consent.expiresAt | date) && consent.status === 'GRANTED'">
+                  {{ formatExpiryDate(consent.expiresAt) }}
+                </small>
+              </td>
+              <td class="text-end pe-4">
+                <button
+                  *ngIf="canRevoke(consent)"
+                  class="btn btn-outline-danger btn-sm"
+                  (click)="openRevokeModal(consent)"
+                  title="Revoca consenso">
+                  <i class="bi bi-x-circle me-1"></i>
+                  Revoca
+                </button>
+                <span *ngIf="consent.status === 'REVOKED'" class="text-muted small">
+                  Revocato il {{ formatDate(consent.revokedAt) }}
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="filteredConsents.length === 0">
+              <td colspan="6" class="text-center py-5">
+                <div class="text-muted">
+                  <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                  <p class="mb-0">Nessun consenso trovato con i filtri selezionati.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Pagination -->
+    <div class="card-footer bg-transparent border-top" *ngIf="totalPages > 1">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          Pagina {{ currentPage }} di {{ totalPages }} ({{ filteredConsents.length }} risultati)
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button class="page-link" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+            </li>
+            <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1">
+              <button class="page-link" (click)="currentPage = i + 1">{{ i + 1 }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Concedi Consenso -->
+<ng-container *ngIf="showGrantModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeGrantModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="grantConsentModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <div>
+            <h5 class="modal-title fw-bold" id="grantConsentModalTitle">
+              <i class="bi bi-plus-circle me-2 text-primary"></i>
+              Concedi nuovo consenso
+            </h5>
+            <p class="text-muted small mb-0 mt-1">Autorizza un medico ad accedere ai tuoi dati clinici</p>
+          </div>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeGrantModal()"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <form (ngSubmit)="submitGrant()" #grantFormRef="ngForm">
+            <!-- Selezione medico -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">
+                <i class="bi bi-person-badge me-1"></i>
+                Seleziona il medico
+              </label>
+              <select
+                class="form-select form-select-lg"
+                name="doctorId"
+                [(ngModel)]="grantForm.doctorId"
+                required>
+                <option [ngValue]="null" disabled>-- Seleziona un medico --</option>
+                <option *ngFor="let doctor of availableDoctors" [ngValue]="doctor.id">
+                  Dr. {{ doctor.firstName }} {{ doctor.lastName }} - {{ doctor.departmentName }} ({{ doctor.facilityName }})
+                </option>
+              </select>
+            </div>
+
+            <!-- Selezione ambito -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">
+                <i class="bi bi-shield-lock me-1"></i>
+                Ambito del consenso
+              </label>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <div class="card h-100 cursor-pointer"
+                       [class.border-primary]="grantForm.scope === 'DOCS'"
+                       [class.bg-primary]="grantForm.scope === 'DOCS'"
+                       [class.bg-opacity-10]="grantForm.scope === 'DOCS'"
+                       (click)="grantForm.scope = 'DOCS'"
+                       style="cursor: pointer;">
+                    <div class="card-body text-center py-4">
+                      <i class="bi bi-file-earmark-medical fs-1 mb-2" [class.text-primary]="grantForm.scope === 'DOCS'"></i>
+                      <h6 class="mb-1">Documenti clinici</h6>
+                      <small class="text-muted">Referti, cartella clinica, esami</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card h-100"
+                       [class.border-primary]="grantForm.scope === 'PRESCRIPTIONS'"
+                       [class.bg-primary]="grantForm.scope === 'PRESCRIPTIONS'"
+                       [class.bg-opacity-10]="grantForm.scope === 'PRESCRIPTIONS'"
+                       (click)="grantForm.scope = 'PRESCRIPTIONS'"
+                       style="cursor: pointer;">
+                    <div class="card-body text-center py-4">
+                      <i class="bi bi-capsule fs-1 mb-2" [class.text-primary]="grantForm.scope === 'PRESCRIPTIONS'"></i>
+                      <h6 class="mb-1">Prescrizioni</h6>
+                      <small class="text-muted">Ricette, terapie farmacologiche</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card h-100"
+                       [class.border-primary]="grantForm.scope === 'TELEVISIT'"
+                       [class.bg-primary]="grantForm.scope === 'TELEVISIT'"
+                       [class.bg-opacity-10]="grantForm.scope === 'TELEVISIT'"
+                       (click)="grantForm.scope = 'TELEVISIT'"
+                       style="cursor: pointer;">
+                    <div class="card-body text-center py-4">
+                      <i class="bi bi-camera-video fs-1 mb-2" [class.text-primary]="grantForm.scope === 'TELEVISIT'"></i>
+                      <h6 class="mb-1">Televisite</h6>
+                      <small class="text-muted">Visite in videochiamata</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scadenza opzionale -->
+            <div class="mb-4">
+              <div class="form-check mb-2">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="hasExpiry"
+                  name="hasExpiry"
+                  [(ngModel)]="grantForm.hasExpiry">
+                <label class="form-check-label fw-semibold" for="hasExpiry">
+                  <i class="bi bi-calendar-event me-1"></i>
+                  Imposta una data di scadenza
+                </label>
+              </div>
+              <div class="collapse" [class.show]="grantForm.hasExpiry">
+                <input
+                  type="date"
+                  class="form-control mt-2"
+                  name="expiryDate"
+                  [(ngModel)]="grantForm.expiryDate"
+                  [min]="'2025-01-01'"
+                  [required]="grantForm.hasExpiry">
+                <small class="text-muted">Il consenso scadra' automaticamente alla data selezionata</small>
+              </div>
+            </div>
+
+            <!-- Warning box -->
+            <div class="alert alert-warning border-0 mb-0">
+              <div class="d-flex">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <div>
+                  <strong>Attenzione:</strong> Concedendo questo consenso, autorizzi il medico selezionato ad accedere ai tuoi dati nell'ambito specificato.
+                  Potrai revocare il consenso in qualsiasi momento.
+                </div>
+              </div>
+            </div>
+
+            <div class="alert alert-danger py-2 mt-3" *ngIf="errorMessage">
+              <i class="bi bi-exclamation-circle me-2"></i>
+              {{ errorMessage }}
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeGrantModal()">Annulla</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="submitGrant()"
+            [disabled]="!grantForm.doctorId || isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+            {{ isLoading ? 'Salvataggio...' : 'Concedi consenso' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal: Revoca Consenso -->
+<ng-container *ngIf="showRevokeModal && selectedConsentForRevoke">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeRevokeModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="revokeConsentModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold text-danger" id="revokeConsentModalTitle">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Conferma revoca consenso
+          </h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeRevokeModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Stai per revocare il seguente consenso:</p>
+
+          <div class="card bg-light border-0 mb-3">
+            <div class="card-body">
+              <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-person-badge me-2 text-primary"></i>
+                <strong>{{ selectedConsentForRevoke.doctorName }}</strong>
+              </div>
+              <div class="d-flex align-items-center mb-2">
+                <i [class]="getScopeIcon(selectedConsentForRevoke.scope) + ' me-2 text-muted'"></i>
+                <span>{{ getScopeLabel(selectedConsentForRevoke.scope) }}</span>
+              </div>
+              <div class="d-flex align-items-center">
+                <i class="bi bi-calendar-check me-2 text-muted"></i>
+                <small class="text-muted">Concesso il {{ formatDate(selectedConsentForRevoke.grantedAt) }}</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-danger border-0 mb-0">
+            <h6 class="alert-heading">
+              <i class="bi bi-shield-x me-1"></i>
+              Effetti della revoca
+            </h6>
+            <ul class="mb-0 small">
+              <li>Il medico non potra' piu' accedere ai tuoi {{ getScopeLabel(selectedConsentForRevoke.scope).toLowerCase() }}</li>
+              <li>La revoca e' immediata ed efficace da subito</li>
+              <li>Eventuali sessioni attive saranno terminate</li>
+              <li>Potrai concedere nuovamente il consenso in futuro</li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeRevokeModal()">Annulla</button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            (click)="confirmRevoke()"
+            [disabled]="isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+            {{ isLoading ? 'Revoca in corso...' : 'Conferma revoca' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>

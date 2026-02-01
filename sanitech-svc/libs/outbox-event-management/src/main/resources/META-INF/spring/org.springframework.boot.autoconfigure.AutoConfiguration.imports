@@ -1,0 +1,2 @@
+it.sanitech.outbox.autoconfigure.OutboxAutoConfiguration
+it.sanitech.outbox.autoconfigure.OutboxPublisherAutoConfiguration

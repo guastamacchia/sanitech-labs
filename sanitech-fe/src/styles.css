@@ -1,0 +1,49 @@
+:root {
+  --sanitech-primary: #0d6efd;
+}
+
+body {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  padding-top: 76px;
+}
+
+.section-title {
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-size: .8rem;
+  color: #6c757d;
+}
+
+.card-glass {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.05);
+}
+
+.badge-soft {
+  background: #e8f3ff;
+  color: #0d6efd;
+}
+
+.service-card img {
+  height: 200px;
+  object-fit: cover;
+}
+
+.avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #0d6efd;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.stat-card {
+  background: #f8f9fb;
+  border-radius: 16px;
+  padding: 16px;
+}

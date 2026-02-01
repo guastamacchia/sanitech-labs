@@ -1,0 +1,13 @@
+spring:
+  task:
+    scheduling:
+      enabled: false
+
+resilience4j:
+  ratelimiter:
+    instances:
+      paymentsApi:
+        # Smoke test: 1 richiesta ogni 10s → la seconda deve diventare 429.
+        limitForPeriod: 1
+        limitRefreshPeriod: 10s
+        timeoutDuration: 0

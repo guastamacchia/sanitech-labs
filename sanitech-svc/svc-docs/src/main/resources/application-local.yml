@@ -1,0 +1,5 @@
+sanitech:
+  docs:
+    s3:
+      endpoint: ${S3_ENDPOINT:http://minio:9000}
+      fail-on-init-error: false

@@ -1,0 +1,89 @@
+############################
+# BUILD / MAVEN
+############################
+
+/target/
+
+# Maven wrapper
+!.mvn/
+!.mvn/wrapper/
+!.mvn/wrapper/maven-wrapper.properties
+!.mvn/wrapper/maven-wrapper.jar
+
+node_modules
+.angular
+package-lock.json
+dist/
+
+############################
+# IDE - INTELLIJ IDEA
+############################
+
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+############################
+# IDE - ECLIPSE
+############################
+
+.classpath
+.project
+.settings/
+.factorypath
+
+############################
+# IDE - VS CODE
+############################
+
+.vscode/
+.history/
+
+############################
+# OS - MAC / WINDOWS / LINUX
+############################
+
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+############################
+# SPRING / JAVA
+############################
+
+# Spring Boot
+spring.log
+
+# JVM crash logs
+hs_err_pid*
+*.log
+
+# Env files
+.env
+
+############################
+# DOCKER
+############################
+
+docker-compose.override.yml
+*.pid
+
+############################
+# ARCHIVI / BINARI
+############################
+
+*.jar
+*.war
+*.ear
+*.zip
+*.tar
+*.tar.gz
+*.rar

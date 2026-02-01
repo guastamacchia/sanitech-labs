@@ -1,0 +1,721 @@
+{
+    "realm": "sanitech",
+    "enabled": true,
+    "displayName": "Sanitech",
+    "defaultRole": {
+        "name": "default-roles-sanitech",
+        "composites": {}
+    },
+    "roles": {
+        "realm": [
+            {
+                "name": "ROLE_ADMIN"
+            },
+            {
+                "name": "ROLE_DOCTOR"
+            },
+            {
+                "name": "ROLE_PATIENT"
+            },
+            {
+                "name": "default-roles-sanitech",
+                "composite": false
+            }
+        ]
+    },
+    "clientScopes": [
+        {
+            "name": "openid",
+            "description": "OpenID Connect scope",
+            "protocol": "openid-connect",
+            "attributes": {
+                "include.in.token.scope": "true",
+                "display.on.consent.screen": "false"
+            },
+            "protocolMappers": [
+                {
+                    "name": "sub",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-sub-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "introspection.token.claim": "true",
+                        "access.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "profile",
+            "description": "OpenID Connect profile scope",
+            "protocol": "openid-connect",
+            "attributes": {
+                "include.in.token.scope": "true",
+                "display.on.consent.screen": "true",
+                "consent.screen.text": "${profileScopeConsentText}"
+            },
+            "protocolMappers": [
+                {
+                    "name": "given name",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "firstName",
+                        "claim.name": "given_name",
+                        "jsonType.label": "String",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "family name",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "lastName",
+                        "claim.name": "family_name",
+                        "jsonType.label": "String",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "full name",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-full-name-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "username",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "username",
+                        "claim.name": "preferred_username",
+                        "jsonType.label": "String",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "nickname",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "nickname",
+                        "claim.name": "nickname",
+                        "jsonType.label": "String",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "updated at",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "updatedAt",
+                        "claim.name": "updated_at",
+                        "jsonType.label": "long",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "email",
+            "description": "OpenID Connect email scope",
+            "protocol": "openid-connect",
+            "attributes": {
+                "include.in.token.scope": "true",
+                "display.on.consent.screen": "true",
+                "consent.screen.text": "${emailScopeConsentText}"
+            },
+            "protocolMappers": [
+                {
+                    "name": "email",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "email",
+                        "claim.name": "email",
+                        "jsonType.label": "String",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "email verified",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "emailVerified",
+                        "claim.name": "email_verified",
+                        "jsonType.label": "boolean",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "web-origins",
+            "description": "OpenID Connect scope for CORS web origins",
+            "protocol": "openid-connect",
+            "attributes": {
+                "include.in.token.scope": "false",
+                "display.on.consent.screen": "false"
+            },
+            "protocolMappers": [
+                {
+                    "name": "allowed web origins",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-allowed-origins-mapper",
+                    "consentRequired": false
+                }
+            ]
+        },
+        {
+            "name": "roles",
+            "description": "OpenID Connect roles scope",
+            "protocol": "openid-connect",
+            "attributes": {
+                "include.in.token.scope": "false",
+                "display.on.consent.screen": "true",
+                "consent.screen.text": "${rolesScopeConsentText}"
+            },
+            "protocolMappers": [
+                {
+                    "name": "realm roles",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-realm-role-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "realm_access.roles",
+                        "jsonType.label": "String",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "client roles",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-client-role-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "claim.name": "resource_access.${client_id}.roles",
+                        "jsonType.label": "String",
+                        "multivalued": "true",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    }
+                },
+                {
+                    "name": "audience resolve",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-audience-resolve-mapper",
+                    "consentRequired": false
+                }
+            ]
+        },
+        {
+            "name": "sanitech-claims",
+            "description": "Sanitech custom claims for patient and doctor IDs",
+            "protocol": "openid-connect",
+            "attributes": {
+                "include.in.token.scope": "true",
+                "display.on.consent.screen": "false"
+            },
+            "protocolMappers": [
+                {
+                    "name": "patient-id-mapper",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "pid",
+                        "claim.name": "pid",
+                        "jsonType.label": "long",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "multivalued": "false",
+                        "aggregate.attrs": "false"
+                    }
+                },
+                {
+                    "name": "doctor-id-mapper",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "did",
+                        "claim.name": "did",
+                        "jsonType.label": "long",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "multivalued": "false",
+                        "aggregate.attrs": "false"
+                    }
+                }
+            ]
+        }
+    ],
+    "clients": [
+        {
+            "clientId": "sanitech-spa",
+            "name": "Sanitech SPA",
+            "protocol": "openid-connect",
+            "publicClient": true,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "attributes": {
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "http://localhost:4200/*"
+            },
+            "redirectUris": [
+                "http://localhost:4200/*"
+            ],
+            "webOrigins": [
+                "http://localhost:4200"
+            ],
+            "defaultClientScopes": [
+                "openid",
+                "web-origins",
+                "roles",
+                "profile",
+                "email",
+                "sanitech-claims"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-directory",
+            "name": "svc-directory",
+            "secret": "svc-directory-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "standardFlowEnabled": false,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "client_credentials.use_refresh_token": "false",
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-admissions",
+            "name": "svc-admissions",
+            "secret": "svc-admissions-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-audit",
+            "name": "svc-audit",
+            "secret": "svc-audit-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-consents",
+            "name": "svc-consents",
+            "secret": "svc-consents-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-docs",
+            "name": "svc-docs",
+            "secret": "svc-docs-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-gateway",
+            "name": "svc-gateway",
+            "secret": "svc-gateway-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-notifications",
+            "name": "svc-notifications",
+            "secret": "svc-notifications-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "sanitech-gateway",
+            "enabled": true,
+            "publicClient": true,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "*"
+            ],
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email",
+                "sanitech-claims"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-payments",
+            "name": "svc-payments",
+            "secret": "svc-payments-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-prescribing",
+            "name": "svc-prescribing",
+            "secret": "svc-prescribing-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-scheduling",
+            "name": "svc-scheduling",
+            "secret": "svc-scheduling-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        },
+        {
+            "clientId": "svc-televisit",
+            "name": "svc-televisit",
+            "secret": "svc-televisit-secret",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "serviceAccountsEnabled": false,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "redirectUris": [
+                "*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "attributes": {
+                "post.logout.redirect.uris": "*"
+            },
+            "defaultClientScopes": [
+                "web-origins",
+                "roles",
+                "profile",
+                "email"
+            ],
+            "optionalClientScopes": []
+        }
+    ],
+    "users": [
+        {
+            "username": "admin",
+            "enabled": true,
+            "email": "admin@sanitech.example",
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "ROLE_ADMIN"
+            ],
+            "emailVerified": true,
+            "firstName": "Admin",
+            "lastName": "Admin",
+            "createdTimestamp": 1704067200000,
+            "requiredActions": []
+        },
+        {
+            "username": "service-account-svc-directory",
+            "enabled": true,
+            "serviceAccountClientId": "svc-directory",
+            "clientRoles": {
+                "realm-management": [
+                    "manage-users",
+                    "view-users",
+                    "view-realm"
+                ]
+            }
+        },
+        {
+            "username": "rossi",
+            "enabled": true,
+            "email": "rossi@sanitech.example",
+            "attributes": {
+                "dept": [
+                    "HEART",
+                    "RESP"
+                ],
+                "did": [
+                    "1"
+                ]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "ROLE_DOCTOR"
+            ],
+            "emailVerified": true,
+            "firstName": "Mario",
+            "lastName": "Rossi",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "conti",
+            "enabled": true,
+            "email": "conti@sanitech.example",
+            "attributes": {
+                "pid": [
+                    "1"
+                ]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "ROLE_PATIENT"
+            ],
+            "emailVerified": true,
+            "firstName": "Anna",
+            "lastName": "Conti",
+            "createdTimestamp": 1704067200000
+        }
+    ]
+}

@@ -1,0 +1,182 @@
+# =========================
+# Server
+# =========================
+server:
+  port: ${SERVER_PORT:8080}
+
+# =========================
+# Spring Application
+# =========================
+spring:
+  application:
+    name: "@project.artifactId@"
+  profiles:
+    active: "@spring.active.profile@"
+
+  # =========================
+  # Security / OAuth2 Resource Server
+  # =========================
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${OAUTH2_SCHEME}://${OAUTH2_HOST}:${OAUTH2_PORT}/realms/${OAUTH2_REALM}/protocol/openid-connect/certs
+
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 2000
+        response-timeout: 5s
+
+# =========================
+# Sanitech Commons
+# =========================
+sanitech:
+  cors:
+    enabled: true
+    path-patterns:
+      - "/**"
+    allowed-origins:
+      - ${SANITECH_CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - Accept
+      - Origin
+      - X-Requested-With
+      - X-Request-Id
+    exposed-headers:
+      - Location
+      - Content-Disposition
+      - X-Request-Id
+      - X-Total-Count
+    allow-credentials: false
+    max-age: 3600
+
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
+  openapi:
+    enabled: true
+    group: gateway
+    packages-to-scan:
+      - it.sanitech.gateway.web
+    title: Sanitech — Gateway API
+    version: v1
+
+  gateway:
+    services:
+      directory: ${DIRECTORY_URL:http://localhost:8082}
+      scheduling: ${SCHEDULING_URL:http://localhost:8083}
+      admissions: ${ADMISSIONS_URL:http://localhost:8084}
+      consents: ${CONSENTS_URL:http://localhost:8085}
+      docs: ${DOCS_URL:http://localhost:8086}
+      notifications: ${NOTIFICATIONS_URL:http://localhost:8087}
+      audit: ${AUDIT_URL:http://localhost:8088}
+      televisit: ${TELEVISIT_URL:http://localhost:8089}
+      payments: ${PAYMENTS_URL:http://localhost:8090}
+      prescribing: ${PRESCRIBING_URL:http://localhost:8091}
+
+    ui:
+      redirect-root-to-swagger: false
+
+    openapi:
+      targets:
+        directory: ${OPENAPI_DIRECTORY_URL:http://localhost:8082/v3/api-docs/directory}
+        scheduling: ${OPENAPI_SCHEDULING_URL:http://localhost:8083/v3/api-docs/scheduling}
+        admissions: ${OPENAPI_ADMISSIONS_URL:http://localhost:8084/v3/api-docs/admissions}
+        consents: ${OPENAPI_CONSENTS_URL:http://localhost:8085/v3/api-docs/consents}
+        docs: ${OPENAPI_DOCS_URL:http://localhost:8086/v3/api-docs/docs}
+        notifications: ${OPENAPI_NOTIFICATIONS_URL:http://localhost:8087/v3/api-docs/notifications}
+        audit: ${OPENAPI_AUDIT_URL:http://localhost:8088/v3/api-docs/audit}
+        televisit: ${OPENAPI_TELEVISIT_URL:http://localhost:8089/v3/api-docs/televisit}
+        payments: ${OPENAPI_PAYMENTS_URL:http://localhost:8090/v3/api-docs/payments}
+        prescribing: ${OPENAPI_PRESCRIBING_URL:http://localhost:8091/v3/api-docs/prescribing}
+
+      merged-cache-ttl-seconds: 30
+
+      http:
+        connect-timeout-ms: 2000
+        response-timeout-ms: 5000
+
+# =========================
+# Management / Actuator
+# =========================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# =========================
+# Resilience4j
+# =========================
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+    instances:
+      directory:
+        baseConfig: default
+      scheduling:
+        baseConfig: default
+      admissions:
+        baseConfig: default
+      consents:
+        baseConfig: default
+      docs:
+        baseConfig: default
+      notifications:
+        baseConfig: default
+      audit:
+        baseConfig: default
+      televisit:
+        baseConfig: default
+      payments:
+        baseConfig: default
+      prescribing:
+        baseConfig: default
+
+# =========================
+# OpenAPI / Swagger
+# =========================
+springdoc:
+  swagger-ui:
+    enabled: true
+    url: /openapi/merged
+    disable-swagger-default-url: true
+
+# =========================
+# Logging
+# =========================
+logging:
+  level:
+    root: INFO
+    it.sanitech: DEBUG

@@ -1,0 +1,192 @@
+# =========================
+# Server
+# =========================
+server:
+  port: ${SERVER_PORT:8090}
+
+# =========================
+# Spring Application
+# =========================
+spring:
+  application:
+    name: "@project.artifactId@"
+  profiles:
+    active: "@spring.active.profile@"
+
+  # =========================
+  # Database (PostgreSQL)
+  # =========================
+  datasource:
+    url: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT:5432}/${DATABASE_NAME}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+
+  # =========================
+  # JPA / Hibernate
+  # =========================
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50
+        show_sql: false
+        format_sql: false
+
+  # =========================
+  # Flyway
+  # =========================
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  # =========================
+  # Security / OAuth2 Resource Server
+  # =========================
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${OAUTH2_SCHEME}://${OAUTH2_HOST}:${OAUTH2_PORT}/realms/${OAUTH2_REALM}/protocol/openid-connect/certs
+
+  # =========================
+  # Kafka
+  # =========================
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      retries: ${KAFKA_PRODUCER_RETRIES:10}
+      properties:
+        acks: ${KAFKA_PRODUCER_ACKS:all}
+        linger.ms: ${KAFKA_PRODUCER_LINGER_MS:5}
+
+# =========================
+# Sanitech Commons
+# =========================
+sanitech:
+  payments:
+    webhook:
+      secret: ${SANITECH_PAYMENTS_WEBHOOK_SECRET:change-me}
+
+  outbox:
+    publisher:
+      topic: ${OUTBOX_TOPIC:payments.events}
+      enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
+      fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
+
+  cors:
+    enabled: true
+    path-patterns:
+      - /api/**
+    allowed-origins:
+      - ${SANITECH_CORS_ALLOWED_ORIGINS:http://localhost:4200}
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - Accept
+      - Origin
+      - X-Requested-With
+      - X-Request-Id
+      - X-Webhook-Secret
+      - X-Idempotency-Key
+    exposed-headers:
+      - Location
+      - X-Request-Id
+      - X-Total-Count
+    allow-credentials: false
+    max-age: 3600
+
+  security:
+    enabled: true
+    public-endpoints:
+      - /v3/api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /actuator/health/**
+      - /actuator/info
+      - /actuator/metrics/**
+      - /actuator/prometheus
+
+  openapi:
+    enabled: true
+    group: payments
+    packages-to-scan:
+      - it.sanitech.payments.web
+    title: Sanitech — Payments API
+    version: v1
+
+# =========================
+# Management / Actuator
+# =========================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# =========================
+# OpenAPI / Swagger
+# =========================
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui
+    operationsSorter: method
+    tagsSorter: alpha
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+
+# =========================
+# Resilience4j
+# =========================
+resilience4j:
+  ratelimiter:
+    instances:
+      paymentsApi:
+        limitForPeriod: 60
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+
+  bulkhead:
+    instances:
+      paymentsRead:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 0
+
+  retry:
+    instances:
+      outboxPublish:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2.0
+        retryExceptions:
+          - org.apache.kafka.common.errors.TimeoutException
+          - org.apache.kafka.common.errors.NetworkException
+          - org.springframework.kafka.KafkaException
+
+# =========================
+# Logging
+# =========================
+logging:
+  level:
+    root: INFO
+    it.sanitech: DEBUG

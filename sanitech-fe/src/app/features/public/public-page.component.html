@@ -1,0 +1,517 @@
+<section id="accesso" class="py-5 bg-white">
+  <div class="container">
+    <div class="row align-items-start g-4">
+      <div class="col-lg-7 col-md-7">
+        <span class="badge badge-soft rounded-pill mb-3 px-3 py-2">Sanità digitale, ovunque</span>
+        <h1 class="display-5 fw-bold mb-3 mt-0">Clinica Sanitech: cura integrata, accesso semplice.</h1>
+        <p class="lead text-muted">
+          Prenotazioni smart, telemedicina, cartella clinica e notifiche in un’unica piattaforma sicura, con percorsi
+          personalizzati e supporto costante per aiutarti a richiedere una visita senza tempi di attesa inutili, tenere
+          sotto controllo i tuoi appuntamenti e ricevere aggiornamenti puntuali dal nostro team clinico.
+        </p>
+        <div class="d-flex flex-wrap gap-3 mt-4">
+          <a routerLink="/portal" class="btn btn-primary btn-lg" *ngIf="auth.isAuthenticated">Area privata</a>
+          <a href="#servizi" class="btn btn-outline-secondary btn-lg">Scopri i servizi</a>
+          <a href="#testimonianze" class="btn btn-outline-secondary btn-lg">Dicono di noi</a>
+          <a href="#strutture" class="btn btn-outline-secondary btn-lg">Le strutture</a>
+          <a href="#chi-siamo" class="btn btn-outline-secondary btn-lg">Chi siamo</a>
+          <a href="#contatti" class="btn btn-outline-secondary btn-lg">Contatti</a>
+        </div>
+      </div>
+      <div class="col-lg-5 col-md-5" *ngIf="!auth.isAuthenticated">
+        <div class="card card-glass bg-info-subtle p-4">
+          <ul class="nav nav-tabs nav-justified w-100 mb-4" role="tablist">
+            <li class="nav-item flex-fill" role="presentation">
+              <button
+                class="nav-link w-100"
+                [class.active]="activeAccessTab === 'login'"
+                type="button"
+                role="tab"
+                aria-controls="accesso-riservato"
+                [attr.aria-selected]="activeAccessTab === 'login'"
+                (click)="setActiveAccessTab('login')">
+                Accesso riservato
+              </button>
+            </li>
+            <li class="nav-item flex-fill" role="presentation">
+              <button
+                class="nav-link w-100"
+                [class.active]="activeAccessTab === 'register'"
+                type="button"
+                role="tab"
+                aria-controls="registrazione-pazienti"
+                [attr.aria-selected]="activeAccessTab === 'register'"
+                (click)="setActiveAccessTab('register')">
+                Registrazione pazienti
+              </button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <div
+              class="tab-pane fade"
+              [class.show]="activeAccessTab === 'login'"
+              [class.active]="activeAccessTab === 'login'"
+              id="accesso-riservato"
+              role="tabpanel">
+              <h5 class="fw-semibold">Accesso riservato</h5>
+              <p class="text-muted">
+                Per accedere all’area privata verrai reindirizzato al portale di autenticazione Sanitech ID.
+              </p>
+              <button class="btn btn-primary w-100" type="button" (click)="login()">Accedi con Sanitech ID</button>
+              <button class="btn btn-link w-100 mt-2" type="button" (click)="setActiveAccessTab('register')">
+                Sei nuovo? Registrati
+              </button>
+            </div>
+
+            <div
+              class="tab-pane fade"
+              [class.show]="activeAccessTab === 'register'"
+              [class.active]="activeAccessTab === 'register'"
+              id="registrazione-pazienti"
+              role="tabpanel">
+              <h5 class="fw-semibold">Registrazione pazienti</h5>
+              <p class="text-muted">Richiedi l’accesso alla tua area riservata per prenotare una visita.</p>
+              <form (ngSubmit)="submitRegistration()" #registrationFormRef="ngForm">
+                <div class="mb-3">
+                  <label class="form-label">Nome</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="registrationFirstName"
+                    [(ngModel)]="registrationForm.firstName"
+                    placeholder="Mario"
+                    required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Cognome</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="registrationLastName"
+                    [(ngModel)]="registrationForm.lastName"
+                    placeholder="Rossi"
+                    required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Email</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    name="registrationEmail"
+                    [(ngModel)]="registrationForm.email"
+                    placeholder="nome.cognome@email.it"
+                    required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Telefono</label>
+                  <input
+                    type="tel"
+                    class="form-control"
+                    name="registrationPhone"
+                    [(ngModel)]="registrationForm.phone"
+                    placeholder="+39 333 123 4567"
+                    required />
+                </div>
+                <div class="alert alert-success py-2 mb-3" *ngIf="registrationSuccess">{{ registrationSuccess }}</div>
+                <div class="alert alert-danger py-2 mb-3" *ngIf="registrationError">{{ registrationError }}</div>
+                <button class="btn btn-outline-primary w-100" type="submit" [disabled]="registrationFormRef.invalid || isSubmitting">
+                  <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  {{ isSubmitting ? 'Invio in corso...' : 'Invia richiesta' }}
+                </button>
+              </form>
+              <button class="btn btn-link w-100 mt-2" type="button" (click)="setActiveAccessTab('login')">
+                Hai già un account? Accedi con le tue credenziali
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-5 col-md-5 d-flex align-items-center" *ngIf="auth.isAuthenticated">
+        <img
+          src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=900&q=80"
+          class="img-fluid rounded-4 shadow-sm w-100"
+          style="min-height: 320px; object-fit: cover;"
+          alt="Equipe Sanitech" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="servizi" class="py-5">
+  <div class="container">
+    <p class="section-title">Sanitech in breve</p>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Prenotazioni digitali" />
+          <div class="card-body">
+            <h5 class="fw-semibold">Prenotazioni digitali</h5>
+            <p class="text-muted">Agenda smart, gestione slot in tempo reale e reminder automatici.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Telemedicina" />
+          <div class="card-body">
+            <h5 class="fw-semibold">Telemedicina</h5>
+            <p class="text-muted">Televisite sicure, follow-up clinici e monitoraggio continuo.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1504439468489-c8920d796a29?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Diagnostica" />
+          <div class="card-body">
+            <h5 class="fw-semibold">Diagnostica avanzata</h5>
+            <p class="text-muted">Referti digitali, imaging e laboratorio sempre disponibili.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Riabilitazione" />
+          <div class="card-body">
+            <h5 class="fw-semibold">Riabilitazione personalizzata</h5>
+            <p class="text-muted">Percorsi su misura con fisioterapisti e team multidisciplinari.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1512678080530-7760d81faba6?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Assistenza domiciliare" />
+          <div class="card-body">
+            <h5 class="fw-semibold">Assistenza domiciliare</h5>
+            <p class="text-muted">Visite a domicilio e piani di cura coordinati con la famiglia.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass h-100 service-card">
+          <img
+            src="https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&w=800&q=80"
+            class="card-img-top"
+            alt="Farmacia clinica" />
+          <div class="card-body">
+            <h5 class="fw-semibold">Farmacia clinica</h5>
+            <p class="text-muted">Prescrizioni digitali, monitoraggio terapie e supporto al paziente.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="testimonianze" class="py-5 bg-white">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-6">
+        <p class="section-title">Esperienza dei pazienti</p>
+        <h3 class="fw-bold mb-3">Recensioni che raccontano la qualità del nostro servizio.</h3>
+        <p class="text-muted mb-0">
+          Ci prendiamo cura delle persone con percorsi assistenziali completi, tecnologia all’avanguardia e un team
+          medico multidisciplinare.
+        </p>
+      </div>
+      <div class="col-lg-6">
+        <div id="testimonianzeCarousel" class="carousel slide" data-bs-ride="carousel">
+          <div class="carousel-inner">
+            <div class="carousel-item active">
+              <div class="card card-glass p-4">
+                <p class="fs-5">“Prenotazione rapidissima e televisita puntuale. Ho avuto tutte le risposte in giornata.”</p>
+                <div class="d-flex align-items-center gap-3 mt-3">
+                  <div class="avatar-circle">LC</div>
+                  <div>
+                    <h6 class="mb-0">Laura C.</h6>
+                    <small class="text-muted">Cardiologia</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="carousel-item">
+              <div class="card card-glass p-4">
+                <p class="fs-5">“Referti digitali immediati e staff sempre disponibile. Consigliatissimo.”</p>
+                <div class="d-flex align-items-center gap-3 mt-3">
+                  <div class="avatar-circle">MG</div>
+                  <div>
+                    <h6 class="mb-0">Marco G.</h6>
+                    <small class="text-muted">Diagnostica</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="carousel-item">
+              <div class="card card-glass p-4">
+                <p class="fs-5">“Percorso di riabilitazione personalizzato e follow-up costante. Mi sono sentita seguita.”</p>
+                <div class="d-flex align-items-center gap-3 mt-3">
+                  <div class="avatar-circle">AF</div>
+                  <div>
+                    <h6 class="mb-0">Anna F.</h6>
+                    <small class="text-muted">Riabilitazione</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="carousel-control-prev" type="button" data-bs-target="#testimonianzeCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Precedente</span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#testimonianzeCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Successivo</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="strutture" class="py-5">
+  <div class="container">
+    <p class="section-title">Le nostre strutture</p>
+    <div class="row g-4 align-items-start">
+      <div class="col-lg-6">
+        <h3 class="fw-bold">Un network di strutture sanitarie con reparti specializzati e percorsi dedicati.</h3>
+        <p class="text-muted">
+          Sanitech Labs è un network di strutture sanitarie che condividono informazioni cliniche. Ogni struttura
+          integra reparti specializzati con accessi dedicati e supporto continuo.
+        </p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card card-glass p-3 h-100">
+              <h6 class="fw-semibold mb-1">Reparti principali</h6>
+              <p class="text-muted mb-0">Cardiologia, Neurologia, Medicina interna, Riabilitazione.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card card-glass p-3 h-100">
+              <h6 class="fw-semibold mb-1">Come raggiungerci</h6>
+              <p class="text-muted mb-0">Navette dedicate, parcheggio coperto, accessi facilitati per disabili.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card card-glass p-3 h-100">
+              <h6 class="fw-semibold mb-1">Orari</h6>
+              <p class="text-muted mb-0">Ambulatori 7:30-19:30, pronto intervento h24.</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card card-glass p-3 h-100">
+              <h6 class="fw-semibold mb-1">Accoglienza</h6>
+              <p class="text-muted mb-0">Infopoint dedicato, supporto multilingua, concierge sanitario.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <img
+          src="https://images.unsplash.com/photo-1504439468489-c8920d796a29?auto=format&fit=crop&w=900&q=80"
+          class="img-fluid rounded-4 shadow-sm"
+          alt="Strutture Sanitech Labs" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="chi-siamo" class="py-5 bg-white">
+  <div class="container">
+    <div class="row g-4 align-items-start">
+      <div class="col-lg-5">
+        <img
+          src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=800&q=80"
+          class="img-fluid rounded-4 shadow-sm"
+          alt="Team Sanitech" />
+      </div>
+      <div class="col-lg-7">
+        <p class="section-title">Chi siamo</p>
+        <h3 class="fw-bold">Una rete di professionisti per la salute delle persone.</h3>
+        <p class="text-muted">
+          Sanitech Labs nasce per integrare tecnologia e competenze cliniche. Offriamo un’esperienza digitale completa,
+          ma con un team medico sempre vicino al paziente.
+        </p>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="stat-card text-center">
+              <div
+                class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
+                style="width: 60px; height: 60px;">
+                <svg
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="36"
+                  height="36"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M16 11.37A4 4 0 1 0 8 11.37" />
+                  <path d="M12 14v7" />
+                  <path d="M9 18h6" />
+                  <path d="M6.5 2h11a1 1 0 0 1 1 1v4H5.5V3a1 1 0 0 1 1-1z" />
+                </svg>
+              </div>
+              <p class="text-muted mb-1">Specialisti</p>
+              <h4 class="fw-bold mb-0">120+</h4>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card text-center">
+              <div
+                class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
+                style="width: 60px; height: 60px;">
+                <svg
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="36"
+                  height="36"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M16 11a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" />
+                  <path d="M12 15c-4.42 0-8 2-8 4v1h16v-1c0-2-3.58-4-8-4Z" />
+                </svg>
+              </div>
+              <p class="text-muted mb-1">Pazienti seguiti</p>
+              <h4 class="fw-bold mb-0">35k</h4>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card text-center">
+              <div
+                class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
+                style="width: 60px; height: 60px;">
+                <svg
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="36"
+                  height="36"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M3 20V7a2 2 0 0 1 2-2h4V3h6v2h4a2 2 0 0 1 2 2v13" />
+                  <path d="M3 20h18" />
+                  <path d="M9 14h6" />
+                  <path d="M12 11v6" />
+                </svg>
+              </div>
+              <p class="text-muted mb-1">Reparti attivi</p>
+              <h4 class="fw-bold mb-0">15</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contatti" class="py-5">
+  <div class="container">
+    <p class="section-title">Contatti</p>
+    <div class="row g-4">
+      <div class="col-12">
+        <div class="card card-glass bg-body-tertiary p-4">
+          <h5 class="fw-semibold mb-3">Scrivici per informazioni</h5>
+          <form (ngSubmit)="submitContact()" #contactFormRef="ngForm">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <input
+                  class="form-control"
+                  type="text"
+                  name="contactFullName"
+                  [(ngModel)]="contactForm.fullName"
+                  placeholder="Nome e cognome"
+                  required />
+              </div>
+              <div class="col-md-6">
+                <input
+                  class="form-control"
+                  type="email"
+                  name="contactEmail"
+                  [(ngModel)]="contactForm.email"
+                  placeholder="Email"
+                  required />
+              </div>
+              <div class="col-12">
+                <input
+                  class="form-control"
+                  type="text"
+                  name="contactSubject"
+                  [(ngModel)]="contactForm.subject"
+                  placeholder="Oggetto"
+                  required />
+              </div>
+              <div class="col-12">
+                <textarea
+                  class="form-control"
+                  rows="4"
+                  name="contactMessage"
+                  [(ngModel)]="contactForm.message"
+                  placeholder="Messaggio"
+                  required></textarea>
+              </div>
+              <div class="col-12" *ngIf="contactSuccess">
+                <div class="alert alert-success mb-0">{{ contactSuccess }}</div>
+              </div>
+              <div class="col-12 text-end">
+                <button class="btn btn-primary" type="submit" [disabled]="contactFormRef.invalid">
+                  Invia richiesta
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mt-4">
+      <div class="col-12">
+        <h5 class="fw-semibold mb-3">Le strutture del network Sanitech Labs</h5>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass p-3 h-100">
+          <h6 class="fw-semibold mb-2">Ospedale Centrale</h6>
+          <p class="text-muted small mb-2">Via della Salute 24, Milano</p>
+          <p class="text-muted small mb-0">Reparti: Cardiologia, Neurologia, Medicina Interna</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass p-3 h-100">
+          <h6 class="fw-semibold mb-2">Ospedale Nord</h6>
+          <p class="text-muted small mb-2">Via Lombardia 15, Monza</p>
+          <p class="text-muted small mb-0">Reparti: Ortopedia, Riabilitazione, Diagnostica</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass p-3 h-100">
+          <h6 class="fw-semibold mb-2">Clinica Sud</h6>
+          <p class="text-muted small mb-2">Via Roma 8, Pavia</p>
+          <p class="text-muted small mb-0">Reparti: Oncologia, Day Hospital, Ambulatori</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
