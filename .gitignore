@@ -2,7 +2,7 @@
 # BUILD / MAVEN
 ############################
 
-/target/
+target/
 
 # Maven wrapper
 !.mvn/
