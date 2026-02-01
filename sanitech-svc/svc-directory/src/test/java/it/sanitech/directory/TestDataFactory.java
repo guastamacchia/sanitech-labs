@@ -86,9 +86,11 @@ public final class TestDataFactory {
                 firstName,
                 lastName,
                 email,
-                null,
-                null,
-                null
+                null,   // phone
+                null,   // departmentCode
+                null,   // departmentName
+                null,   // facilityCode
+                null    // facilityName
         );
     }
 

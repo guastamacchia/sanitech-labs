@@ -72,7 +72,7 @@ class ConsentControllerTest {
 
     @Test
     void myConsentsUsesPatientClaim() throws Exception {
-        String path = AppConstants.ApiPath.CONSENTS_ME;
+        String path = AppConstants.ApiPath.CONSENTS_ME + "/doctors";
         ConsentDto dto = new ConsentDto(
                 10L,
                 77L,
@@ -95,7 +95,7 @@ class ConsentControllerTest {
 
     @Test
     void grantUsesPatientClaim() throws Exception {
-        String path = AppConstants.ApiPath.CONSENTS_ME;
+        String path = AppConstants.ApiPath.CONSENTS_ME + "/doctors";
         ConsentDto dto = new ConsentDto(
                 20L,
                 77L,
@@ -125,7 +125,7 @@ class ConsentControllerTest {
 
     @Test
     void revokeUsesPatientClaim() throws Exception {
-        String path = AppConstants.ApiPath.CONSENTS_ME + "/12/DOCS";
+        String path = AppConstants.ApiPath.CONSENTS_ME + "/doctors/12/DOCS";
 
         JwtAuthenticationToken auth = patientAuth(77L);
 

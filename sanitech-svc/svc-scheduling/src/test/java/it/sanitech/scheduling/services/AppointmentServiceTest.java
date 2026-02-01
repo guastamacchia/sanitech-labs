@@ -64,7 +64,7 @@ class AppointmentServiceTest {
         when(mapper.toDto(any(Appointment.class))).thenAnswer(invocation -> toDto(invocation.getArgument(0)));
 
         JwtAuthenticationToken auth = patientAuth(77L);
-        AppointmentDto result = service.book(new AppointmentCreateDto(11L, null), auth);
+        AppointmentDto result = service.book(new AppointmentCreateDto(11L, null, null), auth);
 
         assertThat(result.id()).isEqualTo(33L);
         assertThat(result.status()).isEqualTo(AppointmentStatus.BOOKED);
@@ -94,7 +94,7 @@ class AppointmentServiceTest {
 
         JwtAuthenticationToken auth = patientAuth(77L);
 
-        assertThatThrownBy(() -> service.book(new AppointmentCreateDto(11L, null), auth))
+        assertThatThrownBy(() -> service.book(new AppointmentCreateDto(11L, null, null), auth))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(AppConstants.ErrorMessage.MSG_SLOT_NOT_AVAILABLE);
     }
@@ -205,7 +205,8 @@ class AppointmentServiceTest {
                 entity.getMode(),
                 entity.getStartAt(),
                 entity.getEndAt(),
-                entity.getStatus()
+                entity.getStatus(),
+                entity.getReason()
         );
     }
 }

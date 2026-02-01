@@ -100,7 +100,7 @@ class DoctorAdminControllerTest {
         mockMvc.perform(get(AppConstants.ApiPath.ADMIN_DOCTORS)
                         .param("q", "Neri")
                         .param("department", "CARD")
-                        .param("specialization", "CARDIO")
+                        .param("facility", "HOSP_CENTRAL")
                         .param("page", "0")
                         .param("size", "20"))
                 .andExpect(status().isOk())

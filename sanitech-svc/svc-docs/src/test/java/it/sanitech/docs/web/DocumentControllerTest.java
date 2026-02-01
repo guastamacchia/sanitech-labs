@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import it.sanitech.commons.exception.GlobalExceptionHandler;
+import it.sanitech.docs.exception.DocsExceptionHandler;
 import it.sanitech.docs.repositories.entities.Document;
 import it.sanitech.docs.services.DocumentService;
 import it.sanitech.docs.services.dto.DocumentDto;
@@ -40,7 +41,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 @WebMvcTest(
         controllers = DocumentController.class,
-        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = GlobalExceptionHandler.class)
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {GlobalExceptionHandler.class, DocsExceptionHandler.class})
 )
 @AutoConfigureMockMvc(addFilters = false)
 class DocumentControllerTest {

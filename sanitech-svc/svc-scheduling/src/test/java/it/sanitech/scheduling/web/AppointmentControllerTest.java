@@ -55,7 +55,7 @@ class AppointmentControllerTest {
         AppointmentDto dto = sampleDto(10L);
         when(appointmentService.book(any(AppointmentCreateDto.class), any(Authentication.class))).thenReturn(dto);
 
-        AppointmentCreateDto request = new AppointmentCreateDto(11L, 77L);
+        AppointmentCreateDto request = new AppointmentCreateDto(11L, 77L, null);
         Authentication auth = new TestingAuthenticationToken("patient", "pwd", "ROLE_PATIENT");
 
         mockMvc.perform(post("/api/appointments")
@@ -109,7 +109,8 @@ class AppointmentControllerTest {
                 VisitMode.IN_PERSON,
                 Instant.parse("2024-01-01T10:00:00Z"),
                 Instant.parse("2024-01-01T10:30:00Z"),
-                AppointmentStatus.BOOKED
+                AppointmentStatus.BOOKED,
+                null
         );
     }
 }
