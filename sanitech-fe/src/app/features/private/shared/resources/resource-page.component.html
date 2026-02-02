@@ -1461,6 +1461,40 @@
                     </div>
                   </div>
 
+                  <!-- Card Statistiche Mensili -->
+                  <div class="card card-glass mb-4">
+                    <div class="card-body">
+                      <h5 class="fw-semibold mb-3">Statistiche pagamenti - Ultimo mese</h5>
+                      <div class="row g-3">
+                        <div class="col-md-3">
+                          <div class="border rounded p-3 text-center" style="background: rgba(25, 135, 84, 0.1);">
+                            <div class="fs-2 fw-bold text-success">{{ paymentStats.percentWithin7Days }}%</div>
+                            <div class="small text-muted">Pagati entro 7 giorni</div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="border rounded p-3 text-center" style="background: rgba(255, 193, 7, 0.1);">
+                            <div class="fs-2 fw-bold text-warning">{{ paymentStats.percentWithReminder }}%</div>
+                            <div class="small text-muted">Con sollecito</div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="border rounded p-3 text-center" style="background: rgba(220, 53, 69, 0.1);">
+                            <div class="fs-2 fw-bold text-danger">{{ paymentStats.percentPending }}%</div>
+                            <div class="small text-muted">Ancora in sospeso</div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="border rounded p-3 text-center" style="background: rgba(13, 110, 253, 0.1);">
+                            <div class="fs-2 fw-bold text-primary">{{ filteredPayments.length }}</div>
+                            <div class="small text-muted">Pagamenti filtrati</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Card Pagamenti con Filtri -->
                   <div class="card card-glass">
                     <div class="card-body">
                       <div class="d-flex align-items-center justify-content-between mb-3">
@@ -1474,41 +1508,243 @@
                           </button>
                         </div>
                       </div>
+
+                      <!-- Filtri -->
+                      <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                          <label class="form-label small">Stato pagamento</label>
+                          <select class="form-select form-select-sm" [(ngModel)]="paymentStatusFilter" name="paymentStatusFilter">
+                            <option value="ALL">Tutti gli stati</option>
+                            <option value="PENDING">In attesa</option>
+                            <option value="PAID">Pagato</option>
+                            <option value="CONFIRMED">Confermato</option>
+                            <option value="FAILED">Non riuscito</option>
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label small">Giorni dalla visita</label>
+                          <select class="form-select form-select-sm" [(ngModel)]="paymentDaysFilter" name="paymentDaysFilter">
+                            <option [ngValue]="null">Tutti</option>
+                            <option [ngValue]="7">Oltre 7 giorni</option>
+                            <option [ngValue]="14">Oltre 14 giorni</option>
+                            <option [ngValue]="30">Oltre 30 giorni</option>
+                          </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                          <button
+                            class="btn btn-warning btn-sm w-100"
+                            type="button"
+                            (click)="openBulkReminderModal()"
+                            [disabled]="selectedPaymentIds.size === 0">
+                            Invia solleciti ({{ selectedPaymentIds.size }} selezionati)
+                          </button>
+                        </div>
+                      </div>
+
                       <div class="alert alert-success py-2" *ngIf="paymentsSuccess">{{ paymentsSuccess }}</div>
                       <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
+
                       <div class="table-responsive">
-                        <table class="table align-middle">
+                        <table class="table align-middle table-hover">
                           <thead>
                             <tr>
+                              <th style="width: 40px;">
+                                <input
+                                  type="checkbox"
+                                  class="form-check-input"
+                                  [checked]="selectedPaymentIds.size > 0 && selectedPaymentIds.size === (filteredPayments | slice:0:filteredPayments.length).length"
+                                  (change)="toggleAllPaymentsSelection()" />
+                              </th>
                               <th>ID</th>
                               <th>Paziente</th>
                               <th>Prestazione</th>
                               <th>Importo</th>
-                              <th>Valuta</th>
+                              <th>Data visita</th>
+                              <th>Giorni</th>
+                              <th>Solleciti</th>
                               <th>Stato</th>
-                              <th>Data</th>
+                              <th>Azioni</th>
                             </tr>
                           </thead>
                           <tbody>
-                            <tr *ngFor="let payment of payments | slice:getPageSliceStart('adminPayments'):getPageSliceEnd('adminPayments')">
+                            <tr *ngFor="let payment of filteredPayments | slice:getPageSliceStart('adminPayments'):getPageSliceEnd('adminPayments')"
+                                [class.table-warning]="payment.status === 'PENDING' && getPaymentDaysOverdue(payment) > 14"
+                                [class.table-danger]="payment.status === 'FAILED'">
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  class="form-check-input"
+                                  [checked]="isPaymentSelected(payment.id)"
+                                  (change)="togglePaymentSelection(payment.id)"
+                                  [disabled]="payment.status !== 'PENDING'" />
+                              </td>
                               <td>{{ payment.id }}</td>
-                              <td>{{ getPatientLabel(payment.patientId) }}</td>
+                              <td>
+                                <div>{{ payment.patientName || getPatientLabel(payment.patientId) }}</div>
+                                <small class="text-muted" *ngIf="payment.patientEmail">{{ payment.patientEmail }}</small>
+                              </td>
                               <td>{{ payment.service }}</td>
-                              <td>{{ payment.amount }}</td>
-                              <td>{{ getCurrencyLabel(payment.currency) }}</td>
-                              <td>{{ getPaymentStatusLabel(payment) }}</td>
-                              <td>{{ formatDate(payment.paidAt) }}</td>
+                              <td>
+                                <strong>{{ payment.amount | number:'1.2-2' }} {{ payment.currency }}</strong>
+                              </td>
+                              <td>{{ formatDate(payment.appointmentDate) || '-' }}</td>
+                              <td>
+                                <span *ngIf="payment.appointmentDate"
+                                      [class.text-warning]="getPaymentDaysOverdue(payment) > 7 && getPaymentDaysOverdue(payment) <= 14"
+                                      [class.text-danger]="getPaymentDaysOverdue(payment) > 14"
+                                      [class.fw-bold]="getPaymentDaysOverdue(payment) > 14">
+                                  {{ getPaymentDaysOverdue(payment) }}
+                                </span>
+                                <span *ngIf="!payment.appointmentDate">-</span>
+                              </td>
+                              <td>
+                                <span class="badge"
+                                      [class.bg-secondary]="getNotificationAttemptsCount(payment) === 0"
+                                      [class.bg-info]="getNotificationAttemptsCount(payment) > 0">
+                                  {{ getNotificationAttemptsCount(payment) }}
+                                </span>
+                                <small class="d-block text-muted" *ngIf="getNotificationAttemptsCount(payment) > 0">
+                                  Ultimo: {{ getLastNotificationDate(payment) }}
+                                </small>
+                              </td>
+                              <td>
+                                <span class="badge"
+                                      [class.bg-warning]="payment.status === 'PENDING'"
+                                      [class.bg-success]="payment.status === 'CONFIRMED'"
+                                      [class.bg-info]="payment.status === 'PAID'"
+                                      [class.bg-danger]="payment.status === 'FAILED'">
+                                  {{ getPaymentStatusLabel(payment) }}
+                                </span>
+                                <small class="d-block text-danger" *ngIf="payment.failureReason">
+                                  {{ payment.failureReason }}
+                                </small>
+                              </td>
+                              <td>
+                                <div class="d-flex gap-1">
+                                  <button
+                                    class="btn btn-outline-success btn-sm"
+                                    type="button"
+                                    title="Conferma pagamento ricevuto"
+                                    [disabled]="payment.status === 'CONFIRMED'"
+                                    (click)="confirmAdminPayment(payment)">
+                                    <i class="bi bi-check-circle"></i>
+                                  </button>
+                                  <button
+                                    class="btn btn-outline-warning btn-sm"
+                                    type="button"
+                                    title="Invia sollecito al paziente"
+                                    [disabled]="payment.status === 'CONFIRMED'"
+                                    (click)="sendSingleReminder(payment)">
+                                    <i class="bi bi-bell"></i>
+                                  </button>
+                                  <button
+                                    class="btn btn-outline-danger btn-sm"
+                                    type="button"
+                                    title="Elimina pagamento"
+                                    (click)="deleteAdminPayment(payment)">
+                                    <i class="bi bi-trash"></i>
+                                  </button>
+                                </div>
+                              </td>
                             </tr>
-                            <tr *ngIf="!payments.length">
-                              <td colspan="7" class="text-center text-muted">Nessun pagamento registrato.</td>
+                            <tr *ngIf="!filteredPayments.length">
+                              <td colspan="10" class="text-center text-muted">Nessun pagamento trovato con i filtri selezionati.</td>
                             </tr>
                           </tbody>
                         </table>
-                        <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminPayments', total: payments.length }"></ng-container>
+                        <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminPayments', total: filteredPayments.length }"></ng-container>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                <!-- Modal Invio Solleciti Massivi -->
+                <ng-container *ngIf="showBulkReminderModal">
+                  <div
+                    class="modal-backdrop fade show"
+                    style="position: fixed; inset: 0; z-index: 1050;"
+                    (click)="closeBulkReminderModal()"></div>
+                  <div
+                    class="modal d-flex align-items-center justify-content-center"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="bulkReminderModalTitle"
+                    style="position: fixed; inset: 0; z-index: 1055;">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="bulkReminderModalTitle">Invio solleciti massivo</h5>
+                          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeBulkReminderModal()"></button>
+                        </div>
+                        <div class="modal-body">
+                          <div class="alert alert-info py-2">
+                            Stai per inviare un sollecito email a <strong>{{ selectedPaymentIds.size }}</strong> pazienti con pagamenti in sospeso.
+                          </div>
+                          <p>Ogni paziente riceverà un'email personalizzata con:</p>
+                          <ul>
+                            <li>Importo dovuto</li>
+                            <li>Data della visita</li>
+                            <li>Link per completare il pagamento online</li>
+                          </ul>
+                          <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button class="btn btn-outline-secondary" type="button" (click)="closeBulkReminderModal()">Annulla</button>
+                            <button class="btn btn-warning" type="button" (click)="sendBulkReminders()">
+                              Invia solleciti
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+
+                <!-- Modal Sollecito Alternativo (per FAILED) -->
+                <ng-container *ngIf="showAlternativePaymentModal">
+                  <div
+                    class="modal-backdrop fade show"
+                    style="position: fixed; inset: 0; z-index: 1050;"
+                    (click)="closeAlternativePaymentModal()"></div>
+                  <div
+                    class="modal d-flex align-items-center justify-content-center"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="alternativePaymentModalTitle"
+                    style="position: fixed; inset: 0; z-index: 1055;">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="alternativePaymentModalTitle">Sollecito con metodo alternativo</h5>
+                          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAlternativePaymentModal()"></button>
+                        </div>
+                        <div class="modal-body">
+                          <div class="alert alert-warning py-2" *ngIf="alternativePaymentTarget">
+                            Il pagamento di <strong>{{ alternativePaymentTarget.amount | number:'1.2-2' }} {{ alternativePaymentTarget.currency }}</strong>
+                            per <strong>{{ alternativePaymentTarget.patientName }}</strong> è fallito.
+                            <br><small>Motivo: {{ alternativePaymentTarget.failureReason }}</small>
+                          </div>
+                          <div class="mb-3">
+                            <label class="form-label">Metodo di pagamento alternativo</label>
+                            <select class="form-select" [(ngModel)]="alternativePaymentForm.method" name="alternativeMethod">
+                              <option value="BONIFICO">Bonifico bancario</option>
+                              <option value="SEDE">Pagamento in sede</option>
+                            </select>
+                          </div>
+                          <div class="mb-3">
+                            <label class="form-label">Note aggiuntive (opzionale)</label>
+                            <textarea class="form-control" rows="2" [(ngModel)]="alternativePaymentForm.notes" name="alternativeNotes"
+                                      placeholder="Es. Orari sportello, IBAN, riferimenti..."></textarea>
+                          </div>
+                          <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button class="btn btn-outline-secondary" type="button" (click)="closeAlternativePaymentModal()">Annulla</button>
+                            <button class="btn btn-warning" type="button" (click)="sendAlternativePaymentNotification()">
+                              Invia sollecito
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
 
                 <ng-container *ngIf="showAdminNotificationModal">
                   <div
@@ -2818,82 +3054,366 @@
 
       <ng-template #adminAuditLayout>
         <ng-container *ngIf="mode === 'admin-audit'; else adminTelevisitLayout">
-          <div class="card card-glass">
-            <div class="card-body">
-              <div class="d-flex align-items-center justify-content-between mb-3">
-                <h5 class="fw-semibold mb-0">Audit trail</h5>
-                <button class="btn btn-outline-secondary btn-sm" (click)="loadAudit()" [disabled]="isLoading">
-                  Aggiorna
-                </button>
-              </div>
-              <div class="alert alert-danger py-2" *ngIf="auditError">{{ auditError }}</div>
-              <div class="table-responsive">
-                <table class="table align-middle">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Azione</th>
-                      <th>Attore</th>
-                      <th>Timestamp</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let event of auditEvents | slice:getPageSliceStart('audit'):getPageSliceEnd('audit')">
-                      <td>{{ event.id }}</td>
-                      <td>{{ event.action }}</td>
-                      <td>{{ event.actor }}</td>
-                      <td>{{ event.timestamp }}</td>
-                    </tr>
-                    <tr *ngIf="!auditEvents.length">
-                      <td colspan="4" class="text-center text-muted">Nessun evento disponibile.</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'audit', total: auditEvents.length }"></ng-container>
+          <div class="row g-4">
+            <!-- Pannello Ricerca -->
+            <div class="col-12">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Ricerca Audit Trail</h5>
+                  <div class="row g-3">
+                    <div class="col-md-2">
+                      <label class="form-label">Tipo soggetto</label>
+                      <select class="form-select" [(ngModel)]="auditSearchCriteria.subjectType" [disabled]="isLoading">
+                        <option value="PATIENT">Paziente</option>
+                        <option value="DOCTOR">Medico</option>
+                        <option value="ADMIN">Amministratore</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">{{ auditSubjectLabel }}</label>
+                      <input type="text" class="form-control" [placeholder]="auditSubjectPlaceholder" [(ngModel)]="auditSearchCriteria.subjectIdentifier" [disabled]="isLoading" style="text-transform: uppercase;" />
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">Data inizio</label>
+                      <input type="date" class="form-control" [(ngModel)]="auditSearchCriteria.dateFrom" [disabled]="isLoading" />
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">Data fine</label>
+                      <input type="date" class="form-control" [(ngModel)]="auditSearchCriteria.dateTo" [disabled]="isLoading" />
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end gap-2">
+                      <button class="btn btn-primary flex-grow-1" (click)="searchAuditEvents()" [disabled]="isLoading || !auditSearchCriteria.subjectIdentifier">
+                        {{ isLoading ? 'Ricerca...' : 'Cerca' }}
+                      </button>
+                      <button class="btn btn-outline-secondary" (click)="clearAuditSearch()" [disabled]="isLoading" title="Reset">
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                  <div class="alert alert-danger py-2 mt-3" *ngIf="auditError">{{ auditError }}</div>
+                </div>
               </div>
             </div>
+
+            <!-- Risultati Ricerca -->
+            <ng-container *ngIf="auditSearchPerformed && auditSubjectFound">
+              <!-- Info Soggetto e Riepilogo -->
+              <div class="col-md-4">
+                <div class="card card-glass h-100">
+                  <div class="card-body">
+                    <h6 class="fw-semibold mb-3">{{ auditSubjectFoundTitle }}</h6>
+                    <div class="mb-2"><strong>ID:</strong> {{ auditSubjectFound.id }}</div>
+                    <div class="mb-2"><strong>Nome:</strong> {{ auditSubjectFound.name }}</div>
+                    <div class="mb-2" *ngIf="auditSubjectFound.role"><strong>Ruolo:</strong> {{ auditSubjectFound.role }}</div>
+                    <div class="mb-3"><strong>{{ auditSubjectFound.identifierLabel }}:</strong> {{ auditSubjectFound.identifier }}</div>
+                    <hr />
+                    <h6 class="fw-semibold mb-3">Riepilogo Periodo</h6>
+                    <div *ngIf="auditReportSummary">
+                      <div class="d-flex justify-content-between mb-1"><span>Totale eventi:</span><strong>{{ auditReportSummary.totalEvents }}</strong></div>
+                      <div class="d-flex justify-content-between mb-1"><span>Accessi documenti:</span><strong>{{ auditReportSummary.documentAccesses }}</strong></div>
+                      <div class="d-flex justify-content-between mb-1"><span>Modifiche consensi:</span><strong>{{ auditReportSummary.consentChanges }}</strong></div>
+                      <div class="d-flex justify-content-between mb-1"><span>Visualizzazioni prescrizioni:</span><strong>{{ auditReportSummary.prescriptionViews }}</strong></div>
+                      <div class="d-flex justify-content-between mb-1"><span>Accessi negati:</span><strong class="text-danger">{{ auditReportSummary.deniedAccesses }}</strong></div>
+                      <div class="d-flex justify-content-between mb-1"><span>Attori unici:</span><strong>{{ auditReportSummary.uniqueActors }}</strong></div>
+                    </div>
+                    <hr />
+                    <button class="btn btn-success w-100" (click)="exportAuditReport()" [disabled]="auditExporting || !auditReportSummary">
+                      {{ auditExporting ? 'Generazione report...' : 'Esporta Report' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Consensi Attivi -->
+              <div class="col-md-4">
+                <div class="card card-glass h-100">
+                  <div class="card-body">
+                    <h6 class="fw-semibold mb-3">Consensi Attivi</h6>
+                    <div *ngIf="auditConsents.length === 0" class="text-muted">Nessun consenso attivo trovato.</div>
+                    <div *ngFor="let consent of auditConsents" class="border-bottom pb-2 mb-2">
+                      <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                          <strong>{{ consent.doctorName }}</strong>
+                          <div class="small text-muted">Ambito: {{ consent.scope }}</div>
+                          <div class="small text-muted">Concesso: {{ formatAuditDateShort(consent.grantedAt) }}</div>
+                        </div>
+                        <span class="badge" [ngClass]="consent.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'">{{ consent.status }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Filtri -->
+              <div class="col-md-4">
+                <div class="card card-glass h-100">
+                  <div class="card-body">
+                    <h6 class="fw-semibold mb-3">Filtri Avanzati</h6>
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold">Tipo Evento</label>
+                      <div class="d-flex flex-wrap gap-1">
+                        <button *ngFor="let opt of auditEventTypeOptions" class="btn btn-sm" [ngClass]="isEventTypeSelected(opt.value) ? 'btn-primary' : 'btn-outline-secondary'" (click)="toggleEventTypeFilter(opt.value)">{{ opt.label }}</button>
+                      </div>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label small fw-semibold">Tipo Attore</label>
+                      <div class="d-flex flex-wrap gap-1">
+                        <button *ngFor="let opt of auditActorTypeOptions" class="btn btn-sm" [ngClass]="isActorTypeSelected(opt.value) ? 'btn-primary' : 'btn-outline-secondary'" (click)="toggleActorTypeFilter(opt.value)">{{ opt.label }}</button>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="form-label small fw-semibold">Esito</label>
+                      <div class="d-flex flex-wrap gap-1">
+                        <button *ngFor="let opt of auditOutcomeOptions" class="btn btn-sm" [ngClass]="isOutcomeSelected(opt.value) ? 'btn-primary' : 'btn-outline-secondary'" (click)="toggleOutcomeFilter(opt.value)">{{ opt.label }}</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tabella Eventi -->
+              <div class="col-12">
+                <div class="card card-glass">
+                  <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                      <h6 class="fw-semibold mb-0">Eventi Audit ({{ auditFilteredEvents.length }})</h6>
+                    </div>
+                    <div class="table-responsive">
+                      <table class="table table-hover align-middle">
+                        <thead>
+                          <tr>
+                            <th style="width: 160px;">Timestamp</th>
+                            <th style="width: 140px;">Tipo Evento</th>
+                            <th>Azione</th>
+                            <th style="width: 180px;">Attore</th>
+                            <th style="width: 100px;">Esito</th>
+                            <th style="width: 100px;">Consenso</th>
+                            <th style="width: 60px;"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let event of auditFilteredEvents | slice:getPageSliceStart('auditFiltered'):getPageSliceEnd('auditFiltered')" style="cursor: pointer;" (click)="selectAuditEvent(event)">
+                            <td class="small">{{ formatAuditDate(event.occurredAt) }}</td>
+                            <td><span class="badge" [ngClass]="getEventTypeBadgeClass(event.eventType)">{{ getEventTypeLabel(event.eventType) }}</span></td>
+                            <td class="small">{{ event.action }}</td>
+                            <td class="small"><strong>{{ event.actorName }}</strong><div class="text-muted" *ngIf="event.actorRole">{{ event.actorRole }}</div></td>
+                            <td><span class="badge" [ngClass]="getOutcomeBadgeClass(event.outcome)">{{ getOutcomeLabel(event.outcome) }}</span></td>
+                            <td><span class="badge bg-success" *ngIf="event.consentValidAtAccess">Valido</span><span class="badge bg-secondary" *ngIf="!event.consentValidAtAccess && event.actorType === 'DOCTOR'">N/A</span></td>
+                            <td><button class="btn btn-sm btn-outline-primary">Dettagli</button></td>
+                          </tr>
+                          <tr *ngIf="!auditFilteredEvents.length">
+                            <td colspan="7" class="text-center text-muted py-4">Nessun evento corrispondente ai criteri di ricerca.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'auditFiltered', total: auditFilteredEvents.length }"></ng-container>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- Stato iniziale -->
+            <ng-container *ngIf="!auditSearchPerformed && !auditError">
+              <div class="col-12">
+                <div class="card card-glass">
+                  <div class="card-body text-center py-5">
+                    <div class="mb-3" style="font-size: 3rem;">&#128270;</div>
+                    <h5>Ricerca Audit Trail</h5>
+                    <p class="text-muted mb-0">Seleziona il tipo di soggetto, inserisci l'identificativo e l'intervallo temporale per visualizzare gli eventi di audit.</p>
+                    <div class="text-muted small mt-3">
+                      <strong>Codici demo:</strong><br/>
+                      Paziente: <strong>SPSGPP65M15H501X</strong> (Sig. Esposito)<br/>
+                      Medico: <strong>BNCMRC75A01H501Z</strong> (Dr. Marco Bianchi)<br/>
+                      Amministratore: <strong>RSSMRA80B15H501Y</strong> (Mario Rossi)
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
           </div>
+
+          <!-- Modal Dettaglio Evento -->
+          <ng-container *ngIf="auditSelectedEvent">
+            <div class="modal-backdrop fade show" style="position: fixed; inset: 0; z-index: 1050;" (click)="closeAuditEventDetail()"></div>
+            <div class="modal d-flex align-items-center justify-content-center" role="dialog" aria-modal="true" style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Dettaglio Evento Audit</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAuditEventDetail()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">ID Evento</label>
+                        <div>{{ auditSelectedEvent.id }}</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Timestamp</label>
+                        <div>{{ formatAuditDate(auditSelectedEvent.occurredAt) }}</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Tipo Evento</label>
+                        <div><span class="badge" [ngClass]="getEventTypeBadgeClass(auditSelectedEvent.eventType)">{{ getEventTypeLabel(auditSelectedEvent.eventType) }}</span></div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Esito</label>
+                        <div><span class="badge" [ngClass]="getOutcomeBadgeClass(auditSelectedEvent.outcome)">{{ getOutcomeLabel(auditSelectedEvent.outcome) }}</span></div>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label small fw-semibold">Azione</label>
+                        <div>{{ auditSelectedEvent.action }}</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Attore</label>
+                        <div><strong>{{ auditSelectedEvent.actorName }}</strong> ({{ getActorTypeLabel(auditSelectedEvent.actorType) }})</div>
+                        <div class="small text-muted" *ngIf="auditSelectedEvent.actorRole">{{ auditSelectedEvent.actorRole }}</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Servizio</label>
+                        <div>{{ auditSelectedEvent.serviceName }}</div>
+                      </div>
+                      <div class="col-md-6" *ngIf="auditSelectedEvent.resourceName">
+                        <label class="form-label small fw-semibold">Risorsa</label>
+                        <div>{{ auditSelectedEvent.resourceName }}</div>
+                      </div>
+                      <div class="col-md-6" *ngIf="auditSelectedEvent.consentScope">
+                        <label class="form-label small fw-semibold">Ambito Consenso</label>
+                        <div>{{ auditSelectedEvent.consentScope }}</div>
+                      </div>
+                      <div class="col-md-6" *ngIf="auditSelectedEvent.ipAddress">
+                        <label class="form-label small fw-semibold">Indirizzo IP</label>
+                        <div>{{ auditSelectedEvent.ipAddress }}</div>
+                      </div>
+                      <div class="col-md-6" *ngIf="auditSelectedEvent.consentValidAtAccess !== undefined">
+                        <label class="form-label small fw-semibold">Consenso al momento dell'accesso</label>
+                        <div><span class="badge" [ngClass]="auditSelectedEvent.consentValidAtAccess ? 'bg-success' : 'bg-danger'">{{ auditSelectedEvent.consentValidAtAccess ? 'Valido' : 'Non valido' }}</span></div>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label small fw-semibold">Hash Integrità</label>
+                        <div class="small text-muted font-monospace" style="word-break: break-all;">{{ auditSelectedEvent.integrityHash }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button class="btn btn-secondary" (click)="closeAuditEventDetail()">Chiudi</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </ng-container>
       </ng-template>
 
+      <!-- LAYOUT ADMIN TELEVISITE -->
       <ng-template #adminTelevisitLayout>
-        <ng-container *ngIf="mode === 'admin-televisit'; else apiLayout">
+        <ng-container *ngIf="mode === 'admin-televisit'; else adminAdmissionsLayout">
           <div class="row g-4">
+            <!-- Alert scenario emergenza -->
             <div class="col-12">
-              <div class="card card-glass mb-4">
+              <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <span class="me-2">⚠️</span>
+                <div>
+                  <strong>Emergenza in corso:</strong> Dr. Martini (Pneumologia) non disponibile.
+                  Appuntamenti convertiti in televisita o riassegnati alla Dott.ssa Bianchi.
+                </div>
+              </div>
+            </div>
+
+            <!-- Statistiche rapide -->
+            <div class="col-12">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-primary">{{ televisits.length }}</div>
+                    <div class="small text-muted">Televisite attive</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-success">4</div>
+                    <div class="small text-muted">Programmate oggi</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-info">1</div>
+                    <div class="small text-muted">Concluse</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-warning">0</div>
+                    <div class="small text-muted">In attesa paziente</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabella sessioni televisita -->
+            <div class="col-12">
+              <div class="card card-glass">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">Sessioni di televisita</h5>
+                    <h5 class="fw-semibold mb-0">Sessioni di televisita attive</h5>
                     <div class="d-flex flex-wrap gap-2">
                       <button class="btn btn-outline-secondary btn-sm" (click)="loadAdminTelevisit()" [disabled]="isLoading">
                         Aggiorna
                       </button>
                       <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminTelevisitModal()">
-                        Avvia sessione
+                        Nuova sessione
                       </button>
                     </div>
                   </div>
                   <div class="table-responsive">
-                    <table class="table align-middle">
+                    <table class="table align-middle table-hover">
                       <thead>
                         <tr>
                           <th>ID</th>
-                          <th>Appuntamento</th>
+                          <th>Paziente</th>
+                          <th>Medico</th>
+                          <th>Data e ora</th>
                           <th>Provider</th>
                           <th>Stato</th>
-                          <th>Token</th>
+                          <th>Link</th>
+                          <th>Azioni</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('televisits'):getPageSliceEnd('televisits')">
+                        <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('adminTelevisits'):getPageSliceEnd('adminTelevisits')"
+                            [class.table-success]="televisit.status === 'COMPLETED'"
+                            [class.table-info]="televisit.status === 'SCHEDULED'">
                           <td>{{ televisit.id }}</td>
-                          <td>{{ televisit.appointmentId }}</td>
-                          <td>{{ televisit.provider }}</td>
-                          <td>{{ televisit.status }}</td>
-                          <td>{{ televisit.token }}</td>
+                          <td>{{ getTelevisitPatientLabel(televisit) }}</td>
+                          <td>Dott.ssa Bianchi</td>
+                          <td>{{ getTelevisitDateTimeLabel(televisit) }}</td>
+                          <td><span class="badge bg-secondary">{{ televisit.provider }}</span></td>
+                          <td>
+                            <span class="badge"
+                                  [class.bg-info]="televisit.status === 'SCHEDULED'"
+                                  [class.bg-success]="televisit.status === 'COMPLETED'"
+                                  [class.bg-warning]="televisit.status === 'IN_PROGRESS'">
+                              {{ getTelevisitStatusLabel(televisit.status) }}
+                            </span>
+                          </td>
+                          <td>
+                            <code class="small">{{ televisit.token }}</code>
+                          </td>
+                          <td>
+                            <div class="d-flex flex-wrap gap-1">
+                              <button class="btn btn-outline-primary btn-sm" type="button" title="Copia link">
+                                📋
+                              </button>
+                              <button class="btn btn-outline-success btn-sm" type="button" title="Avvia"
+                                      [disabled]="televisit.status !== 'SCHEDULED'">
+                                ▶️
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                         <tr *ngIf="!televisits.length">
-                          <td colspan="5" class="text-center text-muted">Nessuna sessione presente.</td>
+                          <td colspan="8" class="text-center text-muted">Nessuna sessione di televisita programmata.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -2901,69 +3421,11 @@
                   </div>
                 </div>
               </div>
-
-              <div class="card card-glass">
-                <div class="card-body">
-                  <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="fw-semibold mb-0">Ricoveri</h5>
-                    <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminAdmissionModal()">
-                      Registra ricovero
-                    </button>
-                  </div>
-                  <div class="table-responsive">
-                    <table class="table align-middle">
-                      <thead>
-                        <tr>
-                          <th>Paziente</th>
-                          <th>Reparto</th>
-                          <th>Letto</th>
-                          <th>Visita</th>
-                          <th>Stato</th>
-                          <th>Note</th>
-                          <th>Data</th>
-                          <th>Azioni</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let admission of admissions | slice:getPageSliceStart('adminAdmissions'):getPageSliceEnd('adminAdmissions')">
-                          <td>{{ getPatientLabel(admission.patientId) }}</td>
-                          <td>{{ getDepartmentLabel(admission.department) }}</td>
-                          <td>{{ admission.bedId }}</td>
-                          <td>{{ getAdmissionAppointmentLabel(admission) }}</td>
-                          <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
-                          <td>{{ admission.notes || '-' }}</td>
-                          <td>{{ formatDate(admission.admittedAt) }}</td>
-                          <td>
-                            <div class="d-flex flex-wrap gap-2">
-                              <button
-                                class="btn btn-outline-success btn-sm"
-                                type="button"
-                                (click)="confirmAdmission(admission)"
-                                [disabled]="admission.status !== 'PROPOSED'">
-                                Approva
-                              </button>
-                              <button
-                                class="btn btn-outline-danger btn-sm"
-                                type="button"
-                                (click)="rejectAdmission(admission)"
-                                [disabled]="admission.status !== 'PROPOSED'">
-                                Rifiuta
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        <tr *ngIf="!admissions.length">
-                          <td colspan="8" class="text-center text-muted">Nessun ricovero registrato.</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminAdmissions', total: admissions.length }"></ng-container>
-                  </div>
-                </div>
-              </div>
             </div>
+
           </div>
 
+          <!-- Modal Avvia Televisita -->
           <ng-container *ngIf="showAdminTelevisitModal">
             <div
               class="modal-backdrop fade show"
@@ -2978,27 +3440,35 @@
               <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                   <div class="modal-header">
-                    <h5 class="modal-title" id="adminTelevisitModalTitle">Avvia sessione</h5>
+                    <h5 class="modal-title" id="adminTelevisitModalTitle">Converti in televisita</h5>
                     <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminTelevisitModal()"></button>
                   </div>
                   <div class="modal-body">
                     <form (ngSubmit)="submitTelevisit()" #adminTelevisitFormRef="ngForm">
                       <div class="mb-3">
-                        <label class="form-label">ID Appuntamento</label>
-                        <input class="form-control" type="number" name="adminTelevisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required />
+                        <label class="form-label">Appuntamento</label>
+                        <select class="form-select" name="adminTelevisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required>
+                          <option [ngValue]="null" disabled>Seleziona appuntamento</option>
+                          <option *ngFor="let apt of appointments" [ngValue]="apt.id">
+                            #{{ apt.id }} - {{ getPatientLabel(apt.patientId) }} - {{ apt.reason }}
+                          </option>
+                        </select>
                       </div>
                       <div class="mb-3">
-                        <label class="form-label">Provider</label>
+                        <label class="form-label">Provider videoconferenza</label>
                         <select class="form-select" name="adminTelevisitProvider" [(ngModel)]="televisitForm.provider" required>
-                          <option value="LIVEKIT">LiveKit</option>
+                          <option value="LIVEKIT">LiveKit (consigliato)</option>
                           <option value="WEBRTC">WebRTC</option>
                         </select>
+                      </div>
+                      <div class="alert alert-info py-2">
+                        <small>Il paziente riceverà automaticamente una notifica email con il link per collegarsi.</small>
                       </div>
                       <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
                       <div class="d-flex justify-content-end gap-2">
                         <button class="btn btn-outline-secondary" type="button" (click)="closeAdminTelevisitModal()">Annulla</button>
                         <button class="btn btn-primary" type="submit" [disabled]="adminTelevisitFormRef.invalid || isLoading">
-                          {{ isLoading ? 'Avvio...' : 'Avvia televisita' }}
+                          {{ isLoading ? 'Conversione...' : 'Converti in televisita' }}
                         </button>
                       </div>
                     </form>
@@ -3007,7 +3477,219 @@
               </div>
             </div>
           </ng-container>
+        </ng-container>
+      </ng-template>
 
+      <!-- LAYOUT ADMIN RICOVERI -->
+      <ng-template #adminAdmissionsLayout>
+        <ng-container *ngIf="mode === 'admin-admissions'; else apiLayout">
+          <div class="row g-4">
+            <!-- Alert scenario emergenza -->
+            <div class="col-12">
+              <div class="alert alert-info d-flex align-items-center" role="alert">
+                <span class="me-2">ℹ️</span>
+                <div>
+                  <strong>Aggiornamento referenti:</strong> I 4 pazienti ricoverati in Pneumologia sotto Dr. Martini
+                  sono stati riassegnati alla Dott.ssa Bianchi. Audit log aggiornato.
+                </div>
+              </div>
+            </div>
+
+            <!-- Statistiche ricoveri -->
+            <div class="col-12">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-primary">5</div>
+                    <div class="small text-muted">Ricoveri attivi</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-warning">4</div>
+                    <div class="small text-muted">Pneumologia (ex Martini)</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-success">1</div>
+                    <div class="small text-muted">Confermati</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-secondary">1</div>
+                    <div class="small text-muted">Dimessi questo mese</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabella ricoveri con focus su Pneumologia -->
+            <div class="col-12">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                      <h5 class="fw-semibold mb-1">Ricoveri attivi</h5>
+                      <small class="text-muted">Gestione posti letto e medici referenti</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadAdminAdmissions()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                      <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminAdmissionModal()">
+                        Nuovo ricovero
+                      </button>
+                    </div>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table align-middle table-hover">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Paziente</th>
+                          <th>Reparto</th>
+                          <th>Letto</th>
+                          <th>Medico referente</th>
+                          <th>Data ammissione</th>
+                          <th>Stato</th>
+                          <th>Note</th>
+                          <th>Azioni</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let admission of admissions | slice:getPageSliceStart('adminAdmissions'):getPageSliceEnd('adminAdmissions')"
+                            [class.table-warning]="admission.department === 'PNEUMO' && admission.status === 'ACTIVE'"
+                            [class.table-success]="admission.status === 'CONFIRMED'"
+                            [class.table-secondary]="admission.status === 'DISCHARGED'">
+                          <td>{{ admission.id }}</td>
+                          <td>
+                            <strong>{{ getPatientLabel(admission.patientId) }}</strong>
+                          </td>
+                          <td>
+                            <span class="badge"
+                                  [class.bg-warning]="admission.department === 'PNEUMO'"
+                                  [class.bg-danger]="admission.department === 'CARD'"
+                                  [class.bg-info]="admission.department === 'NEURO'"
+                                  [class.text-dark]="admission.department === 'PNEUMO'">
+                              {{ getDepartmentLabel(admission.department) }}
+                            </span>
+                          </td>
+                          <td><span class="badge bg-secondary">{{ admission.bedId }}</span></td>
+                          <td>
+                            <span *ngIf="admission.department === 'PNEUMO' && admission.status === 'ACTIVE'" class="text-success fw-semibold">
+                              Dott.ssa Bianchi
+                            </span>
+                            <span *ngIf="admission.department !== 'PNEUMO' || admission.status !== 'ACTIVE'">
+                              {{ admission.department === 'CARD' ? 'Dr. Belli' : admission.department === 'NEURO' ? 'Dr. Esposito' : '-' }}
+                            </span>
+                          </td>
+                          <td>{{ formatDate(admission.admittedAt) }}</td>
+                          <td>
+                            <span class="badge"
+                                  [class.bg-primary]="admission.status === 'ACTIVE'"
+                                  [class.bg-success]="admission.status === 'CONFIRMED'"
+                                  [class.bg-secondary]="admission.status === 'DISCHARGED'"
+                                  [class.bg-warning]="admission.status === 'PROPOSED'">
+                              {{ getAdmissionStatusLabel(admission.status) }}
+                            </span>
+                          </td>
+                          <td>
+                            <small class="text-muted" *ngIf="admission.notes">{{ admission.notes }}</small>
+                            <span *ngIf="!admission.notes">-</span>
+                          </td>
+                          <td>
+                            <div class="d-flex flex-wrap gap-1">
+                              <button
+                                class="btn btn-outline-primary btn-sm"
+                                type="button"
+                                title="Modifica referente"
+                                [disabled]="admission.status === 'DISCHARGED'">
+                                👨‍⚕️
+                              </button>
+                              <button
+                                class="btn btn-outline-success btn-sm"
+                                type="button"
+                                title="Dimetti"
+                                [disabled]="admission.status === 'DISCHARGED'">
+                                ✓
+                              </button>
+                              <button
+                                class="btn btn-outline-secondary btn-sm"
+                                type="button"
+                                title="Note"
+                                (click)="openAdmissionNoteModal(admission)">
+                                📝
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr *ngIf="!admissions.length">
+                          <td colspan="9" class="text-center text-muted">Nessun ricovero registrato.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminAdmissions', total: admissions.length }"></ng-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Riepilogo cambio referenti -->
+            <div class="col-12">
+              <div class="card card-glass border-warning">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">📋 Registro modifiche referenti - Emergenza Dr. Martini</h5>
+                  <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                      <thead>
+                        <tr>
+                          <th>Timestamp</th>
+                          <th>Paziente</th>
+                          <th>Da</th>
+                          <th>A</th>
+                          <th>Operatore</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><small>{{ formatDateTime(getTodayAt(18, 45)) }}</small></td>
+                          <td>Anna Conti</td>
+                          <td><span class="text-danger">Dr. Martini</span></td>
+                          <td><span class="text-success">Dott.ssa Bianchi</span></td>
+                          <td>Marco (Admin)</td>
+                        </tr>
+                        <tr>
+                          <td><small>{{ formatDateTime(getTodayAt(18, 42)) }}</small></td>
+                          <td>Francesca Romano</td>
+                          <td><span class="text-danger">Dr. Martini</span></td>
+                          <td><span class="text-success">Dott.ssa Bianchi</span></td>
+                          <td>Marco (Admin)</td>
+                        </tr>
+                        <tr>
+                          <td><small>{{ formatDateTime(getTodayAt(18, 38)) }}</small></td>
+                          <td>Elena Costa</td>
+                          <td><span class="text-danger">Dr. Martini</span></td>
+                          <td><span class="text-success">Dott.ssa Bianchi</span></td>
+                          <td>Marco (Admin)</td>
+                        </tr>
+                        <tr>
+                          <td><small>{{ formatDateTime(getTodayAt(18, 35)) }}</small></td>
+                          <td>Paziente #10</td>
+                          <td><span class="text-danger">Dr. Martini</span></td>
+                          <td><span class="text-success">Dott.ssa Bianchi</span></td>
+                          <td>Marco (Admin)</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Nuovo Ricovero -->
           <ng-container *ngIf="showAdminAdmissionModal">
             <div
               class="modal-backdrop fade show"
@@ -3022,25 +3704,28 @@
               <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                   <div class="modal-header">
-                    <h5 class="modal-title" id="adminAdmissionModalTitle">Registra ricovero</h5>
+                    <h5 class="modal-title" id="adminAdmissionModalTitle">Registra nuovo ricovero</h5>
                     <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminAdmissionModal()"></button>
                   </div>
                   <div class="modal-body">
                     <form (ngSubmit)="submitAdmission()" #adminAdmissionFormRef="ngForm">
                       <div class="mb-3">
-                        <label class="form-label">ID Paziente</label>
-                        <input class="form-control" type="number" name="adminAdmissionPatientId" [(ngModel)]="admissionForm.patientId" required />
+                        <label class="form-label">Paziente</label>
+                        <select class="form-select" name="adminAdmissionPatientId" [(ngModel)]="admissionForm.patientId" required>
+                          <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                            {{ patient.firstName }} {{ patient.lastName }}
+                          </option>
+                        </select>
                       </div>
                       <div class="mb-3">
                         <label class="form-label">Reparto</label>
                         <select class="form-select" name="adminAdmissionDepartment" [(ngModel)]="admissionForm.department" required>
-                          <option value="CARD">Cardiologia</option>
-                          <option value="NEURO">Neurologia</option>
+                          <option *ngFor="let dept of departments" [value]="dept.code">{{ dept.name }}</option>
                         </select>
                       </div>
                       <div class="mb-3">
-                        <label class="form-label">Letto</label>
-                        <input class="form-control" type="number" name="adminAdmissionBedId" [(ngModel)]="admissionForm.bedId" required />
+                        <label class="form-label">Numero letto</label>
+                        <input class="form-control" type="number" name="adminAdmissionBedId" [(ngModel)]="admissionForm.bedId" min="1" required />
                       </div>
                       <div class="d-flex justify-content-end gap-2">
                         <button class="btn btn-outline-secondary" type="button" (click)="closeAdminAdmissionModal()">Annulla</button>
@@ -3055,6 +3740,7 @@
             </div>
           </ng-container>
 
+          <!-- Modal Rifiuta Ricovero -->
           <ng-container *ngIf="showAdmissionRejectModal">
             <div
               class="modal-backdrop fade show"

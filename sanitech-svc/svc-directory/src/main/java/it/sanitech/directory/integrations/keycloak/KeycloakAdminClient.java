@@ -87,6 +87,37 @@ public class KeycloakAdminClient {
         ));
     }
 
+    @Retry(name = "keycloakSync")
+    public void enableUser(String email) {
+        KeycloakUserRepresentation existing = findUserByEmail(email);
+        if (existing == null) {
+            log.warn("Utente Keycloak con email '{}' non trovato per abilitazione.", email);
+            return;
+        }
+        String existingPid = existing.attributes() != null && existing.attributes().containsKey(PID_ATTR)
+                ? existing.attributes().get(PID_ATTR).stream().findFirst().orElse(null)
+                : null;
+        String existingDid = existing.attributes() != null && existing.attributes().containsKey(DID_ATTR)
+                ? existing.attributes().get(DID_ATTR).stream().findFirst().orElse(null)
+                : null;
+        String aggregateType = existingPid != null ? AGGREGATE_TYPE_PATIENT
+                : existingDid != null ? AGGREGATE_TYPE_DOCTOR : null;
+        Long aggregateId = existingPid != null ? Long.valueOf(existingPid)
+                : existingDid != null ? Long.valueOf(existingDid) : null;
+        updateUser(existing.id(), new KeycloakUserSyncRequest(
+                email,
+                existing.firstName(),
+                existing.lastName(),
+                existing.attributes() != null && existing.attributes().containsKey(PHONE_ATTR)
+                        ? existing.attributes().get(PHONE_ATTR).stream().findFirst().orElse(null)
+                        : null,
+                true,
+                null,
+                aggregateType,
+                aggregateId
+        ));
+    }
+
     private String createUser(KeycloakUserSyncRequest request) {
         UserRepresentation payload = toRepresentation(request);
         try (Response response = usersResource().create(payload)) {
@@ -245,7 +276,7 @@ public class KeycloakAdminClient {
         CredentialRepresentation credential = new CredentialRepresentation();
         credential.setType(CredentialRepresentation.PASSWORD);
         credential.setValue(properties.initialPassword());
-        credential.setTemporary(true);
+        credential.setTemporary(false);  // Password permanente, non richiede cambio al primo login
         return credential;
     }
 

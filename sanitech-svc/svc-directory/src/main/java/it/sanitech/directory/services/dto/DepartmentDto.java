@@ -19,6 +19,12 @@ public record DepartmentDto(
         /** Nome leggibile reparto. */
         String name,
 
+        /** Capacità posti letto. */
+        Integer capacity,
+
         /** Codice della struttura di appartenenza. */
-        String facilityCode
+        String facilityCode,
+
+        /** Nome della struttura di appartenenza. */
+        String facilityName
 ) {}

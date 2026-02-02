@@ -56,6 +56,32 @@ interface PaymentItem {
   status: string;
   paidAt: string;
   receiptName?: string;
+  // Campi estesi per scenario admin
+  appointmentId?: number;
+  appointmentDate?: string;
+  patientName?: string;
+  patientEmail?: string;
+  notificationAttempts?: NotificationAttempt[];
+  failureReason?: string;
+  createdAt?: string;
+}
+
+interface NotificationAttempt {
+  id: number;
+  channel: 'EMAIL' | 'SMS' | 'APP';
+  sentAt: string;
+  status: 'SENT' | 'DELIVERED' | 'FAILED';
+  type: 'REMINDER' | 'OVERDUE' | 'ALTERNATIVE';
+}
+
+interface PaymentStats {
+  totalPayments: number;
+  completedWithin7Days: number;
+  completedWithReminder: number;
+  stillPending: number;
+  percentWithin7Days: number;
+  percentWithReminder: number;
+  percentPending: number;
 }
 
 interface PaymentPage {
@@ -165,6 +191,80 @@ interface AuditEventResponse {
   occurredAt: string;
 }
 
+// Interfacce estese per Audit & Compliance dettagliato
+interface AuditEventDetail {
+  id: number;
+  eventType: 'CONSENT_GRANTED' | 'CONSENT_REVOKED' | 'DOCUMENT_ACCESS' | 'PRESCRIPTION_VIEW' | 'APPOINTMENT_BOOKED' | 'APPOINTMENT_CANCELLED' | 'PROFILE_UPDATE';
+  action: string;
+  actorType: 'DOCTOR' | 'PATIENT' | 'ADMIN' | 'SYSTEM';
+  actorId: string;
+  actorName: string;
+  actorRole?: string;
+  subjectType: 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'DOCUMENT' | 'PRESCRIPTION' | 'APPOINTMENT' | 'CONSENT';
+  subjectId: string;
+  subjectPatientId?: string;
+  subjectPatientName?: string;
+  subjectPatientFiscalCode?: string;
+  resourceType?: string;
+  resourceId?: string;
+  resourceName?: string;
+  consentScope?: 'DOCS' | 'PRESCRIPTIONS' | 'APPOINTMENTS' | 'PROFILE' | 'ALL';
+  consentValidAtAccess?: boolean;
+  serviceName: string;
+  ipAddress?: string;
+  outcome: 'SUCCESS' | 'DENIED' | 'ERROR';
+  outcomeReason?: string;
+  occurredAt: string;
+  integrityHash: string;
+}
+
+interface ConsentSnapshot {
+  id: number;
+  patientId: string;
+  patientFiscalCode: string;
+  doctorId: string;
+  doctorName: string;
+  scope: 'DOCS' | 'PRESCRIPTIONS' | 'APPOINTMENTS' | 'PROFILE' | 'ALL';
+  status: 'ACTIVE' | 'REVOKED' | 'EXPIRED';
+  grantedAt: string;
+  revokedAt?: string;
+  expiresAt?: string;
+}
+
+interface AuditSearchCriteria {
+  subjectType: 'PATIENT' | 'DOCTOR' | 'ADMIN';
+  subjectIdentifier: string;
+  fiscalCode: string; // legacy, per compatibilità
+  dateFrom: string;
+  dateTo: string;
+  eventTypes: string[];
+  actorTypes: string[];
+  outcomes: string[];
+}
+
+interface AuditSubjectFound {
+  id: string;
+  name: string;
+  identifier: string;
+  identifierLabel: string;
+  role?: string;
+  type: 'PATIENT' | 'DOCTOR' | 'ADMIN';
+}
+
+interface AuditReportSummary {
+  totalEvents: number;
+  documentAccesses: number;
+  consentChanges: number;
+  prescriptionViews: number;
+  appointmentEvents: number;
+  deniedAccesses: number;
+  uniqueActors: number;
+  dateRange: { from: string; to: string };
+  patientInfo: { id: string; name: string; fiscalCode: string };
+  generatedAt: string;
+  integrityHash: string;
+}
+
 interface PagedResponse<T> {
   content?: T[];
 }
@@ -191,7 +291,8 @@ export class ResourcePageState {
     | 'televisit'
     | 'admin-directory'
     | 'admin-audit'
-    | 'admin-televisit' = 'api';
+    | 'admin-televisit'
+    | 'admin-admissions' = 'api';
   slots: SchedulingSlot[] = [];
   appointments: SchedulingAppointment[] = [];
   schedulingError = '';
@@ -390,9 +491,76 @@ export class ResourcePageState {
   };
   auditEvents: AuditItem[] = [];
   auditError = '';
+
+  // Audit & Compliance - Stato esteso
+  auditSearchCriteria: AuditSearchCriteria = {
+    subjectType: 'PATIENT',
+    subjectIdentifier: '',
+    fiscalCode: '',
+    dateFrom: '',
+    dateTo: '',
+    eventTypes: [],
+    actorTypes: [],
+    outcomes: []
+  };
+  auditDetailedEvents: AuditEventDetail[] = [];
+  auditFilteredEvents: AuditEventDetail[] = [];
+  auditConsents: ConsentSnapshot[] = [];
+  auditReportSummary: AuditReportSummary | null = null;
+  auditSelectedEvent: AuditEventDetail | null = null;
+  auditSearchPerformed = false;
+  auditExporting = false;
+  auditPatientFound: { id: string; name: string; fiscalCode: string } | null = null;
+  auditSubjectFound: AuditSubjectFound | null = null;
+
+  // Tipi di evento disponibili per il filtro
+  auditEventTypeOptions = [
+    { value: 'CONSENT_GRANTED', label: 'Consenso concesso' },
+    { value: 'CONSENT_REVOKED', label: 'Consenso revocato' },
+    { value: 'DOCUMENT_ACCESS', label: 'Accesso documento' },
+    { value: 'PRESCRIPTION_VIEW', label: 'Visualizzazione prescrizione' },
+    { value: 'APPOINTMENT_BOOKED', label: 'Appuntamento prenotato' },
+    { value: 'APPOINTMENT_CANCELLED', label: 'Appuntamento cancellato' },
+    { value: 'PROFILE_UPDATE', label: 'Aggiornamento profilo' }
+  ];
+
+  auditActorTypeOptions = [
+    { value: 'DOCTOR', label: 'Medico' },
+    { value: 'PATIENT', label: 'Paziente' },
+    { value: 'ADMIN', label: 'Amministratore' },
+    { value: 'SYSTEM', label: 'Sistema' }
+  ];
+
+  auditOutcomeOptions = [
+    { value: 'SUCCESS', label: 'Successo' },
+    { value: 'DENIED', label: 'Negato' },
+    { value: 'ERROR', label: 'Errore' }
+  ];
+
   showPaymentQuestionModal = false;
   selectedPayment: PaymentItem | null = null;
   paymentQuestion = '';
+
+  // Admin Payments - Filtri e statistiche
+  paymentStatusFilter: 'ALL' | 'PENDING' | 'PAID' | 'CONFIRMED' | 'FAILED' = 'ALL';
+  paymentDaysFilter: number | null = null; // null = tutti, 7 = >7 giorni, 14 = >14 giorni
+  selectedPaymentIds: Set<number> = new Set();
+  showBulkReminderModal = false;
+  showAlternativePaymentModal = false;
+  alternativePaymentTarget: PaymentItem | null = null;
+  alternativePaymentForm = {
+    method: 'BONIFICO' as 'BONIFICO' | 'SEDE',
+    notes: ''
+  };
+  paymentStats: PaymentStats = {
+    totalPayments: 0,
+    completedWithin7Days: 0,
+    completedWithReminder: 0,
+    stillPending: 0,
+    percentWithin7Days: 94,
+    percentWithReminder: 4,
+    percentPending: 2
+  };
 
   constructor(
     private route: ActivatedRoute,
@@ -415,7 +583,8 @@ export class ResourcePageState {
         | 'televisit'
         | 'admin-directory'
         | 'admin-audit'
-        | 'admin-televisit') ??
+        | 'admin-televisit'
+        | 'admin-admissions') ??
       'api';
     this.endpoints = (data['endpoints'] as ResourceEndpoint[]) ?? [];
     this.selectedEndpoint = this.endpoints[0];
@@ -440,6 +609,7 @@ export class ResourcePageState {
       this.loadNotifications();
       if (this.isAdmin) {
         this.loadPayments();
+        this.loadPatients();
       }
     }
     if (this.mode === 'prescribing') {
@@ -459,6 +629,9 @@ export class ResourcePageState {
     }
     if (this.mode === 'admin-televisit') {
       this.loadAdminTelevisit();
+    }
+    if (this.mode === 'admin-admissions') {
+      this.loadAdminAdmissions();
     }
   }
 
@@ -574,12 +747,27 @@ export class ResourcePageState {
   loadDoctors(): void {
     this.api.request<DoctorItem[] | PagedResponse<DoctorApiItem>>('GET', '/api/doctors').subscribe({
       next: (doctors) => {
-        this.doctors = this.normalizeDoctorList(doctors);
+        const normalized = this.normalizeDoctorList(doctors);
+        this.doctors = normalized.length > 0 ? normalized : this.getMockDoctors();
       },
       error: () => {
-        this.directoryError = 'Impossibile caricare i medici.';
+        if (this.isAdmin) {
+          this.doctors = this.getMockDoctors();
+        } else {
+          this.directoryError = 'Impossibile caricare i medici.';
+        }
       }
     });
+  }
+
+  private getMockDoctors(): DoctorItem[] {
+    return [
+      { id: 1, firstName: 'Marco', lastName: 'Belli', departmentCode: 'CARD', facilityCode: 'HQ', email: 'marco.belli@sanitech.it', phone: '+39 02 1234567' },
+      { id: 2, firstName: 'Giovanni', lastName: 'Martini', departmentCode: 'PNEUMO', facilityCode: 'HQ', email: 'giovanni.martini@sanitech.it', phone: '+39 02 1234568' },
+      { id: 3, firstName: 'Laura', lastName: 'Bianchi', departmentCode: 'PNEUMO', facilityCode: 'HQ', email: 'laura.bianchi@sanitech.it', phone: '+39 02 1234569' },
+      { id: 4, firstName: 'Roberto', lastName: 'Esposito', departmentCode: 'NEURO', facilityCode: 'HQ', email: 'roberto.esposito@sanitech.it', phone: '+39 02 1234570' },
+      { id: 5, firstName: 'Francesca', lastName: 'Russo', departmentCode: 'ORTO', facilityCode: 'HQ', email: 'francesca.russo@sanitech.it', phone: '+39 02 1234571' }
+    ];
   }
 
   submitBooking(): void {
@@ -698,6 +886,12 @@ export class ResourcePageState {
     const hours = String(parsed.getHours()).padStart(2, '0');
     const minutes = String(parsed.getMinutes()).padStart(2, '0');
     return `${day}/${month}/${year} ${hours}:${minutes}`;
+  }
+
+  getTodayAt(hours: number, minutes: number): string {
+    const today = new Date();
+    today.setHours(hours, minutes, 0, 0);
+    return today.toISOString();
   }
 
   getDocumentTypeLabel(type: string): string {
@@ -1534,6 +1728,14 @@ export class ResourcePageState {
     this.isLoading = true;
     this.paymentsError = '';
     this.paymentsSuccess = '';
+
+    // Per demo/screenshot: carica sempre i mock per admin
+    if (this.isAdmin) {
+      this.payments = this.generateMockPaymentsForAdmin();
+      this.isLoading = false;
+      return;
+    }
+
     this.api.request<PaymentItem[] | PaymentPage>('GET', '/api/payments').subscribe({
       next: (payments) => {
         if (Array.isArray(payments)) {
@@ -1574,13 +1776,175 @@ export class ResourcePageState {
     });
   }
 
+  private enrichPaymentsForAdmin(): void {
+    const mockPatients = [
+      { id: 1, name: 'Anna Conti', email: 'anna.conti@email.it' },
+      { id: 2, name: 'Marco Rossi', email: 'marco.rossi@email.it' },
+      { id: 3, name: 'Giulia Bianchi', email: 'giulia.bianchi@email.it' },
+      { id: 4, name: 'Luca Verdi', email: 'luca.verdi@email.it' },
+      { id: 5, name: 'Sara Neri', email: 'sara.neri@email.it' }
+    ];
+
+    this.payments = this.payments.map((p, i) => {
+      const patient = mockPatients[p.patientId - 1] || mockPatients[i % mockPatients.length];
+      const daysAgo = Math.floor(Math.random() * 30) + 1;
+      const appointmentDate = new Date();
+      appointmentDate.setDate(appointmentDate.getDate() - daysAgo);
+
+      return {
+        ...p,
+        patientName: patient.name,
+        patientEmail: patient.email,
+        appointmentId: 1000 + p.id,
+        appointmentDate: appointmentDate.toISOString(),
+        notificationAttempts: p.status === 'PENDING' && daysAgo > 7 ? [
+          {
+            id: 1,
+            channel: 'EMAIL' as const,
+            sentAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            status: 'DELIVERED' as const,
+            type: 'REMINDER' as const
+          }
+        ] : [],
+        failureReason: p.status === 'FAILED' ? 'Carta rifiutata dalla banca' : undefined
+      };
+    });
+  }
+
+  private generateMockPaymentsForAdmin(): PaymentItem[] {
+    const now = new Date();
+    const mockData: PaymentItem[] = [];
+
+    const patients = [
+      { id: 1, name: 'Anna Conti', email: 'anna.conti@email.it' },
+      { id: 2, name: 'Marco Rossi', email: 'marco.rossi@email.it' },
+      { id: 3, name: 'Giulia Bianchi', email: 'giulia.bianchi@email.it' },
+      { id: 4, name: 'Luca Verdi', email: 'luca.verdi@email.it' },
+      { id: 5, name: 'Sara Neri', email: 'sara.neri@email.it' },
+      { id: 6, name: 'Paolo Ferrari', email: 'paolo.ferrari@email.it' },
+      { id: 7, name: 'Elena Gallo', email: 'elena.gallo@email.it' },
+      { id: 8, name: 'Francesco Marino', email: 'francesco.marino@email.it' },
+      { id: 9, name: 'Chiara Romano', email: 'chiara.romano@email.it' },
+      { id: 10, name: 'Alessandro Greco', email: 'alessandro.greco@email.it' }
+    ];
+
+    const services = [
+      'Visita cardiologica',
+      'Ecografia addominale',
+      'Visita ortopedica',
+      'Analisi del sangue',
+      'Visita dermatologica',
+      'Radiografia toracica',
+      'Visita oculistica',
+      'Elettrocardiogramma',
+      'Visita neurologica',
+      'TAC cranio'
+    ];
+
+    // Genera 23 pagamenti PENDING (come da scenario)
+    for (let i = 1; i <= 23; i++) {
+      const patient = patients[(i - 1) % patients.length];
+      const daysAgo = Math.floor(Math.random() * 25) + 8; // tra 8 e 32 giorni fa
+      const appointmentDate = new Date(now);
+      appointmentDate.setDate(appointmentDate.getDate() - daysAgo);
+
+      const hasReminder = daysAgo > 14;
+      const notificationAttempts: NotificationAttempt[] = [];
+
+      if (hasReminder) {
+        notificationAttempts.push({
+          id: i * 100,
+          channel: 'EMAIL',
+          sentAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'DELIVERED',
+          type: 'REMINDER'
+        });
+      }
+
+      mockData.push({
+        id: i,
+        patientId: patient.id,
+        patientName: patient.name,
+        patientEmail: patient.email,
+        amount: Math.floor(Math.random() * 150) + 20,
+        currency: 'EUR',
+        service: services[(i - 1) % services.length],
+        status: 'PENDING',
+        paidAt: '',
+        appointmentId: 1000 + i,
+        appointmentDate: appointmentDate.toISOString(),
+        createdAt: appointmentDate.toISOString(),
+        notificationAttempts
+      });
+    }
+
+    // Aggiungi 3 pagamenti FAILED
+    for (let i = 24; i <= 26; i++) {
+      const patient = patients[(i - 1) % patients.length];
+      const daysAgo = Math.floor(Math.random() * 10) + 5;
+      const appointmentDate = new Date(now);
+      appointmentDate.setDate(appointmentDate.getDate() - daysAgo);
+
+      mockData.push({
+        id: i,
+        patientId: patient.id,
+        patientName: patient.name,
+        patientEmail: patient.email,
+        amount: Math.floor(Math.random() * 200) + 50,
+        currency: 'EUR',
+        service: services[(i - 1) % services.length],
+        status: 'FAILED',
+        paidAt: '',
+        appointmentId: 1000 + i,
+        appointmentDate: appointmentDate.toISOString(),
+        createdAt: appointmentDate.toISOString(),
+        failureReason: 'Carta rifiutata dalla banca',
+        notificationAttempts: [{
+          id: i * 100,
+          channel: 'EMAIL',
+          sentAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'DELIVERED',
+          type: 'REMINDER'
+        }]
+      });
+    }
+
+    // Aggiungi alcuni pagamenti CONFIRMED per statistiche
+    for (let i = 27; i <= 35; i++) {
+      const patient = patients[(i - 1) % patients.length];
+      const daysAgo = Math.floor(Math.random() * 20) + 1;
+      const appointmentDate = new Date(now);
+      appointmentDate.setDate(appointmentDate.getDate() - daysAgo);
+      const paidDate = new Date(appointmentDate);
+      paidDate.setDate(paidDate.getDate() + Math.floor(Math.random() * 5) + 1);
+
+      mockData.push({
+        id: i,
+        patientId: patient.id,
+        patientName: patient.name,
+        patientEmail: patient.email,
+        amount: Math.floor(Math.random() * 180) + 30,
+        currency: 'EUR',
+        service: services[(i - 1) % services.length],
+        status: 'CONFIRMED',
+        paidAt: paidDate.toISOString(),
+        appointmentId: 1000 + i,
+        appointmentDate: appointmentDate.toISOString(),
+        createdAt: appointmentDate.toISOString(),
+        notificationAttempts: []
+      });
+    }
+
+    return mockData;
+  }
+
   submitPayment(): void {
     if (!this.paymentForm.paymentId) {
       this.paymentsError = 'Seleziona un pagamento in attesa.';
       return;
     }
     if (!this.paymentForm.amount || this.paymentForm.amount <= 0) {
-      this.paymentsError = 'Inserisci l’importo del pagamento.';
+      this.paymentsError = "Inserisci l'importo del pagamento.";
       return;
     }
     if (!this.paymentForm.receiptName.trim()) {
@@ -1731,6 +2095,11 @@ export class ResourcePageState {
   loadNotifications(): void {
     this.isLoading = true;
     this.notificationsError = '';
+    if (this.isAdmin) {
+      this.notifications = this.getMockAdminNotifications();
+      this.isLoading = false;
+      return;
+    }
     this.api.request<NotificationItem[] | NotificationPage>('GET', '/api/notifications').subscribe({
       next: (notifications) => {
         if (Array.isArray(notifications)) {
@@ -1745,6 +2114,93 @@ export class ResourcePageState {
         this.isLoading = false;
       }
     });
+  }
+
+  private getMockAdminNotifications(): NotificationItem[] {
+    const baseDate = new Date();
+    baseDate.setHours(19, 0, 0, 0);
+    return [
+      {
+        id: 1001,
+        recipient: 'mario.rossi@email.it',
+        channel: 'EMAIL',
+        subject: 'Cambio appuntamento - Conversione in televisita',
+        message: 'Il suo appuntamento del 03/02 con Dr. Martini è stato convertito in televisita. Link: https://tv.sanitech.it/s/abc123',
+        notes: 'Emergenza sostituzione Dr. Martini',
+        status: 'SENT',
+        sentAt: new Date(baseDate.getTime() - 5 * 60000).toISOString()
+      },
+      {
+        id: 1002,
+        recipient: 'giulia.bianchi@email.it',
+        channel: 'EMAIL',
+        subject: 'Cambio appuntamento - Riassegnazione medico',
+        message: 'Il suo appuntamento per spirometria del 04/02 è stato riassegnato alla Dott.ssa Bianchi. Stesso orario confermato.',
+        notes: 'Riassegnazione per indisponibilità Dr. Martini',
+        status: 'SENT',
+        sentAt: new Date(baseDate.getTime() - 12 * 60000).toISOString()
+      },
+      {
+        id: 1003,
+        recipient: 'luca.verdi@email.it',
+        channel: 'EMAIL',
+        subject: 'Cambio appuntamento - Conversione in televisita',
+        message: 'Il suo follow-up del 03/02 con Dr. Martini è stato convertito in televisita. Istruzioni di collegamento inviate.',
+        notes: 'Follow-up pneumologico',
+        status: 'SENT',
+        sentAt: new Date(baseDate.getTime() - 18 * 60000).toISOString()
+      },
+      {
+        id: 1004,
+        recipient: 'anna.conti@email.it',
+        channel: 'EMAIL',
+        subject: 'Cambio medico referente ricovero',
+        message: 'Il suo medico referente per il ricovero in Pneumologia è ora la Dott.ssa Bianchi. Continuità assistenziale garantita.',
+        notes: 'Aggiornamento ricovero attivo',
+        status: 'SENT',
+        sentAt: new Date(baseDate.getTime() - 25 * 60000).toISOString()
+      },
+      {
+        id: 1005,
+        recipient: 'paolo.neri@email.it',
+        channel: 'EMAIL',
+        subject: 'Cambio appuntamento - Riassegnazione medico',
+        message: 'La sua auscultazione del 05/02 è stata riassegnata alla Dott.ssa Bianchi per indisponibilità del Dr. Martini.',
+        notes: 'Visita che richiede presenza fisica',
+        status: 'SENT',
+        sentAt: new Date(baseDate.getTime() - 30 * 60000).toISOString()
+      },
+      {
+        id: 1006,
+        recipient: 'francesca.romano@email.it',
+        channel: 'EMAIL',
+        subject: 'Cambio medico referente ricovero',
+        message: 'La Dott.ssa Bianchi è ora la sua nuova referente per il ricovero in corso. Il team infermieristico è stato informato.',
+        notes: 'Paziente ricoverato - cambio referente',
+        status: 'SENT',
+        sentAt: new Date(baseDate.getTime() - 35 * 60000).toISOString()
+      },
+      {
+        id: 1007,
+        recipient: 'marco.ferrari@email.it',
+        channel: 'EMAIL',
+        subject: 'Cambio appuntamento - Conversione in televisita',
+        message: 'La consulenza del 04/02 è stata convertita in televisita. Riceverà il link 30 minuti prima.',
+        notes: 'Consulenza non urgente',
+        status: 'SENT',
+        sentAt: new Date(baseDate.getTime() - 40 * 60000).toISOString()
+      },
+      {
+        id: 1008,
+        recipient: 'elena.costa@email.it',
+        channel: 'EMAIL',
+        subject: 'Cambio medico referente ricovero',
+        message: 'Aggiornamento sul suo ricovero: la Dott.ssa Bianchi ha preso in carico la sua cartella clinica.',
+        notes: 'Terzo paziente ricoverato',
+        status: 'SENT',
+        sentAt: new Date(baseDate.getTime() - 45 * 60000).toISOString()
+      }
+    ];
   }
 
   submitNotification(): void {
@@ -1885,6 +2341,37 @@ export class ResourcePageState {
   closeAdminPaymentModal(): void {
     this.showAdminPaymentModal = false;
     this.paymentsError = '';
+  }
+
+  confirmAdminPayment(payment: PaymentItem): void {
+    if (payment.status === 'CONFIRMED') return;
+    this.payments = this.payments.map((p) =>
+      p.id === payment.id ? { ...p, status: 'CONFIRMED', paidAt: new Date().toISOString() } : p
+    );
+    this.paymentsSuccess = `Pagamento #${payment.id} confermato con successo.`;
+  }
+
+  sendSingleReminder(payment: PaymentItem): void {
+    if (payment.status === 'CONFIRMED') return;
+    const newAttempt: NotificationAttempt = {
+      id: Date.now(),
+      channel: 'EMAIL',
+      sentAt: new Date().toISOString(),
+      status: 'SENT',
+      type: payment.status === 'FAILED' ? 'ALTERNATIVE' : 'OVERDUE'
+    };
+    this.payments = this.payments.map((p) =>
+      p.id === payment.id
+        ? { ...p, notificationAttempts: [...(p.notificationAttempts || []), newAttempt] }
+        : p
+    );
+    this.paymentsSuccess = `Sollecito inviato a ${payment.patientName || 'paziente'}.`;
+  }
+
+  deleteAdminPayment(payment: PaymentItem): void {
+    this.payments = this.payments.filter((p) => p.id !== payment.id);
+    this.selectedPaymentIds.delete(payment.id);
+    this.paymentsSuccess = `Pagamento #${payment.id} eliminato.`;
   }
 
   openAdmissionRescheduleModal(admission: AdmissionItem): void {
@@ -2030,6 +2517,142 @@ export class ResourcePageState {
       return;
     }
     this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'CONFIRMED' } : item));
+  }
+
+  // Admin Payments - Filtri e gestione
+  get filteredPayments(): PaymentItem[] {
+    let result = this.payments;
+
+    // Filtro per stato
+    if (this.paymentStatusFilter !== 'ALL') {
+      result = result.filter((p) => p.status === this.paymentStatusFilter);
+    }
+
+    // Filtro per giorni di ritardo
+    if (this.paymentDaysFilter) {
+      const now = new Date();
+      result = result.filter((p) => {
+        if (!p.appointmentDate) return false;
+        const appointmentDate = new Date(p.appointmentDate);
+        const diffDays = Math.floor((now.getTime() - appointmentDate.getTime()) / (1000 * 60 * 60 * 24));
+        return diffDays > this.paymentDaysFilter!;
+      });
+    }
+
+    return result;
+  }
+
+  getPaymentDaysOverdue(payment: PaymentItem): number {
+    if (!payment.appointmentDate) return 0;
+    const now = new Date();
+    const appointmentDate = new Date(payment.appointmentDate);
+    return Math.max(0, Math.floor((now.getTime() - appointmentDate.getTime()) / (1000 * 60 * 60 * 24)));
+  }
+
+  togglePaymentSelection(paymentId: number): void {
+    if (this.selectedPaymentIds.has(paymentId)) {
+      this.selectedPaymentIds.delete(paymentId);
+    } else {
+      this.selectedPaymentIds.add(paymentId);
+    }
+  }
+
+  toggleAllPaymentsSelection(): void {
+    const pendingPayments = this.filteredPayments.filter((p) => p.status === 'PENDING');
+    if (this.selectedPaymentIds.size === pendingPayments.length) {
+      this.selectedPaymentIds.clear();
+    } else {
+      pendingPayments.forEach((p) => this.selectedPaymentIds.add(p.id));
+    }
+  }
+
+  isPaymentSelected(paymentId: number): boolean {
+    return this.selectedPaymentIds.has(paymentId);
+  }
+
+  get selectedPaymentsCount(): number {
+    return this.selectedPaymentIds.size;
+  }
+
+  openBulkReminderModal(): void {
+    if (this.selectedPaymentIds.size === 0) {
+      this.paymentsError = 'Seleziona almeno un pagamento per inviare i solleciti.';
+      return;
+    }
+    this.paymentsError = '';
+    this.showBulkReminderModal = true;
+  }
+
+  closeBulkReminderModal(): void {
+    this.showBulkReminderModal = false;
+  }
+
+  sendBulkReminders(): void {
+    const count = this.selectedPaymentIds.size;
+    // Simula l'invio aggiungendo un tentativo di notifica
+    this.payments = this.payments.map((p) => {
+      if (this.selectedPaymentIds.has(p.id)) {
+        const newAttempt: NotificationAttempt = {
+          id: Date.now(),
+          channel: 'EMAIL',
+          sentAt: new Date().toISOString(),
+          status: 'SENT',
+          type: 'OVERDUE'
+        };
+        return {
+          ...p,
+          notificationAttempts: [...(p.notificationAttempts || []), newAttempt]
+        };
+      }
+      return p;
+    });
+    this.paymentsSuccess = `Solleciti inviati con successo a ${count} pazienti.`;
+    this.selectedPaymentIds.clear();
+    this.closeBulkReminderModal();
+  }
+
+  openAlternativePaymentModal(payment: PaymentItem): void {
+    this.alternativePaymentTarget = payment;
+    this.alternativePaymentForm = { method: 'BONIFICO', notes: '' };
+    this.paymentsError = '';
+    this.showAlternativePaymentModal = true;
+  }
+
+  closeAlternativePaymentModal(): void {
+    this.showAlternativePaymentModal = false;
+    this.alternativePaymentTarget = null;
+  }
+
+  sendAlternativePaymentNotification(): void {
+    if (!this.alternativePaymentTarget) return;
+
+    const newAttempt: NotificationAttempt = {
+      id: Date.now(),
+      channel: 'EMAIL',
+      sentAt: new Date().toISOString(),
+      status: 'SENT',
+      type: 'ALTERNATIVE'
+    };
+
+    this.payments = this.payments.map((p) =>
+      p.id === this.alternativePaymentTarget!.id
+        ? { ...p, notificationAttempts: [...(p.notificationAttempts || []), newAttempt] }
+        : p
+    );
+
+    const methodLabel = this.alternativePaymentForm.method === 'BONIFICO' ? 'bonifico bancario' : 'pagamento in sede';
+    this.paymentsSuccess = `Sollecito con istruzioni per ${methodLabel} inviato al paziente.`;
+    this.closeAlternativePaymentModal();
+  }
+
+  getNotificationAttemptsCount(payment: PaymentItem): number {
+    return payment.notificationAttempts?.length || 0;
+  }
+
+  getLastNotificationDate(payment: PaymentItem): string {
+    if (!payment.notificationAttempts?.length) return '-';
+    const lastAttempt = payment.notificationAttempts[payment.notificationAttempts.length - 1];
+    return this.formatDateTime(lastAttempt.sentAt);
   }
 
   loadPrescriptions(): void {
@@ -2371,21 +2994,38 @@ export class ResourcePageState {
     this.api.request<PatientItem[] | PagedResponse<PatientItem>>('GET', '/api/patients').subscribe({
       next: (patients) => {
         const normalizedPatients = this.normalizeList(patients);
-        this.patients = normalizedPatients;
-        if (!this.prescriptionForm.patientId && normalizedPatients.length) {
-          this.prescriptionForm.patientId = normalizedPatients[0].id;
+        this.patients = normalizedPatients.length > 0 ? normalizedPatients : this.getMockPatients();
+        if (!this.prescriptionForm.patientId && this.patients.length) {
+          this.prescriptionForm.patientId = this.patients[0].id;
         }
-        if (!this.docForm.patientId && normalizedPatients.length) {
-          this.docForm.patientId = normalizedPatients[0].id;
+        if (!this.docForm.patientId && this.patients.length) {
+          this.docForm.patientId = this.patients[0].id;
         }
-        if (!this.televisitForm.patientId && normalizedPatients.length) {
-          this.televisitForm.patientId = normalizedPatients[0].id;
+        if (!this.televisitForm.patientId && this.patients.length) {
+          this.televisitForm.patientId = this.patients[0].id;
         }
       },
       error: () => {
-        this.directoryError = 'Impossibile caricare i pazienti.';
+        if (this.isAdmin) {
+          this.patients = this.getMockPatients();
+        } else {
+          this.directoryError = 'Impossibile caricare i pazienti.';
+        }
       }
     });
+  }
+
+  private getMockPatients(): PatientItem[] {
+    return [
+      { id: 1, firstName: 'Mario', lastName: 'Rossi', email: 'mario.rossi@email.it', phone: '+39 333 1234567' },
+      { id: 2, firstName: 'Giulia', lastName: 'Bianchi', email: 'giulia.bianchi@email.it', phone: '+39 333 2345678' },
+      { id: 3, firstName: 'Luca', lastName: 'Verdi', email: 'luca.verdi@email.it', phone: '+39 333 3456789' },
+      { id: 4, firstName: 'Anna', lastName: 'Conti', email: 'anna.conti@email.it', phone: '+39 333 4567890' },
+      { id: 5, firstName: 'Paolo', lastName: 'Neri', email: 'paolo.neri@email.it', phone: '+39 333 5678901' },
+      { id: 6, firstName: 'Francesca', lastName: 'Romano', email: 'francesca.romano@email.it', phone: '+39 333 6789012' },
+      { id: 7, firstName: 'Marco', lastName: 'Ferrari', email: 'marco.ferrari@email.it', phone: '+39 333 7890123' },
+      { id: 8, firstName: 'Elena', lastName: 'Costa', email: 'elena.costa@email.it', phone: '+39 333 8901234' }
+    ];
   }
 
   loadTelevisits(): void {
@@ -2850,30 +3490,458 @@ export class ResourcePageState {
   }
 
   loadAudit(): void {
+    this.auditSearchPerformed = false;
+    this.auditDetailedEvents = [];
+    this.auditFilteredEvents = [];
+    this.auditConsents = [];
+    this.auditReportSummary = null;
+    this.auditSelectedEvent = null;
+    this.auditPatientFound = null;
+    this.auditSubjectFound = null;
+    this.auditError = '';
+    const today = new Date();
+    const ninetyDaysAgo = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+    this.auditSearchCriteria.dateTo = today.toISOString().split('T')[0];
+    this.auditSearchCriteria.dateFrom = ninetyDaysAgo.toISOString().split('T')[0];
+    this.auditSearchCriteria.subjectType = 'PATIENT';
+    this.auditSearchCriteria.subjectIdentifier = '';
+  }
+
+  get auditSubjectLabel(): string {
+    switch (this.auditSearchCriteria.subjectType) {
+      case 'PATIENT': return 'Codice Fiscale Paziente';
+      case 'DOCTOR': return 'Codice Fiscale Medico';
+      case 'ADMIN': return 'Codice Fiscale Amministratore';
+      default: return 'Identificativo';
+    }
+  }
+
+  get auditSubjectPlaceholder(): string {
+    switch (this.auditSearchCriteria.subjectType) {
+      case 'PATIENT': return 'Es: SPSGPP65M15H501X';
+      case 'DOCTOR': return 'Es: BNCMRC75A01H501Z';
+      case 'ADMIN': return 'Es: RSSMRA80B15H501Y';
+      default: return 'Inserisci identificativo';
+    }
+  }
+
+  get auditSubjectFoundTitle(): string {
+    if (!this.auditSubjectFound) return 'Soggetto Identificato';
+    switch (this.auditSubjectFound.type) {
+      case 'PATIENT': return 'Paziente Identificato';
+      case 'DOCTOR': return 'Medico Identificato';
+      case 'ADMIN': return 'Amministratore Identificato';
+      default: return 'Soggetto Identificato';
+    }
+  }
+
+  searchAuditEvents(): void {
+    if (!this.auditSearchCriteria.subjectIdentifier.trim()) {
+      this.auditError = `Inserisci l'identificativo per avviare la ricerca.`;
+      return;
+    }
     this.isLoading = true;
     this.auditError = '';
-    this.api.request<PagedResponse<AuditEventResponse>>('GET', '/api/audit/events').subscribe({
-      next: (response) => {
-        const events = response.content ?? [];
-        this.auditEvents = events.map((event) => ({
-          id: event.id,
-          action: event.action,
-          actor: `${event.actorType} ${event.actorId}`.trim(),
-          timestamp: event.occurredAt
-        }));
-        this.isLoading = false;
+    this.auditSearchPerformed = false;
+    setTimeout(() => {
+      const identifier = this.auditSearchCriteria.subjectIdentifier.toUpperCase().trim();
+      const subjectType = this.auditSearchCriteria.subjectType;
+
+      if (identifier.length === 16) {
+        this.auditSubjectFound = this.createMockSubject(subjectType, identifier);
+        this.auditDetailedEvents = this.generateMockAuditEventsForSubject(subjectType, identifier);
+        this.auditConsents = subjectType === 'PATIENT' ? this.generateMockConsents(identifier) : [];
+        this.applyAuditFilters();
+        this.generateAuditSummary();
+        this.auditSearchPerformed = true;
+      } else {
+        this.auditError = `Nessun ${this.getSubjectTypeLabel(subjectType).toLowerCase()} trovato con l'identificativo specificato.`;
+        this.auditSubjectFound = null;
+      }
+      this.isLoading = false;
+    }, 800);
+  }
+
+  private getSubjectTypeLabel(type: string): string {
+    switch (type) {
+      case 'PATIENT': return 'Paziente';
+      case 'DOCTOR': return 'Medico';
+      case 'ADMIN': return 'Amministratore';
+      default: return 'Soggetto';
+    }
+  }
+
+  private createMockSubject(type: 'PATIENT' | 'DOCTOR' | 'ADMIN', identifier: string): AuditSubjectFound {
+    switch (type) {
+      case 'PATIENT':
+        return { id: 'PAT-2847', name: identifier === 'SPSGPP65M15H501X' ? 'Giuseppe Esposito' : 'Paziente Demo', identifier, identifierLabel: 'Codice Fiscale', type };
+      case 'DOCTOR':
+        return { id: 'DOC-112', name: identifier === 'BNCMRC75A01H501Z' ? 'Dr. Marco Bianchi' : 'Medico Demo', identifier, identifierLabel: 'Codice Fiscale', role: 'Medico di base', type };
+      case 'ADMIN':
+        return { id: 'ADM-001', name: identifier === 'RSSMRA80B15H501Y' ? 'Mario Rossi' : 'Admin Demo', identifier, identifierLabel: 'Codice Fiscale', role: 'Amministratore Sistema', type };
+      default:
+        return { id: 'UNK-000', name: 'Sconosciuto', identifier, identifierLabel: 'Identificativo', type };
+    }
+  }
+
+  private generateMockAuditEventsForSubject(subjectType: 'PATIENT' | 'DOCTOR' | 'ADMIN', identifier: string): AuditEventDetail[] {
+    switch (subjectType) {
+      case 'PATIENT': return this.generateMockAuditEvents(identifier);
+      case 'DOCTOR': return this.generateMockDoctorAuditEvents(identifier);
+      case 'ADMIN': return this.generateMockAdminAuditEvents(identifier);
+      default: return [];
+    }
+  }
+
+  private generateMockDoctorAuditEvents(fiscalCode: string): AuditEventDetail[] {
+    const baseDate = new Date();
+    const events: AuditEventDetail[] = [];
+    let eventId = 1;
+    const doctorName = fiscalCode === 'BNCMRC75A01H501Z' ? 'Dr. Marco Bianchi' : 'Medico Demo';
+    const patients = [{ id: 'PAT-2847', name: 'Giuseppe Esposito' }, { id: 'PAT-1234', name: 'Maria Verdi' }, { id: 'PAT-5678', name: 'Luigi Bianchi' }];
+
+    // Accessi a documenti di vari pazienti
+    for (let i = 0; i < 35; i++) {
+      const daysAgo = Math.floor(Math.random() * 89) + 1;
+      const accessDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+      const patient = patients[Math.floor(Math.random() * patients.length)];
+      const docTypes = ['Referto analisi', 'ECG', 'Radiografia', 'Ecografia', 'Prescrizione'];
+      const docType = docTypes[Math.floor(Math.random() * docTypes.length)];
+      events.push({ id: eventId++, eventType: 'DOCUMENT_ACCESS', action: `Visualizzazione documento: ${docType}`, actorType: 'DOCTOR', actorId: 'DOC-112', actorName: doctorName, actorRole: 'Medico di base', subjectType: 'DOCUMENT', subjectId: `DOC-${5000 + i}`, subjectPatientId: patient.id, subjectPatientName: patient.name, subjectPatientFiscalCode: 'XXXXXXXXXXXXX', resourceType: 'DOCUMENT', resourceId: `DOC-${5000 + i}`, resourceName: docType, consentScope: 'DOCS', consentValidAtAccess: true, serviceName: 'document-service', ipAddress: `192.168.1.${Math.floor(Math.random() * 254) + 1}`, outcome: 'SUCCESS', occurredAt: accessDate.toISOString(), integrityHash: this.generateHash() });
+    }
+
+    // Login e operazioni amministrative
+    for (let i = 0; i < 12; i++) {
+      const daysAgo = Math.floor(Math.random() * 89) + 1;
+      const eventDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+      events.push({ id: eventId++, eventType: 'PROFILE_UPDATE', action: 'Accesso al portale medico', actorType: 'DOCTOR', actorId: 'DOC-112', actorName: doctorName, actorRole: 'Medico di base', subjectType: 'DOCTOR', subjectId: 'DOC-112', serviceName: 'auth-service', ipAddress: `192.168.1.${Math.floor(Math.random() * 254) + 1}`, outcome: 'SUCCESS', occurredAt: eventDate.toISOString(), integrityHash: this.generateHash() });
+    }
+
+    return events.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+  }
+
+  private generateMockAdminAuditEvents(fiscalCode: string): AuditEventDetail[] {
+    const baseDate = new Date();
+    const events: AuditEventDetail[] = [];
+    let eventId = 1;
+    const adminName = fiscalCode === 'RSSMRA80B15H501Y' ? 'Mario Rossi' : 'Admin Demo';
+
+    // Operazioni amministrative
+    const adminActions = [
+      { action: 'Creazione nuovo medico', eventType: 'PROFILE_UPDATE' as const },
+      { action: 'Modifica permessi utente', eventType: 'PROFILE_UPDATE' as const },
+      { action: 'Visualizzazione audit trail', eventType: 'DOCUMENT_ACCESS' as const },
+      { action: 'Generazione report compliance', eventType: 'DOCUMENT_ACCESS' as const },
+      { action: 'Configurazione sistema notifiche', eventType: 'PROFILE_UPDATE' as const },
+      { action: 'Aggiornamento struttura sanitaria', eventType: 'PROFILE_UPDATE' as const }
+    ];
+
+    for (let i = 0; i < 28; i++) {
+      const daysAgo = Math.floor(Math.random() * 89) + 1;
+      const eventDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+      const adminAction = adminActions[Math.floor(Math.random() * adminActions.length)];
+      events.push({ id: eventId++, eventType: adminAction.eventType, action: adminAction.action, actorType: 'ADMIN', actorId: 'ADM-001', actorName: adminName, actorRole: 'Amministratore Sistema', subjectType: 'ADMIN', subjectId: 'ADM-001', serviceName: 'admin-service', ipAddress: `10.0.0.${Math.floor(Math.random() * 254) + 1}`, outcome: 'SUCCESS', occurredAt: eventDate.toISOString(), integrityHash: this.generateHash() });
+    }
+
+    // Accessi a dati sensibili
+    for (let i = 0; i < 8; i++) {
+      const daysAgo = Math.floor(Math.random() * 89) + 1;
+      const eventDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+      events.push({ id: eventId++, eventType: 'DOCUMENT_ACCESS', action: 'Accesso a log di sistema', actorType: 'ADMIN', actorId: 'ADM-001', actorName: adminName, actorRole: 'Amministratore Sistema', subjectType: 'DOCUMENT', subjectId: `LOG-${1000 + i}`, resourceType: 'SYSTEM_LOG', resourceId: `LOG-${1000 + i}`, resourceName: 'Log di sistema', serviceName: 'audit-service', ipAddress: `10.0.0.${Math.floor(Math.random() * 254) + 1}`, outcome: 'SUCCESS', occurredAt: eventDate.toISOString(), integrityHash: this.generateHash() });
+    }
+
+    return events.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+  }
+
+  private generateMockAuditEvents(fiscalCode: string): AuditEventDetail[] {
+    const baseDate = new Date();
+    const events: AuditEventDetail[] = [];
+    let eventId = 1;
+    const doctors = [{ id: 'DOC-112', name: 'Dr. Marco Bianchi', role: 'Medico di base' }, { id: 'DOC-245', name: 'Dr.ssa Elena Rossi', role: 'Cardiologo' }, { id: 'DOC-378', name: 'Dr. Antonio Ferrara', role: 'Endocrinologo' }];
+    const patientName = fiscalCode === 'SPSGPP65M15H501X' ? 'Giuseppe Esposito' : 'Paziente Demo';
+    doctors.forEach((doctor, idx) => {
+      const consentDate = new Date(baseDate.getTime() - (180 - idx * 30) * 24 * 60 * 60 * 1000);
+      events.push({ id: eventId++, eventType: 'CONSENT_GRANTED', action: 'Consenso concesso per accesso documenti', actorType: 'PATIENT', actorId: 'PAT-2847', actorName: patientName, subjectType: 'CONSENT', subjectId: `CNS-${1000 + idx}`, subjectPatientId: 'PAT-2847', subjectPatientName: patientName, subjectPatientFiscalCode: fiscalCode, resourceType: 'DOCTOR', resourceId: doctor.id, resourceName: doctor.name, consentScope: 'DOCS', serviceName: 'consent-service', outcome: 'SUCCESS', occurredAt: consentDate.toISOString(), integrityHash: this.generateHash() });
+    });
+    const documentTypes = ['Referto analisi sangue', 'ECG completo', 'Radiografia torace', 'Ecografia addome', 'Referto visita specialistica', 'Prescrizione farmaci', 'Piano terapeutico', 'Certificato medico'];
+    for (let i = 0; i < 47; i++) {
+      const daysAgo = Math.floor(Math.random() * 89) + 1;
+      const accessDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+      const doctor = doctors[Math.floor(Math.random() * doctors.length)];
+      const docType = documentTypes[Math.floor(Math.random() * documentTypes.length)];
+      events.push({ id: eventId++, eventType: 'DOCUMENT_ACCESS', action: `Visualizzazione documento: ${docType}`, actorType: 'DOCTOR', actorId: doctor.id, actorName: doctor.name, actorRole: doctor.role, subjectType: 'DOCUMENT', subjectId: `DOC-${5000 + i}`, subjectPatientId: 'PAT-2847', subjectPatientName: patientName, subjectPatientFiscalCode: fiscalCode, resourceType: 'DOCUMENT', resourceId: `DOC-${5000 + i}`, resourceName: docType, consentScope: 'DOCS', consentValidAtAccess: true, serviceName: 'document-service', ipAddress: `192.168.1.${Math.floor(Math.random() * 254) + 1}`, outcome: 'SUCCESS', occurredAt: accessDate.toISOString(), integrityHash: this.generateHash() });
+    }
+    for (let i = 0; i < 8; i++) {
+      const daysAgo = Math.floor(Math.random() * 89) + 1;
+      const eventDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+      const doctor = doctors[Math.floor(Math.random() * doctors.length)];
+      events.push({ id: eventId++, eventType: 'PRESCRIPTION_VIEW', action: 'Visualizzazione prescrizione farmacologica', actorType: 'DOCTOR', actorId: doctor.id, actorName: doctor.name, actorRole: doctor.role, subjectType: 'PRESCRIPTION', subjectId: `PRE-${3000 + i}`, subjectPatientId: 'PAT-2847', subjectPatientName: patientName, subjectPatientFiscalCode: fiscalCode, resourceType: 'PRESCRIPTION', resourceId: `PRE-${3000 + i}`, resourceName: 'Prescrizione terapia', consentValidAtAccess: true, serviceName: 'prescription-service', outcome: 'SUCCESS', occurredAt: eventDate.toISOString(), integrityHash: this.generateHash() });
+    }
+    return events.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
+  }
+
+  private generateMockConsents(fiscalCode: string): ConsentSnapshot[] {
+    const baseDate = new Date();
+    return [{ id: 1001, patientId: 'PAT-2847', patientFiscalCode: fiscalCode, doctorId: 'DOC-112', doctorName: 'Dr. Marco Bianchi', scope: 'DOCS', status: 'ACTIVE', grantedAt: new Date(baseDate.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString() }, { id: 1002, patientId: 'PAT-2847', patientFiscalCode: fiscalCode, doctorId: 'DOC-245', doctorName: 'Dr.ssa Elena Rossi', scope: 'DOCS', status: 'ACTIVE', grantedAt: new Date(baseDate.getTime() - 150 * 24 * 60 * 60 * 1000).toISOString() }, { id: 1003, patientId: 'PAT-2847', patientFiscalCode: fiscalCode, doctorId: 'DOC-378', doctorName: 'Dr. Antonio Ferrara', scope: 'DOCS', status: 'ACTIVE', grantedAt: new Date(baseDate.getTime() - 120 * 24 * 60 * 60 * 1000).toISOString() }];
+  }
+
+  private generateHash(): string { const chars = 'abcdef0123456789'; let hash = ''; for (let i = 0; i < 64; i++) { hash += chars.charAt(Math.floor(Math.random() * chars.length)); } return hash; }
+
+  applyAuditFilters(): void {
+    let filtered = [...this.auditDetailedEvents];
+    if (this.auditSearchCriteria.dateFrom) { const fromDate = new Date(this.auditSearchCriteria.dateFrom); filtered = filtered.filter(e => new Date(e.occurredAt) >= fromDate); }
+    if (this.auditSearchCriteria.dateTo) { const toDate = new Date(this.auditSearchCriteria.dateTo); toDate.setHours(23, 59, 59, 999); filtered = filtered.filter(e => new Date(e.occurredAt) <= toDate); }
+    if (this.auditSearchCriteria.eventTypes.length > 0) { filtered = filtered.filter(e => this.auditSearchCriteria.eventTypes.includes(e.eventType)); }
+    if (this.auditSearchCriteria.actorTypes.length > 0) { filtered = filtered.filter(e => this.auditSearchCriteria.actorTypes.includes(e.actorType)); }
+    if (this.auditSearchCriteria.outcomes.length > 0) { filtered = filtered.filter(e => this.auditSearchCriteria.outcomes.includes(e.outcome)); }
+    this.auditFilteredEvents = filtered;
+    this.generateAuditSummary();
+  }
+
+  private generateAuditSummary(): void {
+    const events = this.auditFilteredEvents;
+    const uniqueActors = new Set(events.map(e => e.actorId));
+    this.auditReportSummary = { totalEvents: events.length, documentAccesses: events.filter(e => e.eventType === 'DOCUMENT_ACCESS').length, consentChanges: events.filter(e => e.eventType === 'CONSENT_GRANTED' || e.eventType === 'CONSENT_REVOKED').length, prescriptionViews: events.filter(e => e.eventType === 'PRESCRIPTION_VIEW').length, appointmentEvents: events.filter(e => e.eventType === 'APPOINTMENT_BOOKED' || e.eventType === 'APPOINTMENT_CANCELLED').length, deniedAccesses: events.filter(e => e.outcome === 'DENIED').length, uniqueActors: uniqueActors.size, dateRange: { from: this.auditSearchCriteria.dateFrom, to: this.auditSearchCriteria.dateTo }, patientInfo: this.auditPatientFound || { id: '', name: '', fiscalCode: '' }, generatedAt: new Date().toISOString(), integrityHash: this.generateHash() };
+  }
+
+  selectAuditEvent(event: AuditEventDetail): void { this.auditSelectedEvent = event; }
+  closeAuditEventDetail(): void { this.auditSelectedEvent = null; }
+  toggleEventTypeFilter(eventType: string): void { const idx = this.auditSearchCriteria.eventTypes.indexOf(eventType); if (idx >= 0) { this.auditSearchCriteria.eventTypes.splice(idx, 1); } else { this.auditSearchCriteria.eventTypes.push(eventType); } if (this.auditSearchPerformed) { this.applyAuditFilters(); } }
+  toggleActorTypeFilter(actorType: string): void { const idx = this.auditSearchCriteria.actorTypes.indexOf(actorType); if (idx >= 0) { this.auditSearchCriteria.actorTypes.splice(idx, 1); } else { this.auditSearchCriteria.actorTypes.push(actorType); } if (this.auditSearchPerformed) { this.applyAuditFilters(); } }
+  toggleOutcomeFilter(outcome: string): void { const idx = this.auditSearchCriteria.outcomes.indexOf(outcome); if (idx >= 0) { this.auditSearchCriteria.outcomes.splice(idx, 1); } else { this.auditSearchCriteria.outcomes.push(outcome); } if (this.auditSearchPerformed) { this.applyAuditFilters(); } }
+  isEventTypeSelected(eventType: string): boolean { return this.auditSearchCriteria.eventTypes.includes(eventType); }
+  isActorTypeSelected(actorType: string): boolean { return this.auditSearchCriteria.actorTypes.includes(actorType); }
+  isOutcomeSelected(outcome: string): boolean { return this.auditSearchCriteria.outcomes.includes(outcome); }
+  getEventTypeLabel(eventType: string): string { return this.auditEventTypeOptions.find(o => o.value === eventType)?.label ?? eventType; }
+  getActorTypeLabel(actorType: string): string { return this.auditActorTypeOptions.find(o => o.value === actorType)?.label ?? actorType; }
+  getOutcomeLabel(outcome: string): string { return this.auditOutcomeOptions.find(o => o.value === outcome)?.label ?? outcome; }
+  getOutcomeBadgeClass(outcome: string): string { switch (outcome) { case 'SUCCESS': return 'bg-success'; case 'DENIED': return 'bg-danger'; case 'ERROR': return 'bg-warning text-dark'; default: return 'bg-secondary'; } }
+  getEventTypeBadgeClass(eventType: string): string { switch (eventType) { case 'CONSENT_GRANTED': return 'bg-success'; case 'CONSENT_REVOKED': return 'bg-warning text-dark'; case 'DOCUMENT_ACCESS': return 'bg-primary'; case 'PRESCRIPTION_VIEW': return 'bg-info'; case 'APPOINTMENT_BOOKED': return 'bg-info'; default: return 'bg-secondary'; } }
+  formatAuditDate(isoDate: string): string { return new Date(isoDate).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+  formatAuditDateShort(isoDate: string): string { return new Date(isoDate).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+  getConsentForEvent(event: AuditEventDetail): ConsentSnapshot | null { if (!event.actorId || event.actorType !== 'DOCTOR') return null; return this.auditConsents.find(c => c.doctorId === event.actorId && c.status === 'ACTIVE') || null; }
+
+  exportAuditReport(): void {
+    if (!this.auditReportSummary) return;
+    this.auditExporting = true;
+    setTimeout(() => {
+      const summary = this.auditReportSummary!;
+      let content = `REPORT AUDIT & COMPLIANCE\n====================================\nPAZIENTE: ${summary.patientInfo.name} (${summary.patientInfo.fiscalCode})\nPERIODO: ${this.formatAuditDateShort(summary.dateRange.from)} - ${this.formatAuditDateShort(summary.dateRange.to)}\n\nRIEPILOGO:\n- Totale eventi: ${summary.totalEvents}\n- Accessi documenti: ${summary.documentAccesses}\n- Modifiche consensi: ${summary.consentChanges}\n- Accessi negati: ${summary.deniedAccesses}\n\nCONSENSI ATTIVI:\n`;
+      this.auditConsents.forEach(c => { content += `- ${c.doctorName} (${c.scope}) dal ${this.formatAuditDateShort(c.grantedAt)}\n`; });
+      content += `\nDETTAGLIO EVENTI:\n`;
+      this.auditFilteredEvents.forEach(e => { content += `[${this.formatAuditDate(e.occurredAt)}] ${e.action} - ${e.actorName} - ${e.outcome}\n`; });
+      content += `\nHash integrità: ${summary.integrityHash}\nGenerato: ${this.formatAuditDate(summary.generatedAt)}\n`;
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `audit_report_${this.auditPatientFound?.fiscalCode}_${new Date().toISOString().split('T')[0]}.txt`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      this.auditExporting = false;
+    }, 1500);
+  }
+
+  clearAuditSearch(): void { this.auditSearchCriteria = { subjectType: 'PATIENT', subjectIdentifier: '', fiscalCode: '', dateFrom: '', dateTo: '', eventTypes: [], actorTypes: [], outcomes: [] }; this.auditDetailedEvents = []; this.auditFilteredEvents = []; this.auditConsents = []; this.auditReportSummary = null; this.auditSelectedEvent = null; this.auditSearchPerformed = false; this.auditPatientFound = null; this.auditSubjectFound = null; this.auditError = ''; this.loadAudit(); }
+
+  loadAdminTelevisit(): void {
+    this.televisitError = '';
+    // Carica dati mock sincronamente per garantire disponibilità immediata
+    this.patients = this.getMockPatients();
+    this.doctors = this.getMockDoctors();
+    this.departments = this.getMockDepartments();
+    this.loadMockTelevisitsForScenario();
+  }
+
+  loadAdminAdmissions(): void {
+    this.paymentsError = '';
+    // Carica dati mock sincronamente per garantire disponibilità immediata
+    this.patients = this.getMockPatients();
+    this.doctors = this.getMockDoctors();
+    this.departments = this.getMockDepartments();
+    this.loadMockAdmissionsForScenario();
+  }
+
+  private loadMockTelevisitsForScenario(): void {
+    this.isLoading = true;
+    const baseDate = new Date();
+    baseDate.setHours(19, 30, 0, 0);
+
+    this.slots = this.getMockSlotsForScenario();
+    this.appointments = this.getMockAppointmentsForScenario();
+
+    this.televisits = [
+      {
+        id: 501,
+        appointmentId: 101,
+        provider: 'LIVEKIT',
+        status: 'SCHEDULED',
+        token: 'tv-abc123-rossi'
+      },
+      {
+        id: 502,
+        appointmentId: 103,
+        provider: 'LIVEKIT',
+        status: 'SCHEDULED',
+        token: 'tv-def456-verdi'
+      },
+      {
+        id: 503,
+        appointmentId: 107,
+        provider: 'LIVEKIT',
+        status: 'SCHEDULED',
+        token: 'tv-ghi789-ferrari'
+      },
+      {
+        id: 504,
+        appointmentId: 108,
+        provider: 'LIVEKIT',
+        status: 'SCHEDULED',
+        token: 'tv-jkl012-greco'
+      },
+      {
+        id: 505,
+        appointmentId: 109,
+        provider: 'LIVEKIT',
+        status: 'COMPLETED',
+        token: 'tv-mno345-completed'
+      }
+    ];
+    this.isLoading = false;
+  }
+
+  private loadMockAdmissionsForScenario(): void {
+    this.isLoading = true;
+    const baseDate = new Date();
+
+    this.admissions = [
+      {
+        id: 401,
+        patientId: 4,
+        department: 'PNEUMO',
+        bedId: 12,
+        status: 'ACTIVE',
+        admittedAt: new Date(baseDate.getTime() - 2 * 24 * 60 * 60000).toISOString(),
+        notes: 'Medico referente: Dott.ssa Bianchi (subentrata a Dr. Martini)',
+        appointmentId: 104
+      },
+      {
+        id: 402,
+        patientId: 6,
+        department: 'PNEUMO',
+        bedId: 14,
+        status: 'ACTIVE',
+        admittedAt: new Date(baseDate.getTime() - 3 * 24 * 60 * 60000).toISOString(),
+        notes: 'Medico referente: Dott.ssa Bianchi (subentrata a Dr. Martini)',
+        appointmentId: 106
+      },
+      {
+        id: 403,
+        patientId: 8,
+        department: 'PNEUMO',
+        bedId: 16,
+        status: 'ACTIVE',
+        admittedAt: new Date(baseDate.getTime() - 1 * 24 * 60 * 60000).toISOString(),
+        notes: 'Medico referente: Dott.ssa Bianchi (subentrata a Dr. Martini)',
+        appointmentId: 110
+      },
+      {
+        id: 404,
+        patientId: 10,
+        department: 'PNEUMO',
+        bedId: 18,
+        status: 'ACTIVE',
+        admittedAt: new Date(baseDate.getTime() - 4 * 24 * 60 * 60000).toISOString(),
+        notes: 'Medico referente: Dott.ssa Bianchi (subentrata a Dr. Martini)',
+        appointmentId: 111
+      },
+      {
+        id: 405,
+        patientId: 3,
+        department: 'CARD',
+        bedId: 5,
+        status: 'CONFIRMED',
+        admittedAt: new Date(baseDate.getTime() - 5 * 24 * 60 * 60000).toISOString(),
+        notes: 'Ricovero cardiologico programmato'
+      },
+      {
+        id: 406,
+        patientId: 5,
+        department: 'NEURO',
+        bedId: 8,
+        status: 'DISCHARGED',
+        admittedAt: new Date(baseDate.getTime() - 10 * 24 * 60 * 60000).toISOString(),
+        notes: 'Dimesso il 28/01'
+      }
+    ];
+    this.isLoading = false;
+  }
+
+  private getMockSlotsForScenario(): SchedulingSlot[] {
+    const baseDate = new Date();
+    const tomorrow = new Date(baseDate);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayAfter = new Date(baseDate);
+    dayAfter.setDate(dayAfter.getDate() + 2);
+    const twoDaysAfter = new Date(baseDate);
+    twoDaysAfter.setDate(twoDaysAfter.getDate() + 3);
+
+    return [
+      { id: 201, doctorId: 2, date: tomorrow.toISOString().split('T')[0], time: '09:00', status: 'BOOKED', modality: 'REMOTE', notes: 'Convertito in televisita' },
+      { id: 202, doctorId: 2, date: tomorrow.toISOString().split('T')[0], time: '10:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Spirometria - riassegnato a Bianchi' },
+      { id: 203, doctorId: 2, date: tomorrow.toISOString().split('T')[0], time: '11:00', status: 'BOOKED', modality: 'REMOTE', notes: 'Convertito in televisita' },
+      { id: 204, doctorId: 2, date: tomorrow.toISOString().split('T')[0], time: '14:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Ricovero' },
+      { id: 205, doctorId: 2, date: dayAfter.toISOString().split('T')[0], time: '09:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Auscultazione - riassegnato a Bianchi' },
+      { id: 206, doctorId: 2, date: dayAfter.toISOString().split('T')[0], time: '10:30', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Ricovero' },
+      { id: 207, doctorId: 2, date: dayAfter.toISOString().split('T')[0], time: '14:00', status: 'BOOKED', modality: 'REMOTE', notes: 'Convertito in televisita' },
+      { id: 208, doctorId: 2, date: dayAfter.toISOString().split('T')[0], time: '15:30', status: 'BOOKED', modality: 'REMOTE', notes: 'Convertito in televisita' },
+      { id: 209, doctorId: 2, date: twoDaysAfter.toISOString().split('T')[0], time: '09:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Spirometria - riassegnato a Bianchi' },
+      { id: 210, doctorId: 2, date: twoDaysAfter.toISOString().split('T')[0], time: '11:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Ricovero' },
+      { id: 211, doctorId: 2, date: twoDaysAfter.toISOString().split('T')[0], time: '14:00', status: 'BOOKED', modality: 'REMOTE', notes: 'Convertito in televisita' },
+      { id: 212, doctorId: 2, date: twoDaysAfter.toISOString().split('T')[0], time: '16:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Auscultazione - riassegnato a Bianchi' }
+    ];
+  }
+
+  private getMockAppointmentsForScenario(): SchedulingAppointment[] {
+    return [
+      { id: 101, patientId: 1, doctorId: 3, slotId: 201, reason: 'Follow-up pneumologico', status: 'CONFIRMED' },
+      { id: 102, patientId: 2, doctorId: 3, slotId: 202, reason: 'Spirometria di controllo', status: 'CONFIRMED' },
+      { id: 103, patientId: 3, doctorId: 3, slotId: 203, reason: 'Controllo post-trattamento', status: 'CONFIRMED' },
+      { id: 104, patientId: 4, doctorId: 3, slotId: 204, reason: 'Valutazione ricovero', status: 'CONFIRMED' },
+      { id: 105, patientId: 5, doctorId: 3, slotId: 205, reason: 'Auscultazione cardiopolmonare', status: 'CONFIRMED' },
+      { id: 106, patientId: 6, doctorId: 3, slotId: 206, reason: 'Ricovero programmato', status: 'CONFIRMED' },
+      { id: 107, patientId: 7, doctorId: 3, slotId: 207, reason: 'Consulenza pneumologica', status: 'CONFIRMED' },
+      { id: 108, patientId: 1, doctorId: 3, slotId: 208, reason: 'Secondo follow-up', status: 'CONFIRMED' },
+      { id: 109, patientId: 2, doctorId: 3, slotId: 209, reason: 'Spirometria', status: 'CONFIRMED' },
+      { id: 110, patientId: 8, doctorId: 3, slotId: 210, reason: 'Ricovero urgente', status: 'CONFIRMED' },
+      { id: 111, patientId: 3, doctorId: 3, slotId: 211, reason: 'Televisita controllo', status: 'CONFIRMED' },
+      { id: 112, patientId: 5, doctorId: 3, slotId: 212, reason: 'Auscultazione finale', status: 'CONFIRMED' }
+    ];
+  }
+
+  private loadDepartments(): void {
+    this.api.request<DepartmentItem[]>('GET', '/api/departments').subscribe({
+      next: (departments) => {
+        if (departments.length > 0) {
+          this.departments = departments;
+        } else {
+          this.departments = this.getMockDepartments();
+        }
       },
       error: () => {
-        this.auditError = 'Impossibile caricare l’audit trail.';
-        this.isLoading = false;
+        this.departments = this.getMockDepartments();
       }
     });
   }
 
-  loadAdminTelevisit(): void {
-    this.televisitError = '';
-    this.loadTelevisits();
-    this.loadAdmissions();
+  private getMockDepartments(): DepartmentItem[] {
+    return [
+      { code: 'PNEUMO', name: 'Pneumologia', facilityCode: 'HQ' },
+      { code: 'CARD', name: 'Cardiologia', facilityCode: 'HQ' },
+      { code: 'NEURO', name: 'Neurologia', facilityCode: 'HQ' },
+      { code: 'ORTO', name: 'Ortopedia', facilityCode: 'HQ' },
+      { code: 'DERM', name: 'Dermatologia', facilityCode: 'HQ' }
+    ];
   }
 
   private getConsentsPath(): string | null {

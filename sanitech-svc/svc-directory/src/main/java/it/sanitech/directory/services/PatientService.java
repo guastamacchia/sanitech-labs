@@ -8,6 +8,7 @@ import it.sanitech.directory.repositories.DepartmentRepository;
 import it.sanitech.directory.repositories.PatientRepository;
 import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.repositories.entities.Patient;
+import it.sanitech.directory.repositories.entities.UserStatus;
 import it.sanitech.directory.repositories.spec.PatientSpecifications;
 import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.directory.services.dto.PatientDto;
@@ -27,6 +28,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -100,6 +102,11 @@ public class PatientService {
                 .lastName(dto.lastName().trim())
                 .email(email)
                 .phone(Objects.isNull(dto.phone()) ? null : dto.phone().trim())
+                .fiscalCode(Objects.isNull(dto.fiscalCode()) ? null : dto.fiscalCode().trim().toUpperCase(Locale.ROOT))
+                .birthDate(dto.birthDate())
+                .address(Objects.isNull(dto.address()) ? null : dto.address().trim())
+                .status(UserStatus.PENDING)
+                .registeredAt(Instant.now())
                 .departments(deptCodes.isEmpty() ? new HashSet<>() : resolveDepartments(deptCodes))
                 .build();
 
@@ -116,7 +123,8 @@ public class PatientService {
                         "email", saved.getEmail(),
                         "phone", saved.getPhone(),
                         "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
@@ -126,10 +134,13 @@ public class PatientService {
                 saved.getFirstName(),
                 saved.getLastName(),
                 saved.getPhone(),
-                true,
+                false,  // Utente disabilitato fino all'attivazione da parte dell'admin
                 PATIENT_ROLE,
                 null
         ));
+
+        // Invia email di attivazione
+        publishActivationEmailEvent(saved);
 
         return patientMapper.toDto(saved);
     }
@@ -140,6 +151,9 @@ public class PatientService {
                 dto.lastName(),
                 dto.email(),
                 dto.phone(),
+                dto.fiscalCode(),
+                dto.birthDate(),
+                dto.address(),
                 Set.of()
         );
         return create(sanitized, null);
@@ -163,6 +177,12 @@ public class PatientService {
         entity.setEmail(normalizeEmail(entity.getEmail()));
         if (Objects.nonNull(entity.getPhone())) {
             entity.setPhone(entity.getPhone().trim());
+        }
+        if (Objects.nonNull(entity.getFiscalCode())) {
+            entity.setFiscalCode(entity.getFiscalCode().trim().toUpperCase(Locale.ROOT));
+        }
+        if (Objects.nonNull(entity.getAddress())) {
+            entity.setAddress(entity.getAddress().trim());
         }
 
         if (Objects.nonNull(dto.departmentCodes())) {
@@ -188,7 +208,8 @@ public class PatientService {
                         "email", saved.getEmail(),
                         "phone", saved.getPhone(),
                         "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
@@ -215,13 +236,53 @@ public class PatientService {
                 AppConstants.Outbox.AggregateType.PATIENT,
                 String.valueOf(id),
                 AppConstants.Outbox.EventType.PATIENT_DELETED,
-                Map.of("id", id)
+                Map.of("id", id),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
     }
 
-    public void disableAccess(Long id) {
+    public PatientDto disableAccess(Long id) {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
+        entity.setStatus(UserStatus.DISABLED);
         keycloakAdminClient.disableUser(entity.getEmail());
+        Patient saved = patientRepository.save(entity);
+        return patientMapper.toDto(saved);
+    }
+
+    public PatientDto activate(Long id) {
+        Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
+        entity.setStatus(UserStatus.ACTIVE);
+        entity.setActivatedAt(Instant.now());
+        keycloakAdminClient.enableUser(entity.getEmail());
+        Patient saved = patientRepository.save(entity);
+        return patientMapper.toDto(saved);
+    }
+
+    public void resendActivation(Long id) {
+        Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
+        if (entity.getStatus() != UserStatus.PENDING) {
+            throw new IllegalArgumentException("Il paziente non è in stato PENDING.");
+        }
+        publishActivationEmailEvent(entity);
+    }
+
+    /**
+     * Pubblica evento per invio email di attivazione account.
+     */
+    private void publishActivationEmailEvent(Patient entity) {
+        eventPublisher.publish(
+                AppConstants.Outbox.AggregateType.PATIENT,
+                String.valueOf(entity.getId()),
+                AppConstants.Outbox.EventType.ACTIVATION_EMAIL_REQUESTED,
+                Map.of(
+                        "recipientType", AppConstants.Outbox.AggregateType.PATIENT,
+                        "recipientId", String.valueOf(entity.getId()),
+                        "email", entity.getEmail(),
+                        "firstName", entity.getFirstName(),
+                        "lastName", entity.getLastName()
+                ),
+                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS
+        );
     }
 
     /**
@@ -258,7 +319,8 @@ public class PatientService {
                         "email", saved.getEmail(),
                         "phone", saved.getPhone(),
                         "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
@@ -278,12 +340,21 @@ public class PatientService {
 
     @Transactional(readOnly = true)
     @Bulkhead(name = "directoryRead", type = Bulkhead.Type.SEMAPHORE)
-    public Page<PatientDto> searchAdmin(String q, String departmentCode, int page, int size, String[] sort) {
+    public Page<PatientDto> searchAdmin(String q, String departmentCode, String status, int page, int size, String[] sort) {
         Sort safeSort = SortUtils.safeSort(sort, AppConstants.SortField.PATIENT_ALLOWED, "id");
         Pageable pageable = PageableUtils.pageRequest(page, size, MAX_PAGE_SIZE, safeSort);
 
+        UserStatus userStatus = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                userStatus = UserStatus.valueOf(status.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                // Ignora filtro status non valido
+            }
+        }
+
         Page<Patient> result = patientRepository.findAll(
-                PatientSpecifications.search(q, departmentCode),
+                PatientSpecifications.search(q, departmentCode, userStatus),
                 pageable
         );
 
@@ -305,7 +376,7 @@ public class PatientService {
         }
 
         Page<Patient> result = patientRepository.findAll(
-                PatientSpecifications.search(q, null).and(PatientSpecifications.inDepartments(allowedDepts)),
+                PatientSpecifications.search(q, null, null).and(PatientSpecifications.inDepartments(allowedDepts)),
                 pageable
         );
 

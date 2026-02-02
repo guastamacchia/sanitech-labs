@@ -132,7 +132,7 @@ public class DocumentService {
                     "patientId", saved.getPatientId(),
                     "departmentCode", saved.getDepartmentCode(),
                     "documentType", saved.getDocumentType()
-            ));
+            ), it.sanitech.docs.utilities.AppConstants.Outbox.TOPIC_AUDITS_EVENTS);
 
             return mapper.toDto(saved);
 
@@ -257,7 +257,7 @@ public class DocumentService {
                 "patientId", doc.getPatientId(),
                 "departmentCode", doc.getDepartmentCode(),
                 "documentType", doc.getDocumentType()
-        ));
+        ), it.sanitech.docs.utilities.AppConstants.Outbox.TOPIC_AUDITS_EVENTS);
     }
 
     private String sha256Hex(byte[] bytes) {

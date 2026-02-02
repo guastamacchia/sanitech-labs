@@ -17,6 +17,8 @@ public interface PaymentOrderMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "patientId", ignore = true)
+    @Mapping(target = "patientEmail", ignore = true)
+    @Mapping(target = "patientName", ignore = true)
     @Mapping(target = "provider", ignore = true)
     @Mapping(target = "providerReference", ignore = true)
     @Mapping(target = "status", ignore = true)

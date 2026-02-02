@@ -16,5 +16,11 @@ public record FacilityDto(
         String code,
 
         /** Nome leggibile struttura. */
-        String name
+        String name,
+
+        /** Indirizzo della struttura. */
+        String address,
+
+        /** Numero di telefono della struttura. */
+        String phone
 ) {}

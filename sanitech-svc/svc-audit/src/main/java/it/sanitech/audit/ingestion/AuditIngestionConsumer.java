@@ -31,7 +31,7 @@ public class AuditIngestionConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(
-            topics = "#{'${sanitech.audit.ingestion.topics}'.split(',')}",
+            topics = "${sanitech.audit.ingestion.topics}",
             groupId = "${spring.kafka.consumer.group-id}"
     )
     public void onMessage(ConsumerRecord<String, String> record) {

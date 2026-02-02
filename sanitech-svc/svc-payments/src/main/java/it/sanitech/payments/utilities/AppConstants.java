@@ -56,6 +56,12 @@ public class AppConstants {
         public static final String AGGREGATE_TYPE_PAYMENT = "PAYMENT_ORDER";
         public static final String EVT_CREATED = "PAYMENT_CREATED";
         public static final String EVT_STATUS_CHANGED = "PAYMENT_STATUS_CHANGED";
+        public static final String EVT_REMINDER_REQUESTED = "PAYMENT_REMINDER_REQUESTED";
+
+        /** Topic per notifiche (solleciti, conferme, etc.) */
+        public static final String TOPIC_NOTIFICATIONS_EVENTS = "notifications.events";
+        /** Topic per eventi di auditing */
+        public static final String TOPIC_AUDITS_EVENTS = "audits.events";
     }
 
     @UtilityClass

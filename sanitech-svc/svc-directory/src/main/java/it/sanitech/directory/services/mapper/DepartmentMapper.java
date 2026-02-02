@@ -12,7 +12,7 @@ import org.mapstruct.*;
  * <p>
  * Gestisce la conversione tra entità e DTO per l'anagrafica reparti, applicando
  * la strategia di update "null-ignore" per supportare patch parziali.
- * Include il mapping del codice struttura (facilityCode) dalla relazione facility.
+ * Include il mapping del codice e nome struttura (facilityCode/Name) dalla relazione facility.
  * </p>
  */
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING,
@@ -20,6 +20,7 @@ import org.mapstruct.*;
 public interface DepartmentMapper {
 
     @Mapping(target = "facilityCode", source = "facility.code")
+    @Mapping(target = "facilityName", source = "facility.name")
     DepartmentDto toDto(Department entity);
 
     @Mapping(target = "id", ignore = true)

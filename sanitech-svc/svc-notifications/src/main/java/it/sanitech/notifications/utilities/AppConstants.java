@@ -20,4 +20,14 @@ public final class AppConstants {
 
         private Notifications() { }
     }
+
+    /**
+     * Costanti per eventi Outbox.
+     */
+    public static final class Outbox {
+        /** Topic per eventi di auditing */
+        public static final String TOPIC_AUDITS_EVENTS = "audits.events";
+
+        private Outbox() { }
+    }
 }

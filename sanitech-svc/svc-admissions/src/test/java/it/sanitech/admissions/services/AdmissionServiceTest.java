@@ -96,7 +96,8 @@ class AdmissionServiceTest {
                 eq("ADMISSION"),
                 eq("77"),
                 eq("ADMISSION_CREATED"),
-                any(Map.class)
+                any(Map.class),
+                eq("audits.events")
         );
     }
 
@@ -174,7 +175,8 @@ class AdmissionServiceTest {
                 eq("ADMISSION"),
                 eq("5"),
                 eq("ADMISSION_DISCHARGED"),
-                any(Map.class)
+                any(Map.class),
+                eq("audits.events")
         );
     }
 

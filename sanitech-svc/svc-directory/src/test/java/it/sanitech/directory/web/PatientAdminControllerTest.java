@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -94,7 +95,7 @@ class PatientAdminControllerTest {
                 null
         );
 
-        when(patientService.searchAdmin(any(), any(), any(Integer.class), any(Integer.class), any()))
+        when(patientService.searchAdmin(any(), any(), any(), anyInt(), anyInt(), any()))
                 .thenReturn(new PageImpl<>(List.of(patient)));
 
         mockMvc.perform(get(AppConstants.ApiPath.ADMIN_PATIENTS)

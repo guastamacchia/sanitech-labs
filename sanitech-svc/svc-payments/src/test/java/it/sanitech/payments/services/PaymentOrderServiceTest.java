@@ -61,6 +61,8 @@ class PaymentOrderServiceTest {
                     saved.getId(),
                     saved.getAppointmentId(),
                     saved.getPatientId(),
+                    saved.getPatientEmail(),
+                    saved.getPatientName(),
                     saved.getAmountCents(),
                     saved.getCurrency(),
                     saved.getMethod(),
@@ -85,7 +87,7 @@ class PaymentOrderServiceTest {
         assertThat(captor.getValue().getStatus()).isEqualTo(PaymentStatus.CREATED);
         assertThat(captor.getValue().getIdempotencyKey()).isEqualTo("idem-1");
 
-        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("55"), eq(AppConstants.Outbox.EVT_CREATED), any());
+        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("55"), eq(AppConstants.Outbox.EVT_CREATED), any(), eq("audits.events"));
     }
 
     @Test
@@ -131,6 +133,8 @@ class PaymentOrderServiceTest {
                 order.getId(),
                 order.getAppointmentId(),
                 order.getPatientId(),
+                order.getPatientEmail(),
+                order.getPatientName(),
                 order.getAmountCents(),
                 order.getCurrency(),
                 order.getMethod(),
@@ -172,6 +176,8 @@ class PaymentOrderServiceTest {
                     saved.getId(),
                     saved.getAppointmentId(),
                     saved.getPatientId(),
+                    saved.getPatientEmail(),
+                    saved.getPatientName(),
                     saved.getAmountCents(),
                     saved.getCurrency(),
                     saved.getMethod(),
@@ -187,7 +193,7 @@ class PaymentOrderServiceTest {
         PaymentOrderDto result = service.capture(22L);
 
         assertThat(result.status()).isEqualTo(PaymentStatus.CAPTURED);
-        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("22"), eq(AppConstants.Outbox.EVT_STATUS_CHANGED), any());
+        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("22"), eq(AppConstants.Outbox.EVT_STATUS_CHANGED), any(), eq("audits.events"));
     }
 
     @Test
@@ -239,6 +245,8 @@ class PaymentOrderServiceTest {
                     saved.getId(),
                     saved.getAppointmentId(),
                     saved.getPatientId(),
+                    saved.getPatientEmail(),
+                    saved.getPatientName(),
                     saved.getAmountCents(),
                     saved.getCurrency(),
                     saved.getMethod(),
@@ -256,7 +264,7 @@ class PaymentOrderServiceTest {
         PaymentOrderDto result = service.adminPatch(44L, updateDto);
 
         assertThat(result.status()).isEqualTo(PaymentStatus.CAPTURED);
-        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("44"), eq(AppConstants.Outbox.EVT_STATUS_CHANGED), any());
+        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("44"), eq(AppConstants.Outbox.EVT_STATUS_CHANGED), any(), eq("audits.events"));
     }
 
     @Test

@@ -63,4 +63,13 @@ public final class AppConstants {
         public static final String DEFAULT_SERVER_PORT = "8084";
     }
 
+    /**
+     * Costanti per eventi Outbox.
+     */
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    public static final class Outbox {
+        /** Topic per eventi di auditing */
+        public static final String TOPIC_AUDITS_EVENTS = "audits.events";
+    }
+
 }

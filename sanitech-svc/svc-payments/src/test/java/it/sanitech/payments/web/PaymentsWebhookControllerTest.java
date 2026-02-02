@@ -7,7 +7,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import it.sanitech.commons.exception.GlobalExceptionHandler;
 import it.sanitech.payments.properties.PaymentWebhookProperties;
 import it.sanitech.payments.repositories.entities.PaymentMethod;
 import it.sanitech.payments.repositories.entities.PaymentStatus;
@@ -20,14 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(
-        controllers = PaymentsWebhookController.class,
-        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = GlobalExceptionHandler.class)
-)
+@WebMvcTest(controllers = PaymentsWebhookController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class PaymentsWebhookControllerTest {
 
@@ -61,6 +55,8 @@ class PaymentsWebhookControllerTest {
                 30L,
                 11L,
                 77L,
+                "patient@test.com",
+                "Test Patient",
                 1500L,
                 "EUR",
                 PaymentMethod.CARD,

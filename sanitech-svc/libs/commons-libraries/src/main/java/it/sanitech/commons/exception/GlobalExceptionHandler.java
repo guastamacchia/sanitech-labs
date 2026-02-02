@@ -12,6 +12,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 import java.util.Optional;
@@ -157,6 +158,21 @@ public class GlobalExceptionHandler {
                 AppConstants.Problem.TYPE_SERVICE_UNAVAILABLE,
                 AppConstants.ErrorMessage.ERR_SERVICE_UNAVAILABLE,
                 AppConstants.ErrorMessage.MSG_SERVICE_UNAVAILABLE,
+                request,
+                null);
+    }
+
+    /**
+     * ResponseStatusException (es. 401 da webhook).
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ProblemDetails> responseStatus(ResponseStatusException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+        String typeSuffix = status.name().toLowerCase().replace("_", "-");
+        return build(status,
+                "https://sanitech.it/problems/" + typeSuffix,
+                status.getReasonPhrase(),
+                ex.getReason(),
                 request,
                 null);
     }

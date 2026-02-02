@@ -26,6 +26,9 @@ public record DoctorUpdateDto(
         /** Numero di telefono del medico (opzionale). */
         String phone,
 
+        /** Specializzazione del medico (opzionale). */
+        String specialization,
+
         /** Codice reparto (opzionale). Se presente, sostituisce il valore corrente. */
         String departmentCode
 

@@ -94,7 +94,7 @@ class DoctorAdminControllerTest {
                 "sara.neri@email.it"
         );
 
-        when(doctorService.search(anyString(), anyString(), anyString(), anyInt(), anyInt(), any()))
+        when(doctorService.search(anyString(), anyString(), anyString(), any(), anyInt(), anyInt(), any()))
                 .thenReturn(new PageImpl<>(List.of(doctor)));
 
         mockMvc.perform(get(AppConstants.ApiPath.ADMIN_DOCTORS)

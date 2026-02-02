@@ -32,6 +32,12 @@ public class PaymentOrder {
     @Column(name = "patient_id", nullable = false)
     private Long patientId;
 
+    @Column(name = "patient_email", length = 255)
+    private String patientEmail;
+
+    @Column(name = "patient_name", length = 255)
+    private String patientName;
+
     @Column(name = "amount_cents", nullable = false)
     private long amountCents;
 

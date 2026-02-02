@@ -30,6 +30,9 @@ public record DoctorCreateDto(
         /** Numero di telefono del medico (opzionale). */
         String phone,
 
+        /** Specializzazione del medico (opzionale). */
+        String specialization,
+
         /** Codice del reparto associato al medico. */
         @NotBlank
         String departmentCode

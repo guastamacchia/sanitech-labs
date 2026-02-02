@@ -73,7 +73,8 @@ public class PrescriptionService {
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_PRESCRIPTION_CREATED,
-                new PrescriptionEventPayload(saved)
+                new PrescriptionEventPayload(saved),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return mapper.toDto(saved);
@@ -164,7 +165,8 @@ public class PrescriptionService {
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_PRESCRIPTION_UPDATED,
-                new PrescriptionEventPayload(saved)
+                new PrescriptionEventPayload(saved),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return mapper.toDto(saved);
@@ -190,7 +192,8 @@ public class PrescriptionService {
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_PRESCRIPTION_UPDATED,
-                new PrescriptionEventPayload(saved)
+                new PrescriptionEventPayload(saved),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return mapper.toDto(saved);
@@ -214,7 +217,8 @@ public class PrescriptionService {
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
                 String.valueOf(prescriptionId),
                 AppConstants.Outbox.EVT_PRESCRIPTION_CANCELLED,
-                new PrescriptionEventPayload(p)
+                new PrescriptionEventPayload(p),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
     }
 

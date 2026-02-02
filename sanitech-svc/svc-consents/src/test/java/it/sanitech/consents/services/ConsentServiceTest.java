@@ -139,7 +139,7 @@ class ConsentServiceTest {
         verify(repository).save(consentCaptor.capture());
         assertThat(consentCaptor.getValue().getGrantedAt()).isNotNull();
 
-        verify(publisher).publish(eq("CONSENT"), eq("22"), eq("CONSENT_GRANTED"), any());
+        verify(publisher).publish(eq("CONSENT"), eq("22"), eq("CONSENT_GRANTED"), any(), eq("audits.events"));
     }
 
     @Test
@@ -170,7 +170,7 @@ class ConsentServiceTest {
         verify(repository).save(consentCaptor.capture());
         assertThat(consentCaptor.getValue().getStatus()).isEqualTo(ConsentStatus.REVOKED);
 
-        verify(publisher).publish(eq("CONSENT"), eq("31"), eq("CONSENT_REVOKED"), any());
+        verify(publisher).publish(eq("CONSENT"), eq("31"), eq("CONSENT_REVOKED"), any(), eq("audits.events"));
     }
 
     @Test
@@ -212,6 +212,6 @@ class ConsentServiceTest {
         service.deleteById(55L);
 
         verify(repository).delete(consent);
-        verify(publisher).publish(eq("CONSENT"), eq("55"), eq("CONSENT_DELETED"), any());
+        verify(publisher).publish(eq("CONSENT"), eq("55"), eq("CONSENT_DELETED"), any(), eq("audits.events"));
     }
 }

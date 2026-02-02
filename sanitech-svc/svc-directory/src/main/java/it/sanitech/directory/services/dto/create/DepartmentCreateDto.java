@@ -20,6 +20,9 @@ public record DepartmentCreateDto(
         @NotBlank
         String name,
 
+        /** Capacità posti letto (opzionale, default 0). */
+        Integer capacity,
+
         /** Codice della struttura di appartenenza. */
         @NotBlank
         String facilityCode

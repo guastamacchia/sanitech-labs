@@ -56,4 +56,14 @@ public final class AppConstants {
         /** Claim custom: doctor id (se presente nel token). */
         public static final String CLAIM_DOCTOR_ID = "did";
     }
+
+    /**
+     * Costanti per eventi Outbox.
+     */
+    public static final class Outbox {
+        private Outbox() {}
+
+        /** Topic per eventi di auditing */
+        public static final String TOPIC_AUDITS_EVENTS = "audits.events";
+    }
 }

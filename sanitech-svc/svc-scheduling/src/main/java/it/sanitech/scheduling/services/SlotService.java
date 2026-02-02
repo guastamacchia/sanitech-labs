@@ -73,7 +73,8 @@ public class SlotService {
                         "mode", saved.getMode().name(),
                         "startAt", saved.getStartAt().toString(),
                         "endAt", saved.getEndAt().toString()
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return slotMapper.toDto(saved);
@@ -136,7 +137,8 @@ public class SlotService {
                 "SLOT",
                 String.valueOf(slot.getId()),
                 "SLOT_CANCELLED",
-                Map.of("slotId", slot.getId(), "occurredAt", Instant.now().toString())
+                Map.of("slotId", slot.getId(), "occurredAt", Instant.now().toString()),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
     }
 

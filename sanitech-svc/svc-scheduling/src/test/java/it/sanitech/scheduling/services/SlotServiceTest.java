@@ -70,7 +70,7 @@ class SlotServiceTest {
 
         assertThat(result.id()).isEqualTo(11L);
         verify(deptGuard).checkCanManage(eq("CARDIO"), eq(auth));
-        verify(events).publish(eq("SLOT"), eq("11"), eq("SLOT_CREATED"), any());
+        verify(events).publish(eq("SLOT"), eq("11"), eq("SLOT_CREATED"), any(), eq("audits.events"));
     }
 
     @Test
@@ -109,7 +109,7 @@ class SlotServiceTest {
 
         assertThat(entity.getStatus()).isEqualTo(SlotStatus.CANCELLED);
         verify(deptGuard).checkCanManage(eq("CARDIO"), eq(auth));
-        verify(events).publish(eq("SLOT"), eq("20"), eq("SLOT_CANCELLED"), any());
+        verify(events).publish(eq("SLOT"), eq("20"), eq("SLOT_CANCELLED"), any(), eq("audits.events"));
     }
 
     @Test

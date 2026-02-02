@@ -17,6 +17,12 @@ public record PaymentAdminCreateDto(
         @NotNull
         Long patientId,
 
+        @Size(max = 255)
+        String patientEmail,
+
+        @Size(max = 255)
+        String patientName,
+
         @Min(1)
         long amountCents,
 

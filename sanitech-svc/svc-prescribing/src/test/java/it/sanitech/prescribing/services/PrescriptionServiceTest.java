@@ -85,7 +85,7 @@ class PrescriptionServiceTest {
 
         verify(deptGuard).checkCanManage(eq("CARDIO"), eq(auth));
         verify(consentClient).assertPrescriptionConsent(eq(77L), eq(55L), eq(auth));
-        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_PRESCRIPTION), eq("10"), eq(AppConstants.Outbox.EVT_PRESCRIPTION_CREATED), any());
+        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_PRESCRIPTION), eq("10"), eq(AppConstants.Outbox.EVT_PRESCRIPTION_CREATED), any(), eq("audits.events"));
     }
 
     @Test
@@ -173,7 +173,7 @@ class PrescriptionServiceTest {
 
         assertThat(result.id()).isEqualTo(40L);
         verify(mapper).patch(eq(entity), any(PrescriptionPatchDto.class));
-        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_PRESCRIPTION), eq("40"), eq(AppConstants.Outbox.EVT_PRESCRIPTION_UPDATED), any());
+        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_PRESCRIPTION), eq("40"), eq(AppConstants.Outbox.EVT_PRESCRIPTION_UPDATED), any(), eq("audits.events"));
     }
 
     @Test
@@ -209,7 +209,7 @@ class PrescriptionServiceTest {
 
         assertThat(result.id()).isEqualTo(50L);
         assertThat(entity.getItems()).hasSize(1);
-        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_PRESCRIPTION), eq("50"), eq(AppConstants.Outbox.EVT_PRESCRIPTION_UPDATED), any());
+        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_PRESCRIPTION), eq("50"), eq(AppConstants.Outbox.EVT_PRESCRIPTION_UPDATED), any(), eq("audits.events"));
     }
 
     @Test
@@ -236,7 +236,7 @@ class PrescriptionServiceTest {
         service.cancel(60L, auth);
 
         assertThat(entity.getStatus()).isEqualTo(PrescriptionStatus.CANCELLED);
-        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_PRESCRIPTION), eq("60"), eq(AppConstants.Outbox.EVT_PRESCRIPTION_CANCELLED), any());
+        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_PRESCRIPTION), eq("60"), eq(AppConstants.Outbox.EVT_PRESCRIPTION_CANCELLED), any(), eq("audits.events"));
     }
 
     @Test

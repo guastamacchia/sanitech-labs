@@ -1,5 +1,9 @@
 package it.sanitech.directory.services.dto;
 
+import it.sanitech.directory.repositories.entities.UserStatus;
+
+import java.time.Instant;
+
 /**
  * DTO utilizzato per esporre i dati anagrafici del medico verso i controller REST.
  *
@@ -24,6 +28,18 @@ public record DoctorDto(
 
         /** Numero di telefono del medico (opzionale). */
         String phone,
+
+        /** Specializzazione del medico (opzionale). */
+        String specialization,
+
+        /** Stato dell'account (PENDING, ACTIVE, DISABLED). */
+        UserStatus status,
+
+        /** Data/ora di creazione dell'account. */
+        Instant createdAt,
+
+        /** Data/ora di attivazione dell'account. */
+        Instant activatedAt,
 
         /** Codice del reparto associato al medico. */
         String departmentCode,

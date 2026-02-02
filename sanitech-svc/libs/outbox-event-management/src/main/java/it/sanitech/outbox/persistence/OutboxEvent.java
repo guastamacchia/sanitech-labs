@@ -24,6 +24,17 @@ import java.time.Instant;
 
 /**
  * Entità Outbox (pensata per PostgreSQL: jsonb + SKIP LOCKED).
+ *
+ * <p>
+ * I microservizi che usano l'outbox devono includere questo package nello scan delle entity.
+ * Esempio:
+ * <pre>{@code
+ * @EntityScan(basePackages = {
+ *     "it.sanitech.tuomicroservizio.repositories.entities",
+ *     OutboxEvent.ENTITY_PACKAGE
+ * })
+ * }</pre>
+ * </p>
  */
 @Getter
 @Setter
@@ -36,6 +47,12 @@ import java.time.Instant;
                 @Index(name = "idx_outbox_unpublished", columnList = "published, occurred_at")
         })
 public class OutboxEvent {
+
+    /**
+     * Package contenente le entity del modulo outbox.
+     * Da usare con {@code @EntityScan} nei microservizi.
+     */
+    public static final String ENTITY_PACKAGE = "it.sanitech.outbox.persistence";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,6 +67,13 @@ public class OutboxEvent {
 
     @Column(name = "event_type", nullable = false, length = 64)
     private String eventType;
+
+    /**
+     * Topic Kafka di destinazione.
+     * Se nullo, il publisher utilizzerà il topic di default configurato.
+     */
+    @Column(name = "topic", length = 128)
+    private String topic;
 
     /**
      * Payload JSON (jsonb).

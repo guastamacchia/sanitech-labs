@@ -4,6 +4,7 @@ import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.repositories.entities.Doctor;
 import it.sanitech.directory.repositories.entities.Facility;
 import it.sanitech.directory.repositories.entities.Patient;
+import it.sanitech.directory.repositories.entities.UserStatus;
 import it.sanitech.directory.services.dto.DepartmentDto;
 import it.sanitech.directory.services.dto.DoctorDto;
 import it.sanitech.directory.services.dto.FacilityDto;
@@ -18,6 +19,8 @@ import it.sanitech.directory.services.dto.update.FacilityUpdateDto;
 import it.sanitech.directory.services.dto.update.PatientUpdateDto;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Set;
 
 @NoArgsConstructor
@@ -30,19 +33,21 @@ public final class TestDataFactory {
                 .id(1L)
                 .code("HOSP_CENTRAL")
                 .name("Ospedale Centrale")
+                .address("Via Roma 1, Milano")
+                .phone("+39 02 1234567")
                 .build();
     }
 
     public static FacilityDto facilityDto(long id, String code, String name) {
-        return new FacilityDto(id, code, name);
+        return new FacilityDto(id, code, name, null, null);
     }
 
     public static FacilityCreateDto facilityCreateDto() {
-        return new FacilityCreateDto("HOSP_NORD", "Ospedale Nord");
+        return new FacilityCreateDto("HOSP_NORD", "Ospedale Nord", "Via Torino 10, Milano", "+39 02 9876543");
     }
 
     public static FacilityUpdateDto facilityUpdateDto() {
-        return new FacilityUpdateDto("Ospedale Centrale Rinnovato");
+        return new FacilityUpdateDto("Ospedale Centrale Rinnovato", "Via Roma 1, Milano", "+39 02 1234567");
     }
 
     // ===== DEPARTMENT (REPARTO) =====
@@ -53,20 +58,21 @@ public final class TestDataFactory {
                 .id(10L)
                 .code("CARD")
                 .name("Cardiologia")
+                .capacity(50)
                 .facility(facility)
                 .build();
     }
 
     public static DepartmentDto departmentDto(long id, String code, String name, String facilityCode) {
-        return new DepartmentDto(id, code, name, facilityCode);
+        return new DepartmentDto(id, code, name, null, facilityCode, null);
     }
 
     public static DepartmentCreateDto departmentCreateDto() {
-        return new DepartmentCreateDto("CARD", "Cardiologia", "HOSP_CENTRAL");
+        return new DepartmentCreateDto("CARD", "Cardiologia", 50, "HOSP_CENTRAL");
     }
 
     public static DepartmentUpdateDto departmentUpdateDto() {
-        return new DepartmentUpdateDto("Cardiologia interventistica");
+        return new DepartmentUpdateDto("Cardiologia interventistica", 60);
     }
 
     // ===== DOCTOR (MEDICO) =====
@@ -77,6 +83,8 @@ public final class TestDataFactory {
                 .firstName(firstName)
                 .lastName(lastName)
                 .email(email)
+                .status(UserStatus.PENDING)
+                .createdAt(Instant.now())
                 .build();
     }
 
@@ -87,6 +95,10 @@ public final class TestDataFactory {
                 lastName,
                 email,
                 null,   // phone
+                null,   // specialization
+                UserStatus.PENDING, // status
+                null,   // createdAt
+                null,   // activatedAt
                 null,   // departmentCode
                 null,   // departmentName
                 null,   // facilityCode
@@ -100,6 +112,7 @@ public final class TestDataFactory {
                 "Bianchi",
                 "luca.bianchi@email.it",
                 null,
+                null,   // specialization
                 "CARD"
         );
     }
@@ -110,6 +123,7 @@ public final class TestDataFactory {
                 "Bianchi",
                 "Luca.Bianchi@Email.it",
                 null,
+                null,   // specialization
                 "CARD"
         );
     }
@@ -120,6 +134,7 @@ public final class TestDataFactory {
                 "Bianchi",
                 "Nuova.Email@Email.it",
                 null,
+                null,   // specialization
                 "CARD"
         );
     }
@@ -133,6 +148,8 @@ public final class TestDataFactory {
                 .lastName(lastName)
                 .email(email)
                 .phone(phone)
+                .status(UserStatus.PENDING)
+                .registeredAt(Instant.now())
                 .build();
     }
 
@@ -143,6 +160,12 @@ public final class TestDataFactory {
                 lastName,
                 email,
                 phone,
+                null,   // fiscalCode
+                null,   // birthDate
+                null,   // address
+                UserStatus.PENDING, // status
+                null,   // registeredAt
+                null,   // activatedAt
                 Set.of()
         );
     }
@@ -153,6 +176,9 @@ public final class TestDataFactory {
                 "Rossi",
                 "nome.cognome@email.it",
                 "+39 333 123 4567",
+                "RSSMRA80A01F205X",  // fiscalCode
+                LocalDate.of(1980, 1, 1), // birthDate
+                "Via Milano 10, Roma", // address
                 Set.of("CARD")
         );
     }
@@ -163,6 +189,9 @@ public final class TestDataFactory {
                 "Rossi",
                 "Nome.Cognome@Email.it",
                 "+39 333 123 4567",
+                "RSSMRA80A01F205X",  // fiscalCode
+                LocalDate.of(1980, 1, 1), // birthDate
+                "Via Milano 10, Roma", // address
                 Set.of("card")
         );
     }
@@ -173,6 +202,9 @@ public final class TestDataFactory {
                 "Rossi",
                 "maria.rossi@email.it",
                 "+39 333 123 9999",
+                null,   // fiscalCode
+                null,   // birthDate
+                null,   // address
                 null
         );
     }
@@ -183,6 +215,9 @@ public final class TestDataFactory {
                 "Rossi",
                 "Nuova.Email@Email.it",
                 " 333 444 555 ",
+                null,   // fiscalCode
+                null,   // birthDate
+                null,   // address
                 null
         );
     }

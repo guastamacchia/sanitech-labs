@@ -6,6 +6,7 @@ import it.sanitech.notifications.repositories.entities.*;
 import it.sanitech.notifications.services.dto.NotificationDto;
 import it.sanitech.notifications.services.dto.create.NotificationCreateDto;
 import it.sanitech.notifications.services.mapper.NotificationMapper;
+import it.sanitech.notifications.utilities.AppConstants;
 import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -71,7 +72,8 @@ public class NotificationService {
                         "channel", saved.getChannel().name(),
                         "status", saved.getStatus().name(),
                         "createdAt", String.valueOf(saved.getCreatedAt())
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return mapper.toDto(saved);
@@ -105,7 +107,8 @@ public class NotificationService {
                 AGGREGATE_TYPE,
                 String.valueOf(id),
                 "NOTIFICATION_DELETED",
-                Map.of("id", id)
+                Map.of("id", id),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
     }
 }

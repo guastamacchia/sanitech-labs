@@ -56,4 +56,9 @@ public class PaymentsAdminController {
     public PaymentOrderDto refund(@PathVariable long id) {
         return service.refund(id);
     }
+
+    @PostMapping("/{id}/reminder")
+    public PaymentOrderDto sendReminder(@PathVariable long id) {
+        return service.sendReminder(id);
+    }
 }

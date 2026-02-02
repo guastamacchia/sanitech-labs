@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { roleGuard } from '../../../core/auth/role.guard';
 import { AdminHomeComponent } from './admin-home.component';
 import { ResourcePageComponent } from '../shared/resources/resource-page.component';
+import { DirectoryPageComponent } from './directory/directory-page.component';
 import {
   admissionsEndpoints,
   auditEndpoints,
@@ -18,14 +19,8 @@ export const adminRoutes: Routes = [
   },
   {
     path: 'admin/directory',
-    component: ResourcePageComponent,
-    canActivate: [roleGuard('ROLE_ADMIN')],
-    data: {
-      title: 'Directory & anagrafiche',
-      description: 'Gestione medici, pazienti, strutture e reparti.',
-      endpoints: directoryEndpoints,
-      view: 'admin-directory'
-    }
+    component: DirectoryPageComponent,
+    canActivate: [roleGuard('ROLE_ADMIN')]
   },
   {
     path: 'admin/audit',
@@ -54,10 +49,21 @@ export const adminRoutes: Routes = [
     component: ResourcePageComponent,
     canActivate: [roleGuard('ROLE_ADMIN')],
     data: {
-      title: 'Televisite & ricoveri',
-      description: 'Supervisione sessioni di telemedicina e admissions.',
-      endpoints: [...televisitEndpoints, ...admissionsEndpoints],
+      title: 'Televisite',
+      description: 'Gestione sessioni di telemedicina e conversione appuntamenti.',
+      endpoints: televisitEndpoints,
       view: 'admin-televisit'
+    }
+  },
+  {
+    path: 'admin/admissions',
+    component: ResourcePageComponent,
+    canActivate: [roleGuard('ROLE_ADMIN')],
+    data: {
+      title: 'Ricoveri',
+      description: 'Gestione ricoveri, posti letto e medici referenti.',
+      endpoints: admissionsEndpoints,
+      view: 'admin-admissions'
     }
   }
 ];

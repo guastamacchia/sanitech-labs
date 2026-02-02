@@ -2,6 +2,17 @@
     "realm": "sanitech",
     "enabled": true,
     "displayName": "Sanitech",
+    "accessTokenLifespan": 1800,
+    "accessTokenLifespanForImplicitFlow": 1800,
+    "ssoSessionIdleTimeout": 3600,
+    "ssoSessionMaxLifespan": 36000,
+    "offlineSessionIdleTimeout": 2592000,
+    "offlineSessionMaxLifespanEnabled": false,
+    "accessCodeLifespan": 60,
+    "accessCodeLifespanUserAction": 300,
+    "accessCodeLifespanLogin": 1800,
+    "actionTokenGeneratedByUserLifespan": 300,
+    "actionTokenGeneratedByAdminLifespan": 43200,
     "defaultRole": {
         "name": "default-roles-sanitech",
         "composites": {}
@@ -715,6 +726,542 @@
             "emailVerified": true,
             "firstName": "Anna",
             "lastName": "Conti",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "marco.bianchi",
+            "enabled": true,
+            "email": "marco.bianchi@sanitech.example",
+            "attributes": {
+                "dept": ["CARD_CENTRAL"],
+                "did": ["2"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Marco",
+            "lastName": "Bianchi",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "laura.verdi",
+            "enabled": true,
+            "email": "laura.verdi@sanitech.example",
+            "attributes": {
+                "dept": ["CARD_CENTRAL"],
+                "did": ["3"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Laura",
+            "lastName": "Verdi",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "giuseppe.russo",
+            "enabled": true,
+            "email": "giuseppe.russo@sanitech.example",
+            "attributes": {
+                "dept": ["NEUR_CENTRAL"],
+                "did": ["4"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Giuseppe",
+            "lastName": "Russo",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "francesca.romano",
+            "enabled": true,
+            "email": "francesca.romano@sanitech.example",
+            "attributes": {
+                "dept": ["NEUR_CENTRAL"],
+                "did": ["5"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Francesca",
+            "lastName": "Romano",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "andrea.colombo",
+            "enabled": true,
+            "email": "andrea.colombo@sanitech.example",
+            "attributes": {
+                "dept": ["ORTH_CENTRAL"],
+                "did": ["6"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Andrea",
+            "lastName": "Colombo",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "elena.ricci",
+            "enabled": true,
+            "email": "elena.ricci@sanitech.example",
+            "attributes": {
+                "dept": ["PEDI_CENTRAL"],
+                "did": ["7"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Elena",
+            "lastName": "Ricci",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "paolo.gallo",
+            "enabled": true,
+            "email": "paolo.gallo@sanitech.example",
+            "attributes": {
+                "dept": ["PEDI_CENTRAL"],
+                "did": ["8"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Paolo",
+            "lastName": "Gallo",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "simone.conti",
+            "enabled": true,
+            "email": "simone.conti@sanitech.example",
+            "attributes": {
+                "dept": ["EMER_CENTRAL"],
+                "did": ["9"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Simone",
+            "lastName": "Conti",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "chiara.ferrari",
+            "enabled": true,
+            "email": "chiara.ferrari@sanitech.example",
+            "attributes": {
+                "dept": ["ONCO_NORD"],
+                "did": ["10"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Chiara",
+            "lastName": "Ferrari",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "matteo.esposito",
+            "enabled": true,
+            "email": "matteo.esposito@sanitech.example",
+            "attributes": {
+                "dept": ["ONCO_NORD"],
+                "did": ["11"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Matteo",
+            "lastName": "Esposito",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "luca.martini",
+            "enabled": true,
+            "email": "luca.martini@sanitech.example",
+            "attributes": {
+                "dept": ["GAST_NORD"],
+                "did": ["12"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Luca",
+            "lastName": "Martini",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "giulia.barbieri",
+            "enabled": true,
+            "email": "giulia.barbieri@sanitech.example",
+            "attributes": {
+                "dept": ["PNEU_NORD"],
+                "did": ["13"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Giulia",
+            "lastName": "Barbieri",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "roberto.bruno",
+            "enabled": true,
+            "email": "roberto.bruno@sanitech.example",
+            "attributes": {
+                "dept": ["GERI_NORD"],
+                "did": ["14"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Roberto",
+            "lastName": "Bruno",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "valentina.fontana",
+            "enabled": true,
+            "email": "valentina.fontana@sanitech.example",
+            "attributes": {
+                "dept": ["DERM_SUD"],
+                "did": ["15"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Valentina",
+            "lastName": "Fontana",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "alessandro.santoro",
+            "enabled": true,
+            "email": "alessandro.santoro@sanitech.example",
+            "attributes": {
+                "dept": ["OFTA_SUD"],
+                "did": ["16"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Alessandro",
+            "lastName": "Santoro",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "silvia.marini",
+            "enabled": true,
+            "email": "silvia.marini@sanitech.example",
+            "attributes": {
+                "dept": ["OTOL_SUD"],
+                "did": ["17"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_DOCTOR"],
+            "emailVerified": true,
+            "firstName": "Silvia",
+            "lastName": "Marini",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "mario.rossi",
+            "enabled": true,
+            "email": "mario.rossi@email.example",
+            "attributes": {
+                "pid": ["2"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_PATIENT"],
+            "emailVerified": true,
+            "firstName": "Mario",
+            "lastName": "Rossi",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "anna.bianchi",
+            "enabled": true,
+            "email": "anna.bianchi@email.example",
+            "attributes": {
+                "pid": ["3"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_PATIENT"],
+            "emailVerified": true,
+            "firstName": "Anna",
+            "lastName": "Bianchi",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "luigi.verde",
+            "enabled": true,
+            "email": "luigi.verde@email.example",
+            "attributes": {
+                "pid": ["4"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_PATIENT"],
+            "emailVerified": true,
+            "firstName": "Luigi",
+            "lastName": "Verde",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "carla.neri",
+            "enabled": true,
+            "email": "carla.neri@email.example",
+            "attributes": {
+                "pid": ["5"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_PATIENT"],
+            "emailVerified": true,
+            "firstName": "Carla",
+            "lastName": "Neri",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "francesco.gialli",
+            "enabled": true,
+            "email": "francesco.gialli@email.example",
+            "attributes": {
+                "pid": ["6"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_PATIENT"],
+            "emailVerified": true,
+            "firstName": "Francesco",
+            "lastName": "Gialli",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "giovanna.viola",
+            "enabled": true,
+            "email": "giovanna.viola@email.example",
+            "attributes": {
+                "pid": ["7"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_PATIENT"],
+            "emailVerified": true,
+            "firstName": "Giovanna",
+            "lastName": "Viola",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "pietro.azzurri",
+            "enabled": true,
+            "email": "pietro.azzurri@email.example",
+            "attributes": {
+                "pid": ["8"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_PATIENT"],
+            "emailVerified": true,
+            "firstName": "Pietro",
+            "lastName": "Azzurri",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "maria.grigi",
+            "enabled": true,
+            "email": "maria.grigi@email.example",
+            "attributes": {
+                "pid": ["9"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_PATIENT"],
+            "emailVerified": true,
+            "firstName": "Maria",
+            "lastName": "Grigi",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "stefano.marroni",
+            "enabled": false,
+            "email": "stefano.marroni@email.example",
+            "attributes": {
+                "pid": ["10"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_PATIENT"],
+            "emailVerified": false,
+            "firstName": "Stefano",
+            "lastName": "Marroni",
+            "createdTimestamp": 1704067200000
+        },
+        {
+            "username": "teresa.rosa",
+            "enabled": false,
+            "email": "teresa.rosa@email.example",
+            "attributes": {
+                "pid": ["11"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "qwerty",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": ["ROLE_PATIENT"],
+            "emailVerified": false,
+            "firstName": "Teresa",
+            "lastName": "Rosa",
             "createdTimestamp": 1704067200000
         }
     ]

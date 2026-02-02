@@ -20,6 +20,15 @@ spring:
     url: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT:5432}/${DATABASE_NAME}
     username: ${DATABASE_USER}
     password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: ${spring.application.name}-pool
+      minimum-idle: 5
+      maximum-pool-size: 10
+      auto-commit: true
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   # =========================
   # JPA / Hibernate
@@ -114,7 +123,7 @@ sanitech:
 
   outbox:
     publisher:
-      topic: ${OUTBOX_TOPIC:prescribing.events}
+      topic: ${OUTBOX_TOPIC:audits.events}
       enabled: ${OUTBOX_PUBLISHER_ENABLED:false}
       fixed-delay-ms: ${OUTBOX_PUBLISHER_DELAY_MS:1000}
 
@@ -193,3 +202,5 @@ logging:
   level:
     root: INFO
     it.sanitech: DEBUG
+    # Riduce il log verboso di Hibernate sui metadati del datasource
+    org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator: WARN

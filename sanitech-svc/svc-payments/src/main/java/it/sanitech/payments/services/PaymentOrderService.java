@@ -77,7 +77,8 @@ public class PaymentOrderService {
                         "currency", saved.getCurrency(),
                         "method", saved.getMethod().name(),
                         "status", saved.getStatus().name()
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return mapper.toDto(saved);
@@ -114,7 +115,8 @@ public class PaymentOrderService {
                         "currency", saved.getCurrency(),
                         "method", saved.getMethod().name(),
                         "status", saved.getStatus().name()
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return mapper.toDto(saved);
@@ -235,6 +237,52 @@ public class PaymentOrderService {
         return mapper.toDto(saved);
     }
 
+    /**
+     * Invia un sollecito di pagamento al paziente.
+     *
+     * <p>
+     * Pubblica un evento {@code PAYMENT_REMINDER_REQUESTED} sul topic notifiche
+     * che verrà consumato da svc-notifications per l'invio dell'email.
+     * </p>
+     */
+    @Transactional
+    public PaymentOrderDto sendReminder(long id) {
+        PaymentOrder order = repository.findById(id)
+                .orElseThrow(() -> NotFoundException.of("PaymentOrder", id));
+
+        if (order.getPatientEmail() == null || order.getPatientEmail().isBlank()) {
+            throw new IllegalArgumentException("Impossibile inviare sollecito: email paziente mancante.");
+        }
+
+        if (order.getStatus() == PaymentStatus.CAPTURED) {
+            throw new IllegalArgumentException("Impossibile inviare sollecito: pagamento già completato.");
+        }
+
+        if (order.getStatus() == PaymentStatus.CANCELLED || order.getStatus() == PaymentStatus.REFUNDED) {
+            throw new IllegalArgumentException("Impossibile inviare sollecito: pagamento annullato o rimborsato.");
+        }
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("recipientType", "PATIENT");
+        payload.put("recipientId", String.valueOf(order.getPatientId()));
+        payload.put("email", order.getPatientEmail());
+        payload.put("patientName", order.getPatientName());
+        payload.put("paymentId", order.getId());
+        payload.put("amountCents", order.getAmountCents());
+        payload.put("currency", order.getCurrency());
+        payload.put("description", order.getDescription());
+
+        domainEventPublisher.publish(
+                AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT,
+                String.valueOf(order.getId()),
+                AppConstants.Outbox.EVT_REMINDER_REQUESTED,
+                payload,
+                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS
+        );
+
+        return mapper.toDto(order);
+    }
+
     private void publishStatusChanged(PaymentOrder order) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("paymentId", order.getId());
@@ -249,7 +297,8 @@ public class PaymentOrderService {
                 AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT,
                 String.valueOf(order.getId()),
                 AppConstants.Outbox.EVT_STATUS_CHANGED,
-                payload
+                payload,
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
     }
 

@@ -17,5 +17,11 @@ public record FacilityCreateDto(
 
         /** Nome leggibile struttura. */
         @NotBlank
-        String name
+        String name,
+
+        /** Indirizzo della struttura (opzionale). */
+        String address,
+
+        /** Numero di telefono della struttura (opzionale). */
+        String phone
 ) {}

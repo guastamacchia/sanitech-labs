@@ -43,11 +43,12 @@ public class DoctorAdminController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String department,
             @RequestParam(required = false) String facility,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String[] sort
     ) {
-        return doctorService.search(q, department, facility, page, size, sort);
+        return doctorService.search(q, department, facility, status, page, size, sort);
     }
 
     @DeleteMapping("/{id}")
@@ -55,8 +56,23 @@ public class DoctorAdminController {
         doctorService.delete(id);
     }
 
+    @PatchMapping("/{id}/activate")
+    public DoctorDto activate(@PathVariable Long id) {
+        return doctorService.activate(id);
+    }
+
     @PatchMapping("/{id}/disable")
-    public void disable(@PathVariable Long id) {
-        doctorService.disableAccess(id);
+    public DoctorDto disable(@PathVariable Long id) {
+        return doctorService.disableAccess(id);
+    }
+
+    @PostMapping("/{id}/resend-activation")
+    public void resendActivation(@PathVariable Long id) {
+        doctorService.resendActivation(id);
+    }
+
+    @PatchMapping("/{id}/transfer")
+    public DoctorDto transfer(@PathVariable Long id, @RequestParam String departmentCode) {
+        return doctorService.transfer(id, departmentCode);
     }
 }

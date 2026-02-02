@@ -17,9 +17,11 @@ export class PublicPageComponent {
   registrationForm = {
     firstName: '',
     lastName: '',
+    fiscalCode: '',
+    birthDate: '',
     email: '',
     phone: '',
-    notes: ''
+    address: ''
   };
   contactForm = {
     fullName: '',
@@ -81,9 +83,11 @@ export class PublicPageComponent {
         this.registrationForm = {
           firstName: '',
           lastName: '',
+          fiscalCode: '',
+          birthDate: '',
           email: '',
           phone: '',
-          notes: ''
+          address: ''
         };
         this.isSubmitting = false;
       },

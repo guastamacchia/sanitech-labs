@@ -65,7 +65,9 @@ public class AppConstants {
      */
     @UtilityClass
     public static class Outbox {
-        public static final String TOPIC_DIRECTORY_EVENTS = "directory.events";
+        public static final String TOPIC_DIRECTORY_EVENTS = "audits.events";
+        public static final String TOPIC_NOTIFICATIONS_EVENTS = "notifications.events";
+        public static final String TOPIC_AUDITS_EVENTS = "audits.events";
 
         /** Tipi evento standard per Outbox (Directory). */
         @UtilityClass
@@ -77,6 +79,8 @@ public class AppConstants {
             public static final String PATIENT_CREATED = "PATIENT_CREATED";
             public static final String PATIENT_UPDATED = "PATIENT_UPDATED";
             public static final String PATIENT_DELETED = "PATIENT_DELETED";
+
+            public static final String ACTIVATION_EMAIL_REQUESTED = "ACTIVATION_EMAIL_REQUESTED";
         }
 
         /** Tipi aggregato standard per eventi Outbox. */

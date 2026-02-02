@@ -106,11 +106,11 @@ class PatientServiceTest {
         assertThat(syncEvent.firstName()).isEqualTo("Mario");
         assertThat(syncEvent.lastName()).isEqualTo("Rossi");
         assertThat(syncEvent.phone()).isEqualTo("+39 333 123 4567");
-        assertThat(syncEvent.enabled()).isTrue();
+        assertThat(syncEvent.enabled()).isFalse();  // Utente disabilitato fino ad attivazione admin
         assertThat(syncEvent.roleToAssign()).isEqualTo("ROLE_PATIENT");
         assertThat(syncEvent.previousEmail()).isNull();
 
-        verify(eventPublisher).publish(eq("PATIENT"), eq("1"), eq("PATIENT_CREATED"), any());
+        verify(eventPublisher).publish(eq("PATIENT"), eq("1"), eq("PATIENT_CREATED"), any(), eq("audits.events"));
     }
 
     @Test
@@ -175,7 +175,7 @@ class PatientServiceTest {
         assertThat(syncEvent.roleToAssign()).isNull();
         assertThat(syncEvent.previousEmail()).isEqualTo("vecchia@email.it");
 
-        verify(eventPublisher).publish(eq("PATIENT"), eq("7"), eq("PATIENT_UPDATED"), any());
+        verify(eventPublisher).publish(eq("PATIENT"), eq("7"), eq("PATIENT_UPDATED"), any(), eq("audits.events"));
     }
 
     @Test
@@ -194,7 +194,7 @@ class PatientServiceTest {
 
         verify(keycloakAdminClient).disableUser("paolo.verdi@email.it");
         verify(patientRepository).delete(existing);
-        verify(eventPublisher).publish(eq("PATIENT"), eq("5"), eq("PATIENT_DELETED"), any());
+        verify(eventPublisher).publish(eq("PATIENT"), eq("5"), eq("PATIENT_DELETED"), any(), eq("audits.events"));
     }
 
     @Test

@@ -100,11 +100,11 @@ class DoctorServiceTest {
         assertThat(syncEvent.firstName()).isEqualTo("Luca");
         assertThat(syncEvent.lastName()).isEqualTo("Bianchi");
         assertThat(syncEvent.phone()).isNull();
-        assertThat(syncEvent.enabled()).isTrue();
+        assertThat(syncEvent.enabled()).isFalse();  // Utente disabilitato fino ad attivazione admin
         assertThat(syncEvent.roleToAssign()).isEqualTo("ROLE_DOCTOR");
         assertThat(syncEvent.previousEmail()).isNull();
 
-        verify(eventPublisher).publish(eq("DOCTOR"), eq("11"), eq("DOCTOR_CREATED"), any());
+        verify(eventPublisher).publish(eq("DOCTOR"), eq("11"), eq("DOCTOR_CREATED"), any(), eq("audits.events"));
     }
 
     @Test
@@ -158,7 +158,7 @@ class DoctorServiceTest {
         assertThat(syncEvent.roleToAssign()).isNull();
         assertThat(syncEvent.previousEmail()).isEqualTo("vecchia@email.it");
 
-        verify(eventPublisher).publish(eq("DOCTOR"), eq("9"), eq("DOCTOR_UPDATED"), any());
+        verify(eventPublisher).publish(eq("DOCTOR"), eq("9"), eq("DOCTOR_UPDATED"), any(), eq("audits.events"));
     }
 
     @Test
@@ -171,7 +171,7 @@ class DoctorServiceTest {
 
         verify(keycloakAdminClient).disableUser("paola.neri@email.it");
         verify(doctorRepository).delete(existing);
-        verify(eventPublisher).publish(eq("DOCTOR"), eq("4"), eq("DOCTOR_DELETED"), any());
+        verify(eventPublisher).publish(eq("DOCTOR"), eq("4"), eq("DOCTOR_DELETED"), any(), eq("audits.events"));
     }
 
     @Test
@@ -197,7 +197,7 @@ class DoctorServiceTest {
                 .thenReturn(new PageImpl<>(List.of(doctor)));
         when(doctorMapper.toDto(doctor)).thenReturn(mappedDto);
 
-        var result = doctorService.search("Rossi", "CARD", "HOSP_CENTRAL", 0, 20, null);
+        var result = doctorService.search("Rossi", "CARD", "HOSP_CENTRAL", null, 0, 20, null);
 
         assertThat(result.getContent()).containsExactly(mappedDto);
     }

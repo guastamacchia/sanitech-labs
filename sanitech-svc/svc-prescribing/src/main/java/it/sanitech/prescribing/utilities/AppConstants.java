@@ -28,6 +28,8 @@ public class AppConstants {
         public static final String EVT_PRESCRIPTION_CREATED = "PRESCRIPTION_CREATED";
         public static final String EVT_PRESCRIPTION_UPDATED = "PRESCRIPTION_UPDATED";
         public static final String EVT_PRESCRIPTION_CANCELLED = "PRESCRIPTION_CANCELLED";
+        /** Topic per eventi di auditing */
+        public static final String TOPIC_AUDITS_EVENTS = "audits.events";
     }
 
     /**

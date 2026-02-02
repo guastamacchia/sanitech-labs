@@ -37,6 +37,9 @@ public class PublicPatientController {
                 request.lastName(),
                 request.email(),
                 request.phone(),
+                request.fiscalCode(),
+                request.birthDate(),
+                request.address(),
                 Set.of()
         );
         return patientService.createPublic(dto);

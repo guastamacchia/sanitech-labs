@@ -88,7 +88,7 @@ class NotificationServiceTest {
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(NotificationStatus.SENT);
 
-        verify(publisher).publish(eq("NOTIFICATION"), eq("10"), eq("NOTIFICATION_CREATED"), any());
+        verify(publisher).publish(eq("NOTIFICATION"), eq("10"), eq("NOTIFICATION_CREATED"), any(), eq("audits.events"));
     }
 
     @Test
@@ -190,7 +190,7 @@ class NotificationServiceTest {
         service.delete(7L);
 
         verify(repository).delete(notification);
-        verify(publisher).publish(eq("NOTIFICATION"), eq("7"), eq("NOTIFICATION_DELETED"), any());
+        verify(publisher).publish(eq("NOTIFICATION"), eq("7"), eq("NOTIFICATION_DELETED"), any(), eq("audits.events"));
     }
 
     @Test

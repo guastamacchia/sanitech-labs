@@ -51,11 +51,15 @@ public class GatewayRoutesConfig {
                         .path(
                                 "/api/doctors/**",
                                 "/api/patients/**",
+                                "/api/patient/**",
                                 "/api/departments/**",
+                                "/api/facilities/**",
                                 "/api/specialities/**",
                                 "/api/specializations/**",
                                 "/api/admin/doctors/**",
                                 "/api/admin/patients/**",
+                                "/api/admin/departments/**",
+                                "/api/admin/facilities/**",
                                 "/api/admin/specializations/**"
                         )
                         .filters(f -> standardFilters(f, AppConstants.Services.DIRECTORY))

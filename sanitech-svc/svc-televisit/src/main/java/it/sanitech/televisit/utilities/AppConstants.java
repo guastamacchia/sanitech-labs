@@ -36,6 +36,8 @@ public class AppConstants {
     @UtilityClass
     public static class Outbox {
         public static final String AGGREGATE_TELEVISIT_SESSION = "TELEVISIT_SESSION";
+        /** Topic per eventi di auditing */
+        public static final String TOPIC_AUDITS_EVENTS = "audits.events";
 
         @UtilityClass
         public static class EventType {

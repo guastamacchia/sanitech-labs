@@ -35,6 +35,11 @@ public class Department {
     @Column(nullable = false, length = 200)
     private String name;
 
+    /** Capacità posti letto del reparto. */
+    @Column
+    @Builder.Default
+    private Integer capacity = 0;
+
     /** Struttura di appartenenza del reparto. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "facility_id", nullable = false)

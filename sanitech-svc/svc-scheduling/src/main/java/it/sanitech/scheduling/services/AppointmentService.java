@@ -86,7 +86,8 @@ public class AppointmentService {
                         "mode", saved.getMode().name(),
                         "startAt", saved.getStartAt().toString(),
                         "endAt", saved.getEndAt().toString()
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return appointmentMapper.toDto(saved);
@@ -170,7 +171,8 @@ public class AppointmentService {
                 "APPOINTMENT",
                 String.valueOf(appt.getId()),
                 "APPOINTMENT_CANCELLED",
-                Map.of("appointmentId", appt.getId(), "occurredAt", Instant.now().toString())
+                Map.of("appointmentId", appt.getId(), "occurredAt", Instant.now().toString()),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
     }
 

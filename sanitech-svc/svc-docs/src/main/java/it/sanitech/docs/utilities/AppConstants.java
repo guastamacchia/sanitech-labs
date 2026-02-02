@@ -70,4 +70,13 @@ public class AppConstants {
     public static class ErrorMessage {
         public static final String ERR_CONSENT_REQUIRED = "Consenso mancante";
     }
+
+    /**
+     * Costanti per eventi Outbox.
+     */
+    @UtilityClass
+    public static class Outbox {
+        /** Topic per eventi di auditing */
+        public static final String TOPIC_AUDITS_EVENTS = "audits.events";
+    }
 }

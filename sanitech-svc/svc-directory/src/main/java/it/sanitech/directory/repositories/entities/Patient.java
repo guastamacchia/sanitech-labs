@@ -2,7 +2,11 @@ package it.sanitech.directory.repositories.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -43,6 +47,34 @@ public class Patient {
     /** Telefono (opzionale). */
     @Column(length = 50)
     private String phone;
+
+    /** Codice fiscale del paziente. */
+    @Column(name = "fiscal_code", length = 16)
+    private String fiscalCode;
+
+    /** Data di nascita. */
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
+    /** Indirizzo di residenza. */
+    @Column(length = 500)
+    private String address;
+
+    /** Stato dell'account (PENDING, ACTIVE, DISABLED). */
+    @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Column(nullable = false, columnDefinition = "user_status")
+    @Builder.Default
+    private UserStatus status = UserStatus.PENDING;
+
+    /** Data/ora di registrazione. */
+    @Column(name = "registered_at", nullable = false, updatable = false)
+    @Builder.Default
+    private Instant registeredAt = Instant.now();
+
+    /** Data/ora di attivazione dell'account. */
+    @Column(name = "activated_at")
+    private Instant activatedAt;
 
     /** Reparti associati al paziente. */
     @Builder.Default

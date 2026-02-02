@@ -50,7 +50,7 @@ public class OutboxKafkaPublisher {
 
         final int batchSize = props.getPublisher().getBatchSize();
         final long timeoutMs = props.getPublisher().getSendTimeoutMs();
-        final String topic = props.getPublisher().getTopic();
+        final String defaultTopic = props.getPublisher().getTopic();
 
         try {
             tx.executeWithoutResult(status -> {
@@ -62,12 +62,13 @@ public class OutboxKafkaPublisher {
                     return;
                 }
 
-                log.debug("Outbox: prelevati {} eventi da pubblicare (batchSize={}, timeoutMs={}, topic='{}').",
-                        batch.size(), batchSize, timeoutMs, topic);
+                log.debug("Outbox: prelevati {} eventi da pubblicare (batchSize={}, timeoutMs={}, defaultTopic='{}').",
+                        batch.size(), batchSize, timeoutMs, defaultTopic);
 
                 // 2) Invio Kafka sincrono con timeout. Se fallisce -> eccezione -> rollback.
                 for (OutboxEvent e : batch) {
-                    sender.sendSync(topic, e, timeoutMs);
+                    String targetTopic = resolveTargetTopic(e, defaultTopic);
+                    sender.sendSync(targetTopic, e, timeoutMs);
                 }
 
                 // 3) Marca come pubblicati solo dopo ACK
@@ -89,5 +90,17 @@ public class OutboxKafkaPublisher {
             log.error("Outbox: errore durante la pubblicazione del batch. La transazione è stata annullata. Causa: {}",
                     ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * Determina il topic Kafka di destinazione per l'evento.
+     * Se l'evento ha un topic specifico lo usa, altrimenti usa il default.
+     */
+    private String resolveTargetTopic(OutboxEvent event, String defaultTopic) {
+        String eventTopic = event.getTopic();
+        if (eventTopic != null && !eventTopic.isBlank()) {
+            return eventTopic;
+        }
+        return defaultTopic;
     }
 }

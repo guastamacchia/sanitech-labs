@@ -70,7 +70,8 @@ public class TelevisitService {
                         "patientSubject", entity.getPatientSubject(),
                         "scheduledAt", entity.getScheduledAt().toString(),
                         "status", entity.getStatus().name()
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return mapper.toDto(entity);
@@ -134,7 +135,7 @@ public class TelevisitService {
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
-        ));
+        ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS);
 
         return mapper.toDto(s);
     }
@@ -154,7 +155,7 @@ public class TelevisitService {
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
-        ));
+        ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS);
 
         return mapper.toDto(s);
     }
@@ -174,7 +175,7 @@ public class TelevisitService {
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
-        ));
+        ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS);
 
         return mapper.toDto(s);
     }

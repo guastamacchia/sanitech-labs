@@ -13,6 +13,7 @@ import it.sanitech.consents.services.dto.PrivacyConsentCreateDto;
 import it.sanitech.consents.services.dto.PrivacyConsentDto;
 import it.sanitech.consents.services.mapper.ConsentMapper;
 import it.sanitech.consents.services.mapper.PrivacyConsentMapper;
+import it.sanitech.consents.utilities.AppConstants.Outbox;
 import it.sanitech.outbox.core.DomainEventPublisher;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
@@ -93,7 +94,8 @@ public class ConsentService {
                             "scope", saved.getScope().name(),
                             "status", saved.getStatus().name(),
                             "expiresAt", saved.getExpiresAt() == null ? null : saved.getExpiresAt().toString()
-                    )
+                    ),
+                    Outbox.TOPIC_AUDITS_EVENTS
             );
 
             return mapper.toDto(saved);
@@ -123,7 +125,8 @@ public class ConsentService {
                         "doctorId", saved.getDoctorId(),
                         "scope", saved.getScope().name(),
                         "status", saved.getStatus().name()
-                )
+                ),
+                Outbox.TOPIC_AUDITS_EVENTS
         );
     }
 
@@ -148,7 +151,8 @@ public class ConsentService {
                         "patientId", consent.getPatientId(),
                         "doctorId", consent.getDoctorId(),
                         "scope", consent.getScope().name()
-                )
+                ),
+                Outbox.TOPIC_AUDITS_EVENTS
         );
     }
 
@@ -193,7 +197,8 @@ public class ConsentService {
                             "patientId", saved.getPatientId(),
                             "consentType", saved.getConsentType().name(),
                             "accepted", saved.isAccepted()
-                    )
+                    ),
+                    Outbox.TOPIC_AUDITS_EVENTS
             );
 
             return privacyMapper.toDto(saved);
@@ -220,7 +225,8 @@ public class ConsentService {
                         "consentId", consent.getId(),
                         "patientId", consent.getPatientId(),
                         "consentType", consent.getConsentType().name()
-                )
+                ),
+                Outbox.TOPIC_AUDITS_EVENTS
         );
     }
 }

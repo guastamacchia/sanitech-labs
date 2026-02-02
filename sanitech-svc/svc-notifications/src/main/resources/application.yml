@@ -20,6 +20,15 @@ spring:
     url: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT:5432}/${DATABASE_NAME}
     username: ${DATABASE_USER}
     password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: ${spring.application.name}-pool
+      minimum-idle: 5
+      maximum-pool-size: 10
+      auto-commit: true
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   # =========================
   # JPA / Hibernate
@@ -55,6 +64,11 @@ spring:
   # =========================
   kafka:
     bootstrap-servers: ${KAFKA_HOST}:${KAFKA_PORT}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:svc-notifications}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -129,6 +143,12 @@ sanitech:
     dispatcher:
       delay-ms: ${NOTIFICATIONS_DISPATCHER_DELAY_MS:2000}
       batch-size: ${NOTIFICATIONS_DISPATCHER_BATCH_SIZE:50}
+    activation-consumer:
+      enabled: ${ACTIVATION_CONSUMER_ENABLED:true}
+      topic: ${NOTIFICATIONS_EVENTS_TOPIC:notifications.events}
+    payment-reminder-consumer:
+      enabled: ${PAYMENT_REMINDER_CONSUMER_ENABLED:true}
+      topic: ${NOTIFICATIONS_EVENTS_TOPIC:notifications.events}
 
 # =========================
 # Management / Actuator
@@ -203,3 +223,5 @@ logging:
   level:
     root: INFO
     it.sanitech: DEBUG
+    # Riduce il log verboso di Hibernate sui metadati del datasource
+    org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator: WARN

@@ -2,6 +2,7 @@ package it.sanitech.directory.services.dto.update;
 
 import jakarta.validation.constraints.Email;
 
+import java.time.LocalDate;
 import java.util.Set;
 
 /**
@@ -27,6 +28,15 @@ public record PatientUpdateDto(
 
         /** Numero di telefono (opzionale). */
         String phone,
+
+        /** Codice fiscale (opzionale). */
+        String fiscalCode,
+
+        /** Data di nascita (opzionale). */
+        LocalDate birthDate,
+
+        /** Indirizzo di residenza (opzionale). */
+        String address,
 
         /** Codici reparto (opzionale). Se presente, sostituisce l'insieme corrente. */
         Set<String> departmentCodes

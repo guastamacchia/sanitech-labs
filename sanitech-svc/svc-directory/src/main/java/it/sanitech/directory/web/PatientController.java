@@ -37,7 +37,7 @@ public class PatientController {
             Authentication auth
     ) {
         return SecurityUtils.isAdmin(auth)
-                ? patientService.searchAdmin(q, department, page, size, sort)
+                ? patientService.searchAdmin(q, department, null, page, size, sort)
                 : patientService.searchForDoctor(q, page, size, sort, auth);
     }
 

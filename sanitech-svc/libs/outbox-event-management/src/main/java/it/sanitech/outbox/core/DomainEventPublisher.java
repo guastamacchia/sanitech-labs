@@ -32,16 +32,35 @@ public final class DomainEventPublisher {
 
     /**
      * Registra un evento outbox partendo dai singoli campi.
+     * Usa il topic di default configurato nel microservizio.
      */
     public void publish(String aggregateType,
                         String aggregateId,
                         String eventType,
                         Object payload) {
+        publish(aggregateType, aggregateId, eventType, payload, null);
+    }
+
+    /**
+     * Registra un evento outbox con topic specifico.
+     *
+     * @param aggregateType tipo aggregato (es. DOCTOR, PATIENT)
+     * @param aggregateId   identificativo aggregato
+     * @param eventType     tipo evento (es. DOCTOR_CREATED)
+     * @param payload       payload dell'evento
+     * @param topic         topic Kafka di destinazione (se null, usa il default)
+     */
+    public void publish(String aggregateType,
+                        String aggregateId,
+                        String eventType,
+                        Object payload,
+                        String topic) {
 
         OutboxEvent event = new OutboxEvent();
         event.setAggregateType(Objects.requireNonNull(aggregateType, "aggregateType obbligatorio"));
         event.setAggregateId(Objects.requireNonNull(aggregateId, "aggregateId obbligatorio"));
         event.setEventType(Objects.requireNonNull(eventType, "eventType obbligatorio"));
+        event.setTopic(topic);
         event.setPayload(Objects.isNull(payload)
                 ? JsonNodeFactory.instance.objectNode()
                 : objectMapper.valueToTree(payload));
@@ -62,8 +81,8 @@ public final class DomainEventPublisher {
 
         OutboxEvent saved = outboxRepository.save(event);
 
-        log.debug("Outbox: evento salvato su DB. id={}, aggregateType={}, eventType={}",
-                saved.getId(), saved.getAggregateType(), saved.getEventType());
+        log.debug("Outbox: evento salvato su DB. id={}, aggregateType={}, eventType={}, topic={}",
+                saved.getId(), saved.getAggregateType(), saved.getEventType(), saved.getTopic());
 
     }
 }

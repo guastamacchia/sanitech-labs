@@ -69,7 +69,7 @@ class TelevisitServiceTest {
         assertThat(captor.getValue().getRoomName()).startsWith("tv-");
 
         verify(roomService).ensureRoomExists(eq(captor.getValue().getRoomName()));
-        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("10"), eq(AppConstants.Outbox.EventType.CREATED), any());
+        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("10"), eq(AppConstants.Outbox.EventType.CREATED), any(), eq("audits.events"));
     }
 
     @Test
@@ -160,7 +160,7 @@ class TelevisitServiceTest {
         TelevisitDto result = service.start(30L, auth);
 
         assertThat(result.status()).isEqualTo(TelevisitStatus.ACTIVE);
-        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("30"), eq(AppConstants.Outbox.EventType.STARTED), any());
+        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("30"), eq(AppConstants.Outbox.EventType.STARTED), any(), eq("audits.events"));
     }
 
     @Test
@@ -217,7 +217,7 @@ class TelevisitServiceTest {
         TelevisitDto result = service.cancel(50L, auth);
 
         assertThat(result.status()).isEqualTo(TelevisitStatus.CANCELED);
-        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("50"), eq(AppConstants.Outbox.EventType.CANCELED), any());
+        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("50"), eq(AppConstants.Outbox.EventType.CANCELED), any(), eq("audits.events"));
     }
 
     @Test

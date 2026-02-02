@@ -2,6 +2,10 @@ package it.sanitech.directory.repositories.entities;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
+
+import java.time.Instant;
 
 /**
  * Entità Medico (Directory).
@@ -40,6 +44,26 @@ public class Doctor {
     /** Telefono (opzionale). */
     @Column(length = 50)
     private String phone;
+
+    /** Specializzazione del medico (es. Cardiologia interventistica). */
+    @Column(length = 200)
+    private String specialization;
+
+    /** Stato dell'account (PENDING, ACTIVE, DISABLED). */
+    @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Column(nullable = false, columnDefinition = "user_status")
+    @Builder.Default
+    private UserStatus status = UserStatus.PENDING;
+
+    /** Data/ora di creazione dell'account. */
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @Builder.Default
+    private Instant createdAt = Instant.now();
+
+    /** Data/ora di attivazione dell'account. */
+    @Column(name = "activated_at")
+    private Instant activatedAt;
 
     /** Reparto di appartenenza del medico. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

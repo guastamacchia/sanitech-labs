@@ -26,5 +26,8 @@ public interface DoctorMapper {
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "department", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "activatedAt", ignore = true)
     void updateEntity(DoctorUpdateDto dto, @MappingTarget Doctor entity);
 }

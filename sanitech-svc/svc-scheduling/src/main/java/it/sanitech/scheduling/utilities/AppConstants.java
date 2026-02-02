@@ -61,4 +61,13 @@ public class AppConstants {
         public static final Set<String> ALLOWED_SLOT_SORT_FIELDS =
                 Set.of("startAt", "endAt", "doctorId", "departmentCode", "mode");
     }
+
+    /**
+     * Costanti per eventi Outbox.
+     */
+    @UtilityClass
+    public static class Outbox {
+        /** Topic per eventi di auditing */
+        public static final String TOPIC_AUDITS_EVENTS = "audits.events";
+    }
 }

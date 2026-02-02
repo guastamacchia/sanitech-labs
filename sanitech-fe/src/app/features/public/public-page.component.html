@@ -71,47 +71,81 @@
               id="registrazione-pazienti"
               role="tabpanel">
               <h5 class="fw-semibold">Registrazione pazienti</h5>
-              <p class="text-muted">Richiedi l’accesso alla tua area riservata per prenotare una visita.</p>
+              <p class="text-muted">Richiedi l'accesso alla tua area riservata per prenotare una visita.</p>
               <form (ngSubmit)="submitRegistration()" #registrationFormRef="ngForm">
+                <div class="row">
+                  <div class="col-6 mb-3">
+                    <label class="form-label">Nome *</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="registrationFirstName"
+                      [(ngModel)]="registrationForm.firstName"
+                      placeholder="Mario"
+                      required />
+                  </div>
+                  <div class="col-6 mb-3">
+                    <label class="form-label">Cognome *</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      name="registrationLastName"
+                      [(ngModel)]="registrationForm.lastName"
+                      placeholder="Rossi"
+                      required />
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-7 mb-3">
+                    <label class="form-label">Codice Fiscale *</label>
+                    <input
+                      type="text"
+                      class="form-control text-uppercase"
+                      name="registrationFiscalCode"
+                      [(ngModel)]="registrationForm.fiscalCode"
+                      placeholder="RSSMRA85M01H501Z"
+                      maxlength="16"
+                      required />
+                  </div>
+                  <div class="col-5 mb-3">
+                    <label class="form-label">Data di nascita</label>
+                    <input
+                      type="date"
+                      class="form-control"
+                      name="registrationBirthDate"
+                      [(ngModel)]="registrationForm.birthDate" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-7 mb-3">
+                    <label class="form-label">Email *</label>
+                    <input
+                      type="email"
+                      class="form-control"
+                      name="registrationEmail"
+                      [(ngModel)]="registrationForm.email"
+                      placeholder="nome.cognome@email.it"
+                      required />
+                  </div>
+                  <div class="col-5 mb-3">
+                    <label class="form-label">Telefono *</label>
+                    <input
+                      type="tel"
+                      class="form-control"
+                      name="registrationPhone"
+                      [(ngModel)]="registrationForm.phone"
+                      placeholder="+39 333 1234567"
+                      required />
+                  </div>
+                </div>
                 <div class="mb-3">
-                  <label class="form-label">Nome</label>
+                  <label class="form-label">Indirizzo di residenza</label>
                   <input
                     type="text"
                     class="form-control"
-                    name="registrationFirstName"
-                    [(ngModel)]="registrationForm.firstName"
-                    placeholder="Mario"
-                    required />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Cognome</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    name="registrationLastName"
-                    [(ngModel)]="registrationForm.lastName"
-                    placeholder="Rossi"
-                    required />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Email</label>
-                  <input
-                    type="email"
-                    class="form-control"
-                    name="registrationEmail"
-                    [(ngModel)]="registrationForm.email"
-                    placeholder="nome.cognome@email.it"
-                    required />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Telefono</label>
-                  <input
-                    type="tel"
-                    class="form-control"
-                    name="registrationPhone"
-                    [(ngModel)]="registrationForm.phone"
-                    placeholder="+39 333 123 4567"
-                    required />
+                    name="registrationAddress"
+                    [(ngModel)]="registrationForm.address"
+                    placeholder="Via Roma 1, 20100 Milano (MI)" />
                 </div>
                 <div class="alert alert-success py-2 mb-3" *ngIf="registrationSuccess">{{ registrationSuccess }}</div>
                 <div class="alert alert-danger py-2 mb-3" *ngIf="registrationError">{{ registrationError }}</div>

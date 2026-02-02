@@ -33,4 +33,12 @@ public class Facility {
     /** Nome leggibile struttura (es. Ospedale Centrale). */
     @Column(nullable = false, length = 200)
     private String name;
+
+    /** Indirizzo della struttura. */
+    @Column(length = 500)
+    private String address;
+
+    /** Numero di telefono della struttura. */
+    @Column(length = 50)
+    private String phone;
 }

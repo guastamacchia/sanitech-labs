@@ -79,7 +79,7 @@ class CapacityServiceTest {
         verify(capacityRepository).save(captor.capture());
         assertThat(captor.getValue().getUpdatedAt()).isNotNull();
 
-        verify(domainEvents).publish(eq("DEPARTMENT_CAPACITY"), eq("ORTHO"), eq("CAPACITY_SET"), any());
+        verify(domainEvents).publish(eq("DEPARTMENT_CAPACITY"), eq("ORTHO"), eq("CAPACITY_SET"), any(), eq("audits.events"));
     }
 
     @Test

@@ -42,12 +42,13 @@ public class PatientAdminController {
     public org.springframework.data.domain.Page<PatientDto> search(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String department,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String[] sort,
             Authentication auth
     ) {
-        return patientService.searchAdmin(q, department, page, size, sort);
+        return patientService.searchAdmin(q, department, status, page, size, sort);
     }
 
     @DeleteMapping("/{id}")
@@ -55,8 +56,18 @@ public class PatientAdminController {
         patientService.delete(id);
     }
 
+    @PatchMapping("/{id}/activate")
+    public PatientDto activate(@PathVariable Long id) {
+        return patientService.activate(id);
+    }
+
     @PatchMapping("/{id}/disable")
-    public void disable(@PathVariable Long id) {
-        patientService.disableAccess(id);
+    public PatientDto disable(@PathVariable Long id) {
+        return patientService.disableAccess(id);
+    }
+
+    @PostMapping("/{id}/resend-activation")
+    public void resendActivation(@PathVariable Long id) {
+        patientService.resendActivation(id);
     }
 }

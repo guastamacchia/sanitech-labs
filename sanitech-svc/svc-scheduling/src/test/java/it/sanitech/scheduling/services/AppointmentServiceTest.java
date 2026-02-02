@@ -74,7 +74,7 @@ class AppointmentServiceTest {
         verify(appointments).save(appointmentCaptor.capture());
         assertThat(appointmentCaptor.getValue().getPatientId()).isEqualTo(77L);
 
-        verify(events).publish(eq("APPOINTMENT"), eq("33"), eq("APPOINTMENT_BOOKED"), any());
+        verify(events).publish(eq("APPOINTMENT"), eq("33"), eq("APPOINTMENT_BOOKED"), any(), eq("audits.events"));
     }
 
     @Test
@@ -159,7 +159,7 @@ class AppointmentServiceTest {
 
         assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
         assertThat(slot.getStatus()).isEqualTo(SlotStatus.AVAILABLE);
-        verify(events).publish(eq("APPOINTMENT"), eq("60"), eq("APPOINTMENT_CANCELLED"), any());
+        verify(events).publish(eq("APPOINTMENT"), eq("60"), eq("APPOINTMENT_CANCELLED"), any(), eq("audits.events"));
     }
 
     @Test

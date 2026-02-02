@@ -14,6 +14,7 @@ import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.commons.security.JwtClaimExtractor;
 import it.sanitech.commons.security.SecurityUtils;
 import it.sanitech.commons.utilities.AppConstants;
+import it.sanitech.admissions.utilities.AppConstants.Outbox;
 import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -76,7 +77,8 @@ public class AdmissionService {
                         "departmentCode", saved.getDepartmentCode(),
                         "admissionType", saved.getAdmissionType().name(),
                         "admittedAt", saved.getAdmittedAt().toString()
-                )
+                ),
+                Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return mapper.toDto(saved);
@@ -110,7 +112,8 @@ public class AdmissionService {
                         "patientId", saved.getPatientId(),
                         "departmentCode", saved.getDepartmentCode(),
                         "dischargedAt", saved.getDischargedAt().toString()
-                )
+                ),
+                Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return mapper.toDto(saved);

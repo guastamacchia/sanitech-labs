@@ -12,6 +12,8 @@ public record PaymentOrderDto(
         Long id,
         Long appointmentId,
         Long patientId,
+        String patientEmail,
+        String patientName,
         long amountCents,
         String currency,
         PaymentMethod method,

@@ -6,6 +6,7 @@ import it.sanitech.directory.repositories.DoctorRepository;
 import it.sanitech.directory.repositories.DepartmentRepository;
 import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.repositories.entities.Doctor;
+import it.sanitech.directory.repositories.entities.UserStatus;
 import it.sanitech.directory.repositories.spec.DoctorSpecifications;
 import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.directory.integrations.keycloak.KeycloakAdminClient;
@@ -25,6 +26,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -80,7 +82,10 @@ public class DoctorService {
                 .lastName(dto.lastName().trim())
                 .email(email)
                 .phone(normalizePhone(dto.phone()))
+                .specialization(dto.specialization() != null ? dto.specialization().trim() : null)
                 .department(department)
+                .status(UserStatus.PENDING)
+                .createdAt(Instant.now())
                 .build();
 
         Doctor saved = doctorRepository.save(entity);
@@ -96,7 +101,8 @@ public class DoctorService {
                         "email", saved.getEmail(),
                         "departmentCode", deptCode,
                         "facilityCode", department.getFacility().getCode()
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
@@ -106,10 +112,13 @@ public class DoctorService {
                 saved.getFirstName(),
                 saved.getLastName(),
                 saved.getPhone(),
-                true,
+                false,  // Utente disabilitato fino all'attivazione da parte dell'admin
                 DOCTOR_ROLE,
                 null
         ));
+
+        // Invia email di attivazione
+        publishActivationEmailEvent(saved);
 
         return doctorMapper.toDto(saved);
     }
@@ -154,7 +163,8 @@ public class DoctorService {
                         "email", saved.getEmail(),
                         "departmentCode", saved.getDepartment().getCode(),
                         "facilityCode", saved.getDepartment().getFacility().getCode()
-                )
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
@@ -181,13 +191,62 @@ public class DoctorService {
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 String.valueOf(id),
                 AppConstants.Outbox.EventType.DOCTOR_DELETED,
-                Map.of("id", id)
+                Map.of("id", id),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
         );
     }
 
-    public void disableAccess(Long id) {
+    public DoctorDto disableAccess(Long id) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
+        entity.setStatus(UserStatus.DISABLED);
         keycloakAdminClient.disableUser(entity.getEmail());
+        Doctor saved = doctorRepository.save(entity);
+        return doctorMapper.toDto(saved);
+    }
+
+    public DoctorDto activate(Long id) {
+        Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
+        entity.setStatus(UserStatus.ACTIVE);
+        entity.setActivatedAt(Instant.now());
+        keycloakAdminClient.enableUser(entity.getEmail());
+        Doctor saved = doctorRepository.save(entity);
+        return doctorMapper.toDto(saved);
+    }
+
+    public void resendActivation(Long id) {
+        Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
+        if (entity.getStatus() != UserStatus.PENDING) {
+            throw new IllegalArgumentException("Il medico non è in stato PENDING.");
+        }
+        publishActivationEmailEvent(entity);
+    }
+
+    /**
+     * Pubblica evento per invio email di attivazione account.
+     */
+    private void publishActivationEmailEvent(Doctor entity) {
+        eventPublisher.publish(
+                AppConstants.Outbox.AggregateType.DOCTOR,
+                String.valueOf(entity.getId()),
+                AppConstants.Outbox.EventType.ACTIVATION_EMAIL_REQUESTED,
+                Map.of(
+                        "recipientType", AppConstants.Outbox.AggregateType.DOCTOR,
+                        "recipientId", String.valueOf(entity.getId()),
+                        "email", entity.getEmail(),
+                        "firstName", entity.getFirstName(),
+                        "lastName", entity.getLastName()
+                ),
+                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS
+        );
+    }
+
+    public DoctorDto transfer(Long id, String newDepartmentCode) {
+        Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
+        String deptCode = normalizeCode(newDepartmentCode, "Reparto non valido.");
+        Department newDepartment = resolveDepartment(deptCode);
+        entity.setDepartment(newDepartment);
+        Doctor saved = doctorRepository.save(entity);
+        return doctorMapper.toDto(saved);
     }
 
     /**
@@ -199,14 +258,23 @@ public class DoctorService {
      */
     @Transactional(readOnly = true)
     @Bulkhead(name = "directoryRead", type = Bulkhead.Type.SEMAPHORE)
-    public Page<DoctorDto> search(String q, String departmentCode, String facilityCode,
+    public Page<DoctorDto> search(String q, String departmentCode, String facilityCode, String status,
                                   int page, int size, String[] sort) {
 
         Sort safeSort = SortUtils.safeSort(sort, AppConstants.SortField.DOCTOR_ALLOWED, "id");
         Pageable pageable = PageableUtils.pageRequest(page, size, MAX_PAGE_SIZE, safeSort);
 
+        UserStatus userStatus = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                userStatus = UserStatus.valueOf(status.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                // Ignora filtro status non valido
+            }
+        }
+
         Page<Doctor> result = doctorRepository.findAll(
-                DoctorSpecifications.search(q, departmentCode, facilityCode),
+                DoctorSpecifications.search(q, departmentCode, facilityCode, userStatus),
                 pageable
         );
 

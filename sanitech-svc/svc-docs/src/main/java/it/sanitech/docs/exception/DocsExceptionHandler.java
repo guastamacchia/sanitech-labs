@@ -61,7 +61,7 @@ public class DocsExceptionHandler {
                     "clientIp", clientIp,
                     "reason", reason,
                     "outcome", "DENIED"
-            ));
+            ), it.sanitech.docs.utilities.AppConstants.Outbox.TOPIC_AUDITS_EVENTS);
 
             log.info("Audit: accesso documenti negato. actor={}, patientId={}, uri={}", actorId, patientId, requestUri);
         } catch (Exception e) {

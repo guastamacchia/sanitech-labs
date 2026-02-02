@@ -41,7 +41,7 @@ public class DoctorController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String[] sort
     ) {
-        return doctorService.search(q, department, specialization, page, size, sort);
+        return doctorService.search(q, department, null, null, page, size, sort);
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)

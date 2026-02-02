@@ -5,6 +5,7 @@ import it.sanitech.admissions.repositories.DepartmentCapacityRepository;
 import it.sanitech.admissions.repositories.entities.AdmissionStatus;
 import it.sanitech.admissions.repositories.entities.DepartmentCapacity;
 import it.sanitech.admissions.services.dto.CapacityDto;
+import it.sanitech.admissions.utilities.AppConstants.Outbox;
 import it.sanitech.commons.exception.ConflictException;
 import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +68,8 @@ public class CapacityService {
                         "departmentCode", saved.getDeptCode(),
                         "totalBeds", saved.getTotalBeds(),
                         "updatedAt", saved.getUpdatedAt().toString()
-                )
+                ),
+                Outbox.TOPIC_AUDITS_EVENTS
         );
 
         return toDto(saved);

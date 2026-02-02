@@ -3,6 +3,7 @@ package it.sanitech.directory.repositories.spec;
 import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.repositories.entities.Doctor;
 import it.sanitech.directory.repositories.entities.Facility;
+import it.sanitech.directory.repositories.entities.UserStatus;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.persistence.criteria.Join;
@@ -15,8 +16,8 @@ import java.util.List;
  * Specifiche JPA per la ricerca di {@link Doctor} con filtri combinabili.
  *
  * <p>
- * Produce {@link Specification} componibili per nome/cognome/email e per filtri su reparto e
- * struttura di appartenenza.
+ * Produce {@link Specification} componibili per nome/cognome/email e per filtri su reparto,
+ * struttura di appartenenza e stato.
  * Gerarchia: Struttura -> Reparto -> Medico.
  * </p>
  */
@@ -24,7 +25,7 @@ public final class DoctorSpecifications {
 
     private DoctorSpecifications() {}
 
-    public static Specification<Doctor> search(String q, String departmentCode, String facilityCode) {
+    public static Specification<Doctor> search(String q, String departmentCode, String facilityCode, UserStatus status) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -46,6 +47,10 @@ public final class DoctorSpecifications {
                 Join<Doctor, Department> dep = root.join("department", JoinType.INNER);
                 Join<Department, Facility> fac = dep.join("facility", JoinType.INNER);
                 predicates.add(cb.equal(cb.upper(fac.get("code")), facilityCode.trim().toUpperCase()));
+            }
+
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

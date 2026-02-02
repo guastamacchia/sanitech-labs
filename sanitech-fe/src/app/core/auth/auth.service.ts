@@ -75,6 +75,22 @@ export class AuthService {
     return this.oauth.getAccessToken();
   }
 
+  /**
+   * Attempts to refresh the access token using the refresh token.
+   * @returns Promise<boolean> - true if refresh was successful, false otherwise
+   */
+  async refreshToken(): Promise<boolean> {
+    try {
+      const result = await this.oauth.refreshToken();
+      return !!result && this.oauth.hasValidAccessToken();
+    } catch (error) {
+      if (!environment.production) {
+        console.warn('Token refresh failed:', error);
+      }
+      return false;
+    }
+  }
+
   getAccessTokenClaim(name: string): unknown {
     return this.accessTokenClaims[name];
   }
