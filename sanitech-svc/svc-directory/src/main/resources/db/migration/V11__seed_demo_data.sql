@@ -38,6 +38,12 @@ ON CONFLICT (code) DO NOTHING;
 -- alle utenze nel realm sanitech-realm.json
 -- =============================================================================
 
+-- Medico principale (ID 1 in Keycloak) - assegnato a più reparti tramite dept attribute
+INSERT INTO doctors (first_name, last_name, email, phone, specialization, department_id, status, created_at, activated_at) VALUES
+    ('Mario', 'Rossi', 'mario.rossi.dr@sanitech.example', '+39 02 1234000', 'Medicina interna',
+     (SELECT id FROM departments WHERE code = 'CARD_CENTRAL'), 'ACTIVE', NOW(), NOW())
+ON CONFLICT (email) DO NOTHING;
+
 -- HOSP_CENTRAL - Cardiologia
 INSERT INTO doctors (first_name, last_name, email, phone, specialization, department_id, status, created_at, activated_at) VALUES
     ('Marco', 'Bianchi', 'marco.bianchi@sanitech.example', '+39 02 1234001', 'Cardiologia interventistica',
@@ -122,6 +128,12 @@ ON CONFLICT (email) DO NOTHING;
 -- PAZIENTI (Patients)
 -- =============================================================================
 
+-- Paziente principale (ID 1 in Keycloak)
+INSERT INTO patients (first_name, last_name, email, phone, fiscal_code, birth_date, address, status, registered_at, activated_at) VALUES
+    ('Anna', 'Conti', 'anna.conti@email.example', '+39 333 1000000', 'CNTNNA90A41H501Z', '1990-01-01',
+     'Via Centrale 1, 00100 Roma RM', 'ACTIVE', NOW(), NOW())
+ON CONFLICT (email) DO NOTHING;
+
 INSERT INTO patients (first_name, last_name, email, phone, fiscal_code, birth_date, address, status, registered_at, activated_at) VALUES
     ('Mario', 'Rossi', 'mario.rossi@email.example', '+39 333 1000001', 'RSSMRA80A01H501A', '1980-01-01',
      'Via Roma 10, 00100 Roma RM', 'ACTIVE', NOW(), NOW()),
@@ -149,6 +161,12 @@ ON CONFLICT (email) DO NOTHING;
 -- ASSOCIAZIONI PAZIENTE-REPARTO (patient_departments)
 -- Associamo i pazienti ad alcuni reparti per test
 -- =============================================================================
+
+-- Anna Conti -> Cardiologia (paziente principale)
+INSERT INTO patient_departments (patient_id, department_id)
+SELECT p.id, d.id FROM patients p, departments d
+WHERE p.email = 'anna.conti@email.example' AND d.code = 'CARD_CENTRAL'
+ON CONFLICT DO NOTHING;
 
 -- Mario Rossi -> Cardiologia
 INSERT INTO patient_departments (patient_id, department_id)

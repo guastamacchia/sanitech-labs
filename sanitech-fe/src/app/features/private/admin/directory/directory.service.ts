@@ -32,6 +32,7 @@ export interface Department {
   facilityCode: string;
   facilityName?: string;
   capacity?: number;
+  doctorCount?: number;
 }
 
 export interface DepartmentCreate {

@@ -1,0 +1,418 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a routerLink="/portal/patient">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Il mio profilo</li>
+        </ol>
+      </nav>
+      <h2 class="mb-1 fw-bold">Il mio profilo</h2>
+      <p class="text-muted mb-0">Visualizza e modifica i tuoi dati personali</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary" (click)="openPreferencesModal()">
+        <i class="bi bi-bell me-1"></i>
+        Preferenze notifiche
+      </button>
+      <button *ngIf="!isEditing" class="btn btn-primary" (click)="startEditing()">
+        <i class="bi bi-pencil me-1"></i>
+        Modifica profilo
+      </button>
+    </div>
+  </div>
+
+  <!-- Alert messages -->
+  <div class="alert alert-success alert-dismissible fade show" *ngIf="successMessage" role="alert">
+    <i class="bi bi-check-circle me-2"></i>
+    {{ successMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
+  </div>
+
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="errorMessage = ''"></button>
+  </div>
+
+  <!-- Loading spinner -->
+  <div class="text-center py-5" *ngIf="isLoading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Caricamento...</span>
+    </div>
+    <p class="text-muted mt-2">Caricamento profilo...</p>
+  </div>
+
+  <div class="row g-4" *ngIf="!isLoading">
+    <!-- Profilo principale -->
+    <div class="col-lg-8">
+      <div class="card card-glass border-0 shadow-sm">
+        <div class="card-header bg-transparent border-bottom">
+          <h5 class="mb-0 fw-semibold">
+            <i class="bi bi-person-circle me-2"></i>
+            Dati anagrafici
+          </h5>
+        </div>
+        <div class="card-body">
+          <!-- Vista in lettura -->
+          <div *ngIf="!isEditing">
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Nome</label>
+                  <p class="mb-0 fs-5">{{ profile.firstName }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Cognome</label>
+                  <p class="mb-0 fs-5">{{ profile.lastName }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Codice Fiscale</label>
+                  <p class="mb-0 font-monospace">{{ profile.fiscalCode }}</p>
+                  <small class="text-muted">
+                    <i class="bi bi-lock me-1"></i>
+                    Campo non modificabile
+                  </small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Email</label>
+                  <p class="mb-0">{{ profile.email }}</p>
+                  <small class="text-muted">
+                    <i class="bi bi-lock me-1"></i>
+                    Campo non modificabile
+                  </small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Telefono</label>
+                  <p class="mb-0 fs-5">{{ profile.phone }}</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Data di nascita</label>
+                  <p class="mb-0">{{ formatDate(profile.birthDate) }}</p>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="mb-0">
+                  <label class="form-label small text-muted fw-semibold">Indirizzo di residenza</label>
+                  <p class="mb-0 fs-5">{{ profile.address }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vista in modifica -->
+          <form *ngIf="isEditing" (ngSubmit)="saveProfile()">
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Nome</label>
+                  <input type="text" class="form-control bg-light" [value]="editForm.firstName" disabled readonly>
+                  <small class="text-muted">
+                    <i class="bi bi-lock me-1"></i>
+                    Campo non modificabile
+                  </small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Cognome</label>
+                  <input type="text" class="form-control bg-light" [value]="editForm.lastName" disabled readonly>
+                  <small class="text-muted">
+                    <i class="bi bi-lock me-1"></i>
+                    Campo non modificabile
+                  </small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Codice Fiscale</label>
+                  <input type="text" class="form-control bg-light font-monospace" [value]="editForm.fiscalCode" disabled readonly>
+                  <small class="text-muted">
+                    <i class="bi bi-lock me-1"></i>
+                    Campo non modificabile
+                  </small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Email</label>
+                  <input type="email" class="form-control bg-light" [value]="editForm.email" disabled readonly>
+                  <small class="text-muted">
+                    <i class="bi bi-lock me-1"></i>
+                    Campo non modificabile
+                  </small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">
+                    Telefono
+                    <span class="text-danger">*</span>
+                  </label>
+                  <input type="tel" class="form-control" [(ngModel)]="editForm.phone" name="phone" required>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label small text-muted fw-semibold">Data di nascita</label>
+                  <input type="text" class="form-control bg-light" [value]="formatDate(editForm.birthDate)" disabled readonly>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="mb-0">
+                  <label class="form-label small text-muted fw-semibold">
+                    Indirizzo di residenza
+                    <span class="text-danger">*</span>
+                  </label>
+                  <input type="text" class="form-control" [(ngModel)]="editForm.address" name="address" required>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-outline-secondary" (click)="cancelEditing()" [disabled]="isSaving">
+                Annulla
+              </button>
+              <button type="submit" class="btn btn-primary" [disabled]="isSaving">
+                <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1"></span>
+                {{ isSaving ? 'Salvataggio...' : 'Salva modifiche' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <!-- Card preferenze notifiche -->
+      <div class="card card-glass border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-bottom">
+          <h5 class="mb-0 fw-semibold">
+            <i class="bi bi-bell me-2"></i>
+            Preferenze di notifica
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+            <div>
+              <div class="fw-semibold">Promemoria appuntamenti</div>
+              <small class="text-muted">Via email e/o SMS</small>
+            </div>
+            <div class="d-flex gap-2">
+              <span class="badge" [ngClass]="notificationPrefs.emailReminders ? 'bg-success' : 'bg-secondary'">
+                <i class="bi bi-envelope me-1"></i>Email
+              </span>
+              <span class="badge" [ngClass]="notificationPrefs.smsReminders ? 'bg-success' : 'bg-secondary'">
+                <i class="bi bi-phone me-1"></i>SMS
+              </span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+            <div>
+              <div class="fw-semibold">Nuovi documenti</div>
+              <small class="text-muted">Referti e documenti caricati</small>
+            </div>
+            <div class="d-flex gap-2">
+              <span class="badge" [ngClass]="notificationPrefs.emailDocuments ? 'bg-success' : 'bg-secondary'">
+                <i class="bi bi-envelope me-1"></i>Email
+              </span>
+              <span class="badge" [ngClass]="notificationPrefs.smsDocuments ? 'bg-success' : 'bg-secondary'">
+                <i class="bi bi-phone me-1"></i>SMS
+              </span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">Pagamenti</div>
+              <small class="text-muted">Conferme e promemoria</small>
+            </div>
+            <div class="d-flex gap-2">
+              <span class="badge" [ngClass]="notificationPrefs.emailPayments ? 'bg-success' : 'bg-secondary'">
+                <i class="bi bi-envelope me-1"></i>Email
+              </span>
+              <span class="badge" [ngClass]="notificationPrefs.smsPayments ? 'bg-success' : 'bg-secondary'">
+                <i class="bi bi-phone me-1"></i>SMS
+              </span>
+            </div>
+          </div>
+          <button class="btn btn-outline-primary w-100 mt-4" (click)="openPreferencesModal()">
+            <i class="bi bi-gear me-1"></i>
+            Modifica preferenze
+          </button>
+        </div>
+      </div>
+
+      <!-- Info Box -->
+      <div class="alert alert-info border-0 mb-0" role="alert">
+        <div class="d-flex">
+          <i class="bi bi-info-circle fs-5 me-3 mt-1"></i>
+          <div>
+            <h6 class="alert-heading mb-1">Dati protetti</h6>
+            <p class="mb-0 small">
+              Il codice fiscale e l'email sono identificativi univoci e non possono essere modificati.
+              Per modifiche a questi dati, contatta l'assistenza.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Preferenze Notifiche -->
+<ng-container *ngIf="showPreferencesModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closePreferencesModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="preferencesModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <div>
+            <h5 class="modal-title fw-bold" id="preferencesModalTitle">
+              <i class="bi bi-bell me-2 text-primary"></i>
+              Preferenze di notifica
+            </h5>
+            <p class="text-muted small mb-0 mt-1">Scegli come e quando vuoi essere contattato</p>
+          </div>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePreferencesModal()"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <!-- Promemoria appuntamenti -->
+          <div class="card bg-light border-0 mb-3">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-3">
+                <i class="bi bi-calendar-check me-2 text-primary"></i>
+                Promemoria appuntamenti
+              </h6>
+              <div class="row g-3">
+                <div class="col-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="emailReminders"
+                           [(ngModel)]="notificationPrefs.emailReminders">
+                    <label class="form-check-label" for="emailReminders">
+                      <i class="bi bi-envelope me-1"></i>
+                      Notifica via Email
+                    </label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="smsReminders"
+                           [(ngModel)]="notificationPrefs.smsReminders">
+                    <label class="form-check-label" for="smsReminders">
+                      <i class="bi bi-phone me-1"></i>
+                      Notifica via SMS
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documenti -->
+          <div class="card bg-light border-0 mb-3">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-3">
+                <i class="bi bi-file-earmark-medical me-2 text-primary"></i>
+                Nuovi documenti clinici
+              </h6>
+              <div class="row g-3">
+                <div class="col-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="emailDocuments"
+                           [(ngModel)]="notificationPrefs.emailDocuments">
+                    <label class="form-check-label" for="emailDocuments">
+                      <i class="bi bi-envelope me-1"></i>
+                      Notifica via Email
+                    </label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="smsDocuments"
+                           [(ngModel)]="notificationPrefs.smsDocuments">
+                    <label class="form-check-label" for="smsDocuments">
+                      <i class="bi bi-phone me-1"></i>
+                      Notifica via SMS
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagamenti -->
+          <div class="card bg-light border-0 mb-3">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-3">
+                <i class="bi bi-credit-card me-2 text-primary"></i>
+                Pagamenti e fatture
+              </h6>
+              <div class="row g-3">
+                <div class="col-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="emailPayments"
+                           [(ngModel)]="notificationPrefs.emailPayments">
+                    <label class="form-check-label" for="emailPayments">
+                      <i class="bi bi-envelope me-1"></i>
+                      Notifica via Email
+                    </label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="smsPayments"
+                           [(ngModel)]="notificationPrefs.smsPayments">
+                    <label class="form-check-label" for="smsPayments">
+                      <i class="bi bi-phone me-1"></i>
+                      Notifica via SMS
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="alert alert-info border-0 mb-0">
+            <div class="d-flex">
+              <i class="bi bi-info-circle me-2"></i>
+              <small>
+                Le notifiche SMS ti permettono di ricevere promemoria anche quando non controlli l'email.
+                Ti consigliamo di attivare gli SMS almeno per i promemoria degli appuntamenti.
+              </small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" (click)="closePreferencesModal()">Annulla</button>
+          <button type="button" class="btn btn-primary" (click)="savePreferences()" [disabled]="isSaving">
+            <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1"></span>
+            {{ isSaving ? 'Salvataggio...' : 'Salva preferenze' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>

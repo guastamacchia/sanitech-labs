@@ -1007,6 +1007,30 @@ services:
       start_period: 25s
     restart: unless-stopped
 
+  # =========================
+  # Frontend (Angular SPA)
+  # =========================
+  # Single Page Application served via Nginx.
+  # Built from sanitech-fe with multi-stage Dockerfile.
+  sanitech-fe:
+    build:
+      context: ../sanitech-fe
+      dockerfile: Dockerfile
+    image: sanitech/sanitech-fe:${SPRING_PROFILES_ACTIVE:-local}
+    container_name: sanitech-fe
+    depends_on:
+      svc-gateway:
+        condition: service_healthy
+    ports:
+      - "4200:80"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/80'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
 volumes:
   grafana-data:
   kafka-data:

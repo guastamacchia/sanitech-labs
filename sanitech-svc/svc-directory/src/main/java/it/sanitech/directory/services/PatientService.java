@@ -229,7 +229,14 @@ public class PatientService {
 
     public void delete(Long id) {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
-        keycloakAdminClient.disableUser(entity.getEmail());
+        keycloakAdminClient.disableUser(
+                entity.getEmail(),
+                entity.getFirstName(),
+                entity.getLastName(),
+                entity.getPhone(),
+                AppConstants.Outbox.AggregateType.PATIENT,
+                entity.getId()
+        );
         patientRepository.delete(entity);
 
         eventPublisher.publish(
@@ -244,7 +251,14 @@ public class PatientService {
     public PatientDto disableAccess(Long id) {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
         entity.setStatus(UserStatus.DISABLED);
-        keycloakAdminClient.disableUser(entity.getEmail());
+        keycloakAdminClient.disableUser(
+                entity.getEmail(),
+                entity.getFirstName(),
+                entity.getLastName(),
+                entity.getPhone(),
+                AppConstants.Outbox.AggregateType.PATIENT,
+                entity.getId()
+        );
         Patient saved = patientRepository.save(entity);
         return patientMapper.toDto(saved);
     }
@@ -253,7 +267,14 @@ public class PatientService {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
         entity.setStatus(UserStatus.ACTIVE);
         entity.setActivatedAt(Instant.now());
-        keycloakAdminClient.enableUser(entity.getEmail());
+        keycloakAdminClient.enableUser(
+                entity.getEmail(),
+                entity.getFirstName(),
+                entity.getLastName(),
+                entity.getPhone(),
+                AppConstants.Outbox.AggregateType.PATIENT,
+                entity.getId()
+        );
         Patient saved = patientRepository.save(entity);
         return patientMapper.toDto(saved);
     }

@@ -1,31 +1,63 @@
 #!/usr/bin/env bash
+#
+# Smoke test per svc-gateway.
+# Verifica che gli endpoint health, metriche e OpenAPI siano accessibili.
+#
+# Utilizzo:
+#   bash .script/services/svc-gateway/smoke.sh
+#   SERVICE_URL=http://custom:8080 bash .script/services/svc-gateway/smoke.sh
+#
 set -euo pipefail
 
-prompt() {
-  local var="$1" label="$2" default="$3"
-  read -rp "${label} [${default}]: " input || true
-  if [ -z "${input}" ]; then
-    eval "${var}=\"${default}\""
-  else
-    eval "${var}=\"${input}\""
-  fi
+readonly SERVICE_URL="${SERVICE_URL:-http://localhost:8080}"
+readonly TIMEOUT="${TIMEOUT:-5}"
+
+# Colori
+readonly GREEN='\033[0;32m'
+readonly RED='\033[0;31m'
+readonly NC='\033[0m'
+
+log_ok() {
+    echo -e "${GREEN}[OK]${NC} $*"
 }
 
-prompt SERVICE_URL "svc-gateway base URL" "${SERVICE_URL:-http://localhost:8080}"
+log_fail() {
+    echo -e "${RED}[FAIL]${NC} $*"
+}
 
-SERVICE_URL="$(echo "${SERVICE_URL}" | xargs)"
-SERVICE_URL="${SERVICE_URL%/}"
+check_endpoint() {
+    local name="$1"
+    local path="$2"
+    local url="${SERVICE_URL}${path}"
 
-echo ">> Checking health at ${SERVICE_URL}/actuator/health"
-curl -fsSL "${SERVICE_URL}/actuator/health" >/dev/null
-echo "OK"
+    if curl -fsS --max-time "${TIMEOUT}" "${url}" >/dev/null 2>&1; then
+        log_ok "${name}"
+        return 0
+    else
+        log_fail "${name} - ${url}"
+        return 1
+    fi
+}
 
-echo ">> Checking metrics endpoint"
-curl -fsSL "${SERVICE_URL}/actuator/metrics" >/dev/null
-echo "OK"
+echo "================================"
+echo "  svc-gateway Smoke Test"
+echo "  URL: ${SERVICE_URL}"
+echo "================================"
+echo ""
 
-echo ">> Checking OpenAPI at ${SERVICE_URL}/v3/api-docs"
-curl -fsSL "${SERVICE_URL}/v3/api-docs" >/dev/null
-echo "OK"
+failed=0
 
-echo "All smoke checks passed."
+check_endpoint "Health check" "/actuator/health" || failed=$((failed + 1))
+check_endpoint "Endpoint metriche" "/actuator/metrics" || failed=$((failed + 1))
+check_endpoint "Documentazione OpenAPI" "/v3/api-docs" || failed=$((failed + 1))
+check_endpoint "Swagger UI" "/swagger-ui/index.html" || failed=$((failed + 1))
+
+echo ""
+
+if [[ ${failed} -gt 0 ]]; then
+    echo -e "${RED}Smoke test fallito: ${failed} controllo/i fallito/i${NC}"
+    exit 1
+else
+    echo -e "${GREEN}Tutti i controlli smoke superati!${NC}"
+    exit 0
+fi

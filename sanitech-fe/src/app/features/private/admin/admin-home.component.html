@@ -1,46 +1,89 @@
-<div class="row g-4">
-  <div class="col-md-6 col-lg-4">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">📁 Directory</h5>
-        <p class="text-muted">Medici, pazienti, strutture, reparti.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/admin/directory">Apri</a>
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="mb-4">
+    <h2 class="mb-1 fw-bold">Pannello di amministrazione</h2>
+    <p class="text-muted mb-0">Gestisci il sistema sanitario in modo completo e sicuro</p>
+  </div>
+
+  <!-- Quick actions grid -->
+  <div class="row g-4">
+    <!-- Directory -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-people text-primary fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Directory</h5>
+          </div>
+          <p class="text-muted small mb-3">Gestione anagrafiche di medici, pazienti, strutture sanitarie e reparti. Attivazione account e trasferimenti.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/admin/directory">Gestisci anagrafiche</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">📊 Audit & compliance</h5>
-        <p class="text-muted">Traccia eventi e accessi.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/admin/audit">Apri</a>
+
+    <!-- Audit & compliance -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+              <i class="bi bi-shield-check text-info fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Audit & Compliance</h5>
+          </div>
+          <p class="text-muted small mb-3">Traccia eventi di sistema, accessi ai dati clinici e verifiche GDPR. Report di conformita' e audit trail.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/admin/audit">Visualizza audit</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">🔔 Notifiche & pagamenti</h5>
-        <p class="text-muted">Configurazione canali e transazioni.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/admin/notifications">Apri</a>
+
+    <!-- Notifiche & pagamenti -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+              <i class="bi bi-bell text-warning fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Notifiche & Pagamenti</h5>
+          </div>
+          <p class="text-muted small mb-3">Configurazione canali di notifica (email, SMS), gestione transazioni e solleciti di pagamento.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/admin/notifications">Gestisci notifiche</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">📹 Televisite</h5>
-        <p class="text-muted">Sessioni di telemedicina e conversioni.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/admin/televisit">Apri</a>
+
+    <!-- Televisite -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
+              <i class="bi bi-camera-video text-danger fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Televisite</h5>
+          </div>
+          <p class="text-muted small mb-3">Gestione sessioni di telemedicina, monitoraggio conversioni e statistiche di utilizzo del servizio.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/admin/televisit">Gestisci televisite</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6 col-lg-4">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">🏥 Ricoveri</h5>
-        <p class="text-muted">Gestione posti letto e referenti.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/admin/admissions">Apri</a>
+
+    <!-- Ricoveri -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-hospital text-success fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Ricoveri</h5>
+          </div>
+          <p class="text-muted small mb-3">Gestione posti letto, assegnazione medici referenti e monitoraggio capacita' reparti.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/admin/admissions">Gestisci ricoveri</a>
+        </div>
       </div>
     </div>
   </div>

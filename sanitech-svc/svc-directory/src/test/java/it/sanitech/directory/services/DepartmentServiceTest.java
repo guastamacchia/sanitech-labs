@@ -2,6 +2,7 @@ package it.sanitech.directory.services;
 
 import it.sanitech.directory.TestDataFactory;
 import it.sanitech.directory.repositories.DepartmentRepository;
+import it.sanitech.directory.repositories.DoctorRepository;
 import it.sanitech.directory.repositories.FacilityRepository;
 import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.repositories.entities.Facility;
@@ -21,6 +22,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
@@ -34,6 +36,9 @@ class DepartmentServiceTest {
 
     @Mock
     private FacilityRepository facilityRepository;
+
+    @Mock
+    private DoctorRepository doctorRepository;
 
     @Mock
     private DepartmentMapper departmentMapper;
@@ -101,10 +106,13 @@ class DepartmentServiceTest {
         when(departmentRepository.findAll(any(org.springframework.data.domain.Sort.class)))
                 .thenReturn(List.of(department));
         when(departmentMapper.toDto(department)).thenReturn(mappedDto);
+        when(doctorRepository.countByDepartmentIds(anyList())).thenReturn(List.<Object[]>of(new Object[]{10L, 5L}));
 
         List<DepartmentDto> result = departmentService.search(" ");
 
-        assertThat(result).containsExactly(mappedDto);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).code()).isEqualTo("CARD");
+        assertThat(result.get(0).doctorCount()).isEqualTo(5L);
     }
 
     @Test
@@ -116,10 +124,13 @@ class DepartmentServiceTest {
                 .findByCodeContainingIgnoreCaseOrNameContainingIgnoreCaseOrderByCodeAsc("Card", "Card"))
                 .thenReturn(List.of(department));
         when(departmentMapper.toDto(department)).thenReturn(mappedDto);
+        when(doctorRepository.countByDepartmentIds(anyList())).thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
 
         List<DepartmentDto> result = departmentService.search("Card");
 
-        assertThat(result).containsExactly(mappedDto);
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).code()).isEqualTo("CARD");
+        assertThat(result.get(0).doctorCount()).isEqualTo(3L);
     }
 
     @Test

@@ -1,23 +1,33 @@
 #!/usr/bin/env bash
+#
+# Avvia il servizio frontend dal docker-compose principale.
+# Il frontend dipende da svc-gateway che deve essere healthy.
+#
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-INFRA_DIR="${INFRA_DIR:-${ROOT_DIR}/.infra/fe}"
-COMPOSE_FILE="${COMPOSE_FILE:-${INFRA_DIR}/docker-compose.yml}"
-COMPOSE="docker compose"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+readonly COMPOSE_FILE="${COMPOSE_FILE:-${ROOT_DIR}/.infra/docker-compose.yml}"
+readonly COMPOSE="docker compose"
+readonly SERVICE="sanitech-fe"
 
 if ! command -v docker >/dev/null 2>&1; then
-  echo "docker non trovato. Installa Docker per avviare il frontend." >&2
-  exit 1
+    echo "[ERRORE] Docker non trovato. Installa Docker per avviare il frontend." >&2
+    exit 1
 fi
 
-if [ ! -f "${COMPOSE_FILE}" ]; then
-  echo "File docker-compose non trovato in ${COMPOSE_FILE}" >&2
-  exit 1
+if [[ ! -f "${COMPOSE_FILE}" ]]; then
+    echo "[ERRORE] File Docker Compose non trovato: ${COMPOSE_FILE}" >&2
+    exit 1
 fi
 
-echo "[frontend:up] usando compose file: ${COMPOSE_FILE}"
-${COMPOSE} -f "${COMPOSE_FILE}" up -d --build "$@"
+echo "[frontend:up] Uso file compose: ${COMPOSE_FILE}"
+echo "[frontend:up] Avvio servizio: ${SERVICE}"
 
-echo "[frontend:up] servizi attivi:"
-${COMPOSE} -f "${COMPOSE_FILE}" ps
+${COMPOSE} -f "${COMPOSE_FILE}" up -d --build "${SERVICE}" "$@"
+
+echo "[frontend:up] Stato servizio:"
+${COMPOSE} -f "${COMPOSE_FILE}" ps "${SERVICE}"
+
+echo ""
+echo "[frontend:up] Frontend disponibile su: http://localhost:4200"

@@ -2,6 +2,7 @@ package it.sanitech.directory.services;
 
 import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.directory.repositories.DepartmentRepository;
+import it.sanitech.directory.repositories.DoctorRepository;
 import it.sanitech.directory.repositories.FacilityRepository;
 import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.repositories.entities.Facility;
@@ -15,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Service applicativo per l'anagrafica reparti.
@@ -33,14 +36,13 @@ public class DepartmentService {
 
     private final DepartmentRepository repository;
     private final FacilityRepository facilityRepository;
+    private final DoctorRepository doctorRepository;
     private final DepartmentMapper mapper;
 
     @Transactional(readOnly = true)
     public List<DepartmentDto> list() {
-        return repository.findAll(Sort.by("code").ascending())
-                .stream()
-                .map(mapper::toDto)
-                .toList();
+        List<Department> departments = repository.findAll(Sort.by("code").ascending());
+        return enrichWithDoctorCounts(departments.stream().map(mapper::toDto).toList());
     }
 
     @Transactional(readOnly = true)
@@ -49,9 +51,28 @@ public class DepartmentService {
             return list();
         }
         String like = q.trim();
-        return repository.findByCodeContainingIgnoreCaseOrNameContainingIgnoreCaseOrderByCodeAsc(like, like)
+        List<Department> departments = repository.findByCodeContainingIgnoreCaseOrNameContainingIgnoreCaseOrderByCodeAsc(like, like);
+        return enrichWithDoctorCounts(departments.stream().map(mapper::toDto).toList());
+    }
+
+    /**
+     * Arricchisce i DTO con il conteggio dei medici per reparto.
+     */
+    private List<DepartmentDto> enrichWithDoctorCounts(List<DepartmentDto> dtos) {
+        if (dtos.isEmpty()) {
+            return dtos;
+        }
+
+        List<Long> departmentIds = dtos.stream().map(DepartmentDto::id).toList();
+        Map<Long, Long> countsByDeptId = doctorRepository.countByDepartmentIds(departmentIds)
                 .stream()
-                .map(mapper::toDto)
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+
+        return dtos.stream()
+                .map(dto -> dto.withDoctorCount(countsByDeptId.getOrDefault(dto.id(), 0L)))
                 .toList();
     }
 

@@ -1,103 +1,137 @@
-<div class="card card-glass mb-4">
-  <div class="card-body">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-      <h5 class="fw-semibold mb-0">Prossimi appuntamenti confermati</h5>
-      <a class="btn btn-outline-primary btn-sm" routerLink="/portal/doctor/scheduling">Vai all’agenda</a>
-    </div>
-    <div class="table-responsive">
-      <table class="table align-middle">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Reparto</th>
-            <th>Paziente</th>
-            <th>Data e ora</th>
-            <th>Modalità</th>
-            <th>Motivo</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let visit of paginatedVisits">
-            <td>{{ visit.id }}</td>
-            <td>{{ visit.department }}</td>
-            <td>{{ visit.patient }}</td>
-            <td>{{ visit.date }} • {{ visit.time }}</td>
-            <td>{{ visit.modality }}</td>
-            <td>{{ visit.reason }}</td>
-          </tr>
-          <tr *ngIf="!upcomingVisits.length">
-            <td colspan="6" class="text-center text-muted">Nessuna visita programmata.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="d-flex flex-wrap align-items-center justify-content-between mt-3">
-      <div class="d-flex align-items-center gap-2">
-        <small class="text-muted">Elementi per pagina</small>
-        <select class="form-select form-select-sm w-auto" [(ngModel)]="pageSize" (ngModelChange)="resetPagination()">
-          <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
-        </select>
-      </div>
-      <nav aria-label="Paginazione prossime visite">
-        <ul class="pagination pagination-sm mb-0">
-          <li class="page-item" [class.disabled]="currentPage <= 1">
-            <button class="page-link" type="button" (click)="changePage(currentPage - 1)">«</button>
-          </li>
-          <li class="page-item active">
-            <span class="page-link">{{ currentPage }} / {{ totalPages }}</span>
-          </li>
-          <li class="page-item" [class.disabled]="currentPage >= totalPages">
-            <button class="page-link" type="button" (click)="changePage(currentPage + 1)">»</button>
-          </li>
-        </ul>
-      </nav>
-    </div>
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="mb-4">
+    <h2 class="mb-1 fw-bold">Pannello medico</h2>
+    <p class="text-muted mb-0">Gestisci i tuoi pazienti, appuntamenti e attività cliniche</p>
   </div>
-</div>
 
-<div class="row g-4">
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Agenda</h5>
-        <p class="text-muted">Slot e appuntamenti disponibili.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/doctor/scheduling">Apri</a>
+  <!-- Quick actions grid -->
+  <div class="row g-4">
+    <!-- Profilo -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-person-badge text-primary fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Il mio profilo</h5>
+          </div>
+          <p class="text-muted small mb-3">Dati professionali, specializzazioni e orari di disponibilità.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/doctor/profile">Gestisci profilo</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Prescrizioni</h5>
-        <p class="text-muted">Gestisci prescrizioni e terapie.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/doctor/prescribing">Apri</a>
+
+    <!-- I miei pazienti -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-people text-success fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">I miei pazienti</h5>
+          </div>
+          <p class="text-muted small mb-3">Pazienti con consenso attivo, ricerca e accesso alle cartelle cliniche.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/doctor/patients">Gestisci pazienti</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Televisite</h5>
-        <p class="text-muted">Sessioni, token e log di televisita.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/doctor/televisit">Apri</a>
+
+    <!-- Documenti clinici -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+              <i class="bi bi-file-earmark-medical text-info fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Documenti clinici</h5>
+          </div>
+          <p class="text-muted small mb-3">Carica referti, visualizza esami e gestisci la documentazione clinica.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/doctor/clinical-docs">Gestisci documenti</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Ricoveri</h5>
-        <p class="text-muted">Storico ricoveri del tuo reparto.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/doctor/admissions">Apri</a>
+
+    <!-- Prescrizioni -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+              <i class="bi bi-prescription2 text-warning fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Prescrizioni</h5>
+          </div>
+          <p class="text-muted small mb-3">Emetti prescrizioni farmacologiche, rinnova terapie e visualizza lo storico.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/doctor/prescriptions">Gestisci prescrizioni</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Documenti & consensi</h5>
-        <p class="text-muted">Documentazione clinica e consensi.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/doctor/docs">Apri</a>
+
+    <!-- Agenda -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
+              <i class="bi bi-calendar-week text-danger fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">La mia agenda</h5>
+          </div>
+          <p class="text-muted small mb-3">Gestisci slot, disponibilità settimanali e appuntamenti prenotati.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/doctor/agenda">Apri agenda</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Televisite -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-purple bg-opacity-10 p-3 me-3" style="background-color: rgba(111, 66, 193, 0.1);">
+              <i class="bi bi-camera-video text-purple fs-4" style="color: #6f42c1;"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Le mie televisite</h5>
+          </div>
+          <p class="text-muted small mb-3">Prepara e conduci visite a distanza, condividi documenti durante la sessione.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/doctor/televisits">Gestisci televisite</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ricoveri -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-hospital text-secondary fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">I miei ricoveri</h5>
+          </div>
+          <p class="text-muted small mb-3">Pazienti ricoverati nel tuo reparto, presa in carico e dimissioni.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/doctor/admissions">Gestisci ricoveri</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifiche -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
+              <i class="bi bi-bell text-danger fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Notifiche</h5>
+          </div>
+          <p class="text-muted small mb-3">Consensi, appuntamenti, documenti caricati e avvisi del sistema.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/doctor/notifications">Visualizza notifiche</a>
+        </div>
       </div>
     </div>
   </div>

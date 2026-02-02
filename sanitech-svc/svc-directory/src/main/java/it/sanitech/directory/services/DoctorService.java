@@ -184,7 +184,14 @@ public class DoctorService {
 
     public void delete(Long id) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
-        keycloakAdminClient.disableUser(entity.getEmail());
+        keycloakAdminClient.disableUser(
+                entity.getEmail(),
+                entity.getFirstName(),
+                entity.getLastName(),
+                entity.getPhone(),
+                AppConstants.Outbox.AggregateType.DOCTOR,
+                entity.getId()
+        );
         doctorRepository.delete(entity);
 
         eventPublisher.publish(
@@ -199,7 +206,14 @@ public class DoctorService {
     public DoctorDto disableAccess(Long id) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
         entity.setStatus(UserStatus.DISABLED);
-        keycloakAdminClient.disableUser(entity.getEmail());
+        keycloakAdminClient.disableUser(
+                entity.getEmail(),
+                entity.getFirstName(),
+                entity.getLastName(),
+                entity.getPhone(),
+                AppConstants.Outbox.AggregateType.DOCTOR,
+                entity.getId()
+        );
         Doctor saved = doctorRepository.save(entity);
         return doctorMapper.toDto(saved);
     }
@@ -208,7 +222,14 @@ public class DoctorService {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
         entity.setStatus(UserStatus.ACTIVE);
         entity.setActivatedAt(Instant.now());
-        keycloakAdminClient.enableUser(entity.getEmail());
+        keycloakAdminClient.enableUser(
+                entity.getEmail(),
+                entity.getFirstName(),
+                entity.getLastName(),
+                entity.getPhone(),
+                AppConstants.Outbox.AggregateType.DOCTOR,
+                entity.getId()
+        );
         Doctor saved = doctorRepository.save(entity);
         return doctorMapper.toDto(saved);
     }

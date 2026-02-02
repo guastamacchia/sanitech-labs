@@ -677,13 +677,13 @@
             }
         },
         {
-            "username": "rossi",
+            "username": "mario.rossi.dr@sanitech.example",
             "enabled": true,
-            "email": "rossi@sanitech.example",
+            "email": "mario.rossi.dr@sanitech.example",
             "attributes": {
                 "dept": [
-                    "HEART",
-                    "RESP"
+                    "CARD_CENTRAL",
+                    "NEUR_CENTRAL"
                 ],
                 "did": [
                     "1"
@@ -705,9 +705,9 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "conti",
+            "username": "anna.conti@email.example",
             "enabled": true,
-            "email": "conti@sanitech.example",
+            "email": "anna.conti@email.example",
             "attributes": {
                 "pid": [
                     "1"
@@ -729,7 +729,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "marco.bianchi",
+            "username": "marco.bianchi@sanitech.example",
             "enabled": true,
             "email": "marco.bianchi@sanitech.example",
             "attributes": {
@@ -750,7 +750,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "laura.verdi",
+            "username": "laura.verdi@sanitech.example",
             "enabled": true,
             "email": "laura.verdi@sanitech.example",
             "attributes": {
@@ -771,7 +771,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "giuseppe.russo",
+            "username": "giuseppe.russo@sanitech.example",
             "enabled": true,
             "email": "giuseppe.russo@sanitech.example",
             "attributes": {
@@ -792,7 +792,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "francesca.romano",
+            "username": "francesca.romano@sanitech.example",
             "enabled": true,
             "email": "francesca.romano@sanitech.example",
             "attributes": {
@@ -813,7 +813,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "andrea.colombo",
+            "username": "andrea.colombo@sanitech.example",
             "enabled": true,
             "email": "andrea.colombo@sanitech.example",
             "attributes": {
@@ -834,7 +834,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "elena.ricci",
+            "username": "elena.ricci@sanitech.example",
             "enabled": true,
             "email": "elena.ricci@sanitech.example",
             "attributes": {
@@ -855,7 +855,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "paolo.gallo",
+            "username": "paolo.gallo@sanitech.example",
             "enabled": true,
             "email": "paolo.gallo@sanitech.example",
             "attributes": {
@@ -876,7 +876,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "simone.conti",
+            "username": "simone.conti@sanitech.example",
             "enabled": true,
             "email": "simone.conti@sanitech.example",
             "attributes": {
@@ -897,7 +897,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "chiara.ferrari",
+            "username": "chiara.ferrari@sanitech.example",
             "enabled": true,
             "email": "chiara.ferrari@sanitech.example",
             "attributes": {
@@ -918,7 +918,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "matteo.esposito",
+            "username": "matteo.esposito@sanitech.example",
             "enabled": true,
             "email": "matteo.esposito@sanitech.example",
             "attributes": {
@@ -939,7 +939,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "luca.martini",
+            "username": "luca.martini@sanitech.example",
             "enabled": true,
             "email": "luca.martini@sanitech.example",
             "attributes": {
@@ -960,7 +960,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "giulia.barbieri",
+            "username": "giulia.barbieri@sanitech.example",
             "enabled": true,
             "email": "giulia.barbieri@sanitech.example",
             "attributes": {
@@ -981,7 +981,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "roberto.bruno",
+            "username": "roberto.bruno@sanitech.example",
             "enabled": true,
             "email": "roberto.bruno@sanitech.example",
             "attributes": {
@@ -1002,7 +1002,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "valentina.fontana",
+            "username": "valentina.fontana@sanitech.example",
             "enabled": true,
             "email": "valentina.fontana@sanitech.example",
             "attributes": {
@@ -1023,7 +1023,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "alessandro.santoro",
+            "username": "alessandro.santoro@sanitech.example",
             "enabled": true,
             "email": "alessandro.santoro@sanitech.example",
             "attributes": {
@@ -1044,7 +1044,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "silvia.marini",
+            "username": "silvia.marini@sanitech.example",
             "enabled": true,
             "email": "silvia.marini@sanitech.example",
             "attributes": {
@@ -1065,7 +1065,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "mario.rossi",
+            "username": "mario.rossi@email.example",
             "enabled": true,
             "email": "mario.rossi@email.example",
             "attributes": {
@@ -1085,7 +1085,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "anna.bianchi",
+            "username": "anna.bianchi@email.example",
             "enabled": true,
             "email": "anna.bianchi@email.example",
             "attributes": {
@@ -1105,7 +1105,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "luigi.verde",
+            "username": "luigi.verde@email.example",
             "enabled": true,
             "email": "luigi.verde@email.example",
             "attributes": {
@@ -1125,7 +1125,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "carla.neri",
+            "username": "carla.neri@email.example",
             "enabled": true,
             "email": "carla.neri@email.example",
             "attributes": {
@@ -1145,7 +1145,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "francesco.gialli",
+            "username": "francesco.gialli@email.example",
             "enabled": true,
             "email": "francesco.gialli@email.example",
             "attributes": {
@@ -1165,7 +1165,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "giovanna.viola",
+            "username": "giovanna.viola@email.example",
             "enabled": true,
             "email": "giovanna.viola@email.example",
             "attributes": {
@@ -1185,7 +1185,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "pietro.azzurri",
+            "username": "pietro.azzurri@email.example",
             "enabled": true,
             "email": "pietro.azzurri@email.example",
             "attributes": {
@@ -1205,7 +1205,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "maria.grigi",
+            "username": "maria.grigi@email.example",
             "enabled": true,
             "email": "maria.grigi@email.example",
             "attributes": {
@@ -1225,7 +1225,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "stefano.marroni",
+            "username": "stefano.marroni@email.example",
             "enabled": false,
             "email": "stefano.marroni@email.example",
             "attributes": {
@@ -1245,7 +1245,7 @@
             "createdTimestamp": 1704067200000
         },
         {
-            "username": "teresa.rosa",
+            "username": "teresa.rosa@email.example",
             "enabled": false,
             "email": "teresa.rosa@email.example",
             "attributes": {

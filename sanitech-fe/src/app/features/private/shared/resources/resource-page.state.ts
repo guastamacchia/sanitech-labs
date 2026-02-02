@@ -47,31 +47,27 @@ interface ConsentItem {
   signedAt: string;
 }
 
+// Allineato a PaymentOrderDto backend
 interface PaymentItem {
   id: number;
+  appointmentId: number;
   patientId: number;
-  amount: number;
-  currency: string;
-  service: string;
-  status: string;
-  paidAt: string;
-  receiptName?: string;
-  // Campi estesi per scenario admin
-  appointmentId?: number;
-  appointmentDate?: string;
-  patientName?: string;
   patientEmail?: string;
-  notificationAttempts?: NotificationAttempt[];
-  failureReason?: string;
-  createdAt?: string;
-}
-
-interface NotificationAttempt {
-  id: number;
-  channel: 'EMAIL' | 'SMS' | 'APP';
-  sentAt: string;
-  status: 'SENT' | 'DELIVERED' | 'FAILED';
-  type: 'REMINDER' | 'OVERDUE' | 'ALTERNATIVE';
+  patientName?: string;
+  amountCents: number;
+  currency: string;
+  method: 'CARD' | 'BANK_TRANSFER' | 'CASH';
+  provider: string;
+  providerReference?: string;
+  status: 'CREATED' | 'CAPTURED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
+  description?: string;
+  createdAt: string;
+  updatedAt?: string;
+  // Campi calcolati per UI
+  amount?: number; // amountCents / 100
+  service?: string; // alias per description
+  // Campi per tracciamento solleciti (gestiti lato frontend)
+  notificationAttempts?: { sentAt: string }[];
 }
 
 interface PaymentStats {
@@ -88,26 +84,37 @@ interface PaymentPage {
   content: PaymentItem[];
 }
 
+// Allineato a AdmissionDto backend
 interface AdmissionItem {
   id: number;
   patientId: number;
-  department: string;
-  bedId?: number;
-  status: string;
+  departmentCode: string;
+  admissionType: 'INPATIENT' | 'DAY_HOSPITAL' | 'OBSERVATION';
+  status: 'ACTIVE' | 'DISCHARGED' | 'CANCELLED';
   admittedAt: string;
+  dischargedAt?: string;
   notes?: string;
-  appointmentId?: number;
+  attendingDoctorId?: number;
+  // Campo legacy per compatibilità template
+  department?: string;
 }
 
+// Allineato a NotificationDto backend
 interface NotificationItem {
   id: number;
-  recipient: string;
-  channel: string;
+  recipientType: 'DOCTOR' | 'PATIENT' | 'ADMIN';
+  recipientId: string;
+  channel: 'EMAIL' | 'IN_APP';
+  toAddress?: string;
   subject: string;
-  message: string;
-  notes: string;
-  status: string;
-  sentAt: string;
+  body: string;
+  status: 'PENDING' | 'SENT' | 'FAILED';
+  createdAt: string;
+  sentAt?: string;
+  errorMessage?: string;
+  // Campi calcolati per UI
+  recipient?: string; // alias per toAddress o recipientId
+  message?: string; // alias per body
 }
 
 interface NotificationPage {
@@ -126,12 +133,18 @@ interface PrescriptionItem {
   patientQuestion?: string;
 }
 
+// Allineato a TelevisitDto backend
 interface TelevisitItem {
   id: number;
-  appointmentId: number;
-  provider: string;
-  status: string;
-  token: string;
+  roomName: string;
+  department: string;
+  doctorSubject: string;
+  patientSubject: string;
+  scheduledAt: string;
+  status: 'CREATED' | 'ACTIVE' | 'ENDED' | 'CANCELED';
+  // Campi legacy per compatibilità template (popolati da mapping)
+  provider?: string;
+  token?: string;
 }
 
 interface DoctorItem {
@@ -176,6 +189,15 @@ interface DepartmentItem {
   facilityCode?: string;
 }
 
+// Allineato a CapacityDto backend
+interface CapacityItem {
+  departmentCode: string;
+  totalBeds: number;
+  occupiedBeds: number;
+  availableBeds: number;
+  updatedAt: string;
+}
+
 interface AuditItem {
   id: number;
   action: string;
@@ -183,12 +205,73 @@ interface AuditItem {
   timestamp: string;
 }
 
+// DTO che mappa esattamente il backend AuditEventDto
 interface AuditEventResponse {
   id: number;
-  action: string;
+  occurredAt: string;
+  source: string;
   actorType: string;
   actorId: string;
-  occurredAt: string;
+  action: string;
+  resourceType?: string;
+  resourceId?: string;
+  outcome: string;
+  ip?: string;
+  traceId?: string;
+  details?: Record<string, unknown>;
+}
+
+// Risposta paginata Spring Boot
+interface SpringPage<T> {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+  };
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
+
+// DTO per lookup pazienti da directory
+interface PatientDirectoryDto {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  fiscalCode: string;
+  birthDate?: string;
+  address?: string;
+  status: string;
+}
+
+// DTO per lookup medici da directory
+interface DoctorDirectoryDto {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  specialization?: string;
+  departmentCode?: string;
+  departmentName?: string;
+  facilityCode?: string;
+  status: string;
+}
+
+// DTO per consensi da API
+interface ConsentApiDto {
+  id: number;
+  patientId: number;
+  doctorId: number;
+  doctorName?: string;
+  scope: string;
+  status: string;
+  grantedAt: string;
+  revokedAt?: string;
+  expiresAt?: string;
 }
 
 // Interfacce estese per Audit & Compliance dettagliato
@@ -370,9 +453,11 @@ export class ResourcePageState {
     amount: 0
   };
   admissionForm = {
-    patientId: 1,
-    department: 'CARD',
-    bedId: 4
+    patientId: null as number | null,
+    departmentCode: '',
+    admissionType: 'INPATIENT' as 'INPATIENT' | 'DAY_HOSPITAL' | 'OBSERVATION',
+    notes: '',
+    attendingDoctorId: null as number | null
   };
   notifications: NotificationItem[] = [];
   notificationsError = '';
@@ -439,9 +524,10 @@ export class ResourcePageState {
   televisitRescheduleDate = '';
   televisitRescheduleTime = '';
   televisitForm = {
-    appointmentId: 1,
-    patientId: null as number | null,
-    provider: 'LIVEKIT'
+    doctorSubject: '',
+    patientSubject: '',
+    department: '',
+    scheduledAt: ''
   };
   showAdminTelevisitModal = false;
   showAdminAdmissionModal = false;
@@ -450,6 +536,7 @@ export class ResourcePageState {
   patients: PatientItem[] = [];
   facilities: FacilityItem[] = [];
   departments: DepartmentItem[] = [];
+  departmentCapacities: CapacityItem[] = [];
   directoryError = '';
   showDoctorModal = false;
   showPatientModal = false;
@@ -541,8 +628,8 @@ export class ResourcePageState {
   selectedPayment: PaymentItem | null = null;
   paymentQuestion = '';
 
-  // Admin Payments - Filtri e statistiche
-  paymentStatusFilter: 'ALL' | 'PENDING' | 'PAID' | 'CONFIRMED' | 'FAILED' = 'ALL';
+  // Admin Payments - Filtri e statistiche (allineati a PaymentStatus backend)
+  paymentStatusFilter: 'ALL' | 'CREATED' | 'CAPTURED' | 'FAILED' | 'CANCELLED' | 'REFUNDED' = 'ALL';
   paymentDaysFilter: number | null = null; // null = tutti, 7 = >7 giorni, 14 = >14 giorni
   selectedPaymentIds: Set<number> = new Set();
   showBulkReminderModal = false;
@@ -814,7 +901,8 @@ export class ResourcePageState {
     });
   }
 
-  getDoctorLabel(doctorId: number): string {
+  getDoctorLabel(doctorId: number | null | undefined): string {
+    if (doctorId == null) return '-';
     const doctor = this.getDoctorById(doctorId);
     return doctor ? `${doctor.firstName} ${doctor.lastName}` : `Medico ${doctorId}`;
   }
@@ -987,45 +1075,44 @@ export class ResourcePageState {
 
   getAdmissionStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      ACTIVE: 'Da confermare',
-      PROPOSED: 'Proposta inviata',
-      CONFIRMED: 'Confermato',
-      RESCHEDULED: 'Ripianificato',
-      REJECTED: 'Rifiutato',
-      DISCHARGED: 'Dimesso'
+      ACTIVE: 'Attivo',
+      DISCHARGED: 'Dimesso',
+      CANCELLED: 'Annullato'
     };
     return labels[status] ?? status;
   }
 
+  getAdmissionTypeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      INPATIENT: 'Ordinario',
+      DAY_HOSPITAL: 'Day Hospital',
+      OBSERVATION: 'Osservazione'
+    };
+    return labels[type] ?? type;
+  }
+
   getPaymentStatusLabel(payment: PaymentItem): string {
-    if (payment.status === 'CONFIRMED') {
-      return 'Pagamento ricevuto';
-    }
-    if (payment.status === 'RECEIPT_UPLOADED' || (payment.status === 'PAID' && payment.receiptName)) {
-      return 'In fase di approvazione';
-    }
-    if (payment.status === 'PAID') {
-      return 'Ricevuta da caricare';
-    }
-    if (payment.status === 'PENDING' || payment.status === 'IN_ATTESA') {
-      return 'Pagamento da effettuare';
-    }
-    if (payment.status === 'FAILED') {
-      return 'Non riuscito';
-    }
-    return payment.status;
+    const labels: Record<string, string> = {
+      CREATED: 'In attesa di pagamento',
+      CAPTURED: 'Pagamento ricevuto',
+      FAILED: 'Non riuscito',
+      CANCELLED: 'Annullato',
+      REFUNDED: 'Rimborsato'
+    };
+    return labels[payment.status] ?? payment.status;
   }
 
   canMarkPaymentAsPaid(payment: PaymentItem): boolean {
-    return payment.status === 'PENDING' || payment.status === 'IN_ATTESA';
+    return payment.status === 'CREATED';
   }
 
   canAttachPaymentReceipt(payment: PaymentItem): boolean {
-    return payment.status === 'PAID' && !payment.receiptName;
+    return payment.status === 'CAPTURED';
   }
 
   get latestConfirmedAdmission(): AdmissionItem | null {
-    const admissions = this.visibleAdmissions.filter((admission) => admission.status === 'CONFIRMED');
+    // Admission backend usa 'DISCHARGED' per indicare completato, 'ACTIVE' per in corso
+    const admissions = this.visibleAdmissions.filter((admission) => admission.status === 'DISCHARGED' || admission.status === 'ACTIVE');
     if (!admissions.length) {
       return null;
     }
@@ -1121,8 +1208,9 @@ export class ResourcePageState {
   }
 
   get pendingPayments(): PaymentItem[] {
+    // Backend usa 'CREATED' per pagamenti in attesa
     const pending = this.payments.filter(
-      (payment) => payment.status === 'PENDING' || payment.status === 'IN_ATTESA'
+      (payment) => payment.status === 'CREATED'
     );
     if (this.isPatient) {
       return pending.filter((payment) => payment.patientId === 1);
@@ -1202,10 +1290,8 @@ export class ResourcePageState {
         return this.admissions;
       }
       const patientIds = new Set(doctorAppointments.map((appointment) => appointment.patientId));
-      const appointmentIds = new Set(doctorAppointments.map((appointment) => appointment.id));
-      return this.admissions.filter((admission) =>
-        admission.appointmentId ? appointmentIds.has(admission.appointmentId) : patientIds.has(admission.patientId)
-      );
+      // Filtra ricoveri per patientId (backend non ha appointmentId)
+      return this.admissions.filter((admission) => patientIds.has(admission.patientId));
     }
     if (this.isPatient) {
       return this.admissions.filter((admission) => admission.patientId === 1);
@@ -1225,8 +1311,12 @@ export class ResourcePageState {
     if (!this.isDoctor || !this.televisitPatientFilterId) {
       return this.televisits;
     }
+    // Filtra per nome paziente
+    const patient = this.patients.find(p => p.id === this.televisitPatientFilterId);
+    if (!patient) return this.televisits;
+    const patientFullName = `${patient.firstName} ${patient.lastName}`;
     return this.televisits.filter(
-      (televisit) => this.getAppointmentById(televisit.appointmentId)?.patientId === this.televisitPatientFilterId
+      (televisit) => televisit.patientSubject === patientFullName
     );
   }
 
@@ -1280,9 +1370,10 @@ export class ResourcePageState {
 
   getTelevisitStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      READY: 'Pronta',
+      CREATED: 'Programmata',
       ACTIVE: 'In corso',
-      COMPLETED: 'Conclusa'
+      ENDED: 'Conclusa',
+      CANCELED: 'Annullata'
     };
     return labels[status] ?? status;
   }
@@ -1294,6 +1385,11 @@ export class ResourcePageState {
 
   get currentDoctorId(): number {
     return this.doctors[0]?.id ?? 1;
+  }
+
+  get currentDoctorName(): string {
+    const doctor = this.doctors[0];
+    return doctor ? `${doctor.firstName} ${doctor.lastName}` : '';
   }
 
   get currentDoctorDepartment(): string {
@@ -1325,39 +1421,40 @@ export class ResourcePageState {
   }
 
   getTelevisitDepartmentLabel(televisit: TelevisitItem): string {
-    const appointment = this.getAppointmentById(televisit.appointmentId);
-    if (!appointment) {
-      return '-';
-    }
-    return this.getDepartmentLabel(this.getDoctorById(appointment.doctorId)?.departmentCode || '-');
+    return this.getDepartmentLabel(televisit.department);
   }
 
   getTelevisitPatientLabel(televisit: TelevisitItem): string {
-    const appointment = this.getAppointmentById(televisit.appointmentId);
-    if (!appointment) {
+    // Il backend restituisce patientSubject, possiamo cercare il paziente per subject
+    // oppure mostrare direttamente il subject abbreviato
+    if (!televisit.patientSubject) {
       return '-';
     }
-    return this.getPatientLabel(appointment.patientId);
+    // Mostra il subject troncato (può essere un UUID o un identificatore)
+    return televisit.patientSubject.length > 20
+      ? televisit.patientSubject.substring(0, 17) + '...'
+      : televisit.patientSubject;
+  }
+
+  getTelevisitDoctorLabel(televisit: TelevisitItem): string {
+    if (!televisit.doctorSubject) {
+      return '-';
+    }
+    return televisit.doctorSubject.length > 20
+      ? televisit.doctorSubject.substring(0, 17) + '...'
+      : televisit.doctorSubject;
   }
 
   getTelevisitDateTimeLabel(televisit: TelevisitItem): string {
-    const appointment = this.getAppointmentById(televisit.appointmentId);
-    if (!appointment) {
+    if (!televisit.scheduledAt) {
       return '-';
     }
-    const slot = this.getSlotById(appointment.slotId);
-    if (!slot) {
-      return '-';
-    }
-    return `${this.formatDate(slot.date)} • ${slot.time}`;
+    return this.formatDateTime(televisit.scheduledAt);
   }
 
   getTelevisitBookingStatusLabel(televisit: TelevisitItem): string {
-    const appointment = this.getAppointmentById(televisit.appointmentId);
-    if (!appointment) {
-      return '-';
-    }
-    return this.getAppointmentStatusLabel(appointment.status);
+    // Restituisce lo stato della televisita direttamente
+    return this.getTelevisitStatusLabel(televisit.status);
   }
 
   getSlotDateTimeValue(slot?: SchedulingSlot): Date | null {
@@ -1383,14 +1480,10 @@ export class ResourcePageState {
   }
 
   getAdmissionAppointmentLabel(admission: AdmissionItem): string {
-    if (!admission.appointmentId) {
-      return '-';
-    }
-    const appointment = this.getAppointmentById(admission.appointmentId);
-    if (!appointment) {
-      return `Visita ${admission.appointmentId}`;
-    }
-    return `${this.getPatientLabel(appointment.patientId)} • ${this.getAppointmentDateTimeLabel(appointment)}`;
+    // Backend AdmissionDto non ha appointmentId, mostra info paziente/reparto
+    const patientLabel = this.getPatientLabel(admission.patientId);
+    const dept = admission.departmentCode || admission.department || '-';
+    return `${patientLabel} • ${dept}`;
   }
 
   get completedDoctorAppointments(): SchedulingAppointment[] {
@@ -1414,13 +1507,15 @@ export class ResourcePageState {
   }
 
   canRescheduleTelevisit(televisit: TelevisitItem): boolean {
-    const appointment = this.getAppointmentById(televisit.appointmentId);
-    if (!appointment) {
+    // Può essere ripianificata se è in stato CREATED e la data è nel futuro
+    if (televisit.status !== 'CREATED') {
       return false;
     }
-    const slot = this.getSlotById(appointment.slotId);
-    const parsed = this.getSlotDateTimeValue(slot);
-    return parsed ? parsed.getTime() >= Date.now() : false;
+    if (!televisit.scheduledAt) {
+      return false;
+    }
+    const parsed = new Date(televisit.scheduledAt);
+    return parsed.getTime() >= Date.now();
   }
 
   submitSlot(): void {
@@ -1729,20 +1824,11 @@ export class ResourcePageState {
     this.paymentsError = '';
     this.paymentsSuccess = '';
 
-    // Per demo/screenshot: carica sempre i mock per admin
-    if (this.isAdmin) {
-      this.payments = this.generateMockPaymentsForAdmin();
-      this.isLoading = false;
-      return;
-    }
-
     this.api.request<PaymentItem[] | PaymentPage>('GET', '/api/payments').subscribe({
       next: (payments) => {
-        if (Array.isArray(payments)) {
-          this.payments = payments;
-        } else {
-          this.payments = payments?.content ?? [];
-        }
+        const rawPayments = Array.isArray(payments) ? payments : (payments?.content ?? []);
+        this.payments = rawPayments.map((p) => this.mapPaymentFromBackend(p));
+        this.updatePaymentStats();
         this.isLoading = false;
       },
       error: () => {
@@ -1750,18 +1836,85 @@ export class ResourcePageState {
         this.isLoading = false;
       }
     });
+
     if (!this.isPatient) {
       this.api.request<AdmissionItem[] | PagedResponse<AdmissionItem>>('GET', '/api/admissions').subscribe({
         next: (admissions) => {
           this.admissions = this.normalizeList(admissions);
         },
-        error: () => {
-          this.paymentsError = 'Impossibile caricare i ricoveri.';
-        }
+        error: () => {}
       });
     } else {
       this.admissions = [];
     }
+  }
+
+  // Mappa PaymentOrderDto backend -> PaymentItem frontend
+  private mapPaymentFromBackend(p: PaymentItem): PaymentItem {
+    return {
+      ...p,
+      amount: p.amountCents ? p.amountCents / 100 : p.amount,
+      service: p.description || p.service
+    };
+  }
+
+  // Aggiorna statistiche pagamenti
+  private updatePaymentStats(): void {
+    const total = this.payments.length;
+    if (total === 0) {
+      this.paymentStats = { totalPayments: 0, completedWithin7Days: 0, completedWithReminder: 0, stillPending: 0, percentWithin7Days: 0, percentWithReminder: 0, percentPending: 0 };
+      return;
+    }
+    const captured = this.payments.filter((p) => p.status === 'CAPTURED').length;
+    const pending = this.payments.filter((p) => p.status === 'CREATED').length;
+    const failed = this.payments.filter((p) => p.status === 'FAILED').length;
+    this.paymentStats = {
+      totalPayments: total, completedWithin7Days: captured, completedWithReminder: failed, stillPending: pending,
+      percentWithin7Days: Math.round((captured / total) * 100), percentWithReminder: Math.round((failed / total) * 100), percentPending: Math.round((pending / total) * 100)
+    };
+  }
+
+  // Conferma pagamento (admin)
+  confirmAdminPayment(payment: PaymentItem): void {
+    if (payment.status === 'CAPTURED') return;
+    this.isLoading = true;
+    this.paymentsError = '';
+    this.api.request<PaymentItem>('POST', `/api/admin/payments/${payment.id}/capture`).subscribe({
+      next: (updated) => {
+        this.payments = this.payments.map((p) => p.id === updated.id ? this.mapPaymentFromBackend(updated) : p);
+        this.updatePaymentStats();
+        this.paymentsSuccess = `Pagamento #${payment.id} confermato con successo.`;
+        this.isLoading = false;
+      },
+      error: () => { this.paymentsError = `Impossibile confermare il pagamento #${payment.id}.`; this.isLoading = false; }
+    });
+  }
+
+  // Invia sollecito singolo
+  sendSingleReminder(payment: PaymentItem): void {
+    if (payment.status === 'CAPTURED') return;
+    this.isLoading = true;
+    this.paymentsError = '';
+    this.api.request<void>('POST', `/api/admin/payments/${payment.id}/reminder`).subscribe({
+      next: () => { this.paymentsSuccess = `Sollecito inviato a ${payment.patientName || payment.patientEmail || 'paziente'}.`; this.isLoading = false; },
+      error: () => { this.paymentsError = `Impossibile inviare sollecito per il pagamento #${payment.id}.`; this.isLoading = false; }
+    });
+  }
+
+  // Elimina pagamento (admin)
+  deleteAdminPayment(payment: PaymentItem): void {
+    this.isLoading = true;
+    this.paymentsError = '';
+    this.api.request<PaymentItem>('POST', `/api/admin/payments/${payment.id}/cancel`).subscribe({
+      next: () => {
+        this.payments = this.payments.filter((p) => p.id !== payment.id);
+        this.selectedPaymentIds.delete(payment.id);
+        this.updatePaymentStats();
+        this.paymentsSuccess = `Pagamento #${payment.id} annullato.`;
+        this.isLoading = false;
+      },
+      error: () => { this.paymentsError = `Impossibile annullare il pagamento #${payment.id}.`; this.isLoading = false; }
+    });
   }
 
   loadAdmissions(): void {
@@ -1776,167 +1929,6 @@ export class ResourcePageState {
     });
   }
 
-  private enrichPaymentsForAdmin(): void {
-    const mockPatients = [
-      { id: 1, name: 'Anna Conti', email: 'anna.conti@email.it' },
-      { id: 2, name: 'Marco Rossi', email: 'marco.rossi@email.it' },
-      { id: 3, name: 'Giulia Bianchi', email: 'giulia.bianchi@email.it' },
-      { id: 4, name: 'Luca Verdi', email: 'luca.verdi@email.it' },
-      { id: 5, name: 'Sara Neri', email: 'sara.neri@email.it' }
-    ];
-
-    this.payments = this.payments.map((p, i) => {
-      const patient = mockPatients[p.patientId - 1] || mockPatients[i % mockPatients.length];
-      const daysAgo = Math.floor(Math.random() * 30) + 1;
-      const appointmentDate = new Date();
-      appointmentDate.setDate(appointmentDate.getDate() - daysAgo);
-
-      return {
-        ...p,
-        patientName: patient.name,
-        patientEmail: patient.email,
-        appointmentId: 1000 + p.id,
-        appointmentDate: appointmentDate.toISOString(),
-        notificationAttempts: p.status === 'PENDING' && daysAgo > 7 ? [
-          {
-            id: 1,
-            channel: 'EMAIL' as const,
-            sentAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'DELIVERED' as const,
-            type: 'REMINDER' as const
-          }
-        ] : [],
-        failureReason: p.status === 'FAILED' ? 'Carta rifiutata dalla banca' : undefined
-      };
-    });
-  }
-
-  private generateMockPaymentsForAdmin(): PaymentItem[] {
-    const now = new Date();
-    const mockData: PaymentItem[] = [];
-
-    const patients = [
-      { id: 1, name: 'Anna Conti', email: 'anna.conti@email.it' },
-      { id: 2, name: 'Marco Rossi', email: 'marco.rossi@email.it' },
-      { id: 3, name: 'Giulia Bianchi', email: 'giulia.bianchi@email.it' },
-      { id: 4, name: 'Luca Verdi', email: 'luca.verdi@email.it' },
-      { id: 5, name: 'Sara Neri', email: 'sara.neri@email.it' },
-      { id: 6, name: 'Paolo Ferrari', email: 'paolo.ferrari@email.it' },
-      { id: 7, name: 'Elena Gallo', email: 'elena.gallo@email.it' },
-      { id: 8, name: 'Francesco Marino', email: 'francesco.marino@email.it' },
-      { id: 9, name: 'Chiara Romano', email: 'chiara.romano@email.it' },
-      { id: 10, name: 'Alessandro Greco', email: 'alessandro.greco@email.it' }
-    ];
-
-    const services = [
-      'Visita cardiologica',
-      'Ecografia addominale',
-      'Visita ortopedica',
-      'Analisi del sangue',
-      'Visita dermatologica',
-      'Radiografia toracica',
-      'Visita oculistica',
-      'Elettrocardiogramma',
-      'Visita neurologica',
-      'TAC cranio'
-    ];
-
-    // Genera 23 pagamenti PENDING (come da scenario)
-    for (let i = 1; i <= 23; i++) {
-      const patient = patients[(i - 1) % patients.length];
-      const daysAgo = Math.floor(Math.random() * 25) + 8; // tra 8 e 32 giorni fa
-      const appointmentDate = new Date(now);
-      appointmentDate.setDate(appointmentDate.getDate() - daysAgo);
-
-      const hasReminder = daysAgo > 14;
-      const notificationAttempts: NotificationAttempt[] = [];
-
-      if (hasReminder) {
-        notificationAttempts.push({
-          id: i * 100,
-          channel: 'EMAIL',
-          sentAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'DELIVERED',
-          type: 'REMINDER'
-        });
-      }
-
-      mockData.push({
-        id: i,
-        patientId: patient.id,
-        patientName: patient.name,
-        patientEmail: patient.email,
-        amount: Math.floor(Math.random() * 150) + 20,
-        currency: 'EUR',
-        service: services[(i - 1) % services.length],
-        status: 'PENDING',
-        paidAt: '',
-        appointmentId: 1000 + i,
-        appointmentDate: appointmentDate.toISOString(),
-        createdAt: appointmentDate.toISOString(),
-        notificationAttempts
-      });
-    }
-
-    // Aggiungi 3 pagamenti FAILED
-    for (let i = 24; i <= 26; i++) {
-      const patient = patients[(i - 1) % patients.length];
-      const daysAgo = Math.floor(Math.random() * 10) + 5;
-      const appointmentDate = new Date(now);
-      appointmentDate.setDate(appointmentDate.getDate() - daysAgo);
-
-      mockData.push({
-        id: i,
-        patientId: patient.id,
-        patientName: patient.name,
-        patientEmail: patient.email,
-        amount: Math.floor(Math.random() * 200) + 50,
-        currency: 'EUR',
-        service: services[(i - 1) % services.length],
-        status: 'FAILED',
-        paidAt: '',
-        appointmentId: 1000 + i,
-        appointmentDate: appointmentDate.toISOString(),
-        createdAt: appointmentDate.toISOString(),
-        failureReason: 'Carta rifiutata dalla banca',
-        notificationAttempts: [{
-          id: i * 100,
-          channel: 'EMAIL',
-          sentAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'DELIVERED',
-          type: 'REMINDER'
-        }]
-      });
-    }
-
-    // Aggiungi alcuni pagamenti CONFIRMED per statistiche
-    for (let i = 27; i <= 35; i++) {
-      const patient = patients[(i - 1) % patients.length];
-      const daysAgo = Math.floor(Math.random() * 20) + 1;
-      const appointmentDate = new Date(now);
-      appointmentDate.setDate(appointmentDate.getDate() - daysAgo);
-      const paidDate = new Date(appointmentDate);
-      paidDate.setDate(paidDate.getDate() + Math.floor(Math.random() * 5) + 1);
-
-      mockData.push({
-        id: i,
-        patientId: patient.id,
-        patientName: patient.name,
-        patientEmail: patient.email,
-        amount: Math.floor(Math.random() * 180) + 30,
-        currency: 'EUR',
-        service: services[(i - 1) % services.length],
-        status: 'CONFIRMED',
-        paidAt: paidDate.toISOString(),
-        appointmentId: 1000 + i,
-        appointmentDate: appointmentDate.toISOString(),
-        createdAt: appointmentDate.toISOString(),
-        notificationAttempts: []
-      });
-    }
-
-    return mockData;
-  }
 
   submitPayment(): void {
     if (!this.paymentForm.paymentId) {
@@ -1952,23 +1944,16 @@ export class ResourcePageState {
       return;
     }
     const pendingPayment = this.payments.find((payment) => payment.id === this.paymentForm.paymentId);
-    if (
-      !pendingPayment ||
-      (pendingPayment.status !== 'PENDING' && pendingPayment.status !== 'IN_ATTESA')
-    ) {
+    if (!pendingPayment || pendingPayment.status !== 'CREATED') {
       this.paymentsError = 'Pagamento selezionato non valido.';
       return;
     }
     this.isLoading = true;
     this.paymentsError = '';
-    this.api.request<PaymentItem>('POST', '/api/payments', {
-      paymentId: this.paymentForm.paymentId,
-      status: 'PAID',
-      receiptName: this.paymentForm.receiptName,
-      amount: this.paymentForm.amount
-    }).subscribe({
+    this.api.request<PaymentItem>('POST', `/api/admin/payments/${this.paymentForm.paymentId}/capture`).subscribe({
       next: (payment) => {
-        this.payments = this.payments.map((item) => (item.id === payment.id ? payment : item));
+        this.payments = this.payments.map((item) => (item.id === payment.id ? this.mapPaymentFromBackend(payment) : item));
+        this.updatePaymentStats();
         this.paymentForm.paymentId = null;
         this.paymentForm.receiptName = '';
         this.paymentForm.service = '';
@@ -1988,20 +1973,56 @@ export class ResourcePageState {
   submitAdmission(): void {
     this.isLoading = true;
     this.paymentsError = '';
-    this.api.request<AdmissionItem>('POST', '/api/admissions', {
+
+    // Validazione campi richiesti dal backend AdmissionCreateDto
+    if (!this.admissionForm.patientId) {
+      this.paymentsError = 'Seleziona un paziente.';
+      this.isLoading = false;
+      return;
+    }
+    if (!this.admissionForm.departmentCode?.trim()) {
+      this.paymentsError = 'Seleziona un reparto.';
+      this.isLoading = false;
+      return;
+    }
+
+    // Payload allineato a AdmissionCreateDto backend
+    const payload = {
       patientId: this.admissionForm.patientId,
-      department: this.admissionForm.department,
-      bedId: this.admissionForm.bedId
-    }).subscribe({
+      departmentCode: this.admissionForm.departmentCode,
+      admissionType: this.admissionForm.admissionType,
+      notes: this.admissionForm.notes || null,
+      attendingDoctorId: this.admissionForm.attendingDoctorId || null
+    };
+
+    this.api.request<AdmissionItem>('POST', '/api/admissions', payload).subscribe({
       next: (admission) => {
-        this.admissions = [...this.admissions, admission];
+        // Mappa per compatibilità template
+        const mappedAdmission: AdmissionItem = {
+          ...admission,
+          department: admission.departmentCode
+        };
+        this.admissions = [...this.admissions, mappedAdmission];
+        // Reset form
+        this.admissionForm = {
+          patientId: null,
+          departmentCode: '',
+          admissionType: 'INPATIENT',
+          notes: '',
+          attendingDoctorId: null
+        };
         if (this.showAdminAdmissionModal) {
           this.closeAdminAdmissionModal();
         }
         this.isLoading = false;
       },
-      error: () => {
-        this.paymentsError = 'Impossibile registrare il ricovero.';
+      error: (err) => {
+        // Gestione errore specifico per mancanza posti
+        if (err?.status === 409 || err?.error?.message?.includes('bed')) {
+          this.paymentsError = 'Nessun posto letto disponibile nel reparto selezionato.';
+        } else {
+          this.paymentsError = err?.error?.message || 'Impossibile registrare il ricovero.';
+        }
         this.isLoading = false;
       }
     });
@@ -2053,23 +2074,31 @@ export class ResourcePageState {
       this.admissionProposalError = 'Visita non trovata.';
       return;
     }
-    const department =
+    const departmentCode =
       this.getDoctorById(appointment.doctorId)?.departmentCode ||
       this.currentDoctorDepartment ||
       'CARD';
-    const nextId = Math.max(0, ...this.admissions.map((item) => item.id)) + 1;
     const notes = `Proposta da visita ${appointment.id}: ${appointment.reason}. ${this.admissionProposalForm.reason}`;
-    const proposal: AdmissionItem = {
-      id: nextId,
+
+    // Chiama API backend per creare proposta ricovero
+    this.isLoading = true;
+    this.api.request<AdmissionItem>('POST', '/api/admin/admissions', {
       patientId: appointment.patientId,
-      department,
-      status: 'PROPOSED',
+      departmentCode,
+      admissionType: 'INPATIENT',
       admittedAt: this.admissionProposalForm.date,
-      notes,
-      appointmentId: appointment.id
-    };
-    this.admissions = [...this.admissions, proposal];
-    this.closeAdmissionProposalModal();
+      notes
+    }).subscribe({
+      next: (created) => {
+        this.admissions = [...this.admissions, { ...created, department: departmentCode }];
+        this.isLoading = false;
+        this.closeAdmissionProposalModal();
+      },
+      error: () => {
+        this.admissionProposalError = 'Impossibile creare la proposta di ricovero.';
+        this.isLoading = false;
+      }
+    });
   }
 
   openAdminTelevisitModal(): void {
@@ -2095,18 +2124,10 @@ export class ResourcePageState {
   loadNotifications(): void {
     this.isLoading = true;
     this.notificationsError = '';
-    if (this.isAdmin) {
-      this.notifications = this.getMockAdminNotifications();
-      this.isLoading = false;
-      return;
-    }
     this.api.request<NotificationItem[] | NotificationPage>('GET', '/api/notifications').subscribe({
       next: (notifications) => {
-        if (Array.isArray(notifications)) {
-          this.notifications = notifications;
-        } else {
-          this.notifications = notifications?.content ?? [];
-        }
+        const rawNotifications = Array.isArray(notifications) ? notifications : (notifications?.content ?? []);
+        this.notifications = rawNotifications.map((n) => this.mapNotificationFromBackend(n));
         this.isLoading = false;
       },
       error: () => {
@@ -2116,91 +2137,9 @@ export class ResourcePageState {
     });
   }
 
-  private getMockAdminNotifications(): NotificationItem[] {
-    const baseDate = new Date();
-    baseDate.setHours(19, 0, 0, 0);
-    return [
-      {
-        id: 1001,
-        recipient: 'mario.rossi@email.it',
-        channel: 'EMAIL',
-        subject: 'Cambio appuntamento - Conversione in televisita',
-        message: 'Il suo appuntamento del 03/02 con Dr. Martini è stato convertito in televisita. Link: https://tv.sanitech.it/s/abc123',
-        notes: 'Emergenza sostituzione Dr. Martini',
-        status: 'SENT',
-        sentAt: new Date(baseDate.getTime() - 5 * 60000).toISOString()
-      },
-      {
-        id: 1002,
-        recipient: 'giulia.bianchi@email.it',
-        channel: 'EMAIL',
-        subject: 'Cambio appuntamento - Riassegnazione medico',
-        message: 'Il suo appuntamento per spirometria del 04/02 è stato riassegnato alla Dott.ssa Bianchi. Stesso orario confermato.',
-        notes: 'Riassegnazione per indisponibilità Dr. Martini',
-        status: 'SENT',
-        sentAt: new Date(baseDate.getTime() - 12 * 60000).toISOString()
-      },
-      {
-        id: 1003,
-        recipient: 'luca.verdi@email.it',
-        channel: 'EMAIL',
-        subject: 'Cambio appuntamento - Conversione in televisita',
-        message: 'Il suo follow-up del 03/02 con Dr. Martini è stato convertito in televisita. Istruzioni di collegamento inviate.',
-        notes: 'Follow-up pneumologico',
-        status: 'SENT',
-        sentAt: new Date(baseDate.getTime() - 18 * 60000).toISOString()
-      },
-      {
-        id: 1004,
-        recipient: 'anna.conti@email.it',
-        channel: 'EMAIL',
-        subject: 'Cambio medico referente ricovero',
-        message: 'Il suo medico referente per il ricovero in Pneumologia è ora la Dott.ssa Bianchi. Continuità assistenziale garantita.',
-        notes: 'Aggiornamento ricovero attivo',
-        status: 'SENT',
-        sentAt: new Date(baseDate.getTime() - 25 * 60000).toISOString()
-      },
-      {
-        id: 1005,
-        recipient: 'paolo.neri@email.it',
-        channel: 'EMAIL',
-        subject: 'Cambio appuntamento - Riassegnazione medico',
-        message: 'La sua auscultazione del 05/02 è stata riassegnata alla Dott.ssa Bianchi per indisponibilità del Dr. Martini.',
-        notes: 'Visita che richiede presenza fisica',
-        status: 'SENT',
-        sentAt: new Date(baseDate.getTime() - 30 * 60000).toISOString()
-      },
-      {
-        id: 1006,
-        recipient: 'francesca.romano@email.it',
-        channel: 'EMAIL',
-        subject: 'Cambio medico referente ricovero',
-        message: 'La Dott.ssa Bianchi è ora la sua nuova referente per il ricovero in corso. Il team infermieristico è stato informato.',
-        notes: 'Paziente ricoverato - cambio referente',
-        status: 'SENT',
-        sentAt: new Date(baseDate.getTime() - 35 * 60000).toISOString()
-      },
-      {
-        id: 1007,
-        recipient: 'marco.ferrari@email.it',
-        channel: 'EMAIL',
-        subject: 'Cambio appuntamento - Conversione in televisita',
-        message: 'La consulenza del 04/02 è stata convertita in televisita. Riceverà il link 30 minuti prima.',
-        notes: 'Consulenza non urgente',
-        status: 'SENT',
-        sentAt: new Date(baseDate.getTime() - 40 * 60000).toISOString()
-      },
-      {
-        id: 1008,
-        recipient: 'elena.costa@email.it',
-        channel: 'EMAIL',
-        subject: 'Cambio medico referente ricovero',
-        message: 'Aggiornamento sul suo ricovero: la Dott.ssa Bianchi ha preso in carico la sua cartella clinica.',
-        notes: 'Terzo paziente ricoverato',
-        status: 'SENT',
-        sentAt: new Date(baseDate.getTime() - 45 * 60000).toISOString()
-      }
-    ];
+  // Mappa NotificationDto backend -> NotificationItem frontend
+  private mapNotificationFromBackend(n: NotificationItem): NotificationItem {
+    return { ...n, recipient: n.toAddress || n.recipientId, message: n.body || n.message };
   }
 
   submitNotification(): void {
@@ -2214,15 +2153,18 @@ export class ResourcePageState {
     }
     this.isLoading = true;
     this.notificationsError = '';
-    this.api.request<NotificationItem>('POST', '/api/admin/notifications', {
-      recipient: this.notificationForm.recipient,
-      channel: this.notificationForm.channel,
+    // Payload allineato a NotificationCreateDto backend
+    const notifPayload = {
+      recipientType: 'PATIENT' as const,
+      recipientId: this.notificationForm.recipient,
+      channel: this.notificationForm.channel === 'EMAIL' ? 'EMAIL' : 'IN_APP',
+      toAddress: this.notificationForm.channel === 'EMAIL' ? this.notificationForm.recipient : undefined,
       subject: this.notificationForm.subject,
-      message: this.notificationForm.message,
-      notes: this.notificationForm.notes
-    }).subscribe({
+      body: this.notificationForm.message
+    };
+    this.api.request<NotificationItem>('POST', '/api/admin/notifications', notifPayload).subscribe({
       next: (notification) => {
-        this.notifications = [...this.notifications, notification];
+        this.notifications = [...this.notifications, this.mapNotificationFromBackend(notification)];
         this.notificationForm.subject = '';
         this.notificationForm.message = '';
         this.notificationForm.notes = '';
@@ -2343,37 +2285,6 @@ export class ResourcePageState {
     this.paymentsError = '';
   }
 
-  confirmAdminPayment(payment: PaymentItem): void {
-    if (payment.status === 'CONFIRMED') return;
-    this.payments = this.payments.map((p) =>
-      p.id === payment.id ? { ...p, status: 'CONFIRMED', paidAt: new Date().toISOString() } : p
-    );
-    this.paymentsSuccess = `Pagamento #${payment.id} confermato con successo.`;
-  }
-
-  sendSingleReminder(payment: PaymentItem): void {
-    if (payment.status === 'CONFIRMED') return;
-    const newAttempt: NotificationAttempt = {
-      id: Date.now(),
-      channel: 'EMAIL',
-      sentAt: new Date().toISOString(),
-      status: 'SENT',
-      type: payment.status === 'FAILED' ? 'ALTERNATIVE' : 'OVERDUE'
-    };
-    this.payments = this.payments.map((p) =>
-      p.id === payment.id
-        ? { ...p, notificationAttempts: [...(p.notificationAttempts || []), newAttempt] }
-        : p
-    );
-    this.paymentsSuccess = `Sollecito inviato a ${payment.patientName || 'paziente'}.`;
-  }
-
-  deleteAdminPayment(payment: PaymentItem): void {
-    this.payments = this.payments.filter((p) => p.id !== payment.id);
-    this.selectedPaymentIds.delete(payment.id);
-    this.paymentsSuccess = `Pagamento #${payment.id} eliminato.`;
-  }
-
   openAdmissionRescheduleModal(admission: AdmissionItem): void {
     this.rescheduleAdmission = admission;
     this.rescheduleForm = {
@@ -2412,12 +2323,26 @@ export class ResourcePageState {
       this.rescheduleError = 'Inserisci una motivazione per il rifiuto.';
       return;
     }
-    this.admissions = this.admissions.map((item) =>
-      item.id === this.rejectAdmissionTarget?.id
-        ? { ...item, status: 'REJECTED', notes: this.rejectAdmissionReason }
-        : item
-    );
-    this.closeAdmissionRejectModal();
+    // Chiama API per cancellare il ricovero
+    this.isLoading = true;
+    this.api.request<AdmissionItem>('PATCH', `/api/admissions/${this.rejectAdmissionTarget.id}`, {
+      status: 'CANCELLED',
+      notes: this.rejectAdmissionReason
+    }).subscribe({
+      next: (updated) => {
+        this.admissions = this.admissions.map((item) =>
+          item.id === this.rejectAdmissionTarget?.id
+            ? { ...item, status: 'CANCELLED', notes: this.rejectAdmissionReason, department: updated.departmentCode }
+            : item
+        );
+        this.isLoading = false;
+        this.closeAdmissionRejectModal();
+      },
+      error: () => {
+        this.rescheduleError = 'Impossibile annullare il ricovero.';
+        this.isLoading = false;
+      }
+    });
   }
 
   submitAdmissionReschedule(): void {
@@ -2430,41 +2355,59 @@ export class ResourcePageState {
       this.rescheduleError = 'Inserisci data e motivazione per la ripianificazione.';
       return;
     }
-    this.admissions = this.admissions.map((item) =>
-      item.id === this.rescheduleAdmission?.id
-        ? {
-            ...item,
-            status: 'RESCHEDULED',
-            admittedAt: this.rescheduleForm.date,
-            notes: this.rescheduleForm.reason
-          }
-        : item
-    );
-    this.rescheduleSuccess = 'Richiesta di ripianificazione inviata.';
-    this.closeAdmissionRescheduleModal();
+    // Backend: aggiorna data ricovero tramite API (se disponibile) o localmente con status CANCELLED + nuovo ricovero
+    const admissionId = this.rescheduleAdmission.id;
+    this.isLoading = true;
+    // Per ora cancelliamo il ricovero esistente (backend usa CANCELLED, non RESCHEDULED)
+    this.api.request<void>('DELETE', `/api/admin/admissions/${admissionId}`).subscribe({
+      next: () => {
+        this.admissions = this.admissions.map((item) =>
+          item.id === admissionId ? { ...item, status: 'CANCELLED', notes: `Ripianificato: ${this.rescheduleForm.reason}` } : item
+        );
+        this.rescheduleSuccess = 'Richiesta di ripianificazione inviata.';
+        this.isLoading = false;
+        this.closeAdmissionRescheduleModal();
+      },
+      error: () => {
+        this.rescheduleError = 'Impossibile ripianificare il ricovero.';
+        this.isLoading = false;
+      }
+    });
   }
 
   confirmAdmission(admission: AdmissionItem): void {
-    if (admission.status !== 'PROPOSED') {
+    // Backend usa ACTIVE per ricovero confermato/attivo
+    if (admission.status === 'ACTIVE' || admission.status === 'DISCHARGED') {
       return;
     }
-    this.admissions = this.admissions.map((item) =>
-      item.id === admission.id ? { ...item, status: 'CONFIRMED' } : item
-    );
+    this.isLoading = true;
+    // Aggiorna status via API backend
+    this.api.request<AdmissionItem>('PUT', `/api/admin/admissions/${admission.id}`, { ...admission, status: 'ACTIVE' }).subscribe({
+      next: (updated) => {
+        this.admissions = this.admissions.map((item) => item.id === updated.id ? updated : item);
+        this.isLoading = false;
+      },
+      error: () => {
+        this.paymentsError = 'Impossibile confermare il ricovero.';
+        this.isLoading = false;
+      }
+    });
   }
 
   rejectAdmission(admission: AdmissionItem): void {
-    if (admission.status !== 'PROPOSED') {
+    // Backend usa CANCELLED per ricovero rifiutato
+    if (admission.status === 'CANCELLED') {
       return;
     }
     this.openAdmissionRejectModal(admission);
   }
 
   markPaymentAsPaid(payment: PaymentItem): void {
-    if (payment.status !== 'PENDING' && payment.status !== 'IN_ATTESA') {
+    // Backend usa CREATED per pagamento in attesa, CAPTURED per pagato
+    if (payment.status !== 'CREATED') {
       return;
     }
-    this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'PAID' } : item));
+    this.confirmAdminPayment(payment); // Usa l'API backend già implementata
   }
 
   openPaymentReceiptUpload(payment: PaymentItem, input: HTMLInputElement): void {
@@ -2474,16 +2417,9 @@ export class ResourcePageState {
     input.click();
   }
 
-  onPaymentReceiptSelected(event: Event, payment: PaymentItem): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) {
-      return;
-    }
-    this.payments = this.payments.map((item) =>
-      item.id === payment.id ? { ...item, receiptName: file.name, status: 'RECEIPT_UPLOADED' } : item
-    );
-    input.value = '';
+  // OBSOLETO: receiptName non esiste più nel backend PaymentOrderDto
+  onPaymentReceiptSelected(_event: Event, _payment: PaymentItem): void {
+    this.paymentsError = 'Funzionalità non più disponibile.';
   }
 
   openPaymentQuestionModal(payment: PaymentItem): void {
@@ -2513,10 +2449,11 @@ export class ResourcePageState {
   }
 
   confirmPayment(payment: PaymentItem): void {
-    if (payment.status !== 'RECEIPT_UPLOADED') {
+    // Backend usa CREATED per pagamento da confermare, CAPTURED per confermato
+    if (payment.status !== 'CREATED') {
       return;
     }
-    this.payments = this.payments.map((item) => (item.id === payment.id ? { ...item, status: 'CONFIRMED' } : item));
+    this.confirmAdminPayment(payment); // Usa l'API backend
   }
 
   // Admin Payments - Filtri e gestione
@@ -2528,13 +2465,13 @@ export class ResourcePageState {
       result = result.filter((p) => p.status === this.paymentStatusFilter);
     }
 
-    // Filtro per giorni di ritardo
+    // Filtro per giorni di ritardo (usa createdAt invece di appointmentDate)
     if (this.paymentDaysFilter) {
       const now = new Date();
       result = result.filter((p) => {
-        if (!p.appointmentDate) return false;
-        const appointmentDate = new Date(p.appointmentDate);
-        const diffDays = Math.floor((now.getTime() - appointmentDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (!p.createdAt) return false;
+        const createdDate = new Date(p.createdAt);
+        const diffDays = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
         return diffDays > this.paymentDaysFilter!;
       });
     }
@@ -2543,10 +2480,11 @@ export class ResourcePageState {
   }
 
   getPaymentDaysOverdue(payment: PaymentItem): number {
-    if (!payment.appointmentDate) return 0;
+    // Usa createdAt invece di appointmentDate (non presente in PaymentOrderDto backend)
+    if (!payment.createdAt) return 0;
     const now = new Date();
-    const appointmentDate = new Date(payment.appointmentDate);
-    return Math.max(0, Math.floor((now.getTime() - appointmentDate.getTime()) / (1000 * 60 * 60 * 24)));
+    const createdDate = new Date(payment.createdAt);
+    return Math.max(0, Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)));
   }
 
   togglePaymentSelection(paymentId: number): void {
@@ -2558,7 +2496,7 @@ export class ResourcePageState {
   }
 
   toggleAllPaymentsSelection(): void {
-    const pendingPayments = this.filteredPayments.filter((p) => p.status === 'PENDING');
+    const pendingPayments = this.filteredPayments.filter((p) => p.status === 'CREATED');
     if (this.selectedPaymentIds.size === pendingPayments.length) {
       this.selectedPaymentIds.clear();
     } else {
@@ -2588,25 +2526,43 @@ export class ResourcePageState {
   }
 
   sendBulkReminders(): void {
-    const count = this.selectedPaymentIds.size;
-    // Simula l'invio aggiungendo un tentativo di notifica
-    this.payments = this.payments.map((p) => {
-      if (this.selectedPaymentIds.has(p.id)) {
-        const newAttempt: NotificationAttempt = {
-          id: Date.now(),
-          channel: 'EMAIL',
-          sentAt: new Date().toISOString(),
-          status: 'SENT',
-          type: 'OVERDUE'
-        };
-        return {
-          ...p,
-          notificationAttempts: [...(p.notificationAttempts || []), newAttempt]
-        };
-      }
-      return p;
+    const paymentIds = Array.from(this.selectedPaymentIds);
+    const count = paymentIds.length;
+    if (count === 0) return;
+
+    this.isLoading = true;
+    this.paymentsError = '';
+    let completed = 0;
+    let errors = 0;
+
+    // Invia solleciti via API backend per ogni pagamento selezionato
+    paymentIds.forEach((id) => {
+      this.api.request<void>('POST', `/api/admin/payments/${id}/reminder`).subscribe({
+        next: () => {
+          completed++;
+          // Aggiorna tracciamento locale solleciti
+          this.payments = this.payments.map((p) =>
+            p.id === id ? { ...p, notificationAttempts: [...(p.notificationAttempts || []), { sentAt: new Date().toISOString() }] } : p
+          );
+          if (completed + errors === count) this.finalizeBulkReminders(completed, errors);
+        },
+        error: () => {
+          errors++;
+          if (completed + errors === count) this.finalizeBulkReminders(completed, errors);
+        }
+      });
     });
-    this.paymentsSuccess = `Solleciti inviati con successo a ${count} pazienti.`;
+  }
+
+  private finalizeBulkReminders(completed: number, errors: number): void {
+    this.isLoading = false;
+    if (errors === 0) {
+      this.paymentsSuccess = `Solleciti inviati con successo a ${completed} pazienti.`;
+    } else if (completed === 0) {
+      this.paymentsError = `Impossibile inviare i solleciti. Errori: ${errors}.`;
+    } else {
+      this.paymentsSuccess = `Solleciti inviati: ${completed}. Errori: ${errors}.`;
+    }
     this.selectedPaymentIds.clear();
     this.closeBulkReminderModal();
   }
@@ -2626,23 +2582,28 @@ export class ResourcePageState {
   sendAlternativePaymentNotification(): void {
     if (!this.alternativePaymentTarget) return;
 
-    const newAttempt: NotificationAttempt = {
-      id: Date.now(),
-      channel: 'EMAIL',
-      sentAt: new Date().toISOString(),
-      status: 'SENT',
-      type: 'ALTERNATIVE'
-    };
-
-    this.payments = this.payments.map((p) =>
-      p.id === this.alternativePaymentTarget!.id
-        ? { ...p, notificationAttempts: [...(p.notificationAttempts || []), newAttempt] }
-        : p
-    );
-
+    const paymentId = this.alternativePaymentTarget.id;
     const methodLabel = this.alternativePaymentForm.method === 'BONIFICO' ? 'bonifico bancario' : 'pagamento in sede';
-    this.paymentsSuccess = `Sollecito con istruzioni per ${methodLabel} inviato al paziente.`;
-    this.closeAlternativePaymentModal();
+
+    this.isLoading = true;
+    this.paymentsError = '';
+
+    // Invia sollecito via API backend con metodo alternativo indicato nelle note
+    this.api.request<void>('POST', `/api/admin/payments/${paymentId}/reminder`).subscribe({
+      next: () => {
+        // Aggiorna tracciamento locale solleciti
+        this.payments = this.payments.map((p) =>
+          p.id === paymentId ? { ...p, notificationAttempts: [...(p.notificationAttempts || []), { sentAt: new Date().toISOString() }] } : p
+        );
+        this.paymentsSuccess = `Sollecito con istruzioni per ${methodLabel} inviato al paziente.`;
+        this.isLoading = false;
+        this.closeAlternativePaymentModal();
+      },
+      error: () => {
+        this.paymentsError = `Impossibile inviare il sollecito per il pagamento #${paymentId}.`;
+        this.isLoading = false;
+      }
+    });
   }
 
   getNotificationAttemptsCount(payment: PaymentItem): number {
@@ -2735,9 +2696,9 @@ export class ResourcePageState {
 
   openTelevisitModal(): void {
     this.televisitError = '';
-    if (this.isDoctor) {
-      const confirmedAppointmentId = this.confirmedAppointments[0]?.id ?? null;
-      this.televisitForm.appointmentId = confirmedAppointmentId ?? this.televisitForm.appointmentId;
+    // Se medico, precompila il doctorSubject con il nome del medico corrente
+    if (this.isDoctor && this.currentDoctorName) {
+      this.televisitForm.doctorSubject = this.currentDoctorName;
     }
     this.showTelevisitModal = true;
   }
@@ -2796,17 +2757,25 @@ export class ResourcePageState {
       this.televisitError = 'Inserisci data e ora della televisita.';
       return;
     }
-    const appointment = this.getAppointmentById(this.selectedTelevisit.appointmentId);
-    if (!appointment) {
-      this.televisitError = 'Prenotazione non trovata.';
-      return;
-    }
-    this.slots = this.slots.map((slot) =>
-      slot.id === appointment.slotId
-        ? { ...slot, date: this.televisitRescheduleDate, time: this.televisitRescheduleTime }
-        : slot
-    );
-    this.closeTelevisitRescheduleModal();
+    const newScheduledAt = `${this.televisitRescheduleDate}T${this.televisitRescheduleTime}:00`;
+    this.isLoading = true;
+    this.api.request<TelevisitItem>('PATCH', `/api/televisits/${this.selectedTelevisit.id}`, {
+      scheduledAt: newScheduledAt
+    }).subscribe({
+      next: (updated) => {
+        this.televisits = this.televisits.map(tv =>
+          tv.id === this.selectedTelevisit?.id
+            ? { ...tv, ...updated, scheduledAt: updated.scheduledAt || newScheduledAt }
+            : tv
+        );
+        this.isLoading = false;
+        this.closeTelevisitRescheduleModal();
+      },
+      error: () => {
+        this.televisitError = 'Impossibile ripianificare la televisita.';
+        this.isLoading = false;
+      }
+    });
   }
 
   openPrescriptionMessageModal(prescription: PrescriptionItem): void {
@@ -2927,19 +2896,9 @@ export class ResourcePageState {
     this.documents = this.documents.filter((item) => item.id !== doc.id);
   }
 
-  viewPaymentReceipt(payment: PaymentItem): void {
-    this.paymentsError = '';
-    if (!payment.receiptName) {
-      this.paymentsError = 'Nessuna ricevuta disponibile per questo pagamento.';
-      return;
-    }
-    const previewWindow = window.open('', '_blank', 'noopener');
-    if (!previewWindow) {
-      this.paymentsError = 'Impossibile aprire la ricevuta di pagamento.';
-      return;
-    }
-    previewWindow.document.write(`<pre>Ricevuta: ${payment.receiptName}</pre>`);
-    previewWindow.document.close();
+  // OBSOLETO: receiptName non esiste più nel backend PaymentOrderDto
+  viewPaymentReceipt(_payment: PaymentItem): void {
+    this.paymentsError = 'Funzionalità non più disponibile.';
   }
 
   deletePayment(payment: PaymentItem): void {
@@ -2983,8 +2942,8 @@ export class ResourcePageState {
       this.paymentForm.service = '';
       return;
     }
-    this.paymentForm.amount = pendingPayment.amount;
-    this.paymentForm.service = pendingPayment.service;
+    this.paymentForm.amount = pendingPayment.amount ?? 0;
+    this.paymentForm.service = pendingPayment.service ?? '';
   }
 
   loadPatients(): void {
@@ -3001,9 +2960,7 @@ export class ResourcePageState {
         if (!this.docForm.patientId && this.patients.length) {
           this.docForm.patientId = this.patients[0].id;
         }
-        if (!this.televisitForm.patientId && this.patients.length) {
-          this.televisitForm.patientId = this.patients[0].id;
-        }
+        // televisitForm non ha patientId - non assegnare
       },
       error: () => {
         if (this.isAdmin) {
@@ -3046,31 +3003,53 @@ export class ResourcePageState {
   submitTelevisit(): void {
     this.isLoading = true;
     this.televisitError = '';
-    const appointmentId = this.isDoctor
-      ? this.televisitForm.appointmentId
-      : this.televisitForm.patientId ?? this.televisitForm.appointmentId;
-    if (!appointmentId) {
-      this.televisitError = this.isDoctor
-        ? 'Seleziona la prenotazione confermata.'
-        : 'Inserisci l’identificativo dell’appuntamento.';
+
+    // Validazione campi richiesti dal backend TelevisitCreateDto
+    if (!this.televisitForm.doctorSubject?.trim()) {
+      this.televisitError = 'Seleziona un medico.';
       this.isLoading = false;
       return;
     }
-    const appointment = this.isDoctor ? this.getAppointmentById(appointmentId) : undefined;
-    if (this.isDoctor && !appointment) {
-      this.televisitError = 'Prenotazione non trovata.';
+    if (!this.televisitForm.patientSubject?.trim()) {
+      this.televisitError = 'Seleziona un paziente.';
       this.isLoading = false;
       return;
     }
-    const patientId = this.isDoctor ? appointment?.patientId ?? null : this.televisitForm.patientId;
-    this.api.request<TelevisitItem>('POST', '/api/admin/televisits', {
-      appointmentId,
-      patientId,
-      provider: this.televisitForm.provider
-    }).subscribe({
+    if (!this.televisitForm.department?.trim()) {
+      this.televisitError = 'Seleziona un reparto.';
+      this.isLoading = false;
+      return;
+    }
+    if (!this.televisitForm.scheduledAt) {
+      this.televisitError = 'Seleziona data e ora della sessione.';
+      this.isLoading = false;
+      return;
+    }
+
+    // Payload allineato a TelevisitCreateDto backend
+    const payload = {
+      doctorSubject: this.televisitForm.doctorSubject,
+      patientSubject: this.televisitForm.patientSubject,
+      department: this.televisitForm.department,
+      scheduledAt: new Date(this.televisitForm.scheduledAt).toISOString()
+    };
+
+    this.api.request<TelevisitItem>('POST', '/api/admin/televisits', payload).subscribe({
       next: (televisit) => {
-        this.televisits = [...this.televisits, televisit];
-        this.televisitForm.patientId = this.patients[0]?.id ?? null;
+        // Mappa il risultato per compatibilità template
+        const mappedTelevisit: TelevisitItem = {
+          ...televisit,
+          provider: 'LIVEKIT',
+          token: televisit.roomName
+        };
+        this.televisits = [...this.televisits, mappedTelevisit];
+        // Reset form
+        this.televisitForm = {
+          doctorSubject: '',
+          patientSubject: '',
+          department: '',
+          scheduledAt: ''
+        };
         if (this.showAdminTelevisitModal) {
           this.closeAdminTelevisitModal();
         } else {
@@ -3078,8 +3057,8 @@ export class ResourcePageState {
         }
         this.isLoading = false;
       },
-      error: () => {
-        this.televisitError = 'Impossibile avviare la sessione.';
+      error: (err) => {
+        this.televisitError = err?.error?.message || 'Impossibile creare la sessione.';
         this.isLoading = false;
       }
     });
@@ -3543,23 +3522,153 @@ export class ResourcePageState {
     this.isLoading = true;
     this.auditError = '';
     this.auditSearchPerformed = false;
-    setTimeout(() => {
-      const identifier = this.auditSearchCriteria.subjectIdentifier.toUpperCase().trim();
-      const subjectType = this.auditSearchCriteria.subjectType;
 
-      if (identifier.length === 16) {
-        this.auditSubjectFound = this.createMockSubject(subjectType, identifier);
-        this.auditDetailedEvents = this.generateMockAuditEventsForSubject(subjectType, identifier);
-        this.auditConsents = subjectType === 'PATIENT' ? this.generateMockConsents(identifier) : [];
-        this.applyAuditFilters();
-        this.generateAuditSummary();
-        this.auditSearchPerformed = true;
-      } else {
+    const identifier = this.auditSearchCriteria.subjectIdentifier.toUpperCase().trim();
+    const subjectType = this.auditSearchCriteria.subjectType;
+
+    // Step 1: Cerca il soggetto nel directory
+    this.lookupSubject(subjectType, identifier).then((subject) => {
+      if (!subject) {
         this.auditError = `Nessun ${this.getSubjectTypeLabel(subjectType).toLowerCase()} trovato con l'identificativo specificato.`;
         this.auditSubjectFound = null;
+        this.isLoading = false;
+        return;
       }
+      this.auditSubjectFound = subject;
+
+      // Step 2: Costruisci parametri per API audit
+      const params: Record<string, string> = { size: '500' };
+      params['actorId'] = identifier;
+      if (this.auditSearchCriteria.dateFrom) {
+        params['from'] = new Date(this.auditSearchCriteria.dateFrom).toISOString();
+      }
+      if (this.auditSearchCriteria.dateTo) {
+        const toDate = new Date(this.auditSearchCriteria.dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        params['to'] = toDate.toISOString();
+      }
+
+      // Step 3: Chiama API audit
+      this.api.get<SpringPage<AuditEventResponse>>('/api/audit/events', params).subscribe({
+        next: (response) => {
+          this.auditDetailedEvents = this.mapAuditEventsToDetail(response.content, subject);
+          if (subjectType === 'PATIENT') {
+            this.loadConsentsForPatient(subject.id);
+          } else {
+            this.auditConsents = [];
+          }
+          this.applyAuditFilters();
+          this.generateAuditSummary();
+          this.auditSearchPerformed = true;
+          this.isLoading = false;
+        },
+        error: (err) => {
+          if (err.status === 403) {
+            this.auditError = 'Non hai i permessi per accedere ai dati di audit.';
+          } else {
+            this.auditError = 'Errore durante la ricerca degli eventi audit.';
+          }
+          this.isLoading = false;
+        }
+      });
+    }).catch(() => {
+      this.auditError = 'Errore durante la ricerca del soggetto.';
       this.isLoading = false;
-    }, 800);
+    });
+  }
+
+  private async lookupSubject(type: 'PATIENT' | 'DOCTOR' | 'ADMIN', identifier: string): Promise<AuditSubjectFound | null> {
+    try {
+      if (type === 'PATIENT') {
+        const response = await this.api.get<SpringPage<PatientDirectoryDto>>('/api/admin/patients', { q: identifier, size: '1' }).toPromise();
+        if (response && response.content && response.content.length > 0) {
+          const patient = response.content[0];
+          return { id: String(patient.id), name: `${patient.firstName} ${patient.lastName}`, identifier: patient.fiscalCode || identifier, identifierLabel: 'Codice Fiscale', type: 'PATIENT' };
+        }
+      } else if (type === 'DOCTOR') {
+        const response = await this.api.get<SpringPage<DoctorDirectoryDto>>('/api/admin/doctors', { q: identifier, size: '1' }).toPromise();
+        if (response && response.content && response.content.length > 0) {
+          const doctor = response.content[0];
+          return { id: String(doctor.id), name: `Dr. ${doctor.firstName} ${doctor.lastName}`, identifier: identifier, identifierLabel: 'Codice Fiscale', role: doctor.specialization || 'Medico', type: 'DOCTOR' };
+        }
+      } else if (type === 'ADMIN' && identifier.length === 16) {
+        return { id: 'ADMIN-' + identifier.substring(0, 6), name: 'Amministratore ' + identifier.substring(0, 6), identifier: identifier, identifierLabel: 'Codice Fiscale', role: 'Amministratore Sistema', type: 'ADMIN' };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private mapAuditEventsToDetail(events: AuditEventResponse[], subject: AuditSubjectFound): AuditEventDetail[] {
+    return events.map((event) => ({
+      id: event.id,
+      eventType: this.mapActionToEventType(event.action),
+      action: event.action,
+      actorType: (event.actorType as 'DOCTOR' | 'PATIENT' | 'ADMIN' | 'SYSTEM') || 'SYSTEM',
+      actorId: event.actorId,
+      actorName: event.actorId === subject.identifier ? subject.name : (event.actorId || 'Sconosciuto'),
+      actorRole: event.actorType === 'DOCTOR' ? 'Medico' : (event.actorType === 'ADMIN' ? 'Amministratore' : undefined),
+      subjectType: this.mapResourceToSubjectType(event.resourceType),
+      subjectId: event.resourceId || `EVT-${event.id}`,
+      subjectPatientId: subject.type === 'PATIENT' ? subject.id : undefined,
+      subjectPatientName: subject.type === 'PATIENT' ? subject.name : undefined,
+      subjectPatientFiscalCode: subject.type === 'PATIENT' ? subject.identifier : undefined,
+      resourceType: event.resourceType,
+      resourceId: event.resourceId,
+      resourceName: this.resolveResourceName(event),
+      serviceName: event.source || 'unknown',
+      ipAddress: event.ip,
+      outcome: (event.outcome as 'SUCCESS' | 'DENIED' | 'ERROR') || 'SUCCESS',
+      occurredAt: event.occurredAt,
+      integrityHash: event.traceId || this.generateHash()
+    }));
+  }
+
+  private mapActionToEventType(action: string): AuditEventDetail['eventType'] {
+    const a = action.toLowerCase();
+    if (a.includes('consent') && a.includes('grant')) return 'CONSENT_GRANTED';
+    if (a.includes('consent') && a.includes('revok')) return 'CONSENT_REVOKED';
+    if (a.includes('document') || a.includes('view') || a.includes('read')) return 'DOCUMENT_ACCESS';
+    if (a.includes('prescription')) return 'PRESCRIPTION_VIEW';
+    if (a.includes('appointment') && a.includes('book')) return 'APPOINTMENT_BOOKED';
+    if (a.includes('appointment') && a.includes('cancel')) return 'APPOINTMENT_CANCELLED';
+    return 'PROFILE_UPDATE';
+  }
+
+  private mapResourceToSubjectType(resourceType?: string): AuditEventDetail['subjectType'] {
+    if (!resourceType) return 'DOCUMENT';
+    const rt = resourceType.toUpperCase();
+    if (rt.includes('PATIENT')) return 'PATIENT';
+    if (rt.includes('DOCTOR')) return 'DOCTOR';
+    if (rt.includes('DOCUMENT')) return 'DOCUMENT';
+    if (rt.includes('PRESCRIPTION')) return 'PRESCRIPTION';
+    if (rt.includes('APPOINTMENT')) return 'APPOINTMENT';
+    if (rt.includes('CONSENT')) return 'CONSENT';
+    return 'DOCUMENT';
+  }
+
+  private resolveResourceName(event: AuditEventResponse): string {
+    if (event.details && typeof event.details === 'object') {
+      const d = event.details as Record<string, unknown>;
+      if (d['resourceName']) return String(d['resourceName']);
+      if (d['documentName']) return String(d['documentName']);
+    }
+    return event.resourceType || 'Risorsa';
+  }
+
+  private loadConsentsForPatient(patientId: string): void {
+    this.api.get<SpringPage<ConsentApiDto>>('/api/consents', { patientId, status: 'ACTIVE' }).subscribe({
+      next: (response) => {
+        this.auditConsents = (response.content || []).map(c => ({
+          id: c.id, patientId: String(c.patientId), patientFiscalCode: this.auditSubjectFound?.identifier || '',
+          doctorId: String(c.doctorId), doctorName: c.doctorName || `Medico ${c.doctorId}`,
+          scope: (c.scope as ConsentSnapshot['scope']) || 'DOCS', status: (c.status as ConsentSnapshot['status']) || 'ACTIVE',
+          grantedAt: c.grantedAt || new Date().toISOString(), revokedAt: c.revokedAt, expiresAt: c.expiresAt
+        }));
+      },
+      error: () => { this.auditConsents = []; }
+    });
   }
 
   private getSubjectTypeLabel(type: string): string {
@@ -3569,120 +3678,6 @@ export class ResourcePageState {
       case 'ADMIN': return 'Amministratore';
       default: return 'Soggetto';
     }
-  }
-
-  private createMockSubject(type: 'PATIENT' | 'DOCTOR' | 'ADMIN', identifier: string): AuditSubjectFound {
-    switch (type) {
-      case 'PATIENT':
-        return { id: 'PAT-2847', name: identifier === 'SPSGPP65M15H501X' ? 'Giuseppe Esposito' : 'Paziente Demo', identifier, identifierLabel: 'Codice Fiscale', type };
-      case 'DOCTOR':
-        return { id: 'DOC-112', name: identifier === 'BNCMRC75A01H501Z' ? 'Dr. Marco Bianchi' : 'Medico Demo', identifier, identifierLabel: 'Codice Fiscale', role: 'Medico di base', type };
-      case 'ADMIN':
-        return { id: 'ADM-001', name: identifier === 'RSSMRA80B15H501Y' ? 'Mario Rossi' : 'Admin Demo', identifier, identifierLabel: 'Codice Fiscale', role: 'Amministratore Sistema', type };
-      default:
-        return { id: 'UNK-000', name: 'Sconosciuto', identifier, identifierLabel: 'Identificativo', type };
-    }
-  }
-
-  private generateMockAuditEventsForSubject(subjectType: 'PATIENT' | 'DOCTOR' | 'ADMIN', identifier: string): AuditEventDetail[] {
-    switch (subjectType) {
-      case 'PATIENT': return this.generateMockAuditEvents(identifier);
-      case 'DOCTOR': return this.generateMockDoctorAuditEvents(identifier);
-      case 'ADMIN': return this.generateMockAdminAuditEvents(identifier);
-      default: return [];
-    }
-  }
-
-  private generateMockDoctorAuditEvents(fiscalCode: string): AuditEventDetail[] {
-    const baseDate = new Date();
-    const events: AuditEventDetail[] = [];
-    let eventId = 1;
-    const doctorName = fiscalCode === 'BNCMRC75A01H501Z' ? 'Dr. Marco Bianchi' : 'Medico Demo';
-    const patients = [{ id: 'PAT-2847', name: 'Giuseppe Esposito' }, { id: 'PAT-1234', name: 'Maria Verdi' }, { id: 'PAT-5678', name: 'Luigi Bianchi' }];
-
-    // Accessi a documenti di vari pazienti
-    for (let i = 0; i < 35; i++) {
-      const daysAgo = Math.floor(Math.random() * 89) + 1;
-      const accessDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-      const patient = patients[Math.floor(Math.random() * patients.length)];
-      const docTypes = ['Referto analisi', 'ECG', 'Radiografia', 'Ecografia', 'Prescrizione'];
-      const docType = docTypes[Math.floor(Math.random() * docTypes.length)];
-      events.push({ id: eventId++, eventType: 'DOCUMENT_ACCESS', action: `Visualizzazione documento: ${docType}`, actorType: 'DOCTOR', actorId: 'DOC-112', actorName: doctorName, actorRole: 'Medico di base', subjectType: 'DOCUMENT', subjectId: `DOC-${5000 + i}`, subjectPatientId: patient.id, subjectPatientName: patient.name, subjectPatientFiscalCode: 'XXXXXXXXXXXXX', resourceType: 'DOCUMENT', resourceId: `DOC-${5000 + i}`, resourceName: docType, consentScope: 'DOCS', consentValidAtAccess: true, serviceName: 'document-service', ipAddress: `192.168.1.${Math.floor(Math.random() * 254) + 1}`, outcome: 'SUCCESS', occurredAt: accessDate.toISOString(), integrityHash: this.generateHash() });
-    }
-
-    // Login e operazioni amministrative
-    for (let i = 0; i < 12; i++) {
-      const daysAgo = Math.floor(Math.random() * 89) + 1;
-      const eventDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-      events.push({ id: eventId++, eventType: 'PROFILE_UPDATE', action: 'Accesso al portale medico', actorType: 'DOCTOR', actorId: 'DOC-112', actorName: doctorName, actorRole: 'Medico di base', subjectType: 'DOCTOR', subjectId: 'DOC-112', serviceName: 'auth-service', ipAddress: `192.168.1.${Math.floor(Math.random() * 254) + 1}`, outcome: 'SUCCESS', occurredAt: eventDate.toISOString(), integrityHash: this.generateHash() });
-    }
-
-    return events.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
-  }
-
-  private generateMockAdminAuditEvents(fiscalCode: string): AuditEventDetail[] {
-    const baseDate = new Date();
-    const events: AuditEventDetail[] = [];
-    let eventId = 1;
-    const adminName = fiscalCode === 'RSSMRA80B15H501Y' ? 'Mario Rossi' : 'Admin Demo';
-
-    // Operazioni amministrative
-    const adminActions = [
-      { action: 'Creazione nuovo medico', eventType: 'PROFILE_UPDATE' as const },
-      { action: 'Modifica permessi utente', eventType: 'PROFILE_UPDATE' as const },
-      { action: 'Visualizzazione audit trail', eventType: 'DOCUMENT_ACCESS' as const },
-      { action: 'Generazione report compliance', eventType: 'DOCUMENT_ACCESS' as const },
-      { action: 'Configurazione sistema notifiche', eventType: 'PROFILE_UPDATE' as const },
-      { action: 'Aggiornamento struttura sanitaria', eventType: 'PROFILE_UPDATE' as const }
-    ];
-
-    for (let i = 0; i < 28; i++) {
-      const daysAgo = Math.floor(Math.random() * 89) + 1;
-      const eventDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-      const adminAction = adminActions[Math.floor(Math.random() * adminActions.length)];
-      events.push({ id: eventId++, eventType: adminAction.eventType, action: adminAction.action, actorType: 'ADMIN', actorId: 'ADM-001', actorName: adminName, actorRole: 'Amministratore Sistema', subjectType: 'ADMIN', subjectId: 'ADM-001', serviceName: 'admin-service', ipAddress: `10.0.0.${Math.floor(Math.random() * 254) + 1}`, outcome: 'SUCCESS', occurredAt: eventDate.toISOString(), integrityHash: this.generateHash() });
-    }
-
-    // Accessi a dati sensibili
-    for (let i = 0; i < 8; i++) {
-      const daysAgo = Math.floor(Math.random() * 89) + 1;
-      const eventDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-      events.push({ id: eventId++, eventType: 'DOCUMENT_ACCESS', action: 'Accesso a log di sistema', actorType: 'ADMIN', actorId: 'ADM-001', actorName: adminName, actorRole: 'Amministratore Sistema', subjectType: 'DOCUMENT', subjectId: `LOG-${1000 + i}`, resourceType: 'SYSTEM_LOG', resourceId: `LOG-${1000 + i}`, resourceName: 'Log di sistema', serviceName: 'audit-service', ipAddress: `10.0.0.${Math.floor(Math.random() * 254) + 1}`, outcome: 'SUCCESS', occurredAt: eventDate.toISOString(), integrityHash: this.generateHash() });
-    }
-
-    return events.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
-  }
-
-  private generateMockAuditEvents(fiscalCode: string): AuditEventDetail[] {
-    const baseDate = new Date();
-    const events: AuditEventDetail[] = [];
-    let eventId = 1;
-    const doctors = [{ id: 'DOC-112', name: 'Dr. Marco Bianchi', role: 'Medico di base' }, { id: 'DOC-245', name: 'Dr.ssa Elena Rossi', role: 'Cardiologo' }, { id: 'DOC-378', name: 'Dr. Antonio Ferrara', role: 'Endocrinologo' }];
-    const patientName = fiscalCode === 'SPSGPP65M15H501X' ? 'Giuseppe Esposito' : 'Paziente Demo';
-    doctors.forEach((doctor, idx) => {
-      const consentDate = new Date(baseDate.getTime() - (180 - idx * 30) * 24 * 60 * 60 * 1000);
-      events.push({ id: eventId++, eventType: 'CONSENT_GRANTED', action: 'Consenso concesso per accesso documenti', actorType: 'PATIENT', actorId: 'PAT-2847', actorName: patientName, subjectType: 'CONSENT', subjectId: `CNS-${1000 + idx}`, subjectPatientId: 'PAT-2847', subjectPatientName: patientName, subjectPatientFiscalCode: fiscalCode, resourceType: 'DOCTOR', resourceId: doctor.id, resourceName: doctor.name, consentScope: 'DOCS', serviceName: 'consent-service', outcome: 'SUCCESS', occurredAt: consentDate.toISOString(), integrityHash: this.generateHash() });
-    });
-    const documentTypes = ['Referto analisi sangue', 'ECG completo', 'Radiografia torace', 'Ecografia addome', 'Referto visita specialistica', 'Prescrizione farmaci', 'Piano terapeutico', 'Certificato medico'];
-    for (let i = 0; i < 47; i++) {
-      const daysAgo = Math.floor(Math.random() * 89) + 1;
-      const accessDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-      const doctor = doctors[Math.floor(Math.random() * doctors.length)];
-      const docType = documentTypes[Math.floor(Math.random() * documentTypes.length)];
-      events.push({ id: eventId++, eventType: 'DOCUMENT_ACCESS', action: `Visualizzazione documento: ${docType}`, actorType: 'DOCTOR', actorId: doctor.id, actorName: doctor.name, actorRole: doctor.role, subjectType: 'DOCUMENT', subjectId: `DOC-${5000 + i}`, subjectPatientId: 'PAT-2847', subjectPatientName: patientName, subjectPatientFiscalCode: fiscalCode, resourceType: 'DOCUMENT', resourceId: `DOC-${5000 + i}`, resourceName: docType, consentScope: 'DOCS', consentValidAtAccess: true, serviceName: 'document-service', ipAddress: `192.168.1.${Math.floor(Math.random() * 254) + 1}`, outcome: 'SUCCESS', occurredAt: accessDate.toISOString(), integrityHash: this.generateHash() });
-    }
-    for (let i = 0; i < 8; i++) {
-      const daysAgo = Math.floor(Math.random() * 89) + 1;
-      const eventDate = new Date(baseDate.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-      const doctor = doctors[Math.floor(Math.random() * doctors.length)];
-      events.push({ id: eventId++, eventType: 'PRESCRIPTION_VIEW', action: 'Visualizzazione prescrizione farmacologica', actorType: 'DOCTOR', actorId: doctor.id, actorName: doctor.name, actorRole: doctor.role, subjectType: 'PRESCRIPTION', subjectId: `PRE-${3000 + i}`, subjectPatientId: 'PAT-2847', subjectPatientName: patientName, subjectPatientFiscalCode: fiscalCode, resourceType: 'PRESCRIPTION', resourceId: `PRE-${3000 + i}`, resourceName: 'Prescrizione terapia', consentValidAtAccess: true, serviceName: 'prescription-service', outcome: 'SUCCESS', occurredAt: eventDate.toISOString(), integrityHash: this.generateHash() });
-    }
-    return events.sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime());
-  }
-
-  private generateMockConsents(fiscalCode: string): ConsentSnapshot[] {
-    const baseDate = new Date();
-    return [{ id: 1001, patientId: 'PAT-2847', patientFiscalCode: fiscalCode, doctorId: 'DOC-112', doctorName: 'Dr. Marco Bianchi', scope: 'DOCS', status: 'ACTIVE', grantedAt: new Date(baseDate.getTime() - 180 * 24 * 60 * 60 * 1000).toISOString() }, { id: 1002, patientId: 'PAT-2847', patientFiscalCode: fiscalCode, doctorId: 'DOC-245', doctorName: 'Dr.ssa Elena Rossi', scope: 'DOCS', status: 'ACTIVE', grantedAt: new Date(baseDate.getTime() - 150 * 24 * 60 * 60 * 1000).toISOString() }, { id: 1003, patientId: 'PAT-2847', patientFiscalCode: fiscalCode, doctorId: 'DOC-378', doctorName: 'Dr. Antonio Ferrara', scope: 'DOCS', status: 'ACTIVE', grantedAt: new Date(baseDate.getTime() - 120 * 24 * 60 * 60 * 1000).toISOString() }];
   }
 
   private generateHash(): string { const chars = 'abcdef0123456789'; let hash = ''; for (let i = 0; i < 64; i++) { hash += chars.charAt(Math.floor(Math.random() * chars.length)); } return hash; }
@@ -3701,7 +3696,8 @@ export class ResourcePageState {
   private generateAuditSummary(): void {
     const events = this.auditFilteredEvents;
     const uniqueActors = new Set(events.map(e => e.actorId));
-    this.auditReportSummary = { totalEvents: events.length, documentAccesses: events.filter(e => e.eventType === 'DOCUMENT_ACCESS').length, consentChanges: events.filter(e => e.eventType === 'CONSENT_GRANTED' || e.eventType === 'CONSENT_REVOKED').length, prescriptionViews: events.filter(e => e.eventType === 'PRESCRIPTION_VIEW').length, appointmentEvents: events.filter(e => e.eventType === 'APPOINTMENT_BOOKED' || e.eventType === 'APPOINTMENT_CANCELLED').length, deniedAccesses: events.filter(e => e.outcome === 'DENIED').length, uniqueActors: uniqueActors.size, dateRange: { from: this.auditSearchCriteria.dateFrom, to: this.auditSearchCriteria.dateTo }, patientInfo: this.auditPatientFound || { id: '', name: '', fiscalCode: '' }, generatedAt: new Date().toISOString(), integrityHash: this.generateHash() };
+    const subjectInfo = this.auditSubjectFound ? { id: this.auditSubjectFound.id, name: this.auditSubjectFound.name, fiscalCode: this.auditSubjectFound.identifier } : { id: '', name: '', fiscalCode: '' };
+    this.auditReportSummary = { totalEvents: events.length, documentAccesses: events.filter(e => e.eventType === 'DOCUMENT_ACCESS').length, consentChanges: events.filter(e => e.eventType === 'CONSENT_GRANTED' || e.eventType === 'CONSENT_REVOKED').length, prescriptionViews: events.filter(e => e.eventType === 'PRESCRIPTION_VIEW').length, appointmentEvents: events.filter(e => e.eventType === 'APPOINTMENT_BOOKED' || e.eventType === 'APPOINTMENT_CANCELLED').length, deniedAccesses: events.filter(e => e.outcome === 'DENIED').length, uniqueActors: uniqueActors.size, dateRange: { from: this.auditSearchCriteria.dateFrom, to: this.auditSearchCriteria.dateTo }, patientInfo: subjectInfo, generatedAt: new Date().toISOString(), integrityHash: this.generateHash() };
   }
 
   selectAuditEvent(event: AuditEventDetail): void { this.auditSelectedEvent = event; }
@@ -3726,8 +3722,12 @@ export class ResourcePageState {
     this.auditExporting = true;
     setTimeout(() => {
       const summary = this.auditReportSummary!;
-      let content = `REPORT AUDIT & COMPLIANCE\n====================================\nPAZIENTE: ${summary.patientInfo.name} (${summary.patientInfo.fiscalCode})\nPERIODO: ${this.formatAuditDateShort(summary.dateRange.from)} - ${this.formatAuditDateShort(summary.dateRange.to)}\n\nRIEPILOGO:\n- Totale eventi: ${summary.totalEvents}\n- Accessi documenti: ${summary.documentAccesses}\n- Modifiche consensi: ${summary.consentChanges}\n- Accessi negati: ${summary.deniedAccesses}\n\nCONSENSI ATTIVI:\n`;
-      this.auditConsents.forEach(c => { content += `- ${c.doctorName} (${c.scope}) dal ${this.formatAuditDateShort(c.grantedAt)}\n`; });
+      const subjectLabel = this.auditSubjectFound?.type === 'PATIENT' ? 'PAZIENTE' : (this.auditSubjectFound?.type === 'DOCTOR' ? 'MEDICO' : 'AMMINISTRATORE');
+      let content = `REPORT AUDIT & COMPLIANCE\n====================================\n${subjectLabel}: ${summary.patientInfo.name} (${summary.patientInfo.fiscalCode})\nPERIODO: ${this.formatAuditDateShort(summary.dateRange.from)} - ${this.formatAuditDateShort(summary.dateRange.to)}\n\nRIEPILOGO:\n- Totale eventi: ${summary.totalEvents}\n- Accessi documenti: ${summary.documentAccesses}\n- Modifiche consensi: ${summary.consentChanges}\n- Accessi negati: ${summary.deniedAccesses}\n`;
+      if (this.auditConsents.length > 0) {
+        content += `\nCONSENSI ATTIVI:\n`;
+        this.auditConsents.forEach(c => { content += `- ${c.doctorName} (${c.scope}) dal ${this.formatAuditDateShort(c.grantedAt)}\n`; });
+      }
       content += `\nDETTAGLIO EVENTI:\n`;
       this.auditFilteredEvents.forEach(e => { content += `[${this.formatAuditDate(e.occurredAt)}] ${e.action} - ${e.actorName} - ${e.outcome}\n`; });
       content += `\nHash integrità: ${summary.integrityHash}\nGenerato: ${this.formatAuditDate(summary.generatedAt)}\n`;
@@ -3735,7 +3735,7 @@ export class ResourcePageState {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `audit_report_${this.auditPatientFound?.fiscalCode}_${new Date().toISOString().split('T')[0]}.txt`;
+      link.download = `audit_report_${this.auditSubjectFound?.identifier}_${new Date().toISOString().split('T')[0]}.txt`;
       link.click();
       window.URL.revokeObjectURL(url);
       this.auditExporting = false;
@@ -3746,177 +3746,62 @@ export class ResourcePageState {
 
   loadAdminTelevisit(): void {
     this.televisitError = '';
-    // Carica dati mock sincronamente per garantire disponibilità immediata
-    this.patients = this.getMockPatients();
-    this.doctors = this.getMockDoctors();
-    this.departments = this.getMockDepartments();
-    this.loadMockTelevisitsForScenario();
+    this.isLoading = true;
+    // Carica dati di supporto
+    this.loadPatients();
+    this.loadDoctors();
+    this.loadDepartments();
+    // Carica televisite da API
+    this.api.request<PagedResponse<TelevisitItem>>('GET', '/api/televisits').subscribe({
+      next: (response) => {
+        this.televisits = (response.content ?? []).map(tv => ({
+          ...tv,
+          provider: 'LIVEKIT',
+          token: tv.roomName
+        }));
+        this.isLoading = false;
+      },
+      error: () => {
+        this.televisitError = 'Impossibile caricare le televisite.';
+        this.isLoading = false;
+      }
+    });
   }
 
   loadAdminAdmissions(): void {
     this.paymentsError = '';
-    // Carica dati mock sincronamente per garantire disponibilità immediata
-    this.patients = this.getMockPatients();
-    this.doctors = this.getMockDoctors();
-    this.departments = this.getMockDepartments();
-    this.loadMockAdmissionsForScenario();
-  }
-
-  private loadMockTelevisitsForScenario(): void {
     this.isLoading = true;
-    const baseDate = new Date();
-    baseDate.setHours(19, 30, 0, 0);
-
-    this.slots = this.getMockSlotsForScenario();
-    this.appointments = this.getMockAppointmentsForScenario();
-
-    this.televisits = [
-      {
-        id: 501,
-        appointmentId: 101,
-        provider: 'LIVEKIT',
-        status: 'SCHEDULED',
-        token: 'tv-abc123-rossi'
+    // Carica dati di supporto
+    this.loadPatients();
+    this.loadDoctors();
+    this.loadDepartments();
+    // Carica ricoveri da API
+    this.api.request<PagedResponse<AdmissionItem>>('GET', '/api/admissions').subscribe({
+      next: (response) => {
+        this.admissions = (response.content ?? []).map(adm => ({
+          ...adm,
+          department: adm.departmentCode // mapping per compatibilità template
+        }));
+        this.isLoading = false;
       },
-      {
-        id: 502,
-        appointmentId: 103,
-        provider: 'LIVEKIT',
-        status: 'SCHEDULED',
-        token: 'tv-def456-verdi'
-      },
-      {
-        id: 503,
-        appointmentId: 107,
-        provider: 'LIVEKIT',
-        status: 'SCHEDULED',
-        token: 'tv-ghi789-ferrari'
-      },
-      {
-        id: 504,
-        appointmentId: 108,
-        provider: 'LIVEKIT',
-        status: 'SCHEDULED',
-        token: 'tv-jkl012-greco'
-      },
-      {
-        id: 505,
-        appointmentId: 109,
-        provider: 'LIVEKIT',
-        status: 'COMPLETED',
-        token: 'tv-mno345-completed'
+      error: () => {
+        this.paymentsError = 'Impossibile caricare i ricoveri.';
+        this.isLoading = false;
       }
-    ];
-    this.isLoading = false;
+    });
+    // Carica anche capacità reparti
+    this.loadDepartmentCapacity();
   }
 
-  private loadMockAdmissionsForScenario(): void {
-    this.isLoading = true;
-    const baseDate = new Date();
-
-    this.admissions = [
-      {
-        id: 401,
-        patientId: 4,
-        department: 'PNEUMO',
-        bedId: 12,
-        status: 'ACTIVE',
-        admittedAt: new Date(baseDate.getTime() - 2 * 24 * 60 * 60000).toISOString(),
-        notes: 'Medico referente: Dott.ssa Bianchi (subentrata a Dr. Martini)',
-        appointmentId: 104
+  private loadDepartmentCapacity(): void {
+    this.api.request<CapacityItem[]>('GET', '/api/departments/capacity').subscribe({
+      next: (capacities) => {
+        this.departmentCapacities = capacities;
       },
-      {
-        id: 402,
-        patientId: 6,
-        department: 'PNEUMO',
-        bedId: 14,
-        status: 'ACTIVE',
-        admittedAt: new Date(baseDate.getTime() - 3 * 24 * 60 * 60000).toISOString(),
-        notes: 'Medico referente: Dott.ssa Bianchi (subentrata a Dr. Martini)',
-        appointmentId: 106
-      },
-      {
-        id: 403,
-        patientId: 8,
-        department: 'PNEUMO',
-        bedId: 16,
-        status: 'ACTIVE',
-        admittedAt: new Date(baseDate.getTime() - 1 * 24 * 60 * 60000).toISOString(),
-        notes: 'Medico referente: Dott.ssa Bianchi (subentrata a Dr. Martini)',
-        appointmentId: 110
-      },
-      {
-        id: 404,
-        patientId: 10,
-        department: 'PNEUMO',
-        bedId: 18,
-        status: 'ACTIVE',
-        admittedAt: new Date(baseDate.getTime() - 4 * 24 * 60 * 60000).toISOString(),
-        notes: 'Medico referente: Dott.ssa Bianchi (subentrata a Dr. Martini)',
-        appointmentId: 111
-      },
-      {
-        id: 405,
-        patientId: 3,
-        department: 'CARD',
-        bedId: 5,
-        status: 'CONFIRMED',
-        admittedAt: new Date(baseDate.getTime() - 5 * 24 * 60 * 60000).toISOString(),
-        notes: 'Ricovero cardiologico programmato'
-      },
-      {
-        id: 406,
-        patientId: 5,
-        department: 'NEURO',
-        bedId: 8,
-        status: 'DISCHARGED',
-        admittedAt: new Date(baseDate.getTime() - 10 * 24 * 60 * 60000).toISOString(),
-        notes: 'Dimesso il 28/01'
+      error: () => {
+        // Silently fail - non critico
       }
-    ];
-    this.isLoading = false;
-  }
-
-  private getMockSlotsForScenario(): SchedulingSlot[] {
-    const baseDate = new Date();
-    const tomorrow = new Date(baseDate);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dayAfter = new Date(baseDate);
-    dayAfter.setDate(dayAfter.getDate() + 2);
-    const twoDaysAfter = new Date(baseDate);
-    twoDaysAfter.setDate(twoDaysAfter.getDate() + 3);
-
-    return [
-      { id: 201, doctorId: 2, date: tomorrow.toISOString().split('T')[0], time: '09:00', status: 'BOOKED', modality: 'REMOTE', notes: 'Convertito in televisita' },
-      { id: 202, doctorId: 2, date: tomorrow.toISOString().split('T')[0], time: '10:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Spirometria - riassegnato a Bianchi' },
-      { id: 203, doctorId: 2, date: tomorrow.toISOString().split('T')[0], time: '11:00', status: 'BOOKED', modality: 'REMOTE', notes: 'Convertito in televisita' },
-      { id: 204, doctorId: 2, date: tomorrow.toISOString().split('T')[0], time: '14:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Ricovero' },
-      { id: 205, doctorId: 2, date: dayAfter.toISOString().split('T')[0], time: '09:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Auscultazione - riassegnato a Bianchi' },
-      { id: 206, doctorId: 2, date: dayAfter.toISOString().split('T')[0], time: '10:30', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Ricovero' },
-      { id: 207, doctorId: 2, date: dayAfter.toISOString().split('T')[0], time: '14:00', status: 'BOOKED', modality: 'REMOTE', notes: 'Convertito in televisita' },
-      { id: 208, doctorId: 2, date: dayAfter.toISOString().split('T')[0], time: '15:30', status: 'BOOKED', modality: 'REMOTE', notes: 'Convertito in televisita' },
-      { id: 209, doctorId: 2, date: twoDaysAfter.toISOString().split('T')[0], time: '09:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Spirometria - riassegnato a Bianchi' },
-      { id: 210, doctorId: 2, date: twoDaysAfter.toISOString().split('T')[0], time: '11:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Ricovero' },
-      { id: 211, doctorId: 2, date: twoDaysAfter.toISOString().split('T')[0], time: '14:00', status: 'BOOKED', modality: 'REMOTE', notes: 'Convertito in televisita' },
-      { id: 212, doctorId: 2, date: twoDaysAfter.toISOString().split('T')[0], time: '16:00', status: 'BOOKED', modality: 'IN_PERSON', notes: 'Auscultazione - riassegnato a Bianchi' }
-    ];
-  }
-
-  private getMockAppointmentsForScenario(): SchedulingAppointment[] {
-    return [
-      { id: 101, patientId: 1, doctorId: 3, slotId: 201, reason: 'Follow-up pneumologico', status: 'CONFIRMED' },
-      { id: 102, patientId: 2, doctorId: 3, slotId: 202, reason: 'Spirometria di controllo', status: 'CONFIRMED' },
-      { id: 103, patientId: 3, doctorId: 3, slotId: 203, reason: 'Controllo post-trattamento', status: 'CONFIRMED' },
-      { id: 104, patientId: 4, doctorId: 3, slotId: 204, reason: 'Valutazione ricovero', status: 'CONFIRMED' },
-      { id: 105, patientId: 5, doctorId: 3, slotId: 205, reason: 'Auscultazione cardiopolmonare', status: 'CONFIRMED' },
-      { id: 106, patientId: 6, doctorId: 3, slotId: 206, reason: 'Ricovero programmato', status: 'CONFIRMED' },
-      { id: 107, patientId: 7, doctorId: 3, slotId: 207, reason: 'Consulenza pneumologica', status: 'CONFIRMED' },
-      { id: 108, patientId: 1, doctorId: 3, slotId: 208, reason: 'Secondo follow-up', status: 'CONFIRMED' },
-      { id: 109, patientId: 2, doctorId: 3, slotId: 209, reason: 'Spirometria', status: 'CONFIRMED' },
-      { id: 110, patientId: 8, doctorId: 3, slotId: 210, reason: 'Ricovero urgente', status: 'CONFIRMED' },
-      { id: 111, patientId: 3, doctorId: 3, slotId: 211, reason: 'Televisita controllo', status: 'CONFIRMED' },
-      { id: 112, patientId: 5, doctorId: 3, slotId: 212, reason: 'Auscultazione finale', status: 'CONFIRMED' }
-    ];
+    });
   }
 
   private loadDepartments(): void {

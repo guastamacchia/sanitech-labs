@@ -1,0 +1,423 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a routerLink="/portal/doctor">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Prescrizioni</li>
+        </ol>
+      </nav>
+      <h2 class="mb-1 fw-bold">Prescrizioni</h2>
+      <p class="text-muted mb-0">Gestisci le prescrizioni farmacologiche dei tuoi pazienti</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary" (click)="loadData()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise me-1"></i>
+        Aggiorna
+      </button>
+      <button class="btn btn-primary" (click)="openNewPrescriptionModal()">
+        <i class="bi bi-plus-lg me-1"></i>
+        Nuova prescrizione
+      </button>
+    </div>
+  </div>
+
+  <!-- Alert messages -->
+  <div class="alert alert-success alert-dismissible fade show" *ngIf="successMessage" role="alert">
+    <i class="bi bi-check-circle me-2"></i>
+    {{ successMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
+  </div>
+
+  <!-- Loading -->
+  <div class="text-center py-5" *ngIf="isLoading && prescriptions.length === 0">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Caricamento...</span>
+    </div>
+    <p class="text-muted mt-2">Caricamento prescrizioni...</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-3 mb-4" *ngIf="!isLoading || prescriptions.length > 0">
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-prescription2 text-primary fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ totalPrescriptions }}</h3>
+              <small class="text-muted">Prescrizioni totali</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-check-circle text-success fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ activePrescriptions }}</h3>
+              <small class="text-muted">Attive</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+              <i class="bi bi-calendar-month text-info fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ issuedThisMonth }}</h3>
+              <small class="text-muted">Emesse questo mese</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtri -->
+  <div class="card card-glass border-0 shadow-sm mb-4" *ngIf="!isLoading || prescriptions.length > 0">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label fw-semibold small text-muted">Stato</label>
+          <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
+            <option value="ALL">Tutti gli stati</option>
+            <option value="ISSUED">Emesse</option>
+            <option value="EXPIRED">Scadute</option>
+            <option value="DRAFT">Bozze</option>
+            <option value="CANCELLED">Annullate</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold small text-muted">Paziente</label>
+          <select class="form-select" [(ngModel)]="patientFilter" (ngModelChange)="currentPage = 1">
+            <option [ngValue]="0">Tutti i pazienti</option>
+            <option *ngFor="let patient of patients" [ngValue]="patient.id">{{ patient.name }}</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small text-muted">Cerca</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Paziente o farmaco..." [(ngModel)]="searchQuery" (ngModelChange)="currentPage = 1">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista prescrizioni -->
+  <div class="card card-glass border-0 shadow-sm" *ngIf="!isLoading || prescriptions.length > 0">
+    <div class="card-header bg-transparent border-bottom">
+      <h5 class="mb-0 fw-semibold">
+        <i class="bi bi-list-ul me-2"></i>
+        Elenco prescrizioni
+        <span class="badge bg-secondary ms-2">{{ filteredPrescriptions.length }}</span>
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Paziente</th>
+              <th>Farmaci</th>
+              <th>Data emissione</th>
+              <th>Scadenza</th>
+              <th>Stato</th>
+              <th class="pe-4 text-end">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let prescription of paginatedPrescriptions">
+              <td class="ps-4">
+                <div class="d-flex align-items-center">
+                  <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-2">
+                    <i class="bi bi-person text-primary"></i>
+                  </div>
+                  <span class="fw-medium">{{ prescription.patientName }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="d-flex flex-wrap gap-1">
+                  <span *ngFor="let med of prescription.medications" class="badge bg-light text-dark border">
+                    {{ med.name }} {{ med.dosage }}
+                  </span>
+                </div>
+              </td>
+              <td>{{ formatDateTime(prescription.issuedAt) }}</td>
+              <td>{{ formatDate(prescription.expiresAt) }}</td>
+              <td>
+                <span class="badge" [ngClass]="getStatusBadgeClass(prescription.status)">
+                  {{ getStatusLabel(prescription.status) }}
+                </span>
+              </td>
+              <td class="pe-4 text-end">
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-primary" (click)="viewPrescription(prescription)" title="Visualizza">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="btn btn-outline-secondary" (click)="downloadPdf(prescription)" title="Scarica PDF">
+                    <i class="bi bi-download"></i>
+                  </button>
+                  <button class="btn btn-outline-info" (click)="duplicatePrescription(prescription)" title="Duplica per rinnovo">
+                    <i class="bi bi-copy"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredPrescriptions.length === 0">
+              <td colspan="6" class="text-center py-4 text-muted">
+                <i class="bi bi-prescription2 fs-1 d-block mb-2"></i>
+                Nessuna prescrizione trovata.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Paginazione -->
+    <div class="card-footer bg-transparent border-top" *ngIf="totalPages > 1">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          Pagina {{ currentPage }} di {{ totalPages }}
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button class="page-link" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+            </li>
+            <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1">
+              <button class="page-link" (click)="currentPage = i + 1">{{ i + 1 }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal nuova prescrizione -->
+<ng-container *ngIf="showNewPrescriptionModal">
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-prescription2 me-2"></i>
+            Nuova prescrizione
+          </h5>
+          <button type="button" class="btn-close" (click)="closeNewPrescriptionModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-danger" *ngIf="errorMessage">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            {{ errorMessage }}
+          </div>
+
+          <!-- Paziente -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Paziente *</label>
+            <select class="form-select" [(ngModel)]="prescriptionForm.patientId">
+              <option [ngValue]="null">Seleziona paziente...</option>
+              <option *ngFor="let patient of patients" [ngValue]="patient.id">{{ patient.name }}</option>
+            </select>
+            <small class="text-muted">Solo pazienti con consenso PRESCRIPTIONS attivo</small>
+          </div>
+
+          <!-- Farmaci -->
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label fw-semibold mb-0">Farmaci *</label>
+              <button class="btn btn-sm btn-outline-primary" (click)="addMedication()">
+                <i class="bi bi-plus-lg me-1"></i>Aggiungi farmaco
+              </button>
+            </div>
+
+            <div *ngFor="let med of prescriptionForm.medications; let i = index" class="card card-glass border mb-3">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                  <h6 class="mb-0">Farmaco {{ i + 1 }}</h6>
+                  <button class="btn btn-sm btn-outline-danger" (click)="removeMedication(i)" *ngIf="prescriptionForm.medications.length > 1">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6 position-relative">
+                    <label class="form-label small">Nome farmaco *</label>
+                    <input type="text" class="form-control" [(ngModel)]="med.name"
+                           (input)="searchDrug(med.name, i)"
+                           (blur)="showDrugSuggestions = false"
+                           placeholder="Inizia a digitare...">
+                    <div class="dropdown-menu show w-100" *ngIf="showDrugSuggestions && currentMedicationIndex === i">
+                      <button class="dropdown-item" *ngFor="let drug of filteredDrugs"
+                              (mousedown)="selectDrug(drug)">
+                        {{ drug.name }}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small">Dosaggio *</label>
+                    <select class="form-select" [(ngModel)]="med.dosage" *ngIf="getDosagesForMedication(i).length > 0">
+                      <option value="">Seleziona...</option>
+                      <option *ngFor="let dose of getDosagesForMedication(i)" [value]="dose">{{ dose }}</option>
+                    </select>
+                    <input type="text" class="form-control" [(ngModel)]="med.dosage" placeholder="Es. 5mg" *ngIf="getDosagesForMedication(i).length === 0">
+                  </div>
+                  <div class="col-md-8">
+                    <label class="form-label small">Posologia *</label>
+                    <input type="text" class="form-control" [(ngModel)]="med.posology" placeholder="Es. 1 compressa al mattino">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label small">Durata (giorni)</label>
+                    <input type="number" class="form-control" [(ngModel)]="med.duration" min="1" max="365">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small">Note per il paziente</label>
+                    <input type="text" class="form-control" [(ngModel)]="med.notes" placeholder="Es. Assumere a stomaco vuoto">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Note generali -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Note aggiuntive</label>
+            <textarea class="form-control" rows="2" [(ngModel)]="prescriptionForm.notes"
+                      placeholder="Indicazioni generali, prossimi controlli..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeNewPrescriptionModal()">Annulla</button>
+          <button type="button" class="btn btn-primary" (click)="openPreview()">
+            <i class="bi bi-eye me-1"></i>Anteprima
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal anteprima e conferma -->
+<ng-container *ngIf="showPreviewModal">
+  <div class="modal-backdrop fade show" style="z-index: 1060;"></div>
+  <div class="modal fade show d-block" tabindex="-1" style="z-index: 1065;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title">
+            <i class="bi bi-file-earmark-check me-2"></i>
+            Anteprima prescrizione
+          </h5>
+          <button type="button" class="btn-close" (click)="closePreview()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <strong>Paziente:</strong> {{ patients | json }}
+          </div>
+          <hr>
+          <h6 class="fw-semibold mb-3">Farmaci prescritti</h6>
+          <div *ngFor="let med of prescriptionForm.medications" class="mb-3 p-3 bg-light rounded">
+            <div class="fw-medium">{{ med.name }} {{ med.dosage }}</div>
+            <div class="small text-muted">{{ med.posology }} - {{ med.duration }} giorni</div>
+            <div class="small fst-italic" *ngIf="med.notes">{{ med.notes }}</div>
+          </div>
+          <div *ngIf="prescriptionForm.notes" class="mt-3">
+            <strong>Note:</strong> {{ prescriptionForm.notes }}
+          </div>
+          <div class="alert alert-info border-0 mt-4 mb-0">
+            <div class="d-flex align-items-start">
+              <i class="bi bi-info-circle me-2 mt-1"></i>
+              <small>Confermando, la prescrizione verrà firmata digitalmente e il paziente riceverà una notifica con il link per visualizzarla.</small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closePreview()">Modifica</button>
+          <button type="button" class="btn btn-success" (click)="issuePrescription()" [disabled]="isSaving">
+            <span class="spinner-border spinner-border-sm me-1" *ngIf="isSaving"></span>
+            <i class="bi bi-check-lg me-1" *ngIf="!isSaving"></i>
+            Emetti prescrizione
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal dettaglio prescrizione -->
+<ng-container *ngIf="selectedPrescription">
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-prescription2 me-2"></i>
+            Prescrizione #{{ selectedPrescription.id }}
+          </h5>
+          <button type="button" class="btn-close" (click)="closePrescriptionDetail()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <strong>{{ selectedPrescription.patientName }}</strong>
+              <br>
+              <small class="text-muted">Emessa il {{ formatDateTime(selectedPrescription.issuedAt) }}</small>
+            </div>
+            <span class="badge fs-6" [ngClass]="getStatusBadgeClass(selectedPrescription.status)">
+              {{ getStatusLabel(selectedPrescription.status) }}
+            </span>
+          </div>
+          <hr>
+          <h6 class="fw-semibold mb-3">Farmaci</h6>
+          <div *ngFor="let med of selectedPrescription.medications" class="mb-3 p-3 bg-light rounded">
+            <div class="fw-medium">{{ med.name }} {{ med.dosage }}</div>
+            <div class="small">{{ med.posology }}</div>
+            <div class="small text-muted">Durata: {{ med.duration }} giorni</div>
+            <div class="small fst-italic text-info" *ngIf="med.notes">{{ med.notes }}</div>
+          </div>
+          <div *ngIf="selectedPrescription.notes" class="mt-3">
+            <h6 class="fw-semibold">Note</h6>
+            <p class="mb-0">{{ selectedPrescription.notes }}</p>
+          </div>
+          <div class="mt-3 text-muted small">
+            <i class="bi bi-calendar-x me-1"></i>
+            Scadenza: {{ formatDate(selectedPrescription.expiresAt) }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closePrescriptionDetail()">Chiudi</button>
+          <button type="button" class="btn btn-outline-primary" (click)="downloadPdf(selectedPrescription)">
+            <i class="bi bi-download me-1"></i>Scarica PDF
+          </button>
+          <button type="button" class="btn btn-primary" (click)="duplicatePrescription(selectedPrescription); closePrescriptionDetail()">
+            <i class="bi bi-copy me-1"></i>Duplica
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>

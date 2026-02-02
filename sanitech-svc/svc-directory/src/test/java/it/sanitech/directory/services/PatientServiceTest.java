@@ -192,7 +192,7 @@ class PatientServiceTest {
 
         patientService.delete(5L);
 
-        verify(keycloakAdminClient).disableUser("paolo.verdi@email.it");
+        verify(keycloakAdminClient).disableUser("paolo.verdi@email.it", "Paolo", "Verdi", null, "PATIENT", 5L);
         verify(patientRepository).delete(existing);
         verify(eventPublisher).publish(eq("PATIENT"), eq("5"), eq("PATIENT_DELETED"), any(), eq("audits.events"));
     }

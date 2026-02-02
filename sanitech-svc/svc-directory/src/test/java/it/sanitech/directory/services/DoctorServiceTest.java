@@ -169,7 +169,7 @@ class DoctorServiceTest {
 
         doctorService.delete(4L);
 
-        verify(keycloakAdminClient).disableUser("paola.neri@email.it");
+        verify(keycloakAdminClient).disableUser("paola.neri@email.it", "Paola", "Neri", null, "DOCTOR", 4L);
         verify(doctorRepository).delete(existing);
         verify(eventPublisher).publish(eq("DOCTOR"), eq("4"), eq("DOCTOR_DELETED"), any(), eq("audits.events"));
     }

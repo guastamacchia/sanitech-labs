@@ -1,0 +1,367 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a routerLink="/portal/patient">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">I miei documenti</li>
+        </ol>
+      </nav>
+      <h2 class="mb-1 fw-bold">I miei documenti</h2>
+      <p class="text-muted mb-0">Cartella clinica, referti e documenti caricati</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary" (click)="loadDocuments()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise me-1"></i>
+        Aggiorna
+      </button>
+      <button class="btn btn-primary" (click)="openUploadModal()">
+        <i class="bi bi-upload me-1"></i>
+        Carica documento
+      </button>
+    </div>
+  </div>
+
+  <!-- Alert messages -->
+  <div class="alert alert-success alert-dismissible fade show" *ngIf="successMessage" role="alert">
+    <i class="bi bi-check-circle me-2"></i>
+    {{ successMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
+  </div>
+
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="errorMessage = ''"></button>
+  </div>
+
+  <!-- Loading spinner -->
+  <div class="text-center py-5" *ngIf="isLoading && documents.length === 0">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Caricamento...</span>
+    </div>
+    <p class="text-muted mt-2">Caricamento documenti...</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-folder2-open text-primary fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ documents.length }}</h3>
+              <small class="text-muted">Documenti totali</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-person-badge text-success fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ documentsByType.medico }}</h3>
+              <small class="text-muted">Caricati dai medici</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+              <i class="bi bi-person text-info fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ documentsByType.paziente }}</h3>
+              <small class="text-muted">Caricati da te</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info Box -->
+  <div class="alert alert-info border-0 mb-4" role="alert">
+    <div class="d-flex">
+      <i class="bi bi-info-circle fs-5 me-3 mt-1"></i>
+      <div>
+        <h6 class="alert-heading mb-1">Documenti e consensi</h6>
+        <p class="mb-0 small">
+          I documenti caricati da te sono visibili ai medici solo se hai concesso il consenso per l'ambito "Documenti clinici".
+          Puoi gestire i tuoi consensi dalla <a routerLink="/portal/patient/consents" class="alert-link">sezione dedicata</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card card-glass border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small text-muted">Tipo documento</label>
+          <select class="form-select" [(ngModel)]="typeFilter" (ngModelChange)="currentPage = 1">
+            <option value="ALL">Tutti i tipi</option>
+            <option value="REFERTO">Referti</option>
+            <option value="ESAMI_LABORATORIO">Esami di laboratorio</option>
+            <option value="LETTERA_DIMISSIONE">Lettere di dimissione</option>
+            <option value="IMAGING">Imaging</option>
+            <option value="ALTRO">Altro</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small text-muted">Caricato da</label>
+          <select class="form-select" [(ngModel)]="sourceFilter" (ngModelChange)="currentPage = 1">
+            <option value="ALL">Tutti</option>
+            <option value="MEDICO">Medico</option>
+            <option value="PAZIENTE">Paziente</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small text-muted">Risultati per pagina</label>
+          <select class="form-select" [(ngModel)]="pageSize" (ngModelChange)="currentPage = 1">
+            <option [ngValue]="5">5</option>
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documents List -->
+  <div class="card card-glass border-0 shadow-sm">
+    <div class="card-header bg-transparent border-bottom">
+      <h5 class="mb-0 fw-semibold">
+        <i class="bi bi-file-earmark-medical me-2"></i>
+        Elenco documenti
+        <span class="badge bg-secondary ms-2">{{ filteredDocuments.length }}</span>
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Documento</th>
+              <th>Tipo</th>
+              <th>Reparto</th>
+              <th>Data</th>
+              <th>Caricato da</th>
+              <th class="text-end pe-4">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let doc of paginatedDocuments">
+              <td class="ps-4">
+                <div class="d-flex align-items-center">
+                  <div class="rounded bg-light p-2 me-3">
+                    <i [class]="getTypeIcon(doc.type) + ' text-primary fs-5'"></i>
+                  </div>
+                  <div>
+                    <div class="fw-semibold">{{ doc.name }}</div>
+                    <small class="text-muted" *ngIf="doc.description">{{ doc.description }}</small>
+                    <small class="text-muted">{{ doc.fileSize }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge bg-light text-dark">{{ getTypeLabel(doc.type) }}</span>
+              </td>
+              <td>
+                <small>{{ doc.department }}</small>
+              </td>
+              <td>
+                <small>{{ formatDateShort(doc.uploadedAt) }}</small>
+              </td>
+              <td>
+                <div>
+                  <span class="badge" [ngClass]="getSourceBadgeClass(doc.uploadedBy)">
+                    {{ doc.uploadedBy === 'MEDICO' ? 'Medico' : 'Paziente' }}
+                  </span>
+                  <div *ngIf="doc.doctorName">
+                    <small class="text-muted">{{ doc.doctorName }}</small>
+                  </div>
+                  <div *ngIf="doc.uploadedBy === 'PAZIENTE' && doc.viewedByDoctor !== undefined">
+                    <small [class]="doc.viewedByDoctor ? 'text-success' : 'text-muted'">
+                      <i [class]="doc.viewedByDoctor ? 'bi bi-eye' : 'bi bi-eye-slash'"></i>
+                      {{ doc.viewedByDoctor ? 'Visto dal medico' : 'Non ancora visualizzato' }}
+                    </small>
+                  </div>
+                </div>
+              </td>
+              <td class="text-end pe-4">
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-primary" (click)="viewDocument(doc)" title="Visualizza">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="btn btn-outline-secondary" (click)="downloadDocument(doc)" title="Scarica">
+                    <i class="bi bi-download"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredDocuments.length === 0">
+              <td colspan="6" class="text-center py-5">
+                <div class="text-muted">
+                  <i class="bi bi-folder2-open fs-1 d-block mb-3"></i>
+                  <p class="mb-0">Nessun documento trovato con i filtri selezionati.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Pagination -->
+    <div class="card-footer bg-transparent border-top" *ngIf="totalPages > 1">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          Pagina {{ currentPage }} di {{ totalPages }} ({{ filteredDocuments.length }} documenti)
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button class="page-link" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+            </li>
+            <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1">
+              <button class="page-link" (click)="currentPage = i + 1">{{ i + 1 }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Carica Documento -->
+<ng-container *ngIf="showUploadModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeUploadModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="uploadModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <div>
+            <h5 class="modal-title fw-bold" id="uploadModalTitle">
+              <i class="bi bi-upload me-2 text-primary"></i>
+              Carica documento
+            </h5>
+            <p class="text-muted small mb-0 mt-1">Carica un referto o documento esterno nella tua cartella clinica</p>
+          </div>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeUploadModal()"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <form (ngSubmit)="submitUpload()">
+            <!-- File upload -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>
+                Seleziona file
+                <span class="text-danger">*</span>
+              </label>
+              <div class="border border-dashed rounded p-4 text-center bg-light">
+                <input type="file" class="d-none" id="fileInput" accept=".pdf,.jpg,.jpeg,.png"
+                       (change)="onFileSelected($event)">
+                <label for="fileInput" class="cursor-pointer" style="cursor: pointer;">
+                  <i class="bi bi-cloud-upload fs-1 text-primary d-block mb-2"></i>
+                  <span *ngIf="!uploadForm.fileName" class="text-muted">
+                    Clicca per selezionare un file o trascinalo qui<br>
+                    <small>PDF, JPG, PNG (max 10MB)</small>
+                  </span>
+                  <span *ngIf="uploadForm.fileName" class="text-success">
+                    <i class="bi bi-file-earmark-check me-1"></i>
+                    {{ uploadForm.fileName }}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Tipo documento -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">
+                <i class="bi bi-tag me-1"></i>
+                Tipo di documento
+                <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" [(ngModel)]="uploadForm.type" name="type" required>
+                <option value="ESAMI_LABORATORIO">Esami di laboratorio</option>
+                <option value="REFERTO">Referto</option>
+                <option value="IMAGING">Imaging (RX, TAC, RM)</option>
+                <option value="LETTERA_DIMISSIONE">Lettera di dimissione</option>
+                <option value="ALTRO">Altro</option>
+              </select>
+            </div>
+
+            <!-- Reparto -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">
+                <i class="bi bi-hospital me-1"></i>
+                Reparto di riferimento
+              </label>
+              <select class="form-select" [(ngModel)]="uploadForm.department" name="department">
+                <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+              </select>
+            </div>
+
+            <!-- Descrizione -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold">
+                <i class="bi bi-text-left me-1"></i>
+                Descrizione (opzionale)
+              </label>
+              <textarea class="form-control" rows="2" [(ngModel)]="uploadForm.description" name="description"
+                        placeholder="Aggiungi una breve descrizione del documento..."></textarea>
+            </div>
+
+            <!-- Info -->
+            <div class="alert alert-info border-0 mb-0">
+              <div class="d-flex">
+                <i class="bi bi-info-circle me-2"></i>
+                <small>
+                  Il documento sara' visibile ai medici a cui hai concesso il consenso per l'ambito "Documenti clinici".
+                  Verifica i tuoi consensi prima di caricare documenti sensibili.
+                </small>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeUploadModal()">Annulla</button>
+          <button type="button" class="btn btn-primary" (click)="submitUpload()"
+                  [disabled]="!uploadForm.file || isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+            {{ isLoading ? 'Caricamento...' : 'Carica documento' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>

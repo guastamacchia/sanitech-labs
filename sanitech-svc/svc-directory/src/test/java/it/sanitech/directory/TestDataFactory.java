@@ -64,7 +64,7 @@ public final class TestDataFactory {
     }
 
     public static DepartmentDto departmentDto(long id, String code, String name, String facilityCode) {
-        return new DepartmentDto(id, code, name, null, facilityCode, null);
+        return new DepartmentDto(id, code, name, null, facilityCode, null, 0L);
     }
 
     public static DepartmentCreateDto departmentCreateDto() {

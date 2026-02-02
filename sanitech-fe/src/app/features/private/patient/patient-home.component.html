@@ -1,64 +1,153 @@
-<div class="row g-4">
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Prenotazioni</h5>
-        <p class="text-muted">Slot, appuntamenti e scheduling.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/patient/scheduling">Apri</a>
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="mb-4">
+    <h2 class="mb-1 fw-bold">Benvenuto nel tuo portale paziente</h2>
+    <p class="text-muted mb-0">Gestisci la tua salute in modo semplice e sicuro</p>
+  </div>
+
+  <!-- Quick actions grid -->
+  <div class="row g-4">
+    <!-- Profilo personale -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-person-circle text-primary fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Il mio profilo</h5>
+          </div>
+          <p class="text-muted small mb-3">Visualizza e modifica i tuoi dati personali, recapiti e preferenze di notifica.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/patient/profile">Apri profilo</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Prescrizioni</h5>
-        <p class="text-muted">Elenco delle prescrizioni e terapie attive.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/patient/prescriptions">Apri</a>
+
+    <!-- Prenotazioni -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-calendar-check text-success fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Prenotazioni</h5>
+          </div>
+          <p class="text-muted small mb-3">Prenota visite mediche, visualizza gli slot disponibili e gestisci i tuoi appuntamenti.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/patient/scheduling">Gestisci appuntamenti</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Consensi ai medici</h5>
-        <p class="text-muted">Gestisci i consensi per l'accesso ai tuoi dati clinici da parte dei medici.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/patient/consents">Gestisci consensi</a>
+
+    <!-- I miei documenti -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+              <i class="bi bi-folder2-open text-info fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">I miei documenti</h5>
+          </div>
+          <p class="text-muted small mb-3">Cartella clinica, referti medici e documenti caricati. Carica referti esterni per condividerli con il medico.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/patient/docs">Vedi documenti</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Documenti</h5>
-        <p class="text-muted">Gestione cartella clinica e referti.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/patient/docs">Apri</a>
+
+    <!-- Prescrizioni -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+              <i class="bi bi-capsule text-warning fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Le mie prescrizioni</h5>
+          </div>
+          <p class="text-muted small mb-3">Consulta le terapie attive, dosaggi e istruzioni. Visualizza lo storico delle prescrizioni.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/patient/prescriptions">Vedi prescrizioni</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Notifiche</h5>
-        <p class="text-muted">Preferenze e cronologia notifiche.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/patient/notifications">Apri</a>
+
+    <!-- Televisite -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
+              <i class="bi bi-camera-video text-danger fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Le mie televisite</h5>
+          </div>
+          <p class="text-muted small mb-3">Gestisci le visite in videochiamata, testa i dispositivi e accedi alle sale d'attesa virtuali.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/patient/televisits">Gestisci televisite</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Pagamenti</h5>
-        <p class="text-muted">Storico pagamenti effettuati e da effettuare.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/patient/payments">Apri</a>
+
+    <!-- Ricoveri -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-hospital text-secondary fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">I miei ricoveri</h5>
+          </div>
+          <p class="text-muted small mb-3">Monitora i ricoveri in corso, timeline degli eventi e storico delle degenze passate.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/patient/admissions">Vedi ricoveri</a>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card card-glass h-100">
-      <div class="card-body">
-        <h5 class="fw-semibold">Ricoveri</h5>
-        <p class="text-muted">Storico ricoveri e conferme.</p>
-        <a class="btn btn-outline-primary" routerLink="/portal/patient/admissions">Apri</a>
+
+    <!-- Consensi -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-shield-check text-primary fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">I miei consensi</h5>
+          </div>
+          <p class="text-muted small mb-3">Gestisci i consensi ai medici per l'accesso ai tuoi dati clinici. Controllo totale sulla tua privacy.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/patient/consents">Gestisci consensi</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifiche -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+              <i class="bi bi-bell text-info fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">Le mie notifiche</h5>
+          </div>
+          <p class="text-muted small mb-3">Promemoria appuntamenti, avvisi su nuovi documenti e notifiche sugli accessi ai tuoi dati.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/patient/notifications">Vedi notifiche</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagamenti -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-credit-card text-success fs-4"></i>
+            </div>
+            <h5 class="fw-semibold mb-0">I miei pagamenti</h5>
+          </div>
+          <p class="text-muted small mb-3">Paga ticket sanitari, visualizza lo storico e scarica ricevute per la dichiarazione dei redditi.</p>
+          <a class="btn btn-outline-primary" routerLink="/portal/patient/payments">Gestisci pagamenti</a>
+        </div>
       </div>
     </div>
   </div>

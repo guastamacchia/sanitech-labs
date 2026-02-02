@@ -1,15 +1,15 @@
 import { Routes } from '@angular/router';
 import { roleGuard } from '../../../core/auth/role.guard';
 import { DoctorHomeComponent } from './doctor-home.component';
+import { DoctorProfileComponent } from './doctor-profile.component';
+import { DoctorPatientsComponent } from './doctor-patients.component';
+import { DoctorClinicalDocsComponent } from './doctor-clinical-docs.component';
+import { DoctorPrescriptionsComponent } from './doctor-prescriptions.component';
+import { DoctorAgendaComponent } from './doctor-agenda.component';
+import { DoctorTelevisitsComponent } from './doctor-televisits.component';
+import { DoctorAdmissionsComponent } from './doctor-admissions.component';
+import { DoctorNotificationsComponent } from './doctor-notifications.component';
 import { DoctorDocsComponent } from './doctor-docs.component';
-import { ResourcePageComponent } from '../shared/resources/resource-page.component';
-import {
-  admissionsEndpoints,
-  paymentsEndpoints,
-  prescribingEndpoints,
-  schedulingEndpoints,
-  televisitEndpoints
-} from '../shared/resources/resource-endpoints';
 
 export const doctorRoutes: Routes = [
   {
@@ -18,59 +18,44 @@ export const doctorRoutes: Routes = [
     canActivate: [roleGuard('ROLE_DOCTOR')]
   },
   {
-    path: 'doctor/prescribing',
-    component: ResourcePageComponent,
-    canActivate: [roleGuard('ROLE_DOCTOR')],
-    data: {
-      title: 'Prescrizioni',
-      description: 'Gestione prescrizioni e terapie.',
-      endpoints: prescribingEndpoints,
-      view: 'prescribing'
-    }
+    path: 'doctor/profile',
+    component: DoctorProfileComponent,
+    canActivate: [roleGuard('ROLE_DOCTOR')]
   },
   {
-    path: 'doctor/televisit',
-    component: ResourcePageComponent,
-    canActivate: [roleGuard('ROLE_DOCTOR')],
-    data: {
-      title: 'Televisite',
-      description: 'Sessioni di telemedicina e token di accesso.',
-      endpoints: televisitEndpoints,
-      view: 'televisit'
-    }
+    path: 'doctor/patients',
+    component: DoctorPatientsComponent,
+    canActivate: [roleGuard('ROLE_DOCTOR')]
   },
   {
-    path: 'doctor/scheduling',
-    component: ResourcePageComponent,
-    canActivate: [roleGuard('ROLE_DOCTOR')],
-    data: {
-      title: 'Agenda medico',
-      description: 'Gestione slot e appuntamenti dei medici.',
-      endpoints: schedulingEndpoints,
-      view: 'scheduling'
-    }
+    path: 'doctor/clinical-docs',
+    component: DoctorClinicalDocsComponent,
+    canActivate: [roleGuard('ROLE_DOCTOR')]
   },
   {
-    path: 'doctor/payments',
-    component: ResourcePageComponent,
-    canActivate: [roleGuard('ROLE_DOCTOR')],
-    data: {
-      title: 'Pagamenti',
-      description: 'Storico pagamenti e registrazione incassi.',
-      endpoints: paymentsEndpoints,
-      view: 'payments'
-    }
+    path: 'doctor/prescriptions',
+    component: DoctorPrescriptionsComponent,
+    canActivate: [roleGuard('ROLE_DOCTOR')]
+  },
+  {
+    path: 'doctor/agenda',
+    component: DoctorAgendaComponent,
+    canActivate: [roleGuard('ROLE_DOCTOR')]
+  },
+  {
+    path: 'doctor/televisits',
+    component: DoctorTelevisitsComponent,
+    canActivate: [roleGuard('ROLE_DOCTOR')]
   },
   {
     path: 'doctor/admissions',
-    component: ResourcePageComponent,
-    canActivate: [roleGuard('ROLE_DOCTOR')],
-    data: {
-      title: 'Ricoveri',
-      description: 'Storico ricoveri del reparto e conferme.',
-      endpoints: admissionsEndpoints,
-      view: 'admissions'
-    }
+    component: DoctorAdmissionsComponent,
+    canActivate: [roleGuard('ROLE_DOCTOR')]
+  },
+  {
+    path: 'doctor/notifications',
+    component: DoctorNotificationsComponent,
+    canActivate: [roleGuard('ROLE_DOCTOR')]
   },
   {
     path: 'doctor/docs',

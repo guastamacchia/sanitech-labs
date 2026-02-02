@@ -1,135 +1,296 @@
 # Sanitech Labs
 
-Monorepo della piattaforma **Sanitech**.
+Piattaforma di gestione sanitaria costruita con architettura a microservizi.
 
-- **Backend** (`sanitech-svc`): microservizi Spring Boot + script helper. Le configurazioni condivise sono in `.infra`, la compose in `.infra/docker-compose.yml`.
-- **Frontend** (`sanitech-fe`): SPA Angular.
+## Indice
+
+- [Panoramica](#panoramica)
+- [Architettura](#architettura)
+- [Prerequisiti](#prerequisiti)
+- [Avvio rapido](#avvio-rapido)
+- [Struttura del progetto](#struttura-del-progetto)
+- [Servizi backend](#servizi-backend)
+- [Servizi infrastrutturali](#servizi-infrastrutturali)
+- [Applicazione frontend](#applicazione-frontend)
+- [Configurazione](#configurazione)
+- [Sviluppo](#sviluppo)
+- [Documentazione](#documentazione)
+
+## Panoramica
+
+Sanitech Labs è una piattaforma sanitaria completa che offre:
+
+- **Gestione pazienti**: Registrazione, cartelle cliniche e gestione consensi
+- **Directory medici**: Gestione personale con assegnazione a reparti
+- **Prenotazione appuntamenti**: Gestione slot e sistema di prenotazione
+- **Telemedicina**: Videoconsulti tramite integrazione LiveKit
+- **Documenti clinici**: Archiviazione sicura documenti con S3/MinIO
+- **Gestione pagamenti**: Fatturazione e tracciamento pagamenti
+- **Audit trail**: Logging completo delle attività per compliance
+
+## Architettura
+
+```
+                            Frontend (Angular SPA)
+                             http://localhost:4200
+                                      |
+                                      v
+                            API Gateway (svc-gateway)
+                             http://localhost:8080
+                   Validazione JWT - Routing - Aggregazione OpenAPI
+                                      |
+     +--------+--------+--------+-----+-----+--------+--------+--------+
+     |        |        |        |           |        |        |        |
+     v        v        v        v           v        v        v        v
+Directory Schedul. Admiss. Consents      Docs   Notif.  Audit  Payments
+  :8082    :8083    :8084    :8085       :8086   :8087   :8088   :8090
+     |        |        |        |           |        |        |        |
+     +--------+--------+--------+-----------+--------+--------+--------+
+                                      |
+              +-----------------------+-----------------------+
+              |                       |                       |
+              v                       v                       v
+           Kafka                  Keycloak                  MinIO
+          (eventi)                 (OIDC)                    (S3)
+```
 
 ## Prerequisiti
-- Docker / Docker Compose (Buildx opzionale; utile per build multi-arch)
-- Java 21
-- Node.js (solo se si modifica la toolchain frontend)
+
+| Strumento | Versione | Note |
+|-----------|----------|------|
+| Docker | 24+ | Docker Compose V2 incluso |
+| Java | 21 | Per sviluppo backend |
+| Node.js | 18+ | Per sviluppo frontend |
+| Maven | 3.9+ | Build tool (wrapper incluso) |
 
 ## Avvio rapido
 
-### Backend (stack completo)
-```bash
-bash .script/backend/up.sh            # avvia tutto lo stack
-# logs:   bash .script/backend/logs.sh
-# stop:   bash .script/backend/down.sh
-# stato:  bash .script/backend/status.sh
-```
-
-Per usare un file env diverso da quello locale:
-```bash
-ENV=staging make compose-up-infra
-```
-
-### Frontend
-```bash
-bash .script/frontend/up.sh
-# SPA: http://localhost:4200
-```
-
-## Struttura repository
-- `.infra/`: configurazioni centralizzate e docker compose per l'infrastruttura backend.
-- `sanitech-fe`: SPA Angular e script di build/avvio.
-- `sanitech-svc`: microservizi backend, Makefile aggregatore e script di stack.
-- `.script/`: script centralizzati per backend, frontend e smoke test dei servizi.
-
-## Backend: servizi e porte
-
-| Servizio | Porta | Descrizione sintetica |
-| --- | --- | --- |
-| `svc-gateway` | 8080 | API Gateway (routing, JWT, OpenAPI aggregata) |
-| `svc-directory` | 8082 | Anagrafiche medici/pazienti/reparti/specializzazioni |
-| `svc-scheduling` | 8083 | Gestione slot e appuntamenti |
-| `svc-admissions` | 8084 | Ricoveri/ammissioni + outbox Kafka |
-| `svc-consents` | 8085 | Consensi paziente/medico e endpoint `check` |
-| `svc-docs` | 8086 | Documenti clinici + storage S3/MinIO |
-| `svc-notifications` | 8087 | Notifiche e SMTP (MailHog in dev) |
-| `svc-audit` | 8088 | Audit centralizzato (API + ingestion Kafka) |
-| `svc-televisit` | 8089 | Sessioni di televisita (LiveKit) |
-| `svc-payments` | 8090 | Pagamenti e webhook provider |
-| `svc-prescribing` | 8091 | Prescrizioni + verifica consensi |
-
-Servizi infrastrutturali (dev):
-- Keycloak: `http://localhost:8081`
-- Prometheus: `http://localhost:9090`
-- Grafana: `http://localhost:3000` (admin/admin)
-- MinIO: `http://localhost:9000` (console `http://localhost:9001`)
-- MailHog: `http://localhost:8025`
-- LiveKit: `http://localhost:7880` (console `http://localhost:7881`)
-
-## Backend: comandi aggregati (sanitech-svc)
-Da `sanitech-svc`:
+### Stack completo (Backend + Infrastruttura + Frontend)
 
 ```bash
-make build   # package completo con skip test
-make test    # test su tutti i moduli (usa MODULES=svc-...)
+# Avvia l'intero stack (backend, infrastruttura e frontend)
+bash .script/backend/up.sh
+
+# Visualizza i log
+bash .script/backend/logs.sh
+
+# Controlla lo stato
+bash .script/backend/status.sh
+
+# Ferma lo stack
+bash .script/backend/down.sh
+
+# Ferma e rimuovi i volumi (stato pulito)
+REMOVE_VOLUMES=true bash .script/backend/down.sh
 ```
 
-Variabili utili:
-- `MODULES=svc-directory,svc-consents`
-- `PROFILE=local`
-- `MAVEN_ARGS=-DskipTests=false`
-- `MVN=mvn`
-- `POM=pom.xml`
+### Solo Frontend (Modalità sviluppo)
 
-## Backend: note funzionali
-
-### Consensi
-- Il consenso **non** è richiesto per consultare l’elenco dei medici.
-- La verifica consenso avviene **nei servizi clinici** (es. `svc-docs`, `svc-prescribing`) quando un **DOCTOR** accede ai dati del **PATIENT**.
-- `svc-consents` espone l’endpoint `check` per valutare un consenso **GRANTED** e non scaduto.
-
-### Sicurezza (Keycloak OIDC)
-- I servizi validano i JWT via **Spring Security Resource Server**.
-- Ruoli da `realm_access.roles` → `ROLE_*`.
-- Claim custom `dept` → authority `DEPT_*` per policy ABAC di reparto.
-
-### Outbox & Kafka
-I servizi di dominio producono eventi su tabella `outbox_events` nella stessa transazione e li pubblicano su Kafka con retry/backoff. I topic principali sono:
-`directory.events`, `scheduling.events`, `admissions.events`, `consents.events`, `docs.events`, `notifications.events`, `audit.events`, `televisit.events`, `payments.events`, `prescribing.events`.
-
-### API Gateway
-- Swagger UI: `/swagger-ui/index.html` oppure `/swagger.html` (locked‑down).
-- OpenAPI aggregata: `/openapi/merged`.
-- OpenAPI per servizio: `/openapi/{service}`.
-- CORS: impostare `SANITECH_CORS_ALLOWED_ORIGINS` con una lista di origin separati da virgola (es. `http://localhost:4200,http://localhost:8080`).
-
-## Frontend
-La nuova SPA Angular sostituisce i micro‑frontend statici (Bootstrap) per shell, paziente, medico e admin.
-
-Avvio rapido (presuppone backend su `http://localhost:8080`):
 ```bash
-bash .script/frontend/up.sh
-# SPA: http://localhost:4200
+# Server di sviluppo con hot reload (richiede backend attivo)
+cd sanitech-fe
+npm install
+npm start
+# Accessibile su http://localhost:4200
 ```
 
-Configurazioni ambiente (`sanitech-fe/src/environments/`):
-- `environment.ts` → local
-- `environment.staging.ts` → staging
-- `environment.prod.ts` → production
+### Comandi Make
 
-Build specifici:
 ```bash
-ng build --configuration=staging
+# Dalla root del repository
+make -C sanitech-svc compose-up       # Avvia con build
+make -C sanitech-svc compose-down     # Ferma lo stack
+make -C sanitech-svc compose-config   # Valida la configurazione
+
+# Selezione ambiente
+ENV=staging make -C sanitech-svc compose-up-infra
+ENV=prod make -C sanitech-svc compose-up-infra
 ```
 
-Script utili:
-- Stop: `bash .script/frontend/down.sh` (usa `REMOVE_VOLUMES=true` per eliminare i volumi)
-- Log: `bash .script/frontend/logs.sh`
-- Stato: `bash .script/frontend/status.sh`
+## Struttura del progetto
 
-Stack Docker:
-- Compose: `.infra/fe/docker-compose.yml`
-- Build multi-stage: `sanitech-fe/Dockerfile` (dist `sanitech-spa`, Nginx con fallback SPA)
+```
+sanitech-labs/
+├── .infra/                    # Configurazione infrastruttura
+│   ├── docker-compose.yml     # File compose principale (backend + infra + frontend)
+│   ├── env/                   # File di ambiente
+│   │   ├── env.local          # Sviluppo locale
+│   │   ├── env.staging        # Ambiente staging
+│   │   └── env.prod           # Ambiente produzione
+│   ├── grafana/               # Dashboard e provisioning Grafana
+│   ├── keycloak/              # Configurazione ed export realm Keycloak
+│   ├── livekit/               # Configurazione server LiveKit
+│   └── prometheus/            # Configurazione scrape Prometheus
+├── .script/                   # Script operativi
+│   ├── backend/               # Gestione stack (up, down, logs, status, smoke)
+│   ├── frontend/              # Gestione stack frontend
+│   └── services/              # Script di test per servizio (smoke, rate-limit, ecc.)
+├── sanitech-fe/               # Frontend Angular SPA
+│   ├── src/                   # Codice sorgente applicazione
+│   ├── Dockerfile             # Build multi-stage
+│   └── angular.json           # Configurazione Angular CLI
+└── sanitech-svc/              # Microservizi backend
+    ├── svc-gateway/           # API Gateway
+    ├── svc-directory/         # Directory utenti (medici, pazienti)
+    ├── svc-scheduling/        # Gestione appuntamenti
+    ├── svc-admissions/        # Ricoveri ospedalieri
+    ├── svc-consents/          # Gestione consensi pazienti
+    ├── svc-docs/              # Archiviazione documenti
+    ├── svc-notifications/     # Email e notifiche
+    ├── svc-audit/             # Logging audit
+    ├── svc-televisit/         # Videoconsulti
+    ├── svc-payments/          # Elaborazione pagamenti
+    ├── svc-prescribing/       # Prescrizioni
+    ├── commons/               # Librerie condivise
+    └── pom.xml                # POM padre
+```
 
-Layout:
-- `sanitech-fe/src`: sorgenti SPA Angular (portale pubblico + area privata con ruoli).
-- `.script/frontend/`: helper per up/down/logs/status.
+## Servizi backend
 
-## Documentazione operativa
-- Runbook generale: `RUNBOOK.md`
-- Manifest repository: `MANIFEST.md`
+| Servizio | Porta | Descrizione | Funzionalità principali |
+|----------|-------|-------------|-------------------------|
+| `svc-gateway` | 8080 | API Gateway | Validazione JWT, routing, aggregazione OpenAPI, rate limiting |
+| `svc-directory` | 8082 | Directory utenti | Medici, pazienti, reparti, strutture, sincronizzazione Keycloak |
+| `svc-scheduling` | 8083 | Scheduling | Slot appuntamenti e prenotazioni |
+| `svc-admissions` | 8084 | Ricoveri | Ammissioni e dimissioni ospedaliere |
+| `svc-consents` | 8085 | Gestione consensi | Consenso paziente per accesso dati con validazione scope |
+| `svc-docs` | 8086 | Documenti | Archiviazione documenti clinici con backend S3/MinIO |
+| `svc-notifications` | 8087 | Notifiche | Invio email via SMTP, templating |
+| `svc-audit` | 8088 | Audit | Logging attività, ingestion Kafka, reportistica compliance |
+| `svc-televisit` | 8089 | Telemedicina | Sessioni video via LiveKit, generazione token |
+| `svc-payments` | 8090 | Pagamenti | Fatturazione, elaborazione pagamenti, gestione webhook |
+| `svc-prescribing` | 8091 | Prescrizioni | Prescrizioni mediche con verifica consenso |
+
+## Servizi infrastrutturali
+
+| Servizio | Porta | URL | Credenziali |
+|----------|-------|-----|-------------|
+| Keycloak | 8081 | http://localhost:8081 | Vedi `.infra/env/env.local` |
+| Kafka | 9092, 29092 | `kafka:9092` (interno) | N/A |
+| Prometheus | 9090 | http://localhost:9090 | N/A |
+| Grafana | 3000 | http://localhost:3000 | admin/admin |
+| MinIO API | 9000 | http://localhost:9000 | Vedi file env |
+| MinIO Console | 9001 | http://localhost:9001 | Vedi file env |
+| Mailpit (MailHog) | 8025 | http://localhost:8025 | N/A |
+| LiveKit | 7880, 7881 | http://localhost:7880 | Vedi file env |
+
+## Applicazione frontend
+
+La SPA Angular fornisce accesso basato su ruoli:
+
+- **Portale pubblico**: Landing page, auto-registrazione pazienti
+- **Area paziente**: Appuntamenti, documenti, gestione consensi
+- **Area medico**: Cartelle pazienti, prescrizioni, scheduling
+- **Area admin**: Gestione utenti, directory, log audit
+
+### Configurazioni di build
+
+```bash
+ng build                            # Build sviluppo
+ng build --configuration=staging    # Build staging
+ng build --configuration=production # Build produzione
+```
+
+File di ambiente: `sanitech-fe/src/environments/`
+
+## Configurazione
+
+### Variabili di ambiente
+
+I file di ambiente si trovano in `.infra/env/`:
+
+| File | Scopo |
+|------|-------|
+| `env.local` | Sviluppo locale (default) |
+| `env.staging` | Ambiente staging |
+| `env.prod` | Ambiente produzione |
+
+Variabili principali:
+
+| Variabile | Descrizione |
+|-----------|-------------|
+| `SPRING_PROFILES_ACTIVE` | Profilo Spring (local/staging/prod) |
+| `DATABASE_USER` | Username PostgreSQL |
+| `DATABASE_PASSWORD` | Password PostgreSQL |
+| `OAUTH2_ISSUER_URI` | URL realm Keycloak |
+| `KAFKA_HOST` | Hostname broker Kafka |
+| `SANITECH_CORS_ALLOWED_ORIGINS` | Origin CORS consentiti (separati da virgola) |
+
+### Configurazione OIDC
+
+- **Host (browser/CLI)**: Keycloak su `http://localhost:8081`
+- **Container (backend)**: Usare il nome servizio Docker `keycloak:8080`
+- **Issuer URI**: `http://keycloak:8080/realms/sanitech`
+
+## Sviluppo
+
+### Build dei servizi backend
+
+```bash
+cd sanitech-svc
+
+# Build di tutti i servizi (skip test)
+make build
+
+# Build con test
+make test
+
+# Build di un servizio specifico
+mvn -pl svc-directory package -DskipTests
+
+# Esegui test di moduli specifici
+MODULES=svc-directory,svc-consents make test
+```
+
+### Documentazione API
+
+| Endpoint | Descrizione |
+|----------|-------------|
+| `/swagger-ui/index.html` | Swagger UI interattivo |
+| `/openapi/merged` | Spec OpenAPI aggregata |
+| `/openapi/{service}` | Spec OpenAPI per servizio |
+
+### Architettura event-driven
+
+I servizi comunicano in modo asincrono tramite Kafka usando il pattern Transactional Outbox:
+
+1. Gli eventi vengono scritti nella tabella `outbox_events` all'interno della transazione di business
+2. Un publisher in background li invia ai topic Kafka
+3. Retry con backoff esponenziale per affidabilità
+
+**Topic Kafka**: `directory.events`, `scheduling.events`, `admissions.events`, `consents.events`, `docs.events`, `notifications.events`, `audit.events`, `televisit.events`, `payments.events`, `prescribing.events`
+
+### Modello di sicurezza
+
+| Livello | Implementazione |
+|---------|-----------------|
+| Autenticazione | Keycloak OIDC con token JWT |
+| Autorizzazione | Basata su ruoli (ROLE_PATIENT, ROLE_DOCTOR, ROLE_ADMIN) |
+| ABAC | Accesso a livello di reparto tramite claim `DEPT_*` |
+| Consenso | Richiesto per accesso a dati clinici (verificato da svc-consents) |
+
+### Script di test per servizio
+
+Script di test per servizio disponibili in `.script/services/{nome-servizio}/`:
+
+```bash
+# Smoke test
+bash .script/services/svc-gateway/smoke.sh
+
+# Test rate limiting
+bash .script/services/svc-gateway/rate-limit.sh
+
+# Test circuit breaker
+bash .script/services/svc-gateway/circuit-breaker.sh
+```
+
+## Documentazione
+
+| Documento | Descrizione |
+|-----------|-------------|
+| [RUNBOOK.md](RUNBOOK.md) | Procedure operative e troubleshooting |
+| [MANIFEST.md](MANIFEST.md) | Manifest e metadati del repository |
+
+## Licenza
+
+Proprietario - Tutti i diritti riservati.

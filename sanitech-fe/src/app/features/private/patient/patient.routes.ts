@@ -3,20 +3,28 @@ import { roleGuard } from '../../../core/auth/role.guard';
 import { PatientHomeComponent } from './patient-home.component';
 import { ConsentManagementComponent } from './consent-management.component';
 import { AppointmentBookingComponent } from './appointment-booking.component';
-import { ResourcePageComponent } from '../shared/resources/resource-page.component';
-import {
-  admissionsEndpoints,
-  docsEndpoints,
-  notificationsEndpoints,
-  paymentsEndpoints,
-  prescribingEndpoints
-} from '../shared/resources/resource-endpoints';
+import { PatientProfileComponent } from './patient-profile.component';
+import { PatientDocumentsComponent } from './patient-documents.component';
+import { PatientPrescriptionsComponent } from './patient-prescriptions.component';
+import { PatientTelevisitsComponent } from './patient-televisits.component';
+import { PatientAdmissionsComponent } from './patient-admissions.component';
+import { PatientNotificationsComponent } from './patient-notifications.component';
+import { PatientPaymentsComponent } from './patient-payments.component';
 
 export const patientRoutes: Routes = [
   {
     path: 'patient',
     component: PatientHomeComponent,
     canActivate: [roleGuard('ROLE_PATIENT')]
+  },
+  {
+    path: 'patient/profile',
+    component: PatientProfileComponent,
+    canActivate: [roleGuard('ROLE_PATIENT')],
+    data: {
+      title: 'Il mio profilo',
+      description: 'Visualizza e modifica i tuoi dati personali.'
+    }
   },
   {
     path: 'patient/consents',
@@ -38,57 +46,56 @@ export const patientRoutes: Routes = [
   },
   {
     path: 'patient/docs',
-    component: ResourcePageComponent,
+    component: PatientDocumentsComponent,
     canActivate: [roleGuard('ROLE_PATIENT')],
     data: {
-      title: 'Documenti & consensi',
-      description: 'Cartella clinica, referti e consensi informati.',
-      endpoints: docsEndpoints,
-      view: 'docs'
-    }
-  },
-  {
-    path: 'patient/notifications',
-    component: ResourcePageComponent,
-    canActivate: [roleGuard('ROLE_PATIENT')],
-    data: {
-      title: 'Notifiche paziente',
-      description: 'Gestione notifiche multicanale e reminder.',
-      endpoints: notificationsEndpoints,
-      view: 'notifications'
-    }
-  },
-  {
-    path: 'patient/payments',
-    component: ResourcePageComponent,
-    canActivate: [roleGuard('ROLE_PATIENT')],
-    data: {
-      title: 'Pagamenti',
-      description: 'Storico pagamenti effettuati e da effettuare.',
-      endpoints: paymentsEndpoints,
-      view: 'payments'
-    }
-  },
-  {
-    path: 'patient/admissions',
-    component: ResourcePageComponent,
-    canActivate: [roleGuard('ROLE_PATIENT')],
-    data: {
-      title: 'Ricoveri',
-      description: 'Storico ricoveri e conferme ricovero.',
-      endpoints: admissionsEndpoints,
-      view: 'admissions'
+      title: 'I miei documenti',
+      description: 'Cartella clinica, referti e documenti caricati.'
     }
   },
   {
     path: 'patient/prescriptions',
-    component: ResourcePageComponent,
+    component: PatientPrescriptionsComponent,
     canActivate: [roleGuard('ROLE_PATIENT')],
     data: {
-      title: 'Prescrizioni paziente',
-      description: 'Consulta le prescrizioni e le terapie attive.',
-      endpoints: prescribingEndpoints,
-      view: 'prescribing'
+      title: 'Le mie prescrizioni',
+      description: 'Consulta le prescrizioni e le terapie attive.'
+    }
+  },
+  {
+    path: 'patient/televisits',
+    component: PatientTelevisitsComponent,
+    canActivate: [roleGuard('ROLE_PATIENT')],
+    data: {
+      title: 'Le mie televisite',
+      description: 'Gestisci le visite in videochiamata.'
+    }
+  },
+  {
+    path: 'patient/admissions',
+    component: PatientAdmissionsComponent,
+    canActivate: [roleGuard('ROLE_PATIENT')],
+    data: {
+      title: 'I miei ricoveri',
+      description: 'Monitora i ricoveri in corso e consulta lo storico.'
+    }
+  },
+  {
+    path: 'patient/notifications',
+    component: PatientNotificationsComponent,
+    canActivate: [roleGuard('ROLE_PATIENT')],
+    data: {
+      title: 'Le mie notifiche',
+      description: 'Gestisci le notifiche e i promemoria.'
+    }
+  },
+  {
+    path: 'patient/payments',
+    component: PatientPaymentsComponent,
+    canActivate: [roleGuard('ROLE_PATIENT')],
+    data: {
+      title: 'I miei pagamenti',
+      description: 'Gestisci i pagamenti e scarica le ricevute.'
     }
   }
 ];

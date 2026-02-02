@@ -57,29 +57,28 @@ public class KeycloakAdminClient {
         assignRealmRoleIfRequested(existing.id(), request.roleToAssign());
     }
 
+    /**
+     * Disabilita un utente in Keycloak.
+     *
+     * @param email email dell'utente
+     * @param firstName nome (dall'entità locale, per evitare null da Keycloak)
+     * @param lastName cognome (dall'entità locale, per evitare null da Keycloak)
+     * @param phone telefono (opzionale)
+     * @param aggregateType tipo aggregato (DOCTOR/PATIENT)
+     * @param aggregateId ID dell'entità locale
+     */
     @Retry(name = "keycloakSync")
-    public void disableUser(String email) {
+    public void disableUser(String email, String firstName, String lastName, String phone,
+                            String aggregateType, Long aggregateId) {
         KeycloakUserRepresentation existing = findUserByEmail(email);
         if (existing == null) {
             return;
         }
-        String existingPid = existing.attributes() != null && existing.attributes().containsKey(PID_ATTR)
-                ? existing.attributes().get(PID_ATTR).stream().findFirst().orElse(null)
-                : null;
-        String existingDid = existing.attributes() != null && existing.attributes().containsKey(DID_ATTR)
-                ? existing.attributes().get(DID_ATTR).stream().findFirst().orElse(null)
-                : null;
-        String aggregateType = existingPid != null ? AGGREGATE_TYPE_PATIENT
-                : existingDid != null ? AGGREGATE_TYPE_DOCTOR : null;
-        Long aggregateId = existingPid != null ? Long.valueOf(existingPid)
-                : existingDid != null ? Long.valueOf(existingDid) : null;
         updateUser(existing.id(), new KeycloakUserSyncRequest(
                 email,
-                existing.firstName(),
-                existing.lastName(),
-                existing.attributes() != null && existing.attributes().containsKey(PHONE_ATTR)
-                        ? existing.attributes().get(PHONE_ATTR).stream().findFirst().orElse(null)
-                        : null,
+                firstName,
+                lastName,
+                phone,
                 false,
                 null,
                 aggregateType,
@@ -87,30 +86,29 @@ public class KeycloakAdminClient {
         ));
     }
 
+    /**
+     * Abilita un utente in Keycloak.
+     *
+     * @param email email dell'utente
+     * @param firstName nome (dall'entità locale, per evitare null da Keycloak)
+     * @param lastName cognome (dall'entità locale, per evitare null da Keycloak)
+     * @param phone telefono (opzionale)
+     * @param aggregateType tipo aggregato (DOCTOR/PATIENT)
+     * @param aggregateId ID dell'entità locale
+     */
     @Retry(name = "keycloakSync")
-    public void enableUser(String email) {
+    public void enableUser(String email, String firstName, String lastName, String phone,
+                           String aggregateType, Long aggregateId) {
         KeycloakUserRepresentation existing = findUserByEmail(email);
         if (existing == null) {
             log.warn("Utente Keycloak con email '{}' non trovato per abilitazione.", email);
             return;
         }
-        String existingPid = existing.attributes() != null && existing.attributes().containsKey(PID_ATTR)
-                ? existing.attributes().get(PID_ATTR).stream().findFirst().orElse(null)
-                : null;
-        String existingDid = existing.attributes() != null && existing.attributes().containsKey(DID_ATTR)
-                ? existing.attributes().get(DID_ATTR).stream().findFirst().orElse(null)
-                : null;
-        String aggregateType = existingPid != null ? AGGREGATE_TYPE_PATIENT
-                : existingDid != null ? AGGREGATE_TYPE_DOCTOR : null;
-        Long aggregateId = existingPid != null ? Long.valueOf(existingPid)
-                : existingDid != null ? Long.valueOf(existingDid) : null;
         updateUser(existing.id(), new KeycloakUserSyncRequest(
                 email,
-                existing.firstName(),
-                existing.lastName(),
-                existing.attributes() != null && existing.attributes().containsKey(PHONE_ATTR)
-                        ? existing.attributes().get(PHONE_ATTR).stream().findFirst().orElse(null)
-                        : null,
+                firstName,
+                lastName,
+                phone,
                 true,
                 null,
                 aggregateType,
@@ -119,7 +117,7 @@ public class KeycloakAdminClient {
     }
 
     private String createUser(KeycloakUserSyncRequest request) {
-        UserRepresentation payload = toRepresentation(request);
+        UserRepresentation payload = toCreateRepresentation(request);
         try (Response response = usersResource().create(payload)) {
             if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
                 throw new WebApplicationException(response);
@@ -138,7 +136,7 @@ public class KeycloakAdminClient {
     }
 
     private void updateUser(String userId, KeycloakUserSyncRequest request) {
-        UserRepresentation payload = toRepresentation(request);
+        UserRepresentation payload = toUpdateRepresentation(request);
         try {
             usersResource().get(userId).update(payload);
         } catch (RuntimeException ex) {
@@ -163,7 +161,21 @@ public class KeycloakAdminClient {
         }
     }
 
-    private UserRepresentation toRepresentation(KeycloakUserSyncRequest request) {
+    /**
+     * Crea la rappresentazione per un NUOVO utente Keycloak.
+     * Include username perché necessario alla creazione.
+     */
+    private UserRepresentation toCreateRepresentation(KeycloakUserSyncRequest request) {
+        UserRepresentation representation = toUpdateRepresentation(request);
+        representation.setUsername(request.email());
+        return representation;
+    }
+
+    /**
+     * Crea la rappresentazione per l'UPDATE di un utente Keycloak esistente.
+     * NON include username perché Keycloak non permette di modificarlo.
+     */
+    private UserRepresentation toUpdateRepresentation(KeycloakUserSyncRequest request) {
         java.util.HashMap<String, List<String>> attributes = new java.util.HashMap<>();
         attributes.put(PHONE_ATTR, request.phone() == null ? List.of() : List.of(request.phone()));
 
@@ -178,7 +190,6 @@ public class KeycloakAdminClient {
 
         UserRepresentation representation = new UserRepresentation();
         representation.setEmail(request.email());
-        representation.setUsername(request.email());
         representation.setFirstName(request.firstName());
         representation.setLastName(request.lastName());
         representation.setEnabled(request.enabled());

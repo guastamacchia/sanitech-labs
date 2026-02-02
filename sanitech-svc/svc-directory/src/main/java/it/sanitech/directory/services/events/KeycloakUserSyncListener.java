@@ -19,7 +19,15 @@ public class KeycloakUserSyncListener {
     public void onUserSync(KeycloakUserSyncEvent event) {
         try {
             if (event.previousEmail() != null && !event.previousEmail().equalsIgnoreCase(event.email())) {
-                keycloakAdminClient.disableUser(event.previousEmail());
+                // Disabilita il vecchio utente Keycloak (email cambiata)
+                keycloakAdminClient.disableUser(
+                        event.previousEmail(),
+                        event.firstName(),
+                        event.lastName(),
+                        event.phone(),
+                        event.aggregateType(),
+                        event.aggregateId()
+                );
             }
             keycloakAdminClient.syncUser(new KeycloakUserSyncRequest(
                     event.email(),

@@ -1,13 +1,19 @@
-<section class="py-5">
-  <div class="container">
-    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
+<section class="py-4">
+  <div class="container-fluid">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
       <div>
-        <p class="section-title mb-1">Operazioni</p>
-        <h2 class="fw-bold mb-2">{{ title }}</h2>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-2">
+            <li class="breadcrumb-item"><a [routerLink]="portalHomeRoute">{{ portalHomeLabel }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+          </ol>
+        </nav>
+        <h2 class="mb-1 fw-bold">{{ title }}</h2>
         <p class="text-muted mb-0">{{ description }}</p>
       </div>
-      <button class="btn btn-outline-primary btn-sm" type="button" (click)="goToPortalHome()">
-        Torna a {{ portalHomeLabel }}
+      <button class="btn btn-outline-secondary" type="button" (click)="goToPortalHome()">
+        <i class="bi bi-arrow-left me-1"></i>
+        Torna indietro
       </button>
     </div>
 
@@ -1000,18 +1006,18 @@
                         <tr>
                           <th *ngIf="!isPatient">Paziente</th>
                           <th>Reparto</th>
-                          <th>Letto</th>
+                          <th>Tipo</th>
                           <th>Data ricovero</th>
                           <th>Stato</th>
-                          <th>Motivo</th>
+                          <th>Note</th>
                           <th>Azioni</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let admission of filteredAdmissions | slice:getPageSliceStart('admissions'):getPageSliceEnd('admissions')">
                           <td *ngIf="!isPatient">{{ getPatientLabel(admission.patientId) }}</td>
-                          <td>{{ getDepartmentLabel(admission.department) }}</td>
-                          <td>{{ admission.bedId ?? '-' }}</td>
+                          <td>{{ getDepartmentLabel(admission.departmentCode) }}</td>
+                          <td>{{ getAdmissionTypeLabel(admission.admissionType) }}</td>
                           <td>{{ formatDate(admission.admittedAt) }}</td>
                           <td>{{ getAdmissionStatusLabel(admission.status) }}</td>
                           <td>{{ admission.notes || '-' }}</td>
@@ -1515,10 +1521,11 @@
                           <label class="form-label small">Stato pagamento</label>
                           <select class="form-select form-select-sm" [(ngModel)]="paymentStatusFilter" name="paymentStatusFilter">
                             <option value="ALL">Tutti gli stati</option>
-                            <option value="PENDING">In attesa</option>
-                            <option value="PAID">Pagato</option>
-                            <option value="CONFIRMED">Confermato</option>
+                            <option value="CREATED">In attesa</option>
+                            <option value="CAPTURED">Confermato</option>
                             <option value="FAILED">Non riuscito</option>
+                            <option value="CANCELLED">Annullato</option>
+                            <option value="REFUNDED">Rimborsato</option>
                           </select>
                         </div>
                         <div class="col-md-4">
@@ -1568,7 +1575,7 @@
                           </thead>
                           <tbody>
                             <tr *ngFor="let payment of filteredPayments | slice:getPageSliceStart('adminPayments'):getPageSliceEnd('adminPayments')"
-                                [class.table-warning]="payment.status === 'PENDING' && getPaymentDaysOverdue(payment) > 14"
+                                [class.table-warning]="payment.status === 'CREATED' && getPaymentDaysOverdue(payment) > 14"
                                 [class.table-danger]="payment.status === 'FAILED'">
                               <td>
                                 <input
@@ -1576,7 +1583,7 @@
                                   class="form-check-input"
                                   [checked]="isPaymentSelected(payment.id)"
                                   (change)="togglePaymentSelection(payment.id)"
-                                  [disabled]="payment.status !== 'PENDING'" />
+                                  [disabled]="payment.status !== 'CREATED'" />
                               </td>
                               <td>{{ payment.id }}</td>
                               <td>
@@ -1609,14 +1616,14 @@
                               </td>
                               <td>
                                 <span class="badge"
-                                      [class.bg-warning]="payment.status === 'PENDING'"
-                                      [class.bg-success]="payment.status === 'CONFIRMED'"
-                                      [class.bg-info]="payment.status === 'PAID'"
+                                      [class.bg-warning]="payment.status === 'CREATED'"
+                                      [class.bg-success]="payment.status === 'CAPTURED'"
+                                      [class.bg-secondary]="payment.status === 'CANCELLED' || payment.status === 'REFUNDED'"
                                       [class.bg-danger]="payment.status === 'FAILED'">
                                   {{ getPaymentStatusLabel(payment) }}
                                 </span>
-                                <small class="d-block text-danger" *ngIf="payment.failureReason">
-                                  {{ payment.failureReason }}
+                                <small class="d-block text-danger" *ngIf="payment.status === 'FAILED'">
+                                  Pagamento non riuscito
                                 </small>
                               </td>
                               <td>
@@ -1625,7 +1632,7 @@
                                     class="btn btn-outline-success btn-sm"
                                     type="button"
                                     title="Conferma pagamento ricevuto"
-                                    [disabled]="payment.status === 'CONFIRMED'"
+                                    [disabled]="payment.status === 'CAPTURED'"
                                     (click)="confirmAdminPayment(payment)">
                                     <i class="bi bi-check-circle"></i>
                                   </button>
@@ -2268,22 +2275,22 @@
                           <th>Reparto</th>
                           <th *ngIf="isDoctor">Paziente</th>
                           <th>Data e ora</th>
-                          <th>ID visita medica</th>
+                          <th>Medico</th>
                           <th>Provider</th>
                           <th>Stato sessione</th>
-                          <th *ngIf="!isDoctor">Token</th>
+                          <th *ngIf="!isDoctor">Link stanza</th>
                           <th>Azione</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr *ngFor="let televisit of filteredTelevisits | slice:getPageSliceStart('televisits'):getPageSliceEnd('televisits')">
-                          <td>{{ getTelevisitDepartmentLabel(televisit) }}</td>
+                          <td>{{ getDepartmentLabel(televisit.department) }}</td>
                           <td *ngIf="isDoctor">{{ getTelevisitPatientLabel(televisit) }}</td>
                           <td>{{ getTelevisitDateTimeLabel(televisit) }}</td>
-                          <td>{{ getTelevisitAppointmentLabel(televisit.appointmentId) }}</td>
+                          <td>{{ televisit.doctorSubject }}</td>
                           <td>{{ televisit.provider }}</td>
                           <td>{{ getTelevisitStatusLabel(televisit.status) }}</td>
-                          <td *ngIf="!isDoctor">{{ televisit.token }}</td>
+                          <td *ngIf="!isDoctor"><code class="small">{{ televisit.roomName }}</code></td>
                           <td>
                             <div class="d-flex flex-wrap gap-2">
                               <button
@@ -2348,30 +2355,42 @@
               </div>
               <div class="modal-body">
                 <form (ngSubmit)="submitTelevisit()" #televisitFormRef="ngForm">
-                  <div class="mb-3" *ngIf="isDoctor; else televisitAppointment">
-                    <label class="form-label">Prenotazione confermata</label>
-                    <select class="form-select" name="televisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required>
-                      <option [ngValue]="null" disabled>Seleziona una prenotazione</option>
-                      <option *ngFor="let appointment of confirmedAppointments" [ngValue]="appointment.id">
-                        {{ getTelevisitAppointmentLabel(appointment.id) }}
-                      </option>
-                    </select>
-                    <div class="form-text" *ngIf="!confirmedAppointments.length">
-                      Nessuna prenotazione confermata disponibile.
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Paziente</label>
+                      <select class="form-select" name="televisitPatient" [(ngModel)]="televisitForm.patientSubject" required>
+                        <option value="" disabled>Seleziona paziente</option>
+                        <option *ngFor="let patient of patients" [value]="patient.firstName + ' ' + patient.lastName">
+                          {{ patient.firstName }} {{ patient.lastName }}
+                        </option>
+                      </select>
+                    </div>
+                    <div class="col-md-6 mb-3" *ngIf="isDoctor">
+                      <label class="form-label">Medico</label>
+                      <input class="form-control" type="text" [value]="currentDoctorName" readonly />
+                    </div>
+                    <div class="col-md-6 mb-3" *ngIf="!isDoctor">
+                      <label class="form-label">Medico</label>
+                      <select class="form-select" name="televisitDoctor" [(ngModel)]="televisitForm.doctorSubject" required>
+                        <option value="" disabled>Seleziona medico</option>
+                        <option *ngFor="let doctor of doctors" [value]="doctor.firstName + ' ' + doctor.lastName">
+                          {{ doctor.firstName }} {{ doctor.lastName }}
+                        </option>
+                      </select>
                     </div>
                   </div>
-                  <ng-template #televisitAppointment>
-                    <div class="mb-3">
-                      <label class="form-label">ID Appuntamento</label>
-                      <input class="form-control" type="number" name="televisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required />
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Reparto</label>
+                      <select class="form-select" name="televisitDepartment" [(ngModel)]="televisitForm.department" required>
+                        <option value="" disabled>Seleziona reparto</option>
+                        <option *ngFor="let dept of departments" [value]="dept.code">{{ dept.name }}</option>
+                      </select>
                     </div>
-                  </ng-template>
-                  <div class="mb-3">
-                    <label class="form-label">Provider</label>
-                    <select class="form-select" name="televisitProvider" [(ngModel)]="televisitForm.provider" required>
-                      <option value="LIVEKIT">LiveKit</option>
-                      <option value="WEBRTC">WebRTC</option>
-                    </select>
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Data e ora programmata</label>
+                      <input class="form-control" type="datetime-local" name="televisitScheduledAt" [(ngModel)]="televisitForm.scheduledAt" required />
+                    </div>
                   </div>
                   <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
                   <div class="d-flex justify-content-end gap-2">
@@ -2406,7 +2425,7 @@
               </div>
               <div class="modal-body">
                 <p class="text-muted mb-3">
-                  Stai eliminando la sessione per {{ getTelevisitAppointmentLabel(selectedTelevisit.appointmentId) }}.
+                  Stai eliminando la sessione con {{ selectedTelevisit.patientSubject }} ({{ selectedTelevisit.doctorSubject }}).
                 </p>
                 <form (ngSubmit)="submitTelevisitDelete()" #televisitDeleteRef="ngForm">
                   <div class="mb-3">
@@ -2449,7 +2468,7 @@
               </div>
               <div class="modal-body">
                 <p class="text-muted mb-3">
-                  Ripianifica la sessione per {{ getTelevisitAppointmentLabel(selectedTelevisit.appointmentId) }}.
+                  Ripianifica la sessione con {{ selectedTelevisit.patientSubject }} ({{ selectedTelevisit.doctorSubject }}).
                 </p>
                 <form (ngSubmit)="submitTelevisitReschedule()" #televisitRescheduleRef="ngForm">
                   <div class="row g-3">
@@ -3382,23 +3401,24 @@
                       </thead>
                       <tbody>
                         <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('adminTelevisits'):getPageSliceEnd('adminTelevisits')"
-                            [class.table-success]="televisit.status === 'COMPLETED'"
-                            [class.table-info]="televisit.status === 'SCHEDULED'">
+                            [class.table-success]="televisit.status === 'ENDED'"
+                            [class.table-info]="televisit.status === 'CREATED'">
                           <td>{{ televisit.id }}</td>
                           <td>{{ getTelevisitPatientLabel(televisit) }}</td>
-                          <td>Dott.ssa Bianchi</td>
+                          <td>{{ televisit.doctorSubject }}</td>
                           <td>{{ getTelevisitDateTimeLabel(televisit) }}</td>
                           <td><span class="badge bg-secondary">{{ televisit.provider }}</span></td>
                           <td>
                             <span class="badge"
-                                  [class.bg-info]="televisit.status === 'SCHEDULED'"
-                                  [class.bg-success]="televisit.status === 'COMPLETED'"
-                                  [class.bg-warning]="televisit.status === 'IN_PROGRESS'">
+                                  [class.bg-info]="televisit.status === 'CREATED'"
+                                  [class.bg-success]="televisit.status === 'ENDED'"
+                                  [class.bg-warning]="televisit.status === 'ACTIVE'"
+                                  [class.bg-secondary]="televisit.status === 'CANCELED'">
                               {{ getTelevisitStatusLabel(televisit.status) }}
                             </span>
                           </td>
                           <td>
-                            <code class="small">{{ televisit.token }}</code>
+                            <code class="small">{{ televisit.roomName }}</code>
                           </td>
                           <td>
                             <div class="d-flex flex-wrap gap-1">
@@ -3406,7 +3426,7 @@
                                 📋
                               </button>
                               <button class="btn btn-outline-success btn-sm" type="button" title="Avvia"
-                                      [disabled]="televisit.status !== 'SCHEDULED'">
+                                      [disabled]="televisit.status !== 'CREATED'">
                                 ▶️
                               </button>
                             </div>
@@ -3445,21 +3465,38 @@
                   </div>
                   <div class="modal-body">
                     <form (ngSubmit)="submitTelevisit()" #adminTelevisitFormRef="ngForm">
-                      <div class="mb-3">
-                        <label class="form-label">Appuntamento</label>
-                        <select class="form-select" name="adminTelevisitAppointmentId" [(ngModel)]="televisitForm.appointmentId" required>
-                          <option [ngValue]="null" disabled>Seleziona appuntamento</option>
-                          <option *ngFor="let apt of appointments" [ngValue]="apt.id">
-                            #{{ apt.id }} - {{ getPatientLabel(apt.patientId) }} - {{ apt.reason }}
-                          </option>
-                        </select>
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Paziente</label>
+                          <select class="form-select" name="adminTelevisitPatient" [(ngModel)]="televisitForm.patientSubject" required>
+                            <option value="" disabled>Seleziona paziente</option>
+                            <option *ngFor="let patient of patients" [value]="patient.firstName + ' ' + patient.lastName">
+                              {{ patient.firstName }} {{ patient.lastName }}
+                            </option>
+                          </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Medico</label>
+                          <select class="form-select" name="adminTelevisitDoctor" [(ngModel)]="televisitForm.doctorSubject" required>
+                            <option value="" disabled>Seleziona medico</option>
+                            <option *ngFor="let doctor of doctors" [value]="doctor.firstName + ' ' + doctor.lastName">
+                              {{ doctor.firstName }} {{ doctor.lastName }}
+                            </option>
+                          </select>
+                        </div>
                       </div>
-                      <div class="mb-3">
-                        <label class="form-label">Provider videoconferenza</label>
-                        <select class="form-select" name="adminTelevisitProvider" [(ngModel)]="televisitForm.provider" required>
-                          <option value="LIVEKIT">LiveKit (consigliato)</option>
-                          <option value="WEBRTC">WebRTC</option>
-                        </select>
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Reparto</label>
+                          <select class="form-select" name="adminTelevisitDepartment" [(ngModel)]="televisitForm.department" required>
+                            <option value="" disabled>Seleziona reparto</option>
+                            <option *ngFor="let dept of departments" [value]="dept.code">{{ dept.name }}</option>
+                          </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Data e ora programmata</label>
+                          <input class="form-control" type="datetime-local" name="adminTelevisitScheduledAt" [(ngModel)]="televisitForm.scheduledAt" required />
+                        </div>
                       </div>
                       <div class="alert alert-info py-2">
                         <small>Il paziente riceverà automaticamente una notifica email con il link per collegarsi.</small>
@@ -3468,7 +3505,7 @@
                       <div class="d-flex justify-content-end gap-2">
                         <button class="btn btn-outline-secondary" type="button" (click)="closeAdminTelevisitModal()">Annulla</button>
                         <button class="btn btn-primary" type="submit" [disabled]="adminTelevisitFormRef.invalid || isLoading">
-                          {{ isLoading ? 'Conversione...' : 'Converti in televisita' }}
+                          {{ isLoading ? 'Creazione...' : 'Crea televisita' }}
                         </button>
                       </div>
                     </form>
@@ -3550,7 +3587,7 @@
                           <th>ID</th>
                           <th>Paziente</th>
                           <th>Reparto</th>
-                          <th>Letto</th>
+                          <th>Tipo</th>
                           <th>Medico referente</th>
                           <th>Data ammissione</th>
                           <th>Stato</th>
@@ -3560,38 +3597,35 @@
                       </thead>
                       <tbody>
                         <tr *ngFor="let admission of admissions | slice:getPageSliceStart('adminAdmissions'):getPageSliceEnd('adminAdmissions')"
-                            [class.table-warning]="admission.department === 'PNEUMO' && admission.status === 'ACTIVE'"
-                            [class.table-success]="admission.status === 'CONFIRMED'"
-                            [class.table-secondary]="admission.status === 'DISCHARGED'">
+                            [class.table-warning]="admission.departmentCode === 'PNEUMO' && admission.status === 'ACTIVE'"
+                            [class.table-secondary]="admission.status === 'DISCHARGED'"
+                            [class.table-danger]="admission.status === 'CANCELLED'">
                           <td>{{ admission.id }}</td>
                           <td>
                             <strong>{{ getPatientLabel(admission.patientId) }}</strong>
                           </td>
                           <td>
                             <span class="badge"
-                                  [class.bg-warning]="admission.department === 'PNEUMO'"
-                                  [class.bg-danger]="admission.department === 'CARD'"
-                                  [class.bg-info]="admission.department === 'NEURO'"
-                                  [class.text-dark]="admission.department === 'PNEUMO'">
-                              {{ getDepartmentLabel(admission.department) }}
+                                  [class.bg-warning]="admission.departmentCode === 'PNEUMO'"
+                                  [class.bg-danger]="admission.departmentCode === 'CARD'"
+                                  [class.bg-info]="admission.departmentCode === 'NEURO'"
+                                  [class.bg-secondary]="!['PNEUMO','CARD','NEURO'].includes(admission.departmentCode)"
+                                  [class.text-dark]="admission.departmentCode === 'PNEUMO'">
+                              {{ getDepartmentLabel(admission.departmentCode) }}
                             </span>
                           </td>
-                          <td><span class="badge bg-secondary">{{ admission.bedId }}</span></td>
                           <td>
-                            <span *ngIf="admission.department === 'PNEUMO' && admission.status === 'ACTIVE'" class="text-success fw-semibold">
-                              Dott.ssa Bianchi
-                            </span>
-                            <span *ngIf="admission.department !== 'PNEUMO' || admission.status !== 'ACTIVE'">
-                              {{ admission.department === 'CARD' ? 'Dr. Belli' : admission.department === 'NEURO' ? 'Dr. Esposito' : '-' }}
-                            </span>
+                            <span class="badge bg-light text-dark">{{ getAdmissionTypeLabel(admission.admissionType) }}</span>
+                          </td>
+                          <td>
+                            {{ getDoctorLabel(admission.attendingDoctorId) }}
                           </td>
                           <td>{{ formatDate(admission.admittedAt) }}</td>
                           <td>
                             <span class="badge"
                                   [class.bg-primary]="admission.status === 'ACTIVE'"
-                                  [class.bg-success]="admission.status === 'CONFIRMED'"
                                   [class.bg-secondary]="admission.status === 'DISCHARGED'"
-                                  [class.bg-warning]="admission.status === 'PROPOSED'">
+                                  [class.bg-danger]="admission.status === 'CANCELLED'">
                               {{ getAdmissionStatusLabel(admission.status) }}
                             </span>
                           </td>
@@ -3605,14 +3639,14 @@
                                 class="btn btn-outline-primary btn-sm"
                                 type="button"
                                 title="Modifica referente"
-                                [disabled]="admission.status === 'DISCHARGED'">
+                                [disabled]="admission.status !== 'ACTIVE'">
                                 👨‍⚕️
                               </button>
                               <button
                                 class="btn btn-outline-success btn-sm"
                                 type="button"
                                 title="Dimetti"
-                                [disabled]="admission.status === 'DISCHARGED'">
+                                [disabled]="admission.status !== 'ACTIVE'">
                                 ✓
                               </button>
                               <button
@@ -3709,24 +3743,48 @@
                   </div>
                   <div class="modal-body">
                     <form (ngSubmit)="submitAdmission()" #adminAdmissionFormRef="ngForm">
-                      <div class="mb-3">
-                        <label class="form-label">Paziente</label>
-                        <select class="form-select" name="adminAdmissionPatientId" [(ngModel)]="admissionForm.patientId" required>
-                          <option *ngFor="let patient of patients" [ngValue]="patient.id">
-                            {{ patient.firstName }} {{ patient.lastName }}
-                          </option>
-                        </select>
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Paziente</label>
+                          <select class="form-select" name="adminAdmissionPatientId" [(ngModel)]="admissionForm.patientId" required>
+                            <option [ngValue]="null" disabled>Seleziona paziente</option>
+                            <option *ngFor="let patient of patients" [ngValue]="patient.id">
+                              {{ patient.firstName }} {{ patient.lastName }}
+                            </option>
+                          </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Reparto</label>
+                          <select class="form-select" name="adminAdmissionDepartment" [(ngModel)]="admissionForm.departmentCode" required>
+                            <option value="" disabled>Seleziona reparto</option>
+                            <option *ngFor="let dept of departments" [value]="dept.code">{{ dept.name }}</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Tipo ricovero</label>
+                          <select class="form-select" name="adminAdmissionType" [(ngModel)]="admissionForm.admissionType" required>
+                            <option value="INPATIENT">Ricovero ordinario</option>
+                            <option value="DAY_HOSPITAL">Day Hospital</option>
+                            <option value="OBSERVATION">Osservazione</option>
+                          </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Medico referente</label>
+                          <select class="form-select" name="adminAdmissionDoctor" [(ngModel)]="admissionForm.attendingDoctorId">
+                            <option [ngValue]="null">Nessuno (assegnazione automatica)</option>
+                            <option *ngFor="let doctor of doctors" [ngValue]="doctor.id">
+                              {{ doctor.firstName }} {{ doctor.lastName }}
+                            </option>
+                          </select>
+                        </div>
                       </div>
                       <div class="mb-3">
-                        <label class="form-label">Reparto</label>
-                        <select class="form-select" name="adminAdmissionDepartment" [(ngModel)]="admissionForm.department" required>
-                          <option *ngFor="let dept of departments" [value]="dept.code">{{ dept.name }}</option>
-                        </select>
+                        <label class="form-label">Note</label>
+                        <textarea class="form-control" rows="2" name="adminAdmissionNotes" [(ngModel)]="admissionForm.notes" placeholder="Note opzionali sul ricovero..."></textarea>
                       </div>
-                      <div class="mb-3">
-                        <label class="form-label">Numero letto</label>
-                        <input class="form-control" type="number" name="adminAdmissionBedId" [(ngModel)]="admissionForm.bedId" min="1" required />
-                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
                       <div class="d-flex justify-content-end gap-2">
                         <button class="btn btn-outline-secondary" type="button" (click)="closeAdminAdmissionModal()">Annulla</button>
                         <button class="btn btn-primary" type="submit" [disabled]="adminAdmissionFormRef.invalid || isLoading">

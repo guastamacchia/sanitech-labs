@@ -1,0 +1,423 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a routerLink="/portal/patient">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">I miei ricoveri</li>
+        </ol>
+      </nav>
+      <h2 class="mb-1 fw-bold">I miei ricoveri</h2>
+      <p class="text-muted mb-0">Monitora i ricoveri in corso e consulta lo storico</p>
+    </div>
+    <button class="btn btn-outline-secondary" (click)="loadAdmissions()" [disabled]="isLoading">
+      <i class="bi bi-arrow-clockwise me-1"></i>
+      Aggiorna
+    </button>
+  </div>
+
+  <!-- Alert messages -->
+  <div class="alert alert-success alert-dismissible fade show" *ngIf="successMessage" role="alert">
+    <i class="bi bi-check-circle me-2"></i>
+    {{ successMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
+  </div>
+
+  <!-- Loading spinner -->
+  <div class="text-center py-5" *ngIf="isLoading && admissions.length === 0">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Caricamento...</span>
+    </div>
+    <p class="text-muted mt-2">Caricamento ricoveri...</p>
+  </div>
+
+  <!-- Active Admission Alert -->
+  <div *ngIf="activeAdmission" class="card border-success mb-4 shadow">
+    <div class="card-body bg-success bg-opacity-10">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-success p-3 me-3">
+              <i class="bi bi-hospital text-white fs-4"></i>
+            </div>
+            <div>
+              <h5 class="mb-1 fw-bold text-success">Ricovero in corso</h5>
+              <p class="mb-0">{{ activeAdmission.department }}</p>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <small class="text-muted d-block">Data ammissione</small>
+              <div class="fw-semibold">{{ formatDateTime(activeAdmission.admittedAt) }}</div>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted d-block">Medico referente</small>
+              <div class="fw-semibold">{{ activeAdmission.attendingDoctor }}</div>
+            </div>
+            <div class="col-md-4">
+              <small class="text-muted d-block">Posizione</small>
+              <div class="fw-semibold">
+                <span *ngIf="activeAdmission.room">Camera {{ activeAdmission.room }}</span>
+                <span *ngIf="activeAdmission.bed"> - Letto {{ activeAdmission.bed }}</span>
+                <span *ngIf="!activeAdmission.room && !activeAdmission.bed">-</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3" *ngIf="activeAdmission.diagnosis">
+            <small class="text-muted d-block">Diagnosi</small>
+            <div>{{ activeAdmission.diagnosis }}</div>
+          </div>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+          <div class="d-flex flex-column align-items-md-end gap-2">
+            <div class="text-center text-md-end">
+              <div class="fs-2 fw-bold text-success">{{ getDaysInHospital(activeAdmission) }}</div>
+              <small class="text-muted">giorni di ricovero</small>
+            </div>
+            <span class="badge" [ngClass]="getTypeBadgeClass(activeAdmission.admissionType)">
+              {{ getTypeLabel(activeAdmission.admissionType) }}
+            </span>
+            <button class="btn btn-success" (click)="openDetailModal(activeAdmission)">
+              <i class="bi bi-eye me-1"></i>
+              Vedi dettagli e timeline
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline preview -->
+      <div class="mt-4 pt-3 border-top" *ngIf="activeAdmission.timeline && activeAdmission.timeline.length > 0">
+        <h6 class="fw-semibold mb-3">
+          <i class="bi bi-clock-history me-2"></i>
+          Ultimi eventi
+        </h6>
+        <div class="d-flex flex-wrap gap-3">
+          <div *ngFor="let event of activeAdmission.timeline.slice(-3).reverse()"
+               class="d-flex align-items-center bg-white rounded px-3 py-2 shadow-sm">
+            <i [class]="'bi ' + getEventIcon(event.type) + ' text-' + getEventColor(event.type) + ' me-2'"></i>
+            <div>
+              <div class="fw-semibold small">{{ event.title }}</div>
+              <small class="text-muted">{{ formatTime(event.timestamp) }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-hospital text-success fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ activeCount }}</h3>
+              <small class="text-muted">Ricoveri attivi</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-check-circle text-secondary fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ dischargedCount }}</h3>
+              <small class="text-muted">Ricoveri passati</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-journal-medical text-primary fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ admissions.length }}</h3>
+              <small class="text-muted">Ricoveri totali</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card card-glass border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small text-muted">Filtra per stato</label>
+          <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
+            <option value="ALL">Tutti gli stati</option>
+            <option value="ACTIVE">In corso</option>
+            <option value="DISCHARGED">Dimessi</option>
+            <option value="SCHEDULED">Programmati</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small text-muted">Risultati per pagina</label>
+          <select class="form-select" [(ngModel)]="pageSize" (ngModelChange)="currentPage = 1">
+            <option [ngValue]="5">5</option>
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admissions List -->
+  <div class="card card-glass border-0 shadow-sm">
+    <div class="card-header bg-transparent border-bottom">
+      <h5 class="mb-0 fw-semibold">
+        <i class="bi bi-journal-medical me-2"></i>
+        Storico ricoveri
+        <span class="badge bg-secondary ms-2">{{ filteredAdmissions.length }}</span>
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Reparto</th>
+              <th>Tipo</th>
+              <th>Ammissione</th>
+              <th>Dimissione</th>
+              <th>Medico</th>
+              <th>Stato</th>
+              <th class="text-end pe-4">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let admission of paginatedAdmissions"
+                [class.table-success]="admission.status === 'ACTIVE'"
+                [class.table-light]="admission.status === 'DISCHARGED'">
+              <td class="ps-4">
+                <div class="d-flex align-items-center">
+                  <div class="rounded-circle p-2 me-3"
+                       [ngClass]="admission.status === 'ACTIVE' ? 'bg-success bg-opacity-10' : 'bg-secondary bg-opacity-10'">
+                    <i class="bi bi-hospital"
+                       [ngClass]="admission.status === 'ACTIVE' ? 'text-success' : 'text-secondary'"></i>
+                  </div>
+                  <div>
+                    <div class="fw-semibold">{{ admission.department }}</div>
+                    <small class="text-muted" *ngIf="admission.room">
+                      Camera {{ admission.room }}<span *ngIf="admission.bed">, Letto {{ admission.bed }}</span>
+                    </small>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getTypeBadgeClass(admission.admissionType)">
+                  {{ getTypeLabel(admission.admissionType) }}
+                </span>
+              </td>
+              <td>{{ formatDate(admission.admittedAt) }}</td>
+              <td>{{ admission.dischargedAt ? formatDate(admission.dischargedAt) : '-' }}</td>
+              <td>
+                <small>{{ admission.attendingDoctor }}</small>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getStatusBadgeClass(admission.status)">
+                  {{ getStatusLabel(admission.status) }}
+                </span>
+                <div *ngIf="admission.status === 'ACTIVE'" class="mt-1">
+                  <small class="text-success">
+                    <i class="bi bi-clock me-1"></i>
+                    {{ getDaysInHospital(admission) }} giorni
+                  </small>
+                </div>
+              </td>
+              <td class="text-end pe-4">
+                <button class="btn btn-outline-primary btn-sm" (click)="openDetailModal(admission)">
+                  <i class="bi bi-eye me-1"></i>
+                  Dettagli
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="filteredAdmissions.length === 0">
+              <td colspan="7" class="text-center py-5">
+                <div class="text-muted">
+                  <i class="bi bi-hospital fs-1 d-block mb-3"></i>
+                  <p class="mb-0">Nessun ricovero trovato con i filtri selezionati.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Pagination -->
+    <div class="card-footer bg-transparent border-top" *ngIf="totalPages > 1">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          Pagina {{ currentPage }} di {{ totalPages }} ({{ filteredAdmissions.length }} ricoveri)
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button class="page-link" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+            </li>
+            <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1">
+              <button class="page-link" (click)="currentPage = i + 1">{{ i + 1 }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Dettaglio Ricovero -->
+<ng-container *ngIf="showDetailModal && selectedAdmission">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeDetailModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="detailModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055; overflow-y: auto;">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <div>
+            <h5 class="modal-title fw-bold" id="detailModalTitle">
+              <i class="bi bi-hospital me-2 text-primary"></i>
+              Dettaglio ricovero
+            </h5>
+            <p class="text-muted small mb-0 mt-1">{{ selectedAdmission.department }}</p>
+          </div>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDetailModal()"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <div class="row g-4">
+            <!-- Info principali -->
+            <div class="col-12">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <p class="mb-1 text-muted small"><strong>Reparto</strong></p>
+                  <p class="mb-0 fw-semibold">{{ selectedAdmission.department }}</p>
+                </div>
+                <div class="col-md-3">
+                  <p class="mb-1 text-muted small"><strong>Tipo ricovero</strong></p>
+                  <span class="badge" [ngClass]="getTypeBadgeClass(selectedAdmission.admissionType)">
+                    {{ getTypeLabel(selectedAdmission.admissionType) }}
+                  </span>
+                </div>
+                <div class="col-md-3">
+                  <p class="mb-1 text-muted small"><strong>Stato</strong></p>
+                  <span class="badge" [ngClass]="getStatusBadgeClass(selectedAdmission.status)">
+                    {{ getStatusLabel(selectedAdmission.status) }}
+                  </span>
+                </div>
+                <div class="col-md-3">
+                  <p class="mb-1 text-muted small"><strong>Durata</strong></p>
+                  <p class="mb-0 fw-bold">{{ getDaysInHospital(selectedAdmission) }} giorni</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <p class="mb-1 text-muted small"><strong>Data ammissione</strong></p>
+              <p class="mb-0">{{ formatDateTime(selectedAdmission.admittedAt) }}</p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-1 text-muted small"><strong>Data dimissione</strong></p>
+              <p class="mb-0">{{ selectedAdmission.dischargedAt ? formatDateTime(selectedAdmission.dischargedAt) : 'In corso' }}</p>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-1 text-muted small"><strong>Medico referente</strong></p>
+              <p class="mb-0">{{ selectedAdmission.attendingDoctor }}</p>
+            </div>
+            <div class="col-md-6" *ngIf="selectedAdmission.room">
+              <p class="mb-1 text-muted small"><strong>Posizione</strong></p>
+              <p class="mb-0">Camera {{ selectedAdmission.room }}<span *ngIf="selectedAdmission.bed">, Letto {{ selectedAdmission.bed }}</span></p>
+            </div>
+            <div class="col-12" *ngIf="selectedAdmission.diagnosis">
+              <p class="mb-1 text-muted small"><strong>Diagnosi</strong></p>
+              <p class="mb-0">{{ selectedAdmission.diagnosis }}</p>
+            </div>
+
+            <!-- Timeline -->
+            <div class="col-12" *ngIf="selectedAdmission.timeline && selectedAdmission.timeline.length > 0">
+              <hr>
+              <h6 class="fw-semibold mb-3">
+                <i class="bi bi-clock-history me-2"></i>
+                Timeline eventi
+              </h6>
+              <div class="timeline">
+                <div *ngFor="let event of selectedAdmission.timeline; let last = last"
+                     class="d-flex mb-3" [class.mb-0]="last">
+                  <div class="flex-shrink-0 me-3">
+                    <div class="rounded-circle p-2" [ngClass]="'bg-' + getEventColor(event.type) + ' bg-opacity-10'">
+                      <i [class]="'bi ' + getEventIcon(event.type) + ' text-' + getEventColor(event.type)"></i>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1 pb-3" [class.border-start]="!last" [class.ps-3]="!last" style="margin-left: -12px;">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <h6 class="mb-1">{{ event.title }}</h6>
+                        <p class="text-muted mb-1 small" *ngIf="event.description">{{ event.description }}</p>
+                        <small class="text-muted" *ngIf="event.doctorName">{{ event.doctorName }}</small>
+                      </div>
+                      <small class="text-muted">{{ formatDateTime(event.timestamp) }}</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Documenti -->
+            <div class="col-12" *ngIf="selectedAdmission.documents && selectedAdmission.documents.length > 0">
+              <hr>
+              <h6 class="fw-semibold mb-3">
+                <i class="bi bi-file-earmark-medical me-2"></i>
+                Documenti associati
+              </h6>
+              <div class="list-group">
+                <div *ngFor="let doc of selectedAdmission.documents"
+                     class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+                    {{ doc.name }}
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary" (click)="downloadDocument(doc)">
+                    <i class="bi bi-download"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-primary" (click)="closeDetailModal()">Chiudi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>

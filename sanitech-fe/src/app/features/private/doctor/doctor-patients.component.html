@@ -1,0 +1,336 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a routerLink="/portal/doctor">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">I miei pazienti</li>
+        </ol>
+      </nav>
+      <h2 class="mb-1 fw-bold">I miei pazienti</h2>
+      <p class="text-muted mb-0">Gestisci i pazienti con consenso attivo</p>
+    </div>
+    <button class="btn btn-outline-secondary" (click)="loadPatients()" [disabled]="isLoading">
+      <i class="bi bi-arrow-clockwise me-1" [class.spin]="isLoading"></i>
+      Aggiorna
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="text-center py-5" *ngIf="isLoading && patients.length === 0">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Caricamento...</span>
+    </div>
+    <p class="text-muted mt-2">Caricamento pazienti...</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-3 mb-4" *ngIf="!isLoading || patients.length > 0">
+    <div class="col-md-3">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-people text-primary fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ totalWithConsent }}</h3>
+              <small class="text-muted">Con consenso attivo</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+              <i class="bi bi-file-earmark-medical text-success fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ patientsWithDocs }}</h3>
+              <small class="text-muted">Accesso documenti</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+              <i class="bi bi-prescription2 text-info fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ patientsWithPrescriptions }}</h3>
+              <small class="text-muted">Accesso prescrizioni</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-person-x text-secondary fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ totalPatients - totalWithConsent }}</h3>
+              <small class="text-muted">Senza consenso</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista tabs e filtri -->
+  <div class="card card-glass border-0 shadow-sm mb-4" *ngIf="!isLoading || patients.length > 0">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small text-muted">Vista</label>
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="viewMode" id="viewConsented" value="consented" [(ngModel)]="viewMode" (ngModelChange)="currentPage = 1">
+            <label class="btn btn-outline-primary" for="viewConsented">
+              <i class="bi bi-shield-check me-1"></i>Con consenso
+            </label>
+            <input type="radio" class="btn-check" name="viewMode" id="viewAll" value="all" [(ngModel)]="viewMode" (ngModelChange)="currentPage = 1">
+            <label class="btn btn-outline-primary" for="viewAll">
+              <i class="bi bi-people me-1"></i>Tutti
+            </label>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold small text-muted">Filtra per consenso</label>
+          <select class="form-select" [(ngModel)]="consentFilter" (ngModelChange)="currentPage = 1">
+            <option value="ALL">Tutti i consensi</option>
+            <option value="DOCS">Documenti</option>
+            <option value="PRESCRIPTIONS">Prescrizioni</option>
+            <option value="TELEVISIT">Televisite</option>
+          </select>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label fw-semibold small text-muted">Cerca paziente</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" placeholder="Nome, cognome o codice fiscale..." [(ngModel)]="searchQuery" (ngModelChange)="currentPage = 1">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista pazienti -->
+  <div class="card card-glass border-0 shadow-sm" *ngIf="!isLoading || patients.length > 0">
+    <div class="card-header bg-transparent border-bottom">
+      <h5 class="mb-0 fw-semibold">
+        <i class="bi bi-list-ul me-2"></i>
+        Elenco pazienti
+        <span class="badge bg-secondary ms-2">{{ filteredPatients.length }}</span>
+      </h5>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Paziente</th>
+              <th>Consensi attivi</th>
+              <th>Ultimo accesso</th>
+              <th>Prossimo appuntamento</th>
+              <th class="pe-4 text-end">Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let patient of paginatedPatients" [class.table-secondary]="!patient.hasActiveConsent">
+              <td class="ps-4">
+                <div class="d-flex align-items-center">
+                  <div class="rounded-circle p-2 me-3" [ngClass]="patient.hasActiveConsent ? 'bg-primary bg-opacity-10' : 'bg-secondary bg-opacity-10'">
+                    <i class="bi" [ngClass]="patient.hasActiveConsent ? 'bi-person text-primary' : 'bi-lock text-secondary'"></i>
+                  </div>
+                  <div>
+                    <p class="mb-0 fw-medium">{{ patient.lastName }} {{ patient.firstName }}</p>
+                    <small class="text-muted">{{ patient.fiscalCode }}</small>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="d-flex gap-1 flex-wrap" *ngIf="patient.hasActiveConsent">
+                  <span *ngFor="let consent of patient.consents" class="badge" [ngClass]="getConsentBadgeClass(consent)">
+                    {{ getConsentLabel(consent) }}
+                  </span>
+                </div>
+                <span *ngIf="!patient.hasActiveConsent" class="badge bg-secondary bg-opacity-10 text-secondary">
+                  <i class="bi bi-lock me-1"></i>Nessun consenso
+                </span>
+              </td>
+              <td>
+                <span *ngIf="patient.lastAccess">{{ formatDateTime(patient.lastAccess) }}</span>
+                <span *ngIf="!patient.lastAccess" class="text-muted">-</span>
+              </td>
+              <td>
+                <span *ngIf="patient.nextAppointment" class="badge bg-success bg-opacity-10 text-success">
+                  <i class="bi bi-calendar-event me-1"></i>{{ formatDateTime(patient.nextAppointment) }}
+                </span>
+                <span *ngIf="!patient.nextAppointment" class="text-muted">-</span>
+              </td>
+              <td class="pe-4 text-end">
+                <button class="btn btn-sm btn-outline-primary" (click)="openPatientModal(patient)" *ngIf="patient.hasActiveConsent">
+                  <i class="bi bi-folder2-open me-1"></i>Apri cartella
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" disabled *ngIf="!patient.hasActiveConsent" title="Consenso richiesto">
+                  <i class="bi bi-lock me-1"></i>Bloccato
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="filteredPatients.length === 0">
+              <td colspan="5" class="text-center py-4 text-muted">
+                <i class="bi bi-search fs-1 d-block mb-2"></i>
+                Nessun paziente trovato con i criteri di ricerca.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Paginazione -->
+    <div class="card-footer bg-transparent border-top" *ngIf="totalPages > 1">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          Pagina {{ currentPage }} di {{ totalPages }} ({{ filteredPatients.length }} pazienti)
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button class="page-link" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+            </li>
+            <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1">
+              <button class="page-link" (click)="currentPage = i + 1">{{ i + 1 }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info box per pazienti senza consenso -->
+  <div class="alert alert-warning border-0 mt-4" *ngIf="viewMode === 'all'">
+    <div class="d-flex">
+      <i class="bi bi-exclamation-triangle me-3 mt-1"></i>
+      <div>
+        <h6 class="alert-heading mb-1">Pazienti senza consenso</h6>
+        <p class="mb-0 small">I pazienti evidenziati in grigio non ti hanno concesso l'accesso ai loro dati clinici. Puoi vedere solo nome e cognome. Per accedere alla cartella clinica, il paziente deve concederti esplicitamente il consenso dall'app.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal dettaglio paziente -->
+<ng-container *ngIf="showPatientModal && selectedPatient">
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-person-badge me-2"></i>
+            Cartella paziente
+          </h5>
+          <button type="button" class="btn-close" (click)="closePatientModal()"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Dati paziente -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                  <i class="bi bi-person text-primary fs-4"></i>
+                </div>
+                <div>
+                  <h5 class="mb-0 fw-bold">{{ selectedPatient.lastName }} {{ selectedPatient.firstName }}</h5>
+                  <small class="text-muted">{{ selectedPatient.fiscalCode }}</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6 text-md-end">
+              <p class="mb-0"><strong>Età:</strong> {{ calculateAge(selectedPatient.birthDate) }} anni</p>
+              <p class="mb-0 text-muted small">Nato il {{ formatDate(selectedPatient.birthDate) }}</p>
+            </div>
+          </div>
+
+          <!-- Consensi attivi -->
+          <div class="mb-4">
+            <h6 class="fw-semibold mb-2">Consensi attivi</h6>
+            <div class="d-flex gap-2 flex-wrap">
+              <span *ngFor="let consent of selectedPatient.consents" class="badge fs-6" [ngClass]="getConsentBadgeClass(consent)">
+                <i class="bi bi-check-circle me-1"></i>{{ getConsentLabel(consent) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Accesso rapido -->
+          <h6 class="fw-semibold mb-3">Accesso rapido</h6>
+          <div class="row g-3">
+            <div class="col-md-4" *ngIf="selectedPatient.consents.includes('DOCS')">
+              <a routerLink="/portal/doctor/docs" class="card card-glass border-0 shadow-sm h-100 text-decoration-none" (click)="closePatientModal()">
+                <div class="card-body text-center">
+                  <div class="rounded-circle bg-primary bg-opacity-10 p-3 mx-auto mb-2" style="width: fit-content;">
+                    <i class="bi bi-file-earmark-medical text-primary fs-4"></i>
+                  </div>
+                  <h6 class="mb-0">Documenti</h6>
+                  <small class="text-muted">Cartella clinica</small>
+                </div>
+              </a>
+            </div>
+            <div class="col-md-4" *ngIf="selectedPatient.consents.includes('PRESCRIPTIONS')">
+              <a routerLink="/portal/doctor/prescribing" class="card card-glass border-0 shadow-sm h-100 text-decoration-none" (click)="closePatientModal()">
+                <div class="card-body text-center">
+                  <div class="rounded-circle bg-success bg-opacity-10 p-3 mx-auto mb-2" style="width: fit-content;">
+                    <i class="bi bi-prescription2 text-success fs-4"></i>
+                  </div>
+                  <h6 class="mb-0">Prescrizioni</h6>
+                  <small class="text-muted">Terapie attive</small>
+                </div>
+              </a>
+            </div>
+            <div class="col-md-4" *ngIf="selectedPatient.consents.includes('TELEVISIT')">
+              <a routerLink="/portal/doctor/televisit" class="card card-glass border-0 shadow-sm h-100 text-decoration-none" (click)="closePatientModal()">
+                <div class="card-body text-center">
+                  <div class="rounded-circle bg-info bg-opacity-10 p-3 mx-auto mb-2" style="width: fit-content;">
+                    <i class="bi bi-camera-video text-info fs-4"></i>
+                  </div>
+                  <h6 class="mb-0">Televisite</h6>
+                  <small class="text-muted">Visite remote</small>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Info ultimo accesso -->
+          <div class="alert alert-light border mt-4 mb-0" *ngIf="selectedPatient.lastAccess">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-clock-history me-2"></i>
+              <small>Ultimo accesso ai dati: <strong>{{ formatDateTime(selectedPatient.lastAccess) }}</strong></small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closePatientModal()">Chiudi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
