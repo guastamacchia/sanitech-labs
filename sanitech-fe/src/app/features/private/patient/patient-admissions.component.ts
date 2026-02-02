@@ -1,36 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-
-type AdmissionStatus = 'ACTIVE' | 'DISCHARGED' | 'SCHEDULED';
-type AdmissionType = 'URGENTE' | 'PROGRAMMATO' | 'DAY_HOSPITAL';
-
-interface AdmissionEvent {
-  id: number;
-  type: 'ADMISSION' | 'EXAM' | 'VISIT' | 'PROCEDURE' | 'DISCHARGE';
-  title: string;
-  description?: string;
-  timestamp: string;
-  doctorName?: string;
-  documentId?: number;
-}
-
-interface Admission {
-  id: number;
-  department: string;
-  admissionType: AdmissionType;
-  status: AdmissionStatus;
-  admittedAt: string;
-  dischargedAt?: string;
-  attendingDoctor: string;
-  room?: string;
-  bed?: string;
-  diagnosis?: string;
-  notes?: string;
-  timeline?: AdmissionEvent[];
-  documents?: { id: number; name: string; type: string }[];
-}
+import { Subject, forkJoin, takeUntil } from 'rxjs';
+import {
+  PatientService,
+  AdmissionDto,
+  AdmissionStatus,
+  AdmissionType,
+  AdmissionWithDetails
+} from './services/patient.service';
+import { DoctorDto, DepartmentDto } from './services/scheduling.service';
 
 @Component({
   selector: 'app-patient-admissions',
@@ -38,16 +18,22 @@ interface Admission {
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './patient-admissions.component.html'
 })
-export class PatientAdmissionsComponent implements OnInit {
+export class PatientAdmissionsComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   // Dati ricoveri
-  admissions: Admission[] = [];
+  admissions: AdmissionWithDetails[] = [];
+
+  // Dati per arricchimento
+  private doctors: DoctorDto[] = [];
+  private departments: DepartmentDto[] = [];
 
   // UI State
   isLoading = false;
   successMessage = '';
   errorMessage = '';
   showDetailModal = false;
-  selectedAdmission: Admission | null = null;
+  selectedAdmission: AdmissionWithDetails | null = null;
 
   // Filtri
   statusFilter: 'ALL' | AdmissionStatus = 'ALL';
@@ -56,112 +42,53 @@ export class PatientAdmissionsComponent implements OnInit {
   pageSize = 10;
   currentPage = 1;
 
+  constructor(private patientService: PatientService) {}
+
   ngOnInit(): void {
     this.loadAdmissions();
   }
 
-  loadAdmissions(): void {
-    this.isLoading = true;
-
-    // Dati mock - Scenario di Francesca (accesso delegato per la madre)
-    setTimeout(() => {
-      this.admissions = [
-        {
-          id: 1,
-          department: 'Cardiologia',
-          admissionType: 'URGENTE',
-          status: 'ACTIVE',
-          admittedAt: '2025-01-28T14:30:00',
-          attendingDoctor: 'Dr. Giovanni Martini',
-          room: '304',
-          bed: 'B',
-          diagnosis: 'Fibrillazione atriale parossistica',
-          notes: 'Paziente stabile, in monitoraggio continuo',
-          timeline: [
-            {
-              id: 1,
-              type: 'ADMISSION',
-              title: 'Ammissione in reparto',
-              description: 'Accesso tramite Pronto Soccorso per cardiopalmo',
-              timestamp: '2025-01-28T14:30:00',
-              doctorName: 'Dr. Giovanni Martini'
-            },
-            {
-              id: 2,
-              type: 'EXAM',
-              title: 'ECG',
-              description: 'Elettrocardiogramma di ingresso',
-              timestamp: '2025-01-28T15:00:00'
-            },
-            {
-              id: 3,
-              type: 'EXAM',
-              title: 'Esami ematochimici',
-              description: 'Emocromo, elettroliti, funzionalita\' renale e tiroidea',
-              timestamp: '2025-01-28T15:30:00'
-            },
-            {
-              id: 4,
-              type: 'VISIT',
-              title: 'Visita cardiologica',
-              description: 'Valutazione clinica e impostazione terapia antiaritmica',
-              timestamp: '2025-01-28T16:00:00',
-              doctorName: 'Dr. Giovanni Martini'
-            },
-            {
-              id: 5,
-              type: 'EXAM',
-              title: 'Ecocardiogramma',
-              description: 'Ecocardiogramma transtoracico',
-              timestamp: '2025-01-29T09:00:00',
-              doctorName: 'Dr. Elena Cuore'
-            }
-          ],
-          documents: [
-            { id: 1, name: 'Lettera di ammissione', type: 'ADMISSION' },
-            { id: 2, name: 'Referto ECG', type: 'EXAM' },
-            { id: 3, name: 'Esiti esami di laboratorio', type: 'EXAM' }
-          ]
-        },
-        {
-          id: 2,
-          department: 'Medicina Interna',
-          admissionType: 'PROGRAMMATO',
-          status: 'DISCHARGED',
-          admittedAt: '2024-11-10T08:00:00',
-          dischargedAt: '2024-11-15T11:00:00',
-          attendingDoctor: 'Dr. Marco Internista',
-          room: '201',
-          bed: 'A',
-          diagnosis: 'Scompenso cardiaco cronico - accertamenti',
-          documents: [
-            { id: 4, name: 'Lettera di dimissione', type: 'DISCHARGE' },
-            { id: 5, name: 'Indicazioni follow-up', type: 'DISCHARGE' }
-          ]
-        },
-        {
-          id: 3,
-          department: 'Cardiologia',
-          admissionType: 'DAY_HOSPITAL',
-          status: 'DISCHARGED',
-          admittedAt: '2024-09-05T07:30:00',
-          dischargedAt: '2024-09-05T16:00:00',
-          attendingDoctor: 'Dr. Giovanni Martini',
-          diagnosis: 'Cardioversione elettrica programmata'
-        }
-      ];
-      this.isLoading = false;
-    }, 500);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  get filteredAdmissions(): Admission[] {
+  loadAdmissions(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    forkJoin({
+      admissions: this.patientService.getMyAdmissions({ size: 100, sort: 'admittedAt,desc' }),
+      enrichment: this.patientService.loadEnrichmentData()
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: ({ admissions, enrichment }) => {
+        this.doctors = enrichment.doctors;
+        this.departments = enrichment.departments;
+        this.admissions = this.patientService.enrichAdmissions(
+          admissions.content,
+          this.doctors,
+          this.departments
+        );
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Errore caricamento ricoveri:', err);
+        this.errorMessage = 'Impossibile caricare i ricoveri. Riprova.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  get filteredAdmissions(): AdmissionWithDetails[] {
     return this.admissions.filter(a => {
       if (this.statusFilter !== 'ALL' && a.status !== this.statusFilter) return false;
       return true;
     });
   }
 
-  get paginatedAdmissions(): Admission[] {
+  get paginatedAdmissions(): AdmissionWithDetails[] {
     const start = (this.currentPage - 1) * this.pageSize;
     return this.filteredAdmissions.slice(start, start + this.pageSize);
   }
@@ -170,12 +97,12 @@ export class PatientAdmissionsComponent implements OnInit {
     return Math.ceil(this.filteredAdmissions.length / this.pageSize) || 1;
   }
 
-  get activeAdmission(): Admission | null {
-    return this.admissions.find(a => a.status === 'ACTIVE') || null;
+  get activeAdmission(): AdmissionWithDetails | null {
+    return this.admissions.find(a => a.status === 'ADMITTED') || null;
   }
 
   get activeCount(): number {
-    return this.admissions.filter(a => a.status === 'ACTIVE').length;
+    return this.admissions.filter(a => a.status === 'ADMITTED').length;
   }
 
   get dischargedCount(): number {
@@ -184,63 +111,41 @@ export class PatientAdmissionsComponent implements OnInit {
 
   getStatusLabel(status: AdmissionStatus): string {
     const labels: Record<AdmissionStatus, string> = {
-      ACTIVE: 'In corso',
+      ADMITTED: 'In corso',
       DISCHARGED: 'Dimesso',
-      SCHEDULED: 'Programmato'
+      CANCELLED: 'Annullato'
     };
-    return labels[status];
+    return labels[status] || status;
   }
 
   getStatusBadgeClass(status: AdmissionStatus): string {
     const classes: Record<AdmissionStatus, string> = {
-      ACTIVE: 'bg-success',
+      ADMITTED: 'bg-success',
       DISCHARGED: 'bg-secondary',
-      SCHEDULED: 'bg-primary'
+      CANCELLED: 'bg-danger'
     };
-    return classes[status];
+    return classes[status] || 'bg-secondary';
   }
 
   getTypeLabel(type: AdmissionType): string {
     const labels: Record<AdmissionType, string> = {
-      URGENTE: 'Urgente',
-      PROGRAMMATO: 'Programmato',
+      EMERGENCY: 'Urgente',
+      ORDINARY: 'Ordinario',
       DAY_HOSPITAL: 'Day Hospital'
     };
-    return labels[type];
+    return labels[type] || type;
   }
 
   getTypeBadgeClass(type: AdmissionType): string {
     const classes: Record<AdmissionType, string> = {
-      URGENTE: 'bg-danger',
-      PROGRAMMATO: 'bg-info',
+      EMERGENCY: 'bg-danger',
+      ORDINARY: 'bg-info',
       DAY_HOSPITAL: 'bg-warning text-dark'
     };
-    return classes[type];
+    return classes[type] || 'bg-info';
   }
 
-  getEventIcon(type: string): string {
-    const icons: Record<string, string> = {
-      ADMISSION: 'bi-door-open',
-      EXAM: 'bi-clipboard2-pulse',
-      VISIT: 'bi-person-badge',
-      PROCEDURE: 'bi-activity',
-      DISCHARGE: 'bi-box-arrow-right'
-    };
-    return icons[type] || 'bi-circle';
-  }
-
-  getEventColor(type: string): string {
-    const colors: Record<string, string> = {
-      ADMISSION: 'primary',
-      EXAM: 'info',
-      VISIT: 'success',
-      PROCEDURE: 'warning',
-      DISCHARGE: 'secondary'
-    };
-    return colors[type] || 'secondary';
-  }
-
-  formatDate(dateStr: string): string {
+  formatDate(dateStr: string | undefined): string {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('it-IT', {
       day: '2-digit',
@@ -249,7 +154,7 @@ export class PatientAdmissionsComponent implements OnInit {
     });
   }
 
-  formatDateTime(dateStr: string): string {
+  formatDateTime(dateStr: string | undefined): string {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('it-IT', {
       day: '2-digit',
@@ -260,7 +165,7 @@ export class PatientAdmissionsComponent implements OnInit {
     });
   }
 
-  formatTime(dateStr: string): string {
+  formatTime(dateStr: string | undefined): string {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleTimeString('it-IT', {
       hour: '2-digit',
@@ -268,14 +173,14 @@ export class PatientAdmissionsComponent implements OnInit {
     });
   }
 
-  getDaysInHospital(admission: Admission): number {
+  getDaysInHospital(admission: AdmissionWithDetails): number {
     const start = new Date(admission.admittedAt);
     const end = admission.dischargedAt ? new Date(admission.dischargedAt) : new Date();
     const diff = end.getTime() - start.getTime();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 
-  openDetailModal(admission: Admission): void {
+  openDetailModal(admission: AdmissionWithDetails): void {
     this.selectedAdmission = admission;
     this.showDetailModal = true;
   }
@@ -285,8 +190,8 @@ export class PatientAdmissionsComponent implements OnInit {
     this.selectedAdmission = null;
   }
 
-  downloadDocument(doc: { id: number; name: string; type: string }): void {
-    this.successMessage = `Download di "${doc.name}" avviato.`;
+  downloadDischargeLetter(admission: AdmissionWithDetails): void {
+    this.successMessage = `Download della lettera di dimissione avviato.`;
     setTimeout(() => this.successMessage = '', 3000);
   }
 }

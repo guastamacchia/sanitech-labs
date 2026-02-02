@@ -3489,8 +3489,8 @@ export class ResourcePageState {
   get auditSubjectLabel(): string {
     switch (this.auditSearchCriteria.subjectType) {
       case 'PATIENT': return 'Codice Fiscale Paziente';
-      case 'DOCTOR': return 'Codice Fiscale Medico';
-      case 'ADMIN': return 'Codice Fiscale Amministratore';
+      case 'DOCTOR': return 'Email Medico';
+      case 'ADMIN': return 'Username Amministratore';
       default: return 'Identificativo';
     }
   }
@@ -3498,8 +3498,8 @@ export class ResourcePageState {
   get auditSubjectPlaceholder(): string {
     switch (this.auditSearchCriteria.subjectType) {
       case 'PATIENT': return 'Es: SPSGPP65M15H501X';
-      case 'DOCTOR': return 'Es: BNCMRC75A01H501Z';
-      case 'ADMIN': return 'Es: RSSMRA80B15H501Y';
+      case 'DOCTOR': return 'Es: marco.bianchi@sanitech.it';
+      case 'ADMIN': return 'Es: admin.rossi';
       default: return 'Inserisci identificativo';
     }
   }
@@ -3523,7 +3523,9 @@ export class ResourcePageState {
     this.auditError = '';
     this.auditSearchPerformed = false;
 
-    const identifier = this.auditSearchCriteria.subjectIdentifier.toUpperCase().trim();
+    const identifier = this.auditSearchCriteria.subjectType === 'DOCTOR'
+      ? this.auditSearchCriteria.subjectIdentifier.trim().toLowerCase()
+      : this.auditSearchCriteria.subjectIdentifier.toUpperCase().trim();
     const subjectType = this.auditSearchCriteria.subjectType;
 
     // Step 1: Cerca il soggetto nel directory
@@ -3577,6 +3579,79 @@ export class ResourcePageState {
     });
   }
 
+  /**
+   * Carica tutti gli eventi di audit senza filtro soggetto.
+   * Utile per amministratori che vogliono vedere tutta l'attivita' del sistema.
+   */
+  loadAllAuditEvents(): void {
+    this.isLoading = true;
+    this.auditError = '';
+    this.auditSearchPerformed = false;
+    this.auditSubjectFound = null;
+
+    // Costruisci parametri per API audit (solo filtri temporali se presenti)
+    const params: Record<string, string> = { size: '500' };
+    if (this.auditSearchCriteria.dateFrom) {
+      params['from'] = new Date(this.auditSearchCriteria.dateFrom).toISOString();
+    }
+    if (this.auditSearchCriteria.dateTo) {
+      const toDate = new Date(this.auditSearchCriteria.dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      params['to'] = toDate.toISOString();
+    }
+
+    // Chiama API audit senza filtro actorId
+    this.api.get<SpringPage<AuditEventResponse>>('/api/audit/events', params).subscribe({
+      next: (response) => {
+        // Mappiamo gli eventi senza un soggetto specifico
+        const genericSubject: AuditSubjectFound = { id: 'ALL', name: 'Tutti gli eventi', identifier: '-', identifierLabel: '-', type: 'ADMIN' };
+        this.auditDetailedEvents = this.mapAuditEventsToDetail(response.content, genericSubject);
+        this.auditConsents = [];
+        this.applyAuditFilters();
+        this.generateAuditSummaryAll();
+        this.auditSearchPerformed = true;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        if (err.status === 403) {
+          this.auditError = 'Non hai i permessi per accedere ai dati di audit.';
+        } else {
+          this.auditError = 'Errore durante il caricamento degli eventi audit.';
+        }
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private generateAuditSummaryAll(): void {
+    const events = this.auditFilteredEvents;
+    const uniqueActors = new Set(events.map(e => e.actorId));
+    this.auditReportSummary = {
+      totalEvents: events.length,
+      consentChanges: events.filter(e => e.eventType === 'CONSENT_GRANTED' || e.eventType === 'CONSENT_REVOKED').length,
+      documentAccesses: events.filter(e => e.eventType === 'DOCUMENT_ACCESS').length,
+      prescriptionViews: events.filter(e => e.eventType === 'PRESCRIPTION_VIEW').length,
+      appointmentEvents: events.filter(e => e.eventType === 'APPOINTMENT_BOOKED' || e.eventType === 'APPOINTMENT_CANCELLED').length,
+      deniedAccesses: events.filter(e => e.outcome === 'DENIED').length,
+      uniqueActors: uniqueActors.size,
+      dateRange: { from: this.auditSearchCriteria.dateFrom || events[events.length - 1]?.occurredAt || '', to: this.auditSearchCriteria.dateTo || events[0]?.occurredAt || '' },
+      patientInfo: { id: 'ALL', name: 'Tutti gli eventi di sistema', fiscalCode: '-' },
+      generatedAt: new Date().toISOString(),
+      integrityHash: this.generateIntegrityHash(events)
+    };
+  }
+
+  private generateIntegrityHash(events: AuditEventDetail[]): string {
+    const data = events.map(e => `${e.id}:${e.occurredAt}:${e.action}`).join('|');
+    let hash = 0;
+    for (let i = 0; i < data.length; i++) {
+      const char = data.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash).toString(16).padStart(8, '0').toUpperCase();
+  }
+
   private async lookupSubject(type: 'PATIENT' | 'DOCTOR' | 'ADMIN', identifier: string): Promise<AuditSubjectFound | null> {
     try {
       if (type === 'PATIENT') {
@@ -3586,13 +3661,15 @@ export class ResourcePageState {
           return { id: String(patient.id), name: `${patient.firstName} ${patient.lastName}`, identifier: patient.fiscalCode || identifier, identifierLabel: 'Codice Fiscale', type: 'PATIENT' };
         }
       } else if (type === 'DOCTOR') {
+        // I medici non hanno codice fiscale, cerchiamo per email
         const response = await this.api.get<SpringPage<DoctorDirectoryDto>>('/api/admin/doctors', { q: identifier, size: '1' }).toPromise();
         if (response && response.content && response.content.length > 0) {
           const doctor = response.content[0];
-          return { id: String(doctor.id), name: `Dr. ${doctor.firstName} ${doctor.lastName}`, identifier: identifier, identifierLabel: 'Codice Fiscale', role: doctor.specialization || 'Medico', type: 'DOCTOR' };
+          return { id: String(doctor.id), name: `Dr. ${doctor.firstName} ${doctor.lastName}`, identifier: doctor.email || identifier, identifierLabel: 'Email', role: doctor.specialization || 'Medico', type: 'DOCTOR' };
         }
-      } else if (type === 'ADMIN' && identifier.length === 16) {
-        return { id: 'ADMIN-' + identifier.substring(0, 6), name: 'Amministratore ' + identifier.substring(0, 6), identifier: identifier, identifierLabel: 'Codice Fiscale', role: 'Amministratore Sistema', type: 'ADMIN' };
+      } else if (type === 'ADMIN' && identifier.trim().length > 0) {
+        // Gli amministratori non hanno codice fiscale, usiamo lo username
+        return { id: 'ADMIN-' + identifier, name: 'Amministratore ' + identifier, identifier: identifier, identifierLabel: 'Username', role: 'Amministratore Sistema', type: 'ADMIN' };
       }
       return null;
     } catch {
@@ -3802,6 +3879,60 @@ export class ResourcePageState {
         // Silently fail - non critico
       }
     });
+  }
+
+  // ===== STATISTICHE TELEVISITE =====
+
+  /** Televisite programmate per oggi */
+  get televisiteProgrammateOggi(): number {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return this.televisits.filter(tv => {
+      const scheduled = new Date(tv.scheduledAt);
+      return scheduled >= today && scheduled < tomorrow && tv.status === 'CREATED';
+    }).length;
+  }
+
+  /** Televisite concluse (status ENDED) */
+  get televisiteConcluse(): number {
+    return this.televisits.filter(tv => tv.status === 'ENDED').length;
+  }
+
+  /** Televisite in attesa paziente (status ACTIVE - il medico è entrato ma il paziente no) */
+  get televisiteInAttesaPaziente(): number {
+    return this.televisits.filter(tv => tv.status === 'ACTIVE').length;
+  }
+
+  // ===== STATISTICHE RICOVERI =====
+
+  /** Ricoveri attivi (status ACTIVE) */
+  get ricoveriAttivi(): number {
+    return this.admissions.filter(adm => adm.status === 'ACTIVE').length;
+  }
+
+  /** Ricoveri in Pneumologia (reparto PNEUMO, status ACTIVE) */
+  get ricoveriPneumologia(): number {
+    return this.admissions.filter(adm => adm.departmentCode === 'PNEUMO' && adm.status === 'ACTIVE').length;
+  }
+
+  /** Ricoveri confermati (INPATIENT attivi) */
+  get ricoveriConfermati(): number {
+    return this.admissions.filter(adm => adm.admissionType === 'INPATIENT' && adm.status === 'ACTIVE').length;
+  }
+
+  /** Dimessi questo mese */
+  get dimessiQuestoMese(): number {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    return this.admissions.filter(adm => {
+      if (adm.status !== 'DISCHARGED' || !adm.dischargedAt) return false;
+      const discharged = new Date(adm.dischargedAt);
+      return discharged >= startOfMonth;
+    }).length;
   }
 
   private loadDepartments(): void {

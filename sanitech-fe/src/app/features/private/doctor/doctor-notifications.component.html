@@ -11,20 +11,10 @@
       <h2 class="mb-1 fw-bold">Notifiche</h2>
       <p class="text-muted mb-0">Centro notifiche e avvisi professionali</p>
     </div>
-    <div class="d-flex gap-2">
-      <button class="btn btn-outline-secondary" (click)="openPreferencesModal()">
-        <i class="bi bi-gear me-1"></i>
-        Preferenze
-      </button>
-      <button class="btn btn-outline-secondary" (click)="toggleArchive()">
-        <i [class]="showArchive ? 'bi bi-inbox' : 'bi bi-archive'" class="me-1"></i>
-        {{ showArchive ? 'Torna alle notifiche' : 'Archivio' }}
-      </button>
-      <button class="btn btn-outline-primary" (click)="markAllAsRead()" [disabled]="unreadCount === 0" *ngIf="!showArchive">
-        <i class="bi bi-check-all me-1"></i>
-        Segna tutto come letto
-      </button>
-    </div>
+    <button class="btn btn-outline-secondary" routerLink="/portal/doctor">
+      <i class="bi bi-arrow-left me-1"></i>
+      Torna indietro
+    </button>
   </div>
 
   <!-- Alert messages -->
@@ -132,6 +122,24 @@
       <i class="bi bi-archive me-2"></i>
       <span>Stai visualizzando le notifiche archiviate.</span>
     </div>
+  </div>
+
+  <!-- Azioni sopra la tabella -->
+  <div class="d-flex justify-content-between align-items-center mb-3" *ngIf="!isLoading">
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-secondary" (click)="toggleArchive()">
+        <i [class]="showArchive ? 'bi bi-inbox' : 'bi bi-archive'" class="me-1"></i>
+        {{ showArchive ? 'Torna alle notifiche' : 'Archivio' }}
+      </button>
+      <button class="btn btn-outline-primary" (click)="markAllAsRead()" [disabled]="unreadCount === 0" *ngIf="!showArchive">
+        <i class="bi bi-check-all me-1"></i>
+        Segna tutto come letto
+      </button>
+    </div>
+    <button class="btn btn-outline-secondary" (click)="openPreferencesModal()">
+      <i class="bi bi-gear me-1"></i>
+      Preferenze
+    </button>
   </div>
 
   <!-- Lista notifiche -->

@@ -2,6 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import {
+  DoctorApiService,
+  NotificationDto,
+  NotificationStatus as ApiNotificationStatus
+} from './doctor-api.service';
 
 type NotificationType = 'CONSENT' | 'APPOINTMENT' | 'DOCUMENT' | 'ADMISSION' | 'SYSTEM';
 type NotificationStatus = 'UNREAD' | 'READ' | 'ARCHIVED';
@@ -58,8 +63,11 @@ export class DoctorNotificationsComponent implements OnInit {
   isLoading = false;
   isSaving = false;
   successMessage = '';
+  errorMessage = '';
   showPreferencesModal = false;
   selectedNotification: Notification | null = null;
+
+  constructor(private doctorApi: DoctorApiService) {}
 
   // Stats
   get unreadCount(): number {
@@ -89,127 +97,44 @@ export class DoctorNotificationsComponent implements OnInit {
 
   loadNotifications(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
-    setTimeout(() => {
-      // Mock data - scenario Dott. Greco
-      this.notifications = [
-        {
-          id: 1,
-          type: 'CONSENT',
-          title: 'Nuovo consenso ricevuto',
-          message: 'Il paziente Mario Rossi ti ha concesso l\'accesso ai documenti.',
-          createdAt: this.getHoursAgo(1),
-          status: 'UNREAD',
-          priority: 'NORMAL',
-          link: '/portal/doctor/patients',
-          actionLabel: 'Vai ai pazienti',
-          patientName: 'Mario Rossi'
-        },
-        {
-          id: 2,
-          type: 'CONSENT',
-          title: 'Consenso revocato',
-          message: 'Il paziente Anna Verdi ha revocato il consenso per le prescrizioni. Mantiene attivo il consenso per i documenti.',
-          createdAt: this.getHoursAgo(2),
-          status: 'UNREAD',
-          priority: 'HIGH',
-          link: '/portal/doctor/patients',
-          actionLabel: 'Visualizza dettagli',
-          patientName: 'Anna Verdi'
-        },
-        {
-          id: 3,
-          type: 'APPOINTMENT',
-          title: 'Nuovo appuntamento prenotato',
-          message: 'Sara Conti ha prenotato un appuntamento per domani alle 10:00.',
-          createdAt: this.getHoursAgo(3),
-          status: 'UNREAD',
-          priority: 'NORMAL',
-          link: '/portal/doctor/agenda',
-          actionLabel: 'Vai all\'agenda',
-          patientName: 'Sara Conti'
-        },
-        {
-          id: 4,
-          type: 'APPOINTMENT',
-          title: 'Appuntamento cancellato',
-          message: 'Luigi Bianchi ha cancellato l\'appuntamento del 15/02 alle 14:00.',
-          createdAt: this.getHoursAgo(4),
-          status: 'UNREAD',
-          priority: 'HIGH',
-          link: '/portal/doctor/agenda',
-          actionLabel: 'Vai all\'agenda',
-          patientName: 'Luigi Bianchi'
-        },
-        {
-          id: 5,
-          type: 'DOCUMENT',
-          title: 'Nuovo documento caricato',
-          message: 'Il paziente Francesco Romano ha caricato nuovi esami di laboratorio.',
-          createdAt: this.getHoursAgo(6),
-          status: 'UNREAD',
-          priority: 'NORMAL',
-          link: '/portal/doctor/clinical-docs',
-          actionLabel: 'Visualizza documenti',
-          patientName: 'Francesco Romano'
-        },
-        {
-          id: 6,
-          type: 'ADMISSION',
-          title: 'Nuovo paziente assegnato',
-          message: 'Ti è stato assegnato un nuovo paziente in reparto: Giovanni Greco.',
-          createdAt: this.getHoursAgo(8),
-          status: 'UNREAD',
-          priority: 'HIGH',
-          link: '/portal/doctor/admissions',
-          actionLabel: 'Visualizza ricovero',
-          patientName: 'Giovanni Greco'
-        },
-        {
-          id: 7,
-          type: 'SYSTEM',
-          title: 'Aggiornamento sistema',
-          message: 'È disponibile una nuova versione del portale con miglioramenti alle televisite.',
-          createdAt: this.getDaysAgo(1),
-          status: 'READ',
-          priority: 'NORMAL'
-        },
-        {
-          id: 8,
-          type: 'APPOINTMENT',
-          title: 'Promemoria televisita',
-          message: 'Hai una televisita programmata tra 30 minuti con Giulia Rossi.',
-          createdAt: this.getDaysAgo(1),
-          status: 'READ',
-          priority: 'HIGH',
-          link: '/portal/doctor/televisits',
-          actionLabel: 'Vai alle televisite',
-          patientName: 'Giulia Rossi'
-        },
-        {
-          id: 9,
-          type: 'CONSENT',
-          title: 'Nuovo consenso ricevuto',
-          message: 'Il paziente Elena Colombo ti ha concesso l\'accesso alle televisite.',
-          createdAt: this.getDaysAgo(2),
-          status: 'READ',
-          priority: 'NORMAL',
-          patientName: 'Elena Colombo'
-        },
-        {
-          id: 10,
-          type: 'DOCUMENT',
-          title: 'Referto disponibile',
-          message: 'Il laboratorio ha caricato i risultati degli esami per Mario Esposito.',
-          createdAt: this.getDaysAgo(3),
-          status: 'ARCHIVED',
-          priority: 'NORMAL',
-          patientName: 'Mario Esposito'
-        }
-      ];
+    this.doctorApi.listNotifications({ size: 100 }).subscribe({
+      next: (page) => {
+        const dtos = page.content || [];
+        this.notifications = dtos.map(dto => this.mapNotification(dto));
+        this.isLoading = false;
+      },
+      error: () => {
+        this.errorMessage = 'Errore nel caricamento delle notifiche.';
+        this.isLoading = false;
+      }
+    });
+  }
 
-      this.isLoading = false;
-    }, 500);
+  private mapNotification(dto: NotificationDto): Notification {
+    // Estrai tipo dalla subject o body
+    let type: NotificationType = 'SYSTEM';
+    const subjectLower = (dto.subject || '').toLowerCase();
+    if (subjectLower.includes('consenso')) type = 'CONSENT';
+    else if (subjectLower.includes('appuntamento') || subjectLower.includes('televisita')) type = 'APPOINTMENT';
+    else if (subjectLower.includes('documento') || subjectLower.includes('referto')) type = 'DOCUMENT';
+    else if (subjectLower.includes('ricovero') || subjectLower.includes('ammissione')) type = 'ADMISSION';
+
+    // Mappa status
+    let status: NotificationStatus = 'UNREAD';
+    if (dto.status === 'SENT') status = 'UNREAD';
+    else if (dto.status === 'READ') status = 'READ';
+
+    return {
+      id: dto.id,
+      type,
+      title: dto.subject,
+      message: dto.body,
+      createdAt: dto.createdAt,
+      status,
+      priority: 'NORMAL' // Il backend non ha un campo priority
+    };
   }
 
   getHoursAgo(hours: number): string {
@@ -292,6 +217,8 @@ export class DoctorNotificationsComponent implements OnInit {
   savePreferences(): void {
     this.isSaving = true;
 
+    // Nota: il backend non ha un endpoint per le preferenze notifiche
+    // Questo sarebbe un'estensione futura
     setTimeout(() => {
       this.isSaving = false;
       this.closePreferencesModal();

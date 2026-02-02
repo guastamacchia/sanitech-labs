@@ -11,16 +11,10 @@
       <h2 class="mb-1 fw-bold">Il mio profilo</h2>
       <p class="text-muted mb-0">Visualizza e modifica i tuoi dati personali</p>
     </div>
-    <div class="d-flex gap-2">
-      <button class="btn btn-outline-secondary" (click)="openPreferencesModal()">
-        <i class="bi bi-bell me-1"></i>
-        Preferenze notifiche
-      </button>
-      <button *ngIf="!isEditing" class="btn btn-primary" (click)="startEditing()">
-        <i class="bi bi-pencil me-1"></i>
-        Modifica profilo
-      </button>
-    </div>
+    <button class="btn btn-outline-secondary" routerLink="/portal/patient">
+      <i class="bi bi-arrow-left me-1"></i>
+      Torna indietro
+    </button>
   </div>
 
   <!-- Alert messages -->
@@ -44,15 +38,19 @@
     <p class="text-muted mt-2">Caricamento profilo...</p>
   </div>
 
-  <div class="row g-4" *ngIf="!isLoading">
+  <div class="row g-4" *ngIf="!isLoading && profile">
     <!-- Profilo principale -->
     <div class="col-lg-8">
       <div class="card card-glass border-0 shadow-sm">
-        <div class="card-header bg-transparent border-bottom">
+        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
           <h5 class="mb-0 fw-semibold">
             <i class="bi bi-person-circle me-2"></i>
             Dati anagrafici
           </h5>
+          <button *ngIf="!isEditing && profile" class="btn btn-primary btn-sm" (click)="startEditing()">
+            <i class="bi bi-pencil me-1"></i>
+            Modifica profilo
+          </button>
         </div>
         <div class="card-body">
           <!-- Vista in lettura -->
@@ -93,7 +91,7 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label small text-muted fw-semibold">Telefono</label>
-                  <p class="mb-0 fs-5">{{ profile.phone }}</p>
+                  <p class="mb-0 fs-5">{{ profile.phone || '-' }}</p>
                 </div>
               </div>
               <div class="col-md-6">
@@ -105,7 +103,7 @@
               <div class="col-12">
                 <div class="mb-0">
                   <label class="form-label small text-muted fw-semibold">Indirizzo di residenza</label>
-                  <p class="mb-0 fs-5">{{ profile.address }}</p>
+                  <p class="mb-0 fs-5">{{ profile.address || '-' }}</p>
                 </div>
               </div>
             </div>
@@ -117,7 +115,7 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label small text-muted fw-semibold">Nome</label>
-                  <input type="text" class="form-control bg-light" [value]="editForm.firstName" disabled readonly>
+                  <input type="text" class="form-control bg-light" [value]="profile.firstName" disabled readonly>
                   <small class="text-muted">
                     <i class="bi bi-lock me-1"></i>
                     Campo non modificabile
@@ -127,7 +125,7 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label small text-muted fw-semibold">Cognome</label>
-                  <input type="text" class="form-control bg-light" [value]="editForm.lastName" disabled readonly>
+                  <input type="text" class="form-control bg-light" [value]="profile.lastName" disabled readonly>
                   <small class="text-muted">
                     <i class="bi bi-lock me-1"></i>
                     Campo non modificabile
@@ -137,7 +135,7 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label small text-muted fw-semibold">Codice Fiscale</label>
-                  <input type="text" class="form-control bg-light font-monospace" [value]="editForm.fiscalCode" disabled readonly>
+                  <input type="text" class="form-control bg-light font-monospace" [value]="profile.fiscalCode" disabled readonly>
                   <small class="text-muted">
                     <i class="bi bi-lock me-1"></i>
                     Campo non modificabile
@@ -147,7 +145,7 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label small text-muted fw-semibold">Email</label>
-                  <input type="email" class="form-control bg-light" [value]="editForm.email" disabled readonly>
+                  <input type="email" class="form-control bg-light" [value]="profile.email" disabled readonly>
                   <small class="text-muted">
                     <i class="bi bi-lock me-1"></i>
                     Campo non modificabile
@@ -166,16 +164,17 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label small text-muted fw-semibold">Data di nascita</label>
-                  <input type="text" class="form-control bg-light" [value]="formatDate(editForm.birthDate)" disabled readonly>
+                  <input type="text" class="form-control bg-light" [value]="formatDate(profile.birthDate)" disabled readonly>
                 </div>
               </div>
               <div class="col-12">
                 <div class="mb-0">
-                  <label class="form-label small text-muted fw-semibold">
-                    Indirizzo di residenza
-                    <span class="text-danger">*</span>
-                  </label>
-                  <input type="text" class="form-control" [(ngModel)]="editForm.address" name="address" required>
+                  <label class="form-label small text-muted fw-semibold">Indirizzo di residenza</label>
+                  <input type="text" class="form-control bg-light" [value]="profile.address || ''" disabled readonly>
+                  <small class="text-muted">
+                    <i class="bi bi-lock me-1"></i>
+                    Campo non modificabile - Contatta l'assistenza per modifiche
+                  </small>
                 </div>
               </div>
             </div>

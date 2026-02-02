@@ -81,6 +81,8 @@ public class AppConstants {
             public static final String PATIENT_DELETED = "PATIENT_DELETED";
 
             public static final String ACTIVATION_EMAIL_REQUESTED = "ACTIVATION_EMAIL_REQUESTED";
+            public static final String ACCOUNT_ENABLED_EMAIL_REQUESTED = "ACCOUNT_ENABLED_EMAIL_REQUESTED";
+            public static final String ACCOUNT_DISABLED_EMAIL_REQUESTED = "ACCOUNT_DISABLED_EMAIL_REQUESTED";
         }
 
         /** Tipi aggregato standard per eventi Outbox. */

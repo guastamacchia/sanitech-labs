@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { DoctorApiService, DoctorDto } from './doctor-api.service';
 
 interface DoctorProfile {
   firstName: string;
@@ -42,22 +43,22 @@ interface DoctorStats {
 export class DoctorProfileComponent implements OnInit {
   // Dati profilo
   profile: DoctorProfile = {
-    firstName: 'Marco',
-    lastName: 'Ricci',
-    email: 'marco.ricci@ospedale.it',
-    phone: '+39 02 1234567',
-    department: 'Ortopedia',
-    facility: 'Ospedale San Raffaele',
-    specialization: 'Ortopedia e Traumatologia',
-    licenseNumber: 'RM-12345'
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    department: '',
+    facility: '',
+    specialization: '',
+    licenseNumber: ''
   };
 
   // Form modifica
   editForm = {
-    phone: this.profile.phone
+    phone: ''
   };
 
-  // Disponibilità settimanale
+  // Disponibilità settimanale (statico per ora - potrebbe essere un'API in futuro)
   availability: Availability[] = [
     { day: 'Lunedì', morning: '08:00 - 13:00', afternoon: '14:00 - 18:00' },
     { day: 'Martedì', morning: '08:00 - 13:00', afternoon: '-' },
@@ -67,7 +68,7 @@ export class DoctorProfileComponent implements OnInit {
   ];
 
   // Specializzazioni
-  specializations: string[] = ['Ortopedia e Traumatologia'];
+  specializations: string[] = [];
 
   // Richiesta nuova specializzazione
   specializationRequest: SpecializationRequest = {
@@ -76,12 +77,12 @@ export class DoctorProfileComponent implements OnInit {
     notes: ''
   };
 
-  // Statistiche
+  // Statistiche (caricate da API separate)
   stats: DoctorStats = {
-    activePatients: 127,
-    monthlyAppointments: 48,
-    activeConsents: 89,
-    pendingTelevisits: 5
+    activePatients: 0,
+    monthlyAppointments: 0,
+    activeConsents: 0,
+    pendingTelevisits: 0
   };
 
   // UI State
@@ -92,15 +93,74 @@ export class DoctorProfileComponent implements OnInit {
   errorMessage = '';
   showSpecializationModal = false;
 
+  constructor(private doctorApi: DoctorApiService) {}
+
   ngOnInit(): void {
     this.loadProfile();
   }
 
   loadProfile(): void {
     this.isLoading = true;
-    setTimeout(() => {
-      this.isLoading = false;
-    }, 500);
+    this.errorMessage = '';
+
+    this.doctorApi.getCurrentDoctor().subscribe({
+      next: (doctor) => {
+        if (doctor) {
+          this.mapDoctorToProfile(doctor);
+          this.loadStats();
+        } else {
+          this.errorMessage = 'Profilo medico non trovato.';
+        }
+        this.isLoading = false;
+      },
+      error: () => {
+        this.errorMessage = 'Errore nel caricamento del profilo.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private mapDoctorToProfile(doctor: DoctorDto): void {
+    this.profile = {
+      firstName: doctor.firstName,
+      lastName: doctor.lastName,
+      email: doctor.email,
+      phone: doctor.phone || '',
+      department: doctor.departmentName || doctor.departmentCode || '',
+      facility: doctor.facilityName || doctor.facilityCode || '',
+      specialization: doctor.specialization || '',
+      licenseNumber: '' // Non disponibile nel backend
+    };
+
+    this.editForm.phone = this.profile.phone;
+
+    if (doctor.specialization) {
+      this.specializations = [doctor.specialization];
+    }
+  }
+
+  private loadStats(): void {
+    const doctorId = this.doctorApi.getDoctorId();
+    if (!doctorId) return;
+
+    // Carica statistiche da varie API
+    this.doctorApi.searchPatients({ size: 1 }).subscribe({
+      next: (page) => {
+        this.stats.activePatients = page.totalElements;
+      }
+    });
+
+    this.doctorApi.searchAppointments({ doctorId, size: 1 }).subscribe({
+      next: (page) => {
+        this.stats.monthlyAppointments = page.totalElements;
+      }
+    });
+
+    this.doctorApi.searchTelevisits({ status: 'SCHEDULED', size: 1 }).subscribe({
+      next: (page) => {
+        this.stats.pendingTelevisits = page.totalElements;
+      }
+    });
   }
 
   startEditing(): void {
@@ -125,6 +185,8 @@ export class DoctorProfileComponent implements OnInit {
     this.isSaving = true;
     this.errorMessage = '';
 
+    // Nota: il backend non ha un endpoint per l'aggiornamento del profilo medico
+    // Questo sarebbe un'estensione futura
     setTimeout(() => {
       this.profile.phone = this.editForm.phone;
       this.isEditing = false;
@@ -163,6 +225,8 @@ export class DoctorProfileComponent implements OnInit {
     this.isSaving = true;
     this.errorMessage = '';
 
+    // Nota: il backend non ha un endpoint per le richieste di specializzazione
+    // Questo sarebbe un'estensione futura
     setTimeout(() => {
       this.isSaving = false;
       this.showSpecializationModal = false;

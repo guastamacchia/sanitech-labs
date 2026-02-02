@@ -260,6 +260,9 @@ public class PatientService {
                 entity.getId()
         );
         Patient saved = patientRepository.save(entity);
+
+        publishAccountStatusEmailEvent(saved, AppConstants.Outbox.EventType.ACCOUNT_DISABLED_EMAIL_REQUESTED);
+
         return patientMapper.toDto(saved);
     }
 
@@ -276,6 +279,9 @@ public class PatientService {
                 entity.getId()
         );
         Patient saved = patientRepository.save(entity);
+
+        publishAccountStatusEmailEvent(saved, AppConstants.Outbox.EventType.ACCOUNT_ENABLED_EMAIL_REQUESTED);
+
         return patientMapper.toDto(saved);
     }
 
@@ -295,6 +301,25 @@ public class PatientService {
                 AppConstants.Outbox.AggregateType.PATIENT,
                 String.valueOf(entity.getId()),
                 AppConstants.Outbox.EventType.ACTIVATION_EMAIL_REQUESTED,
+                Map.of(
+                        "recipientType", AppConstants.Outbox.AggregateType.PATIENT,
+                        "recipientId", String.valueOf(entity.getId()),
+                        "email", entity.getEmail(),
+                        "firstName", entity.getFirstName(),
+                        "lastName", entity.getLastName()
+                ),
+                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS
+        );
+    }
+
+    /**
+     * Pubblica evento per invio email di cambio stato account (attivazione/disattivazione).
+     */
+    private void publishAccountStatusEmailEvent(Patient entity, String eventType) {
+        eventPublisher.publish(
+                AppConstants.Outbox.AggregateType.PATIENT,
+                String.valueOf(entity.getId()),
+                eventType,
                 Map.of(
                         "recipientType", AppConstants.Outbox.AggregateType.PATIENT,
                         "recipientId", String.valueOf(entity.getId()),

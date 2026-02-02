@@ -2,8 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-
-type ConsentScope = 'DOCS' | 'PRESCRIPTIONS' | 'TELEVISIT';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import {
+  DoctorApiService,
+  PatientDto,
+  ConsentScope
+} from './doctor-api.service';
 
 interface Patient {
   id: number;
@@ -42,6 +47,9 @@ export class DoctorPatientsComponent implements OnInit {
   isLoading = false;
   selectedPatient: Patient | null = null;
   showPatientModal = false;
+  errorMessage = '';
+
+  constructor(private doctorApi: DoctorApiService) {}
 
   // Stats
   get totalWithConsent(): number {
@@ -66,109 +74,62 @@ export class DoctorPatientsComponent implements OnInit {
 
   loadPatients(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
-    // Mock data - scenario dottoressa Ferretti
-    setTimeout(() => {
-      this.patients = [
-        {
-          id: 1,
-          firstName: 'Mario',
-          lastName: 'Esposito',
-          fiscalCode: 'SPSMRA80A01H501X',
-          email: 'mario.esposito@email.it',
-          phone: '+39 333 1111111',
-          birthDate: '1980-01-01',
-          consents: ['DOCS', 'PRESCRIPTIONS'],
-          lastAccess: '2025-01-28T10:30:00',
-          nextAppointment: '2025-02-05T09:00:00',
-          hasActiveConsent: true
-        },
-        {
-          id: 2,
-          firstName: 'Anna',
-          lastName: 'Verdi',
-          fiscalCode: 'VRDNNA75B45H501Y',
-          email: 'anna.verdi@email.it',
-          phone: '+39 333 2222222',
-          birthDate: '1975-02-15',
-          consents: ['DOCS', 'PRESCRIPTIONS', 'TELEVISIT'],
-          lastAccess: '2025-01-25T14:00:00',
-          nextAppointment: '2025-02-10T11:30:00',
-          hasActiveConsent: true
-        },
-        {
-          id: 3,
-          firstName: 'Luigi',
-          lastName: 'Bianchi',
-          fiscalCode: 'BNCLGU85C20H501Z',
-          email: 'luigi.bianchi@email.it',
-          phone: '+39 333 3333333',
-          birthDate: '1985-03-20',
-          consents: ['TELEVISIT'],
-          lastAccess: '2025-01-20T16:45:00',
-          hasActiveConsent: true
-        },
-        {
-          id: 4,
-          firstName: 'Giulia',
-          lastName: 'Rossi',
-          fiscalCode: 'RSSGLU90D55H501W',
-          email: 'giulia.rossi@email.it',
-          phone: '+39 333 4444444',
-          birthDate: '1990-04-15',
-          consents: ['DOCS'],
-          lastAccess: '2025-01-15T09:00:00',
-          nextAppointment: '2025-02-20T14:00:00',
-          hasActiveConsent: true
-        },
-        {
-          id: 5,
-          firstName: 'Francesco',
-          lastName: 'Romano',
-          fiscalCode: 'RMNFNC70E10H501V',
-          email: 'francesco.romano@email.it',
-          phone: '+39 333 5555555',
-          birthDate: '1970-05-10',
-          consents: ['DOCS', 'PRESCRIPTIONS'],
-          hasActiveConsent: true
-        },
-        {
-          id: 6,
-          firstName: 'Elena',
-          lastName: 'Colombo',
-          fiscalCode: 'CLMLNE88F25H501U',
-          email: 'elena.colombo@email.it',
-          phone: '+39 333 6666666',
-          birthDate: '1988-06-25',
-          consents: [],
-          hasActiveConsent: false
-        },
-        {
-          id: 7,
-          firstName: 'Marco',
-          lastName: 'Ferrari',
-          fiscalCode: 'FRRMRC82G30H501T',
-          email: 'marco.ferrari@email.it',
-          phone: '+39 333 7777777',
-          birthDate: '1982-07-30',
-          consents: [],
-          hasActiveConsent: false
-        },
-        {
-          id: 8,
-          firstName: 'Sara',
-          lastName: 'Conti',
-          fiscalCode: 'CNTSRA95H05H501S',
-          email: 'sara.conti@email.it',
-          phone: '+39 333 8888888',
-          birthDate: '1995-08-05',
-          consents: ['DOCS', 'TELEVISIT'],
-          lastAccess: '2025-01-27T11:15:00',
-          hasActiveConsent: true
+    this.doctorApi.searchPatients({ size: 100 }).subscribe({
+      next: (page) => {
+        const patientDtos = page.content || [];
+
+        // Per ogni paziente, verifica i consensi
+        const consentChecks = patientDtos.map(patient => {
+          const scopes: ConsentScope[] = ['DOCS', 'PRESCRIPTIONS', 'TELEVISIT'];
+          return this.doctorApi.checkMultipleConsents(patient.id, scopes).pipe(
+            map(consentsMap => ({ patient, consentsMap })),
+            catchError(() => of({ patient, consentsMap: new Map<ConsentScope, boolean>() }))
+          );
+        });
+
+        if (consentChecks.length > 0) {
+          forkJoin(consentChecks).subscribe({
+            next: (results) => {
+              this.patients = results.map(r => this.mapPatient(r.patient, r.consentsMap));
+              this.isLoading = false;
+            },
+            error: () => {
+              // Fallback: mostra pazienti senza info consensi
+              this.patients = patientDtos.map(p => this.mapPatient(p, new Map()));
+              this.isLoading = false;
+            }
+          });
+        } else {
+          this.patients = [];
+          this.isLoading = false;
         }
-      ];
-      this.isLoading = false;
-    }, 500);
+      },
+      error: () => {
+        this.errorMessage = 'Errore nel caricamento dei pazienti.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private mapPatient(dto: PatientDto, consentsMap: Map<ConsentScope, boolean>): Patient {
+    const consents: ConsentScope[] = [];
+    if (consentsMap.get('DOCS')) consents.push('DOCS');
+    if (consentsMap.get('PRESCRIPTIONS')) consents.push('PRESCRIPTIONS');
+    if (consentsMap.get('TELEVISIT')) consents.push('TELEVISIT');
+
+    return {
+      id: dto.id,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      fiscalCode: dto.fiscalCode || '',
+      email: dto.email,
+      phone: dto.phone || '',
+      birthDate: dto.birthDate || '',
+      consents,
+      hasActiveConsent: consents.length > 0
+    };
   }
 
   get filteredPatients(): Patient[] {
@@ -255,6 +216,7 @@ export class DoctorPatientsComponent implements OnInit {
   }
 
   calculateAge(birthDate: string): number {
+    if (!birthDate) return 0;
     const birth = new Date(birthDate);
     const today = new Date();
     let age = today.getFullYear() - birth.getFullYear();

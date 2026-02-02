@@ -1,21 +1,18 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { Subject, forkJoin, takeUntil } from 'rxjs';
+import {
+  PatientService,
+  TelevisitDto,
+  TelevisitStatus
+} from './services/patient.service';
+import { DoctorDto, DepartmentDto } from './services/scheduling.service';
 
-type TelevisitStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-
-interface Televisit {
-  id: number;
-  doctorName: string;
-  doctorSpecialty: string;
-  scheduledAt: string;
-  duration: number; // minuti
-  status: TelevisitStatus;
-  notes?: string;
-  preparationChecklist?: string[];
-  roomUrl?: string;
-  attachments?: { name: string; uploaded: boolean }[];
+interface TelevisitWithDetails extends TelevisitDto {
+  doctorName?: string;
+  departmentName?: string;
 }
 
 interface DeviceCheck {
@@ -30,9 +27,15 @@ interface DeviceCheck {
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './patient-televisits.component.html'
 })
-export class PatientTelevisitsComponent implements OnInit {
+export class PatientTelevisitsComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   // Dati televisite
-  televisits: Televisit[] = [];
+  televisits: TelevisitWithDetails[] = [];
+
+  // Dati per arricchimento
+  private doctors: DoctorDto[] = [];
+  private departments: DepartmentDto[] = [];
 
   // UI State
   isLoading = false;
@@ -40,7 +43,7 @@ export class PatientTelevisitsComponent implements OnInit {
   errorMessage = '';
   showDetailModal = false;
   showDeviceTestModal = false;
-  selectedTelevisit: Televisit | null = null;
+  selectedTelevisit: TelevisitWithDetails | null = null;
 
   // Device check
   deviceCheck: DeviceCheck = {
@@ -63,93 +66,70 @@ export class PatientTelevisitsComponent implements OnInit {
 
   // Tempo corrente per countdown
   currentTime = new Date();
+  private intervalId: ReturnType<typeof setInterval> | null = null;
+
+  constructor(private patientService: PatientService) {}
 
   ngOnInit(): void {
     this.loadTelevisits();
     // Aggiorna il countdown ogni secondo
-    setInterval(() => {
+    this.intervalId = setInterval(() => {
       this.currentTime = new Date();
     }, 1000);
   }
 
-  loadTelevisits(): void {
-    this.isLoading = true;
-
-    // Dati mock - Scenario di Roberto con televisita imminente
-    const now = new Date();
-    const thirtyMinutesLater = new Date(now.getTime() + 30 * 60000);
-
-    setTimeout(() => {
-      this.televisits = [
-        {
-          id: 1,
-          doctorName: 'Dr. Elena Dermati',
-          doctorSpecialty: 'Dermatologia',
-          scheduledAt: thirtyMinutesLater.toISOString(),
-          duration: 20,
-          status: 'SCHEDULED',
-          notes: 'Controllo lesione cutanea braccio sinistro',
-          preparationChecklist: [
-            'Verificare connessione internet stabile',
-            'Testare webcam e microfono',
-            'Preparare eventuali documenti da condividere',
-            'Essere in un ambiente ben illuminato'
-          ],
-          roomUrl: 'https://televisit.sanitech.it/room/abc123',
-          attachments: [
-            { name: 'foto_lesione_1.jpg', uploaded: true },
-            { name: 'foto_lesione_2.jpg', uploaded: true }
-          ]
-        },
-        {
-          id: 2,
-          doctorName: 'Dr. Marco Cardioli',
-          doctorSpecialty: 'Cardiologia',
-          scheduledAt: new Date(now.getTime() + 7 * 24 * 60 * 60000).toISOString(),
-          duration: 30,
-          status: 'SCHEDULED',
-          notes: 'Follow-up terapia antipertensiva'
-        },
-        {
-          id: 3,
-          doctorName: 'Dr. Anna Medici',
-          doctorSpecialty: 'Medicina generale',
-          scheduledAt: new Date(now.getTime() - 3 * 24 * 60 * 60000).toISOString(),
-          duration: 15,
-          status: 'COMPLETED',
-          notes: 'Consulto per sintomi influenzali'
-        },
-        {
-          id: 4,
-          doctorName: 'Dr. Luigi Ortopedico',
-          doctorSpecialty: 'Ortopedia',
-          scheduledAt: new Date(now.getTime() - 14 * 24 * 60 * 60000).toISOString(),
-          duration: 25,
-          status: 'COMPLETED',
-          notes: 'Controllo post-operatorio ginocchio'
-        },
-        {
-          id: 5,
-          doctorName: 'Dr. Paolo Pneumologo',
-          doctorSpecialty: 'Pneumologia',
-          scheduledAt: new Date(now.getTime() - 7 * 24 * 60 * 60000).toISOString(),
-          duration: 20,
-          status: 'CANCELLED',
-          notes: 'Cancellato su richiesta paziente'
-        }
-      ];
-      this.isLoading = false;
-    }, 500);
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
   }
 
-  get filteredTelevisits(): Televisit[] {
+  loadTelevisits(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    forkJoin({
+      televisits: this.patientService.getTelevisits({ size: 100, sort: 'scheduledAt,desc' }),
+      enrichment: this.patientService.loadEnrichmentData()
+    })
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: ({ televisits, enrichment }) => {
+        this.doctors = enrichment.doctors;
+        this.departments = enrichment.departments;
+        this.televisits = this.enrichTelevisits(televisits.content);
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Errore caricamento televisite:', err);
+        this.errorMessage = 'Impossibile caricare le televisite. Riprova.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private enrichTelevisits(televisits: TelevisitDto[]): TelevisitWithDetails[] {
+    const deptMap = new Map(this.departments.map(d => [d.code, d]));
+
+    return televisits.map(t => {
+      const dept = deptMap.get(t.department);
+      return {
+        ...t,
+        departmentName: dept?.name || t.department
+      };
+    });
+  }
+
+  get filteredTelevisits(): TelevisitWithDetails[] {
     return this.televisits.filter(t => {
       if (this.statusFilter !== 'ALL' && t.status !== this.statusFilter) return false;
       return true;
     });
   }
 
-  get paginatedTelevisits(): Televisit[] {
+  get paginatedTelevisits(): TelevisitWithDetails[] {
     const start = (this.currentPage - 1) * this.pageSize;
     return this.filteredTelevisits.slice(start, start + this.pageSize);
   }
@@ -158,39 +138,41 @@ export class PatientTelevisitsComponent implements OnInit {
     return Math.ceil(this.filteredTelevisits.length / this.pageSize) || 1;
   }
 
-  get upcomingTelevisit(): Televisit | null {
+  get upcomingTelevisit(): TelevisitWithDetails | null {
     const upcoming = this.televisits
-      .filter(t => t.status === 'SCHEDULED' && new Date(t.scheduledAt) > this.currentTime)
+      .filter(t => t.status === 'CREATED' && new Date(t.scheduledAt) > this.currentTime)
       .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
     return upcoming.length > 0 ? upcoming[0] : null;
   }
 
   get scheduledCount(): number {
-    return this.televisits.filter(t => t.status === 'SCHEDULED').length;
+    return this.televisits.filter(t => t.status === 'CREATED').length;
   }
 
   get completedCount(): number {
-    return this.televisits.filter(t => t.status === 'COMPLETED').length;
+    return this.televisits.filter(t => t.status === 'ENDED').length;
   }
 
   getStatusLabel(status: TelevisitStatus): string {
     const labels: Record<TelevisitStatus, string> = {
+      CREATED: 'Creata',
       SCHEDULED: 'Programmata',
-      IN_PROGRESS: 'In corso',
-      COMPLETED: 'Completata',
-      CANCELLED: 'Annullata'
+      ACTIVE: 'In corso',
+      ENDED: 'Completata',
+      CANCELED: 'Annullata'
     };
-    return labels[status];
+    return labels[status] || status;
   }
 
   getStatusBadgeClass(status: TelevisitStatus): string {
     const classes: Record<TelevisitStatus, string> = {
+      CREATED: 'bg-info',
       SCHEDULED: 'bg-primary',
-      IN_PROGRESS: 'bg-success',
-      COMPLETED: 'bg-secondary',
-      CANCELLED: 'bg-danger'
+      ACTIVE: 'bg-success',
+      ENDED: 'bg-secondary',
+      CANCELED: 'bg-danger'
     };
-    return classes[status];
+    return classes[status] || 'bg-secondary';
   }
 
   formatDate(dateStr: string): string {
@@ -237,21 +219,21 @@ export class PatientTelevisitsComponent implements OnInit {
     return `${minutes} minuti`;
   }
 
-  canJoinVisit(televisit: Televisit): boolean {
-    if (televisit.status !== 'SCHEDULED') return false;
+  canJoinVisit(televisit: TelevisitWithDetails): boolean {
+    if (televisit.status !== 'CREATED' && televisit.status !== 'ACTIVE') return false;
     const scheduled = new Date(televisit.scheduledAt);
     const tenMinutesBefore = new Date(scheduled.getTime() - 10 * 60000);
     return this.currentTime >= tenMinutesBefore;
   }
 
-  isUpcoming(televisit: Televisit): boolean {
-    if (televisit.status !== 'SCHEDULED') return false;
+  isUpcoming(televisit: TelevisitWithDetails): boolean {
+    if (televisit.status !== 'CREATED') return false;
     const scheduled = new Date(televisit.scheduledAt);
     const oneHourFromNow = new Date(this.currentTime.getTime() + 60 * 60000);
     return scheduled <= oneHourFromNow && scheduled > this.currentTime;
   }
 
-  openDetailModal(televisit: Televisit): void {
+  openDetailModal(televisit: TelevisitWithDetails): void {
     this.selectedTelevisit = televisit;
     this.showDetailModal = true;
   }
@@ -299,9 +281,21 @@ export class PatientTelevisitsComponent implements OnInit {
     }, 3000);
   }
 
-  joinVisit(televisit: Televisit): void {
-    this.successMessage = `Connessione alla sala d'attesa virtuale per la visita con ${televisit.doctorName}...`;
-    setTimeout(() => this.successMessage = '', 5000);
+  joinVisit(televisit: TelevisitWithDetails): void {
+    this.patientService.getPatientTelevisitToken(televisit.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (tokenData) => {
+          // Apri la stanza LiveKit
+          window.open(tokenData.url, '_blank');
+          this.successMessage = `Connessione alla sala d'attesa virtuale per la visita con ${televisit.departmentName}...`;
+          setTimeout(() => this.successMessage = '', 5000);
+        },
+        error: (err) => {
+          console.error('Errore generazione token:', err);
+          this.errorMessage = 'Impossibile connettersi alla televisita. Riprova.';
+        }
+      });
   }
 
   openUploadPhotoModal(): void {

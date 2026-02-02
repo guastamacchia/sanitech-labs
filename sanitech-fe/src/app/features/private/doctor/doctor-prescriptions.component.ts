@@ -2,6 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import {
+  DoctorApiService,
+  PrescriptionDto,
+  PatientDto,
+  PrescriptionStatus as ApiPrescriptionStatus,
+  ConsentScope
+} from './doctor-api.service';
 
 type PrescriptionStatus = 'DRAFT' | 'ISSUED' | 'EXPIRED' | 'CANCELLED';
 
@@ -49,7 +58,10 @@ export class DoctorPrescriptionsComponent implements OnInit {
   // Pazienti con consenso PRESCRIPTIONS
   patients: { id: number; name: string }[] = [];
 
-  // Database farmaci (mock)
+  // Cache pazienti
+  private patientsCache = new Map<number, PatientDto>();
+
+  // Database farmaci (statico - potrebbe essere un'API in futuro)
   drugDatabase: DrugSuggestion[] = [
     { name: 'Ramipril', dosages: ['2.5mg', '5mg', '10mg'] },
     { name: 'Bisoprololo', dosages: ['1.25mg', '2.5mg', '5mg', '10mg'] },
@@ -60,6 +72,8 @@ export class DoctorPrescriptionsComponent implements OnInit {
     { name: 'Amlodipina', dosages: ['5mg', '10mg'] },
     { name: 'Furosemide', dosages: ['25mg', '50mg', '100mg'] }
   ];
+
+  constructor(private doctorApi: DoctorApiService) {}
 
   // Suggerimenti filtrati
   filteredDrugs: DrugSuggestion[] = [];
@@ -114,74 +128,108 @@ export class DoctorPrescriptionsComponent implements OnInit {
 
   loadData(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
-    setTimeout(() => {
-      // Mock pazienti con consenso PRESCRIPTIONS
-      this.patients = [
-        { id: 1, name: 'Esposito Mario' },
-        { id: 2, name: 'Verdi Anna' },
-        { id: 5, name: 'Romano Francesco' }
-      ];
+    // Carica pazienti con consenso PRESCRIPTIONS
+    this.doctorApi.searchPatients({ size: 100 }).pipe(
+      switchMap(patientsPage => {
+        const allPatients = patientsPage.content || [];
+        // Cache pazienti
+        allPatients.forEach(p => this.patientsCache.set(p.id, p));
 
-      // Mock prescrizioni - scenario Dott.ssa Moretti
-      this.prescriptions = [
-        {
-          id: 1,
-          patientId: 1,
-          patientName: 'Esposito Mario',
-          medications: [
-            { name: 'Ramipril', dosage: '5mg', posology: '1 compressa al mattino', duration: 90, notes: 'Assumere a stomaco vuoto' },
-            { name: 'Bisoprololo', dosage: '2.5mg', posology: '1 compressa al mattino', duration: 90, notes: '' }
-          ],
-          issuedAt: '2025-01-28T10:30:00',
-          expiresAt: '2025-04-28',
-          status: 'ISSUED',
-          notes: 'Controllare la pressione settimanalmente. Prossimo controllo tra 3 mesi.',
-          pdfUrl: '/prescriptions/rx_001.pdf'
-        },
-        {
-          id: 2,
-          patientId: 2,
-          patientName: 'Verdi Anna',
-          medications: [
-            { name: 'Atorvastatina', dosage: '20mg', posology: '1 compressa la sera', duration: 30, notes: '' }
-          ],
-          issuedAt: '2025-01-25T14:00:00',
-          expiresAt: '2025-02-25',
-          status: 'ISSUED',
-          notes: 'Ripetere esami del profilo lipidico tra 1 mese.',
-          pdfUrl: '/prescriptions/rx_002.pdf'
-        },
-        {
-          id: 3,
-          patientId: 1,
-          patientName: 'Esposito Mario',
-          medications: [
-            { name: 'Aspirina', dosage: '100mg', posology: '1 compressa al giorno', duration: 365, notes: 'Cardioaspirina' }
-          ],
-          issuedAt: '2024-11-15T09:00:00',
-          expiresAt: '2025-11-15',
-          status: 'ISSUED',
-          notes: 'Terapia continuativa per prevenzione secondaria.',
-          pdfUrl: '/prescriptions/rx_003.pdf'
-        },
-        {
-          id: 4,
-          patientId: 5,
-          patientName: 'Romano Francesco',
-          medications: [
-            { name: 'Omeprazolo', dosage: '20mg', posology: '1 compressa prima di colazione', duration: 14, notes: '' }
-          ],
-          issuedAt: '2024-12-20T11:30:00',
-          expiresAt: '2025-01-03',
-          status: 'EXPIRED',
-          notes: 'Ciclo per gastrite. Rivalutare se sintomi persistono.',
-          pdfUrl: '/prescriptions/rx_004.pdf'
+        // Verifica consenso PRESCRIPTIONS per ogni paziente
+        const consentChecks = allPatients.map(patient =>
+          this.doctorApi.checkConsent(patient.id, 'PRESCRIPTIONS').pipe(
+            map(consent => ({ patient, allowed: consent.allowed })),
+            catchError(() => of({ patient, allowed: false }))
+          )
+        );
+
+        if (consentChecks.length === 0) {
+          return of({ allPatients, patientsWithConsent: [] as { id: number; name: string }[] });
         }
-      ];
 
-      this.isLoading = false;
-    }, 500);
+        return forkJoin(consentChecks).pipe(
+          map(results => {
+            // Filtra pazienti con consenso
+            const patientsWithConsent = results
+              .filter(r => r.allowed)
+              .map(r => ({
+                id: r.patient.id,
+                name: `${r.patient.lastName} ${r.patient.firstName}`
+              }));
+            return { allPatients, patientsWithConsent };
+          })
+        );
+      })
+    ).subscribe({
+      next: ({ allPatients, patientsWithConsent }) => {
+        this.patients = patientsWithConsent;
+
+        // Carica prescrizioni per ogni paziente con consenso
+        if (patientsWithConsent.length === 0) {
+          this.prescriptions = [];
+          this.isLoading = false;
+          return;
+        }
+
+        const departmentCode = this.doctorApi.getDepartmentCode() || '';
+        const prescriptionFetches = patientsWithConsent.map(patient =>
+          this.doctorApi.listPrescriptions({
+            patientId: patient.id,
+            departmentCode,
+            size: 50
+          }).pipe(
+            map(page => page.content || []),
+            catchError(() => of([] as PrescriptionDto[]))
+          )
+        );
+
+        forkJoin(prescriptionFetches).subscribe({
+          next: (prescriptionArrays) => {
+            const allPrescriptions = prescriptionArrays.flat();
+            this.prescriptions = allPrescriptions.map(p => this.mapPrescription(p));
+            this.isLoading = false;
+          },
+          error: () => {
+            this.errorMessage = 'Errore nel caricamento delle prescrizioni.';
+            this.isLoading = false;
+          }
+        });
+      },
+      error: () => {
+        this.errorMessage = 'Errore nel caricamento dei dati.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private mapPrescription(dto: PrescriptionDto): Prescription {
+    const patient = this.patientsCache.get(dto.patientId);
+
+    // Calcola data scadenza (issuedAt + max duration)
+    const maxDuration = dto.items.reduce((max, item) => Math.max(max, item.durationDays || 30), 30);
+    const issuedDate = dto.issuedAt ? new Date(dto.issuedAt) : new Date(dto.createdAt);
+    const expiryDate = new Date(issuedDate);
+    expiryDate.setDate(expiryDate.getDate() + maxDuration);
+
+    return {
+      id: dto.id,
+      patientId: dto.patientId,
+      patientName: patient ? `${patient.lastName} ${patient.firstName}` : `Paziente ${dto.patientId}`,
+      medications: dto.items.map(item => ({
+        name: item.medicationName,
+        dosage: item.dosage,
+        posology: item.frequency,
+        duration: item.durationDays || 30,
+        notes: item.instructions || ''
+      })),
+      issuedAt: dto.issuedAt || dto.createdAt,
+      expiresAt: expiryDate.toISOString().split('T')[0],
+      status: dto.status as PrescriptionStatus,
+      notes: dto.notes || '',
+      pdfUrl: `/prescriptions/rx_${dto.id}.pdf`
+    };
   }
 
   get filteredPrescriptions(): Prescription[] {
@@ -302,32 +350,43 @@ export class DoctorPrescriptionsComponent implements OnInit {
   issuePrescription(): void {
     if (!this.validateForm()) return;
 
+    const departmentCode = this.doctorApi.getDepartmentCode();
+    if (!departmentCode) {
+      this.errorMessage = 'Reparto non configurato.';
+      return;
+    }
+
     this.isSaving = true;
+    this.errorMessage = '';
 
-    setTimeout(() => {
-      const patient = this.patients.find(p => p.id === this.prescriptionForm.patientId);
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + Math.max(...this.prescriptionForm.medications.map(m => m.duration)));
+    const patient = this.patients.find(p => p.id === this.prescriptionForm.patientId);
 
-      const newPrescription: Prescription = {
-        id: this.prescriptions.length + 1,
-        patientId: this.prescriptionForm.patientId!,
-        patientName: patient?.name || '',
-        medications: [...this.prescriptionForm.medications],
-        issuedAt: new Date().toISOString(),
-        expiresAt: expiryDate.toISOString().split('T')[0],
-        status: 'ISSUED',
-        notes: this.prescriptionForm.notes,
-        pdfUrl: '/prescriptions/rx_new.pdf'
-      };
-
-      this.prescriptions.unshift(newPrescription);
-      this.isSaving = false;
-      this.showPreviewModal = false;
-      this.closeNewPrescriptionModal();
-      this.successMessage = `Prescrizione emessa con successo. Il paziente ${patient?.name} riceverà una notifica.`;
-      setTimeout(() => this.successMessage = '', 5000);
-    }, 2000);
+    this.doctorApi.createPrescription({
+      patientId: this.prescriptionForm.patientId!,
+      departmentCode,
+      notes: this.prescriptionForm.notes,
+      items: this.prescriptionForm.medications.map((med, index) => ({
+        medicationName: med.name,
+        dosage: med.dosage,
+        frequency: med.posology,
+        durationDays: med.duration,
+        instructions: med.notes,
+        sortOrder: index
+      }))
+    }).subscribe({
+      next: (created) => {
+        this.isSaving = false;
+        this.showPreviewModal = false;
+        this.closeNewPrescriptionModal();
+        this.loadData(); // Ricarica tutto
+        this.successMessage = `Prescrizione emessa con successo. Il paziente ${patient?.name} riceverà una notifica.`;
+        setTimeout(() => this.successMessage = '', 5000);
+      },
+      error: (err) => {
+        this.isSaving = false;
+        this.errorMessage = err.error?.detail || 'Errore nella creazione della prescrizione.';
+      }
+    });
   }
 
   duplicatePrescription(prescription: Prescription): void {

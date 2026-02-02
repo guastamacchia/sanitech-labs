@@ -1309,34 +1309,61 @@
                   aria-modal="true"
                   aria-labelledby="notificationContactsModalTitle"
                   style="position: fixed; inset: 0; z-index: 1055;">
-                  <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 720px;">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="notificationContactsModalTitle">Modifica contatti</h5>
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content shadow-lg border-0">
+                      <div class="modal-header border-0 pb-0">
+                        <div>
+                          <h5 class="modal-title fw-bold" id="notificationContactsModalTitle">
+                            <i class="bi bi-person-lines-fill me-2 text-primary"></i>
+                            Modifica contatti
+                          </h5>
+                          <p class="text-muted small mb-0 mt-1">Aggiorna i tuoi recapiti per le notifiche</p>
+                        </div>
                         <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeNotificationContactsModal()"></button>
                       </div>
-                      <div class="modal-body">
+                      <div class="modal-body pt-4">
                         <form (ngSubmit)="saveContactChanges()" #notificationContactsRef="ngForm">
-                          <div class="alert alert-info py-2 mb-3">
-                            <small>L'indirizzo email non è modificabile perché corrisponde allo username utilizzato per accedere al portale. È possibile modificare solo il numero di telefono.</small>
+                          <div class="alert alert-info border-0 py-2 mb-4">
+                            <div class="d-flex">
+                              <i class="bi bi-info-circle me-2 mt-1"></i>
+                              <small>L'indirizzo email non è modificabile perché corrisponde allo username utilizzato per accedere al portale. È possibile modificare solo il numero di telefono.</small>
+                            </div>
                           </div>
                           <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input class="form-control" type="email" name="notificationEmail" [value]="notificationPrefs.email" readonly disabled />
+                            <label class="form-label fw-semibold small text-muted">Email</label>
+                            <div class="input-group">
+                              <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-envelope text-muted"></i>
+                              </span>
+                              <input class="form-control border-start-0 bg-light" type="email" name="notificationEmail" [value]="notificationPrefs.email" readonly disabled />
+                            </div>
                           </div>
-                          <div class="mb-3">
-                            <label class="form-label">Numero di telefono</label>
-                            <input class="form-control" type="tel" name="notificationPhone" [(ngModel)]="notificationPrefs.phone" />
+                          <div class="mb-4">
+                            <label class="form-label fw-semibold small text-muted">Numero di telefono</label>
+                            <div class="input-group">
+                              <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-phone text-muted"></i>
+                              </span>
+                              <input class="form-control border-start-0" type="tel" name="notificationPhone" [(ngModel)]="notificationPrefs.phone" placeholder="+39 333 1234567" />
+                            </div>
                           </div>
-                          <div class="alert alert-success py-2" *ngIf="notificationsSuccess">{{ notificationsSuccess }}</div>
-                          <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
-                          <div class="d-flex justify-content-end gap-2">
-                            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="closeNotificationContactsModal()">Annulla</button>
-                            <button class="btn btn-primary btn-sm" type="submit" [disabled]="isLoading">
-                              Salva
-                            </button>
+                          <div class="alert alert-success border-0 py-2" *ngIf="notificationsSuccess">
+                            <i class="bi bi-check-circle me-2"></i>
+                            {{ notificationsSuccess }}
+                          </div>
+                          <div class="alert alert-danger border-0 py-2" *ngIf="notificationsError">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            {{ notificationsError }}
                           </div>
                         </form>
+                      </div>
+                      <div class="modal-footer border-0 pt-0">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeNotificationContactsModal()">Annulla</button>
+                        <button class="btn btn-primary" type="button" (click)="saveContactChanges()" [disabled]="isLoading">
+                          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+                          <i *ngIf="!isLoading" class="bi bi-check-circle me-1"></i>
+                          {{ isLoading ? 'Salvataggio...' : 'Salva contatti' }}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1354,61 +1381,117 @@
                   aria-modal="true"
                   aria-labelledby="notificationPreferencesModalTitle"
                   style="position: fixed; inset: 0; z-index: 1055;">
-                  <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 980px;">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="notificationPreferencesModalTitle">Modifica preferenze</h5>
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content shadow-lg border-0">
+                      <div class="modal-header border-0 pb-0">
+                        <div>
+                          <h5 class="modal-title fw-bold" id="notificationPreferencesModalTitle">
+                            <i class="bi bi-gear me-2 text-primary"></i>
+                            Preferenze notifiche
+                          </h5>
+                          <p class="text-muted small mb-0 mt-1">Personalizza come ricevere le comunicazioni</p>
+                        </div>
                         <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeNotificationPreferencesModal()"></button>
                       </div>
-                      <div class="modal-body">
+                      <div class="modal-body pt-4">
                         <form (ngSubmit)="saveNotificationPreferences()" #notificationPrefsRef="ngForm">
-                          <div class="mb-3">
-                            <div class="d-flex align-items-center justify-content-between">
-                              <label class="form-label mb-0">Canali preferiti</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="checkbox" id="prefChannelEmail" name="prefChannelEmail" [(ngModel)]="notificationPrefs.channels.email" />
-                              <label class="form-check-label" for="prefChannelEmail">Email</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="checkbox" id="prefChannelSms" name="prefChannelSms" [(ngModel)]="notificationPrefs.channels.sms" />
-                              <label class="form-check-label" for="prefChannelSms">SMS</label>
-                            </div>
-                          </div>
-                          <div class="mb-3">
-                            <div class="d-flex align-items-center justify-content-between">
-                              <label class="form-label mb-0">Tipologie di notifica</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="checkbox" id="prefTypeAppointments" name="prefTypeAppointments" [(ngModel)]="notificationPrefs.types.appointments" />
-                              <label class="form-check-label" for="prefTypeAppointments">Appuntamenti</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="checkbox" id="prefTypeDocuments" name="prefTypeDocuments" [(ngModel)]="notificationPrefs.types.documents" />
-                              <label class="form-check-label" for="prefTypeDocuments">Referti e documenti</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="checkbox" id="prefTypePayments" name="prefTypePayments" [(ngModel)]="notificationPrefs.types.payments" />
-                              <label class="form-check-label" for="prefTypePayments">Pagamenti</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="checkbox" id="prefTypeAdmissions" name="prefTypeAdmissions" [(ngModel)]="notificationPrefs.types.admissions" />
-                              <label class="form-check-label" for="prefTypeAdmissions">Ricoveri</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPrefs.types.prescriptions" />
-                              <label class="form-check-label" for="prefTypePrescriptions">Prescrizioni</label>
+                          <div class="mb-4">
+                            <label class="form-label fw-semibold small text-muted mb-3">
+                              <i class="bi bi-broadcast me-1"></i>
+                              Canali preferiti
+                            </label>
+                            <div class="row g-3">
+                              <div class="col-6">
+                                <div class="card h-100"
+                                     [class.border-primary]="notificationPrefs.channels.email"
+                                     [class.bg-primary]="notificationPrefs.channels.email"
+                                     [class.bg-opacity-10]="notificationPrefs.channels.email"
+                                     style="cursor: pointer;"
+                                     (click)="notificationPrefs.channels.email = !notificationPrefs.channels.email">
+                                  <div class="card-body text-center py-3">
+                                    <i class="bi bi-envelope fs-4 mb-2" [class.text-primary]="notificationPrefs.channels.email"></i>
+                                    <div class="fw-semibold">Email</div>
+                                    <input class="form-check-input visually-hidden" type="checkbox" id="prefChannelEmail" name="prefChannelEmail" [(ngModel)]="notificationPrefs.channels.email" />
+                                  </div>
+                                </div>
+                              </div>
+                              <div class="col-6">
+                                <div class="card h-100"
+                                     [class.border-primary]="notificationPrefs.channels.sms"
+                                     [class.bg-primary]="notificationPrefs.channels.sms"
+                                     [class.bg-opacity-10]="notificationPrefs.channels.sms"
+                                     style="cursor: pointer;"
+                                     (click)="notificationPrefs.channels.sms = !notificationPrefs.channels.sms">
+                                  <div class="card-body text-center py-3">
+                                    <i class="bi bi-phone fs-4 mb-2" [class.text-primary]="notificationPrefs.channels.sms"></i>
+                                    <div class="fw-semibold">SMS</div>
+                                    <input class="form-check-input visually-hidden" type="checkbox" id="prefChannelSms" name="prefChannelSms" [(ngModel)]="notificationPrefs.channels.sms" />
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          <div class="alert alert-success py-2" *ngIf="notificationsSuccess">{{ notificationsSuccess }}</div>
-                          <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
-                          <div class="d-flex justify-content-end gap-2">
-                            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="closeNotificationPreferencesModal()">Annulla</button>
-                            <button class="btn btn-primary btn-sm" type="submit" [disabled]="notificationPrefsRef.invalid || isLoading">
-                              Salva preferenze
-                            </button>
+                          <hr class="my-4">
+                          <div class="mb-4">
+                            <label class="form-label fw-semibold small text-muted mb-3">
+                              <i class="bi bi-bell me-1"></i>
+                              Tipologie di notifica
+                            </label>
+                            <div class="list-group list-group-flush">
+                              <label class="list-group-item d-flex align-items-center border-0 px-0 py-2" for="prefTypeAppointments">
+                                <input class="form-check-input me-3 flex-shrink-0" type="checkbox" id="prefTypeAppointments" name="prefTypeAppointments" [(ngModel)]="notificationPrefs.types.appointments" />
+                                <div>
+                                  <div class="fw-semibold">Appuntamenti</div>
+                                  <small class="text-muted">Promemoria e conferme visite</small>
+                                </div>
+                              </label>
+                              <label class="list-group-item d-flex align-items-center border-0 px-0 py-2" for="prefTypeDocuments">
+                                <input class="form-check-input me-3 flex-shrink-0" type="checkbox" id="prefTypeDocuments" name="prefTypeDocuments" [(ngModel)]="notificationPrefs.types.documents" />
+                                <div>
+                                  <div class="fw-semibold">Referti e documenti</div>
+                                  <small class="text-muted">Nuovi referti disponibili</small>
+                                </div>
+                              </label>
+                              <label class="list-group-item d-flex align-items-center border-0 px-0 py-2" for="prefTypePayments">
+                                <input class="form-check-input me-3 flex-shrink-0" type="checkbox" id="prefTypePayments" name="prefTypePayments" [(ngModel)]="notificationPrefs.types.payments" />
+                                <div>
+                                  <div class="fw-semibold">Pagamenti</div>
+                                  <small class="text-muted">Scadenze e conferme pagamento</small>
+                                </div>
+                              </label>
+                              <label class="list-group-item d-flex align-items-center border-0 px-0 py-2" for="prefTypeAdmissions">
+                                <input class="form-check-input me-3 flex-shrink-0" type="checkbox" id="prefTypeAdmissions" name="prefTypeAdmissions" [(ngModel)]="notificationPrefs.types.admissions" />
+                                <div>
+                                  <div class="fw-semibold">Ricoveri</div>
+                                  <small class="text-muted">Aggiornamenti sui ricoveri</small>
+                                </div>
+                              </label>
+                              <label class="list-group-item d-flex align-items-center border-0 px-0 py-2" for="prefTypePrescriptions">
+                                <input class="form-check-input me-3 flex-shrink-0" type="checkbox" id="prefTypePrescriptions" name="prefTypePrescriptions" [(ngModel)]="notificationPrefs.types.prescriptions" />
+                                <div>
+                                  <div class="fw-semibold">Prescrizioni</div>
+                                  <small class="text-muted">Nuove prescrizioni mediche</small>
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+                          <div class="alert alert-success border-0 py-2" *ngIf="notificationsSuccess">
+                            <i class="bi bi-check-circle me-2"></i>
+                            {{ notificationsSuccess }}
+                          </div>
+                          <div class="alert alert-danger border-0 py-2" *ngIf="notificationsError">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            {{ notificationsError }}
                           </div>
                         </form>
+                      </div>
+                      <div class="modal-footer border-0 pt-0">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeNotificationPreferencesModal()">Annulla</button>
+                        <button class="btn btn-primary" type="button" (click)="saveNotificationPreferences()" [disabled]="notificationPrefsRef.invalid || isLoading">
+                          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+                          <i *ngIf="!isLoading" class="bi bi-check-circle me-1"></i>
+                          {{ isLoading ? 'Salvataggio...' : 'Salva preferenze' }}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1765,45 +1848,66 @@
                     aria-labelledby="adminNotificationModalTitle"
                     style="position: fixed; inset: 0; z-index: 1055;">
                     <div class="modal-dialog modal-dialog-centered modal-lg">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title" id="adminNotificationModalTitle">Invia notifica</h5>
+                      <div class="modal-content shadow-lg border-0">
+                        <div class="modal-header border-0 pb-0">
+                          <div>
+                            <h5 class="modal-title fw-bold" id="adminNotificationModalTitle">
+                              <i class="bi bi-send me-2 text-primary"></i>
+                              Invia notifica
+                            </h5>
+                            <p class="text-muted small mb-0 mt-1">Invia una comunicazione personalizzata</p>
+                          </div>
                           <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminNotificationModal()"></button>
                         </div>
-                        <div class="modal-body">
+                        <div class="modal-body pt-4">
                           <form (ngSubmit)="submitNotification()" #notificationFormRef="ngForm">
-                            <div class="mb-3">
-                              <label class="form-label">Destinatario</label>
-                              <input class="form-control" type="email" name="notificationRecipient" [(ngModel)]="notificationForm.recipient" required />
+                            <div class="row g-3 mb-3">
+                              <div class="col-md-8">
+                                <label class="form-label fw-semibold small text-muted">Destinatario</label>
+                                <div class="input-group">
+                                  <span class="input-group-text bg-light border-end-0">
+                                    <i class="bi bi-person text-muted"></i>
+                                  </span>
+                                  <input class="form-control border-start-0" type="email" name="notificationRecipient" [(ngModel)]="notificationForm.recipient" placeholder="email@esempio.com" required />
+                                </div>
+                              </div>
+                              <div class="col-md-4">
+                                <label class="form-label fw-semibold small text-muted">Canale</label>
+                                <select class="form-select" name="notificationChannel" [(ngModel)]="notificationForm.channel" required>
+                                  <option value="EMAIL">📧 Email</option>
+                                  <option value="SMS">📱 SMS</option>
+                                  <option value="APP">📲 App</option>
+                                </select>
+                              </div>
                             </div>
                             <div class="mb-3">
-                              <label class="form-label">Canale</label>
-                              <select class="form-select" name="notificationChannel" [(ngModel)]="notificationForm.channel" required>
-                                <option value="EMAIL">Email</option>
-                                <option value="SMS">SMS</option>
-                                <option value="APP">App</option>
-                              </select>
+                              <label class="form-label fw-semibold small text-muted">Oggetto</label>
+                              <input class="form-control" type="text" name="notificationSubject" [(ngModel)]="notificationForm.subject" placeholder="Oggetto della comunicazione" required />
                             </div>
                             <div class="mb-3">
-                              <label class="form-label">Oggetto</label>
-                              <input class="form-control" type="text" name="notificationSubject" [(ngModel)]="notificationForm.subject" required />
+                              <label class="form-label fw-semibold small text-muted">Messaggio</label>
+                              <textarea class="form-control" rows="4" name="notificationMessage" [(ngModel)]="notificationForm.message" placeholder="Scrivi il contenuto del messaggio..." required></textarea>
                             </div>
-                            <div class="mb-3">
-                              <label class="form-label">Messaggio</label>
-                              <textarea class="form-control" rows="4" name="notificationMessage" [(ngModel)]="notificationForm.message" required></textarea>
+                            <div class="mb-4">
+                              <label class="form-label fw-semibold small text-muted">
+                                Note interne
+                                <span class="fw-normal text-muted">(opzionale)</span>
+                              </label>
+                              <textarea class="form-control" rows="2" name="notificationNotes" [(ngModel)]="notificationForm.notes" placeholder="Note visibili solo agli operatori..."></textarea>
                             </div>
-                            <div class="mb-3">
-                              <label class="form-label">Note</label>
-                              <textarea class="form-control" rows="2" name="notificationNotes" [(ngModel)]="notificationForm.notes"></textarea>
-                            </div>
-                            <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
-                            <div class="d-flex justify-content-end gap-2">
-                              <button class="btn btn-outline-secondary" type="button" (click)="closeAdminNotificationModal()">Annulla</button>
-                              <button class="btn btn-primary" type="submit" [disabled]="notificationFormRef.invalid || isLoading">
-                                {{ isLoading ? 'Invio...' : 'Invia notifica' }}
-                              </button>
+                            <div class="alert alert-danger border-0 py-2" *ngIf="notificationsError">
+                              <i class="bi bi-exclamation-circle me-2"></i>
+                              {{ notificationsError }}
                             </div>
                           </form>
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                          <button class="btn btn-outline-secondary" type="button" (click)="closeAdminNotificationModal()">Annulla</button>
+                          <button class="btn btn-primary" type="button" (click)="submitNotification()" [disabled]="notificationFormRef.invalid || isLoading">
+                            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+                            <i *ngIf="!isLoading" class="bi bi-send me-1"></i>
+                            {{ isLoading ? 'Invio in corso...' : 'Invia notifica' }}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1821,16 +1925,22 @@
                     aria-modal="true"
                     aria-labelledby="adminPaymentModalTitle"
                     style="position: fixed; inset: 0; z-index: 1055;">
-                    <div class="modal-dialog modal-dialog-centered modal-lg">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title" id="adminPaymentModalTitle">Registra pagamento</h5>
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content shadow-lg border-0">
+                        <div class="modal-header border-0 pb-0">
+                          <div>
+                            <h5 class="modal-title fw-bold" id="adminPaymentModalTitle">
+                              <i class="bi bi-credit-card me-2 text-primary"></i>
+                              Registra pagamento
+                            </h5>
+                            <p class="text-muted small mb-0 mt-1">Registra un pagamento ricevuto per un paziente</p>
+                          </div>
                           <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminPaymentModal()"></button>
                         </div>
-                        <div class="modal-body">
+                        <div class="modal-body pt-4">
                           <form (ngSubmit)="submitPayment()" #adminPaymentFormRef="ngForm">
                             <div class="mb-3">
-                              <label class="form-label">Pagamento</label>
+                              <label class="form-label fw-semibold small text-muted">Pagamento</label>
                               <select class="form-select" name="adminPaymentId" [(ngModel)]="paymentForm.paymentId" required>
                                 <option [ngValue]="null" disabled>Seleziona un pagamento</option>
                                 <option *ngFor="let payment of payments" [ngValue]="payment.id">
@@ -1839,21 +1949,33 @@
                               </select>
                             </div>
                             <div class="mb-3">
-                              <label class="form-label">Ricevuta</label>
-                              <input class="form-control" type="text" name="adminPaymentReceipt" [(ngModel)]="paymentForm.receiptName" required />
+                              <label class="form-label fw-semibold small text-muted">Ricevuta</label>
+                              <input class="form-control" type="text" name="adminPaymentReceipt" [(ngModel)]="paymentForm.receiptName" placeholder="es. RIC-2025-001" required />
                             </div>
-                            <div class="mb-3">
-                              <label class="form-label">Importo</label>
-                              <input class="form-control" type="number" name="adminPaymentAmount" [(ngModel)]="paymentForm.amount" min="1" required />
+                            <div class="mb-4">
+                              <label class="form-label fw-semibold small text-muted">Importo (€)</label>
+                              <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                  <i class="bi bi-currency-euro text-muted"></i>
+                                </span>
+                                <input class="form-control border-start-0" type="number" name="adminPaymentAmount" [(ngModel)]="paymentForm.amount" min="1" step="0.01" placeholder="0.00" required />
+                              </div>
                             </div>
-                            <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
-                            <div class="d-flex justify-content-end gap-2">
-                              <button class="btn btn-outline-secondary" type="button" (click)="closeAdminPaymentModal()">Annulla</button>
-                              <button class="btn btn-primary" type="submit" [disabled]="adminPaymentFormRef.invalid || isLoading">
-                                {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
-                              </button>
+                            <div class="alert alert-danger border-0 py-2" *ngIf="paymentsError">
+                              <i class="bi bi-exclamation-circle me-2"></i>
+                              {{ paymentsError }}
                             </div>
                           </form>
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                          <button class="btn btn-outline-secondary" type="button" (click)="closeAdminPaymentModal()">
+                            Annulla
+                          </button>
+                          <button class="btn btn-primary" type="button" (click)="submitPayment()" [disabled]="adminPaymentFormRef.invalid || isLoading">
+                            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+                            <i *ngIf="!isLoading" class="bi bi-check-circle me-1"></i>
+                            {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -3090,7 +3212,7 @@
                     </div>
                     <div class="col-md-3">
                       <label class="form-label">{{ auditSubjectLabel }}</label>
-                      <input type="text" class="form-control" [placeholder]="auditSubjectPlaceholder" [(ngModel)]="auditSearchCriteria.subjectIdentifier" [disabled]="isLoading" style="text-transform: uppercase;" />
+                      <input type="text" class="form-control" [placeholder]="auditSubjectPlaceholder" [(ngModel)]="auditSearchCriteria.subjectIdentifier" [disabled]="isLoading" [style.text-transform]="auditSearchCriteria.subjectType === 'PATIENT' ? 'uppercase' : 'none'" />
                     </div>
                     <div class="col-md-2">
                       <label class="form-label">Data inizio</label>
@@ -3101,8 +3223,11 @@
                       <input type="date" class="form-control" [(ngModel)]="auditSearchCriteria.dateTo" [disabled]="isLoading" />
                     </div>
                     <div class="col-md-3 d-flex align-items-end gap-2">
-                      <button class="btn btn-primary flex-grow-1" (click)="searchAuditEvents()" [disabled]="isLoading || !auditSearchCriteria.subjectIdentifier">
+                      <button class="btn btn-primary" (click)="searchAuditEvents()" [disabled]="isLoading || !auditSearchCriteria.subjectIdentifier">
                         {{ isLoading ? 'Ricerca...' : 'Cerca' }}
+                      </button>
+                      <button class="btn btn-outline-primary" (click)="loadAllAuditEvents()" [disabled]="isLoading" title="Mostra tutti gli eventi">
+                        Mostra tutti
                       </button>
                       <button class="btn btn-outline-secondary" (click)="clearAuditSearch()" [disabled]="isLoading" title="Reset">
                         Reset
@@ -3115,16 +3240,21 @@
             </div>
 
             <!-- Risultati Ricerca -->
-            <ng-container *ngIf="auditSearchPerformed && auditSubjectFound">
+            <ng-container *ngIf="auditSearchPerformed">
               <!-- Info Soggetto e Riepilogo -->
               <div class="col-md-4">
                 <div class="card card-glass h-100">
                   <div class="card-body">
-                    <h6 class="fw-semibold mb-3">{{ auditSubjectFoundTitle }}</h6>
-                    <div class="mb-2"><strong>ID:</strong> {{ auditSubjectFound.id }}</div>
-                    <div class="mb-2"><strong>Nome:</strong> {{ auditSubjectFound.name }}</div>
-                    <div class="mb-2" *ngIf="auditSubjectFound.role"><strong>Ruolo:</strong> {{ auditSubjectFound.role }}</div>
-                    <div class="mb-3"><strong>{{ auditSubjectFound.identifierLabel }}:</strong> {{ auditSubjectFound.identifier }}</div>
+                    <h6 class="fw-semibold mb-3">{{ auditSubjectFound ? auditSubjectFoundTitle : 'Tutti gli Eventi' }}</h6>
+                    <ng-container *ngIf="auditSubjectFound && auditSubjectFound.id !== 'ALL'">
+                      <div class="mb-2"><strong>ID:</strong> {{ auditSubjectFound.id }}</div>
+                      <div class="mb-2"><strong>Nome:</strong> {{ auditSubjectFound.name }}</div>
+                      <div class="mb-2" *ngIf="auditSubjectFound.role"><strong>Ruolo:</strong> {{ auditSubjectFound.role }}</div>
+                      <div class="mb-3"><strong>{{ auditSubjectFound.identifierLabel }}:</strong> {{ auditSubjectFound.identifier }}</div>
+                    </ng-container>
+                    <ng-container *ngIf="!auditSubjectFound || auditSubjectFound.id === 'ALL'">
+                      <p class="text-muted mb-3">Visualizzazione di tutti gli eventi di audit del sistema senza filtro per soggetto.</p>
+                    </ng-container>
                     <hr />
                     <h6 class="fw-semibold mb-3">Riepilogo Periodo</h6>
                     <div *ngIf="auditReportSummary">
@@ -3243,9 +3373,12 @@
                     <div class="text-muted small mt-3">
                       <strong>Codici demo:</strong><br/>
                       Paziente: <strong>SPSGPP65M15H501X</strong> (Sig. Esposito)<br/>
-                      Medico: <strong>BNCMRC75A01H501Z</strong> (Dr. Marco Bianchi)<br/>
-                      Amministratore: <strong>RSSMRA80B15H501Y</strong> (Mario Rossi)
+                      Medico: <strong>marco.bianchi&#64;sanitech.it</strong> (Dr. Marco Bianchi)<br/>
+                      Amministratore: <strong>admin.rossi</strong> (Mario Rossi)
                     </div>
+                    <button class="btn btn-outline-info mt-3" (click)="loadAllAuditEvents()" [disabled]="isLoading">
+                      <i class="bi bi-list-ul me-2"></i>Mostra tutti gli eventi
+                    </button>
                   </div>
                 </div>
               </div>
@@ -3329,17 +3462,6 @@
       <ng-template #adminTelevisitLayout>
         <ng-container *ngIf="mode === 'admin-televisit'; else adminAdmissionsLayout">
           <div class="row g-4">
-            <!-- Alert scenario emergenza -->
-            <div class="col-12">
-              <div class="alert alert-warning d-flex align-items-center" role="alert">
-                <span class="me-2">⚠️</span>
-                <div>
-                  <strong>Emergenza in corso:</strong> Dr. Martini (Pneumologia) non disponibile.
-                  Appuntamenti convertiti in televisita o riassegnati alla Dott.ssa Bianchi.
-                </div>
-              </div>
-            </div>
-
             <!-- Statistiche rapide -->
             <div class="col-12">
               <div class="row g-3">
@@ -3351,19 +3473,19 @@
                 </div>
                 <div class="col-md-3">
                   <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-success">4</div>
+                    <div class="fs-2 fw-bold text-success">{{ televisiteProgrammateOggi }}</div>
                     <div class="small text-muted">Programmate oggi</div>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-info">1</div>
+                    <div class="fs-2 fw-bold text-info">{{ televisiteConcluse }}</div>
                     <div class="small text-muted">Concluse</div>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-warning">0</div>
+                    <div class="fs-2 fw-bold text-warning">{{ televisiteInAttesaPaziente }}</div>
                     <div class="small text-muted">In attesa paziente</div>
                   </div>
                 </div>
@@ -3521,41 +3643,30 @@
       <ng-template #adminAdmissionsLayout>
         <ng-container *ngIf="mode === 'admin-admissions'; else apiLayout">
           <div class="row g-4">
-            <!-- Alert scenario emergenza -->
-            <div class="col-12">
-              <div class="alert alert-info d-flex align-items-center" role="alert">
-                <span class="me-2">ℹ️</span>
-                <div>
-                  <strong>Aggiornamento referenti:</strong> I 4 pazienti ricoverati in Pneumologia sotto Dr. Martini
-                  sono stati riassegnati alla Dott.ssa Bianchi. Audit log aggiornato.
-                </div>
-              </div>
-            </div>
-
             <!-- Statistiche ricoveri -->
             <div class="col-12">
               <div class="row g-3">
                 <div class="col-md-3">
                   <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-primary">5</div>
+                    <div class="fs-2 fw-bold text-primary">{{ ricoveriAttivi }}</div>
                     <div class="small text-muted">Ricoveri attivi</div>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-warning">4</div>
-                    <div class="small text-muted">Pneumologia (ex Martini)</div>
+                    <div class="fs-2 fw-bold text-warning">{{ ricoveriPneumologia }}</div>
+                    <div class="small text-muted">Pneumologia</div>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-success">1</div>
+                    <div class="fs-2 fw-bold text-success">{{ ricoveriConfermati }}</div>
                     <div class="small text-muted">Confermati</div>
                   </div>
                 </div>
                 <div class="col-md-3">
                   <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-secondary">1</div>
+                    <div class="fs-2 fw-bold text-secondary">{{ dimessiQuestoMese }}</div>
                     <div class="small text-muted">Dimessi questo mese</div>
                   </div>
                 </div>
@@ -3665,58 +3776,6 @@
                       </tbody>
                     </table>
                     <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminAdmissions', total: admissions.length }"></ng-container>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Riepilogo cambio referenti -->
-            <div class="col-12">
-              <div class="card card-glass border-warning">
-                <div class="card-body">
-                  <h5 class="fw-semibold mb-3">📋 Registro modifiche referenti - Emergenza Dr. Martini</h5>
-                  <div class="table-responsive">
-                    <table class="table table-sm align-middle">
-                      <thead>
-                        <tr>
-                          <th>Timestamp</th>
-                          <th>Paziente</th>
-                          <th>Da</th>
-                          <th>A</th>
-                          <th>Operatore</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td><small>{{ formatDateTime(getTodayAt(18, 45)) }}</small></td>
-                          <td>Anna Conti</td>
-                          <td><span class="text-danger">Dr. Martini</span></td>
-                          <td><span class="text-success">Dott.ssa Bianchi</span></td>
-                          <td>Marco (Admin)</td>
-                        </tr>
-                        <tr>
-                          <td><small>{{ formatDateTime(getTodayAt(18, 42)) }}</small></td>
-                          <td>Francesca Romano</td>
-                          <td><span class="text-danger">Dr. Martini</span></td>
-                          <td><span class="text-success">Dott.ssa Bianchi</span></td>
-                          <td>Marco (Admin)</td>
-                        </tr>
-                        <tr>
-                          <td><small>{{ formatDateTime(getTodayAt(18, 38)) }}</small></td>
-                          <td>Elena Costa</td>
-                          <td><span class="text-danger">Dr. Martini</span></td>
-                          <td><span class="text-success">Dott.ssa Bianchi</span></td>
-                          <td>Marco (Admin)</td>
-                        </tr>
-                        <tr>
-                          <td><small>{{ formatDateTime(getTodayAt(18, 35)) }}</small></td>
-                          <td>Paziente #10</td>
-                          <td><span class="text-danger">Dr. Martini</span></td>
-                          <td><span class="text-success">Dott.ssa Bianchi</span></td>
-                          <td>Marco (Admin)</td>
-                        </tr>
-                      </tbody>
-                    </table>
                   </div>
                 </div>
               </div>

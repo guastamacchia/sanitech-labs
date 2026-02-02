@@ -2,6 +2,16 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import {
+  DoctorApiService,
+  SlotDto,
+  AppointmentDto,
+  PatientDto,
+  VisitMode,
+  SlotStatus as ApiSlotStatus
+} from './doctor-api.service';
 
 type SlotStatus = 'AVAILABLE' | 'BOOKED' | 'BLOCKED';
 type SlotModality = 'IN_PERSON' | 'TELEVISIT' | 'BOTH';
@@ -16,6 +26,7 @@ interface TimeSlot {
   patientId?: number;
   patientName?: string;
   visitReason?: string;
+  appointmentId?: number;
 }
 
 interface SlotCreationForm {
@@ -38,9 +49,14 @@ export class DoctorAgendaComponent implements OnInit {
   // Slots
   slots: TimeSlot[] = [];
 
+  // Cache pazienti
+  private patientsCache = new Map<number, PatientDto>();
+
   // Vista corrente
   currentWeekStart: Date = new Date();
   weekDays: Date[] = [];
+
+  constructor(private doctorApi: DoctorApiService) {}
 
   // Form creazione slot
   slotForm: SlotCreationForm = {
@@ -134,38 +150,116 @@ export class DoctorAgendaComponent implements OnInit {
 
   loadSlots(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
-    setTimeout(() => {
-      // Mock data - scenario Dott. Verdi
-      const baseDate = new Date();
-      this.slots = [
-        // Lunedì
-        { id: 1, date: this.getDateString(0), time: '09:00', duration: 30, modality: 'IN_PERSON', status: 'BOOKED', patientId: 1, patientName: 'Esposito Mario', visitReason: 'Controllo post-operatorio' },
-        { id: 2, date: this.getDateString(0), time: '09:30', duration: 30, modality: 'IN_PERSON', status: 'BOOKED', patientId: 2, patientName: 'Verdi Anna', visitReason: 'Prima visita' },
-        { id: 3, date: this.getDateString(0), time: '10:00', duration: 30, modality: 'BOTH', status: 'AVAILABLE' },
-        { id: 4, date: this.getDateString(0), time: '10:30', duration: 30, modality: 'BOTH', status: 'AVAILABLE' },
-        { id: 5, date: this.getDateString(0), time: '11:00', duration: 30, modality: 'BOTH', status: 'BLOCKED' },
-        // Martedì
-        { id: 6, date: this.getDateString(1), time: '09:00', duration: 30, modality: 'TELEVISIT', status: 'BOOKED', patientId: 3, patientName: 'Bianchi Luigi', visitReason: 'Televisita di controllo' },
-        { id: 7, date: this.getDateString(1), time: '09:30', duration: 30, modality: 'TELEVISIT', status: 'AVAILABLE' },
-        { id: 8, date: this.getDateString(1), time: '10:00', duration: 30, modality: 'TELEVISIT', status: 'AVAILABLE' },
-        // Mercoledì
-        { id: 9, date: this.getDateString(2), time: '14:00', duration: 30, modality: 'IN_PERSON', status: 'AVAILABLE' },
-        { id: 10, date: this.getDateString(2), time: '14:30', duration: 30, modality: 'IN_PERSON', status: 'AVAILABLE' },
-        { id: 11, date: this.getDateString(2), time: '15:00', duration: 30, modality: 'IN_PERSON', status: 'BOOKED', patientId: 4, patientName: 'Rossi Giulia', visitReason: 'Visita specialistica' },
-        // Giovedì
-        { id: 12, date: this.getDateString(3), time: '14:00', duration: 30, modality: 'BOTH', status: 'AVAILABLE' },
-        { id: 13, date: this.getDateString(3), time: '14:30', duration: 30, modality: 'BOTH', status: 'AVAILABLE' },
-        { id: 14, date: this.getDateString(3), time: '15:00', duration: 30, modality: 'BOTH', status: 'AVAILABLE' },
-        { id: 15, date: this.getDateString(3), time: '15:30', duration: 30, modality: 'BOTH', status: 'AVAILABLE' },
-        // Venerdì
-        { id: 16, date: this.getDateString(4), time: '09:00', duration: 30, modality: 'IN_PERSON', status: 'BOOKED', patientId: 5, patientName: 'Romano Francesco', visitReason: 'Controllo terapia' },
-        { id: 17, date: this.getDateString(4), time: '09:30', duration: 30, modality: 'IN_PERSON', status: 'AVAILABLE' },
-        { id: 18, date: this.getDateString(4), time: '10:00', duration: 30, modality: 'IN_PERSON', status: 'AVAILABLE' }
-      ];
-
+    const doctorId = this.doctorApi.getDoctorId();
+    if (!doctorId) {
+      this.errorMessage = 'ID medico non disponibile.';
       this.isLoading = false;
-    }, 500);
+      return;
+    }
+
+    // Calcola range settimana (da lunedì a domenica)
+    const weekStart = new Date(this.currentWeekStart);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    // Fetch slots e appointments in parallelo
+    forkJoin({
+      slots: this.doctorApi.searchSlots({
+        doctorId,
+        from: weekStart.toISOString(),
+        to: weekEnd.toISOString(),
+        size: 200
+      }).pipe(catchError(() => of({ content: [], totalElements: 0, totalPages: 0, size: 0, number: 0 }))),
+      appointments: this.doctorApi.searchAppointments({
+        doctorId,
+        size: 200
+      }).pipe(catchError(() => of({ content: [], totalElements: 0, totalPages: 0, size: 0, number: 0 })))
+    }).subscribe({
+      next: ({ slots, appointments }) => {
+        // Crea mappa appuntamenti per slotId
+        const appointmentsBySlot = new Map<number, AppointmentDto>();
+        (appointments.content || []).forEach(apt => {
+          if (apt.status === 'BOOKED') {
+            appointmentsBySlot.set(apt.slotId, apt);
+          }
+        });
+
+        // Raccogli patientIds unici per fetch nomi
+        const patientIds = new Set<number>();
+        appointmentsBySlot.forEach(apt => patientIds.add(apt.patientId));
+
+        // Fetch pazienti se necessario
+        if (patientIds.size > 0) {
+          const patientFetches = Array.from(patientIds)
+            .filter(id => !this.patientsCache.has(id))
+            .map(id => this.doctorApi.getPatient(id).pipe(
+              map(p => ({ id, patient: p })),
+              catchError(() => of({ id, patient: null as PatientDto | null }))
+            ));
+
+          if (patientFetches.length > 0) {
+            forkJoin(patientFetches).subscribe(results => {
+              results.forEach(r => {
+                if (r.patient) this.patientsCache.set(r.id, r.patient);
+              });
+              this.mapSlotsToTimeSlots(slots.content || [], appointmentsBySlot);
+              this.isLoading = false;
+            });
+          } else {
+            this.mapSlotsToTimeSlots(slots.content || [], appointmentsBySlot);
+            this.isLoading = false;
+          }
+        } else {
+          this.mapSlotsToTimeSlots(slots.content || [], appointmentsBySlot);
+          this.isLoading = false;
+        }
+      },
+      error: () => {
+        this.errorMessage = 'Errore nel caricamento degli slot.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private mapSlotsToTimeSlots(apiSlots: SlotDto[], appointmentsBySlot: Map<number, AppointmentDto>): void {
+    this.slots = apiSlots.map(slot => {
+      const appointment = appointmentsBySlot.get(slot.id);
+      const patient = appointment ? this.patientsCache.get(appointment.patientId) : undefined;
+
+      // Calcola durata in minuti
+      const start = new Date(slot.startAt);
+      const end = new Date(slot.endAt);
+      const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+
+      // Mappa status
+      let status: SlotStatus = 'AVAILABLE';
+      if (slot.status === 'BLOCKED') {
+        status = 'BLOCKED';
+      } else if (appointment) {
+        status = 'BOOKED';
+      }
+
+      // Mappa modality
+      let modality: SlotModality = 'BOTH';
+      if (slot.mode === 'IN_PERSON') modality = 'IN_PERSON';
+      else if (slot.mode === 'TELEVISIT') modality = 'TELEVISIT';
+
+      return {
+        id: slot.id,
+        date: start.toISOString().split('T')[0],
+        time: `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`,
+        duration: durationMinutes,
+        modality,
+        status,
+        patientId: appointment?.patientId,
+        patientName: patient ? `${patient.lastName} ${patient.firstName}` : undefined,
+        visitReason: appointment?.reason,
+        appointmentId: appointment?.id
+      };
+    });
   }
 
   getDateString(daysFromMonday: number): string {
@@ -206,38 +300,74 @@ export class DoctorAgendaComponent implements OnInit {
       return;
     }
 
+    const doctorId = this.doctorApi.getDoctorId();
+    const departmentCode = this.doctorApi.getDepartmentCode();
+
+    if (!doctorId || !departmentCode) {
+      this.errorMessage = 'Dati medico non disponibili.';
+      return;
+    }
+
     this.isSaving = true;
+    this.errorMessage = '';
 
-    setTimeout(() => {
-      // Calcola numero di slot da creare
-      const startParts = this.slotForm.startTime.split(':');
-      const endParts = this.slotForm.endTime.split(':');
-      const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
-      const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
-      const slotsCount = Math.floor((endMinutes - startMinutes) / this.slotForm.duration);
+    // Calcola slot da creare
+    const startParts = this.slotForm.startTime.split(':');
+    const endParts = this.slotForm.endTime.split(':');
+    const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+    const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+    const slotsCount = Math.floor((endMinutes - startMinutes) / this.slotForm.duration);
 
-      let currentTime = startMinutes;
-      for (let i = 0; i < slotsCount; i++) {
-        const hours = Math.floor(currentTime / 60).toString().padStart(2, '0');
-        const mins = (currentTime % 60).toString().padStart(2, '0');
+    // Mappa modality frontend -> backend
+    let mode: VisitMode = 'IN_PERSON';
+    if (this.slotForm.modality === 'TELEVISIT') mode = 'TELEVISIT';
+    // BOTH non esiste nel backend, usiamo IN_PERSON come default
 
-        this.slots.push({
-          id: this.slots.length + 1,
-          date: this.slotForm.date,
-          time: `${hours}:${mins}`,
-          duration: this.slotForm.duration,
-          modality: this.slotForm.modality,
-          status: 'AVAILABLE'
-        });
+    const slotCreations: { startAt: string; endAt: string }[] = [];
+    let currentTime = startMinutes;
+    for (let i = 0; i < slotsCount; i++) {
+      const hours = Math.floor(currentTime / 60);
+      const mins = currentTime % 60;
 
-        currentTime += this.slotForm.duration;
+      const startDate = new Date(this.slotForm.date);
+      startDate.setHours(hours, mins, 0, 0);
+
+      const endDate = new Date(startDate);
+      endDate.setMinutes(endDate.getMinutes() + this.slotForm.duration);
+
+      slotCreations.push({
+        startAt: startDate.toISOString(),
+        endAt: endDate.toISOString()
+      });
+
+      currentTime += this.slotForm.duration;
+    }
+
+    // Crea slot in parallelo
+    const createCalls = slotCreations.map(slot =>
+      this.doctorApi.createSlot({
+        doctorId,
+        departmentCode,
+        mode,
+        startAt: slot.startAt,
+        endAt: slot.endAt
+      }).pipe(catchError(() => of(null)))
+    );
+
+    forkJoin(createCalls).subscribe({
+      next: (results) => {
+        const created = results.filter(r => r !== null).length;
+        this.isSaving = false;
+        this.closeCreateSlotModal();
+        this.loadSlots(); // Ricarica slots
+        this.successMessage = `${created} slot creati per il ${this.formatDate(this.slotForm.date)}.`;
+        setTimeout(() => this.successMessage = '', 5000);
+      },
+      error: () => {
+        this.isSaving = false;
+        this.errorMessage = 'Errore nella creazione degli slot.';
       }
-
-      this.isSaving = false;
-      this.closeCreateSlotModal();
-      this.successMessage = `${slotsCount} slot creati per il ${this.formatDate(this.slotForm.date)}.`;
-      setTimeout(() => this.successMessage = '', 5000);
-    }, 1000);
+    });
   }
 
   openSlotDetail(slot: TimeSlot): void {
@@ -265,14 +395,23 @@ export class DoctorAgendaComponent implements OnInit {
   }
 
   cancelAppointment(slot: TimeSlot): void {
+    if (!slot.appointmentId) {
+      this.errorMessage = 'Appuntamento non trovato.';
+      return;
+    }
+
     if (confirm(`Vuoi cancellare l'appuntamento di ${slot.patientName}? Il paziente riceverà una notifica.`)) {
-      slot.status = 'AVAILABLE';
-      slot.patientId = undefined;
-      slot.patientName = undefined;
-      slot.visitReason = undefined;
-      this.closeSlotDetailModal();
-      this.successMessage = 'Appuntamento cancellato. Il paziente è stato notificato.';
-      setTimeout(() => this.successMessage = '', 5000);
+      this.doctorApi.cancelAppointment(slot.appointmentId).subscribe({
+        next: () => {
+          this.closeSlotDetailModal();
+          this.loadSlots(); // Ricarica slots
+          this.successMessage = 'Appuntamento cancellato. Il paziente è stato notificato.';
+          setTimeout(() => this.successMessage = '', 5000);
+        },
+        error: () => {
+          this.errorMessage = 'Errore nella cancellazione dell\'appuntamento.';
+        }
+      });
     }
   }
 

@@ -11,16 +11,10 @@
       <h2 class="mb-1 fw-bold">I miei documenti</h2>
       <p class="text-muted mb-0">Cartella clinica, referti e documenti caricati</p>
     </div>
-    <div class="d-flex gap-2">
-      <button class="btn btn-outline-secondary" (click)="loadDocuments()" [disabled]="isLoading">
-        <i class="bi bi-arrow-clockwise me-1"></i>
-        Aggiorna
-      </button>
-      <button class="btn btn-primary" (click)="openUploadModal()">
-        <i class="bi bi-upload me-1"></i>
-        Carica documento
-      </button>
-    </div>
+    <button class="btn btn-outline-secondary" routerLink="/portal/patient">
+      <i class="bi bi-arrow-left me-1"></i>
+      Torna indietro
+    </button>
   </div>
 
   <!-- Alert messages -->
@@ -45,8 +39,8 @@
   </div>
 
   <!-- Stats Cards -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-4">
+  <div class="row g-3 mb-4" *ngIf="!isLoading || documents.length > 0">
+    <div class="col-md-12">
       <div class="card card-glass h-100 border-0 shadow-sm">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -61,40 +55,10 @@
         </div>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="card card-glass h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
-              <i class="bi bi-person-badge text-success fs-4"></i>
-            </div>
-            <div>
-              <h3 class="mb-0 fw-bold">{{ documentsByType.medico }}</h3>
-              <small class="text-muted">Caricati dai medici</small>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card card-glass h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
-              <i class="bi bi-person text-info fs-4"></i>
-            </div>
-            <div>
-              <h3 class="mb-0 fw-bold">{{ documentsByType.paziente }}</h3>
-              <small class="text-muted">Caricati da te</small>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Info Box -->
-  <div class="alert alert-info border-0 mb-4" role="alert">
+  <div class="alert alert-info border-0 mb-4" role="alert" *ngIf="!isLoading || documents.length > 0">
     <div class="d-flex">
       <i class="bi bi-info-circle fs-5 me-3 mt-1"></i>
       <div>
@@ -108,26 +72,21 @@
   </div>
 
   <!-- Filters -->
-  <div class="card card-glass border-0 shadow-sm mb-4">
+  <div class="card card-glass border-0 shadow-sm mb-4" *ngIf="!isLoading || documents.length > 0">
     <div class="card-body">
       <div class="row g-3 align-items-end">
         <div class="col-md-4">
           <label class="form-label fw-semibold small text-muted">Tipo documento</label>
           <select class="form-select" [(ngModel)]="typeFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti i tipi</option>
-            <option value="REFERTO">Referti</option>
-            <option value="ESAMI_LABORATORIO">Esami di laboratorio</option>
-            <option value="LETTERA_DIMISSIONE">Lettere di dimissione</option>
-            <option value="IMAGING">Imaging</option>
-            <option value="ALTRO">Altro</option>
+            <option *ngFor="let type of documentTypes" [value]="type.code">{{ type.label }}</option>
           </select>
         </div>
         <div class="col-md-4">
-          <label class="form-label fw-semibold small text-muted">Caricato da</label>
-          <select class="form-select" [(ngModel)]="sourceFilter" (ngModelChange)="currentPage = 1">
+          <label class="form-label fw-semibold small text-muted">Reparto</label>
+          <select class="form-select" [(ngModel)]="departmentFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti</option>
-            <option value="MEDICO">Medico</option>
-            <option value="PAZIENTE">Paziente</option>
+            <option *ngFor="let dept of departments" [value]="dept.code">{{ dept.name }}</option>
           </select>
         </div>
         <div class="col-md-4">
@@ -143,7 +102,7 @@
   </div>
 
   <!-- Documents List -->
-  <div class="card card-glass border-0 shadow-sm">
+  <div class="card card-glass border-0 shadow-sm" *ngIf="!isLoading || documents.length > 0">
     <div class="card-header bg-transparent border-bottom">
       <h5 class="mb-0 fw-semibold">
         <i class="bi bi-file-earmark-medical me-2"></i>
@@ -160,7 +119,7 @@
               <th>Tipo</th>
               <th>Reparto</th>
               <th>Data</th>
-              <th>Caricato da</th>
+              <th>Dimensione</th>
               <th class="text-end pe-4">Azioni</th>
             </tr>
           </thead>
@@ -169,39 +128,25 @@
               <td class="ps-4">
                 <div class="d-flex align-items-center">
                   <div class="rounded bg-light p-2 me-3">
-                    <i [class]="getTypeIcon(doc.type) + ' text-primary fs-5'"></i>
+                    <i [class]="getTypeIcon(doc.documentType) + ' text-primary fs-5'"></i>
                   </div>
                   <div>
-                    <div class="fw-semibold">{{ doc.name }}</div>
+                    <div class="fw-semibold">{{ doc.fileName }}</div>
                     <small class="text-muted" *ngIf="doc.description">{{ doc.description }}</small>
-                    <small class="text-muted">{{ doc.fileSize }}</small>
                   </div>
                 </div>
               </td>
               <td>
-                <span class="badge bg-light text-dark">{{ getTypeLabel(doc.type) }}</span>
+                <span class="badge bg-light text-dark">{{ getTypeLabel(doc.documentType) }}</span>
               </td>
               <td>
-                <small>{{ doc.department }}</small>
+                <small>{{ getDepartmentName(doc.departmentCode) }}</small>
               </td>
               <td>
-                <small>{{ formatDateShort(doc.uploadedAt) }}</small>
+                <small>{{ formatDateShort(doc.createdAt) }}</small>
               </td>
               <td>
-                <div>
-                  <span class="badge" [ngClass]="getSourceBadgeClass(doc.uploadedBy)">
-                    {{ doc.uploadedBy === 'MEDICO' ? 'Medico' : 'Paziente' }}
-                  </span>
-                  <div *ngIf="doc.doctorName">
-                    <small class="text-muted">{{ doc.doctorName }}</small>
-                  </div>
-                  <div *ngIf="doc.uploadedBy === 'PAZIENTE' && doc.viewedByDoctor !== undefined">
-                    <small [class]="doc.viewedByDoctor ? 'text-success' : 'text-muted'">
-                      <i [class]="doc.viewedByDoctor ? 'bi bi-eye' : 'bi bi-eye-slash'"></i>
-                      {{ doc.viewedByDoctor ? 'Visto dal medico' : 'Non ancora visualizzato' }}
-                    </small>
-                  </div>
-                </div>
+                <small class="text-muted">{{ formatFileSize(doc.sizeBytes) }}</small>
               </td>
               <td class="text-end pe-4">
                 <div class="btn-group btn-group-sm">
@@ -312,11 +257,7 @@
                 <span class="text-danger">*</span>
               </label>
               <select class="form-select" [(ngModel)]="uploadForm.type" name="type" required>
-                <option value="ESAMI_LABORATORIO">Esami di laboratorio</option>
-                <option value="REFERTO">Referto</option>
-                <option value="IMAGING">Imaging (RX, TAC, RM)</option>
-                <option value="LETTERA_DIMISSIONE">Lettera di dimissione</option>
-                <option value="ALTRO">Altro</option>
+                <option *ngFor="let type of documentTypes" [value]="type.code">{{ type.label }}</option>
               </select>
             </div>
 
@@ -325,9 +266,10 @@
               <label class="form-label fw-semibold">
                 <i class="bi bi-hospital me-1"></i>
                 Reparto di riferimento
+                <span class="text-danger">*</span>
               </label>
-              <select class="form-select" [(ngModel)]="uploadForm.department" name="department">
-                <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+              <select class="form-select" [(ngModel)]="uploadForm.departmentCode" name="departmentCode" required>
+                <option *ngFor="let dept of departments" [value]="dept.code">{{ dept.name }}</option>
               </select>
             </div>
 

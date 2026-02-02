@@ -2,19 +2,21 @@
   <!-- Header -->
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
     <div>
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-2">
-          <li class="breadcrumb-item"><a routerLink="/portal/doctor">Home</a></li>
-          <li class="breadcrumb-item active" aria-current="page">Il mio profilo</li>
-        </ol>
-      </nav>
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <a routerLink="/portal/doctor" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>
+          Torna Indietro
+        </a>
+        <nav aria-label="breadcrumb" class="mb-0">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a routerLink="/portal/doctor">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Il mio profilo</li>
+          </ol>
+        </nav>
+      </div>
       <h2 class="mb-1 fw-bold">Il mio profilo</h2>
       <p class="text-muted mb-0">Gestisci i tuoi dati professionali e la disponibilità</p>
     </div>
-    <button class="btn btn-outline-primary" (click)="startEditing()" *ngIf="!isEditing">
-      <i class="bi bi-pencil me-1"></i>
-      Modifica contatti
-    </button>
   </div>
 
   <!-- Alert messages -->
@@ -107,11 +109,15 @@
     <!-- Dati personali -->
     <div class="col-lg-6">
       <div class="card card-glass border-0 shadow-sm h-100">
-        <div class="card-header bg-transparent border-bottom">
+        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
           <h5 class="mb-0 fw-semibold">
             <i class="bi bi-person-badge me-2"></i>
             Dati professionali
           </h5>
+          <button class="btn btn-sm btn-outline-primary" (click)="startEditing()" *ngIf="!isEditing">
+            <i class="bi bi-pencil me-1"></i>
+            Modifica contatti
+          </button>
         </div>
         <div class="card-body">
           <div class="row g-3">

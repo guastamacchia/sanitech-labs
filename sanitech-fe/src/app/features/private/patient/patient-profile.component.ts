@@ -1,18 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-
-interface UserProfile {
-  firstName: string;
-  lastName: string;
-  fiscalCode: string;
-  email: string;
-  phone: string;
-  address: string;
-  birthDate: string;
-  gender: string;
-}
+import { Subject, takeUntil } from 'rxjs';
+import { PatientService, PatientDto } from './services/patient.service';
 
 interface NotificationPreferences {
   emailReminders: boolean;
@@ -29,23 +20,18 @@ interface NotificationPreferences {
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './patient-profile.component.html'
 })
-export class PatientProfileComponent implements OnInit {
-  // Dati profilo
-  profile: UserProfile = {
-    firstName: 'Laura',
-    lastName: 'Bianchi',
-    fiscalCode: 'BNCLRA85M45H501Z',
-    email: 'laura.bianchi@email.it',
-    phone: '+39 333 1234567',
-    address: 'Via Roma 42, 20121 Milano (MI)',
-    birthDate: '1985-08-05',
-    gender: 'F'
+export class PatientProfileComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
+  // Dati profilo dal backend
+  profile: PatientDto | null = null;
+
+  // Form di modifica (solo campi editabili)
+  editForm = {
+    phone: ''
   };
 
-  // Form di modifica
-  editForm: UserProfile = { ...this.profile };
-
-  // Preferenze notifiche
+  // Preferenze notifiche (gestite localmente per ora - il backend non ha questo endpoint)
   notificationPrefs: NotificationPreferences = {
     emailReminders: true,
     smsReminders: false,
@@ -63,20 +49,41 @@ export class PatientProfileComponent implements OnInit {
   errorMessage = '';
   showPreferencesModal = false;
 
+  constructor(private patientService: PatientService) {}
+
   ngOnInit(): void {
     this.loadProfile();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadProfile(): void {
     this.isLoading = true;
-    // Simula caricamento dal backend
-    setTimeout(() => {
-      this.isLoading = false;
-    }, 500);
+    this.errorMessage = '';
+
+    this.patientService.getMyProfile()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (profile) => {
+          this.profile = profile;
+          this.isLoading = false;
+        },
+        error: (err) => {
+          console.error('Errore caricamento profilo:', err);
+          this.errorMessage = 'Impossibile caricare il profilo. Riprova.';
+          this.isLoading = false;
+        }
+      });
   }
 
   startEditing(): void {
-    this.editForm = { ...this.profile };
+    if (!this.profile) return;
+    this.editForm = {
+      phone: this.profile.phone || ''
+    };
     this.isEditing = true;
     this.successMessage = '';
     this.errorMessage = '';
@@ -84,35 +91,38 @@ export class PatientProfileComponent implements OnInit {
 
   cancelEditing(): void {
     this.isEditing = false;
-    this.editForm = { ...this.profile };
     this.errorMessage = '';
   }
 
   saveProfile(): void {
-    if (!this.validateForm()) {
+    if (!this.validateForm() || !this.profile) {
       return;
     }
 
     this.isSaving = true;
     this.errorMessage = '';
 
-    // Simula salvataggio
-    setTimeout(() => {
-      this.profile = { ...this.editForm };
-      this.isEditing = false;
-      this.isSaving = false;
-      this.successMessage = 'Profilo aggiornato con successo!';
-      setTimeout(() => this.successMessage = '', 5000);
-    }, 1000);
+    this.patientService.updateMyPhone({ phone: this.editForm.phone })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updatedProfile) => {
+          this.profile = updatedProfile;
+          this.isEditing = false;
+          this.isSaving = false;
+          this.successMessage = 'Profilo aggiornato con successo!';
+          setTimeout(() => this.successMessage = '', 5000);
+        },
+        error: (err) => {
+          console.error('Errore aggiornamento profilo:', err);
+          this.errorMessage = 'Impossibile aggiornare il profilo. Riprova.';
+          this.isSaving = false;
+        }
+      });
   }
 
   validateForm(): boolean {
     if (!this.editForm.phone || this.editForm.phone.trim().length < 10) {
       this.errorMessage = 'Inserisci un numero di telefono valido.';
-      return false;
-    }
-    if (!this.editForm.address || this.editForm.address.trim().length < 5) {
-      this.errorMessage = 'Inserisci un indirizzo valido.';
       return false;
     }
     return true;
@@ -128,16 +138,17 @@ export class PatientProfileComponent implements OnInit {
 
   savePreferences(): void {
     this.isSaving = true;
-    // Simula salvataggio preferenze
+    // Le preferenze notifiche non sono gestite dal backend attualmente
+    // Salvataggio locale simulato
     setTimeout(() => {
       this.isSaving = false;
       this.showPreferencesModal = false;
       this.successMessage = 'Preferenze di notifica aggiornate!';
       setTimeout(() => this.successMessage = '', 5000);
-    }, 800);
+    }, 500);
   }
 
-  formatDate(dateStr: string): string {
+  formatDate(dateStr: string | undefined): string {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('it-IT', {
       day: '2-digit',

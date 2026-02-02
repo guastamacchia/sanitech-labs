@@ -45,6 +45,17 @@ public class GatewayRoutesConfig {
                 )
 
                 // =========================
+                // Admissions (ricoveri / posti letto / capacità reparti)
+                // NOTA: deve precedere Directory per evitare che /api/departments/**
+                //       catturi /api/departments/capacity/**
+                // =========================
+                .route(AppConstants.Services.ADMISSIONS, r -> r
+                        .path("/api/admissions/**", "/api/beds/**", "/api/departments/capacity/**")
+                        .filters(f -> standardFilters(f, AppConstants.Services.ADMISSIONS))
+                        .uri(services.getAdmissions())
+                )
+
+                // =========================
                 // Directory (medici/pazienti)
                 // =========================
                 .route(AppConstants.Services.DIRECTORY, r -> r
@@ -73,15 +84,6 @@ public class GatewayRoutesConfig {
                         .path("/api/appointments/**", "/api/slots/**", "/api/scheduling/**", "/api/admin/slots/**")
                         .filters(f -> standardFilters(f, AppConstants.Services.SCHEDULING))
                         .uri(services.getScheduling())
-                )
-
-                // =========================
-                // Admissions (ricoveri / posti letto)
-                // =========================
-                .route(AppConstants.Services.ADMISSIONS, r -> r
-                        .path("/api/admissions/**", "/api/beds/**")
-                        .filters(f -> standardFilters(f, AppConstants.Services.ADMISSIONS))
-                        .uri(services.getAdmissions())
                 )
 
                 // =========================
@@ -124,7 +126,7 @@ public class GatewayRoutesConfig {
                 // Televisit
                 // =========================
                 .route(AppConstants.Services.TELEVISIT, r -> r
-                        .path("/api/televisits/**")
+                        .path("/api/televisits/**", "/api/patient/televisits/**")
                         .filters(f -> standardFilters(f, AppConstants.Services.TELEVISIT))
                         .uri(services.getTelevisit())
                 )

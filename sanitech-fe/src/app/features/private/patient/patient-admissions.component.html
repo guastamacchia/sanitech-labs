@@ -11,9 +11,9 @@
       <h2 class="mb-1 fw-bold">I miei ricoveri</h2>
       <p class="text-muted mb-0">Monitora i ricoveri in corso e consulta lo storico</p>
     </div>
-    <button class="btn btn-outline-secondary" (click)="loadAdmissions()" [disabled]="isLoading">
-      <i class="bi bi-arrow-clockwise me-1"></i>
-      Aggiorna
+    <button class="btn btn-outline-secondary" routerLink="/portal/patient">
+      <i class="bi bi-arrow-left me-1"></i>
+      Torna indietro
     </button>
   </div>
 
@@ -43,7 +43,7 @@
             </div>
             <div>
               <h5 class="mb-1 fw-bold text-success">Ricovero in corso</h5>
-              <p class="mb-0">{{ activeAdmission.department }}</p>
+              <p class="mb-0">{{ activeAdmission.departmentName || activeAdmission.departmentCode }}</p>
             </div>
           </div>
           <div class="row g-3">
@@ -53,20 +53,16 @@
             </div>
             <div class="col-md-4">
               <small class="text-muted d-block">Medico referente</small>
-              <div class="fw-semibold">{{ activeAdmission.attendingDoctor }}</div>
+              <div class="fw-semibold">{{ activeAdmission.attendingDoctorName || '-' }}</div>
             </div>
             <div class="col-md-4">
-              <small class="text-muted d-block">Posizione</small>
-              <div class="fw-semibold">
-                <span *ngIf="activeAdmission.room">Camera {{ activeAdmission.room }}</span>
-                <span *ngIf="activeAdmission.bed"> - Letto {{ activeAdmission.bed }}</span>
-                <span *ngIf="!activeAdmission.room && !activeAdmission.bed">-</span>
-              </div>
+              <small class="text-muted d-block">Tipo ricovero</small>
+              <div class="fw-semibold">{{ getTypeLabel(activeAdmission.admissionType) }}</div>
             </div>
           </div>
-          <div class="mt-3" *ngIf="activeAdmission.diagnosis">
-            <small class="text-muted d-block">Diagnosi</small>
-            <div>{{ activeAdmission.diagnosis }}</div>
+          <div class="mt-3" *ngIf="activeAdmission.notes">
+            <small class="text-muted d-block">Note</small>
+            <div>{{ activeAdmission.notes }}</div>
           </div>
         </div>
         <div class="col-md-4 text-md-end mt-3 mt-md-0">
@@ -80,26 +76,8 @@
             </span>
             <button class="btn btn-success" (click)="openDetailModal(activeAdmission)">
               <i class="bi bi-eye me-1"></i>
-              Vedi dettagli e timeline
+              Vedi dettagli
             </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Timeline preview -->
-      <div class="mt-4 pt-3 border-top" *ngIf="activeAdmission.timeline && activeAdmission.timeline.length > 0">
-        <h6 class="fw-semibold mb-3">
-          <i class="bi bi-clock-history me-2"></i>
-          Ultimi eventi
-        </h6>
-        <div class="d-flex flex-wrap gap-3">
-          <div *ngFor="let event of activeAdmission.timeline.slice(-3).reverse()"
-               class="d-flex align-items-center bg-white rounded px-3 py-2 shadow-sm">
-            <i [class]="'bi ' + getEventIcon(event.type) + ' text-' + getEventColor(event.type) + ' me-2'"></i>
-            <div>
-              <div class="fw-semibold small">{{ event.title }}</div>
-              <small class="text-muted">{{ formatTime(event.timestamp) }}</small>
-            </div>
           </div>
         </div>
       </div>
@@ -163,9 +141,9 @@
           <label class="form-label fw-semibold small text-muted">Filtra per stato</label>
           <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti gli stati</option>
-            <option value="ACTIVE">In corso</option>
+            <option value="ADMITTED">In corso</option>
             <option value="DISCHARGED">Dimessi</option>
-            <option value="SCHEDULED">Programmati</option>
+            <option value="CANCELLED">Annullati</option>
           </select>
         </div>
         <div class="col-md-6">
@@ -205,20 +183,17 @@
           </thead>
           <tbody>
             <tr *ngFor="let admission of paginatedAdmissions"
-                [class.table-success]="admission.status === 'ACTIVE'"
+                [class.table-success]="admission.status === 'ADMITTED'"
                 [class.table-light]="admission.status === 'DISCHARGED'">
               <td class="ps-4">
                 <div class="d-flex align-items-center">
                   <div class="rounded-circle p-2 me-3"
-                       [ngClass]="admission.status === 'ACTIVE' ? 'bg-success bg-opacity-10' : 'bg-secondary bg-opacity-10'">
+                       [ngClass]="admission.status === 'ADMITTED' ? 'bg-success bg-opacity-10' : 'bg-secondary bg-opacity-10'">
                     <i class="bi bi-hospital"
-                       [ngClass]="admission.status === 'ACTIVE' ? 'text-success' : 'text-secondary'"></i>
+                       [ngClass]="admission.status === 'ADMITTED' ? 'text-success' : 'text-secondary'"></i>
                   </div>
                   <div>
-                    <div class="fw-semibold">{{ admission.department }}</div>
-                    <small class="text-muted" *ngIf="admission.room">
-                      Camera {{ admission.room }}<span *ngIf="admission.bed">, Letto {{ admission.bed }}</span>
-                    </small>
+                    <div class="fw-semibold">{{ admission.departmentName || admission.departmentCode }}</div>
                   </div>
                 </div>
               </td>
@@ -230,13 +205,13 @@
               <td>{{ formatDate(admission.admittedAt) }}</td>
               <td>{{ admission.dischargedAt ? formatDate(admission.dischargedAt) : '-' }}</td>
               <td>
-                <small>{{ admission.attendingDoctor }}</small>
+                <small>{{ admission.attendingDoctorName || '-' }}</small>
               </td>
               <td>
                 <span class="badge" [ngClass]="getStatusBadgeClass(admission.status)">
                   {{ getStatusLabel(admission.status) }}
                 </span>
-                <div *ngIf="admission.status === 'ACTIVE'" class="mt-1">
+                <div *ngIf="admission.status === 'ADMITTED'" class="mt-1">
                   <small class="text-success">
                     <i class="bi bi-clock me-1"></i>
                     {{ getDaysInHospital(admission) }} giorni
@@ -302,7 +277,7 @@
     aria-modal="true"
     aria-labelledby="detailModalTitle"
     style="position: fixed; inset: 0; z-index: 1055; overflow-y: auto;">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
           <div>
@@ -310,7 +285,7 @@
               <i class="bi bi-hospital me-2 text-primary"></i>
               Dettaglio ricovero
             </h5>
-            <p class="text-muted small mb-0 mt-1">{{ selectedAdmission.department }}</p>
+            <p class="text-muted small mb-0 mt-1">{{ selectedAdmission.departmentName || selectedAdmission.departmentCode }}</p>
           </div>
           <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDetailModal()"></button>
         </div>
@@ -321,7 +296,7 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <p class="mb-1 text-muted small"><strong>Reparto</strong></p>
-                  <p class="mb-0 fw-semibold">{{ selectedAdmission.department }}</p>
+                  <p class="mb-0 fw-semibold">{{ selectedAdmission.departmentName || selectedAdmission.departmentCode }}</p>
                 </div>
                 <div class="col-md-3">
                   <p class="mb-1 text-muted small"><strong>Tipo ricovero</strong></p>
@@ -352,65 +327,24 @@
             </div>
             <div class="col-md-6">
               <p class="mb-1 text-muted small"><strong>Medico referente</strong></p>
-              <p class="mb-0">{{ selectedAdmission.attendingDoctor }}</p>
+              <p class="mb-0">{{ selectedAdmission.attendingDoctorName || '-' }}</p>
             </div>
-            <div class="col-md-6" *ngIf="selectedAdmission.room">
-              <p class="mb-1 text-muted small"><strong>Posizione</strong></p>
-              <p class="mb-0">Camera {{ selectedAdmission.room }}<span *ngIf="selectedAdmission.bed">, Letto {{ selectedAdmission.bed }}</span></p>
-            </div>
-            <div class="col-12" *ngIf="selectedAdmission.diagnosis">
-              <p class="mb-1 text-muted small"><strong>Diagnosi</strong></p>
-              <p class="mb-0">{{ selectedAdmission.diagnosis }}</p>
+            <div class="col-12" *ngIf="selectedAdmission.notes">
+              <p class="mb-1 text-muted small"><strong>Note</strong></p>
+              <p class="mb-0">{{ selectedAdmission.notes }}</p>
             </div>
 
-            <!-- Timeline -->
-            <div class="col-12" *ngIf="selectedAdmission.timeline && selectedAdmission.timeline.length > 0">
-              <hr>
-              <h6 class="fw-semibold mb-3">
-                <i class="bi bi-clock-history me-2"></i>
-                Timeline eventi
-              </h6>
-              <div class="timeline">
-                <div *ngFor="let event of selectedAdmission.timeline; let last = last"
-                     class="d-flex mb-3" [class.mb-0]="last">
-                  <div class="flex-shrink-0 me-3">
-                    <div class="rounded-circle p-2" [ngClass]="'bg-' + getEventColor(event.type) + ' bg-opacity-10'">
-                      <i [class]="'bi ' + getEventIcon(event.type) + ' text-' + getEventColor(event.type)"></i>
-                    </div>
-                  </div>
-                  <div class="flex-grow-1 pb-3" [class.border-start]="!last" [class.ps-3]="!last" style="margin-left: -12px;">
-                    <div class="d-flex justify-content-between align-items-start">
-                      <div>
-                        <h6 class="mb-1">{{ event.title }}</h6>
-                        <p class="text-muted mb-1 small" *ngIf="event.description">{{ event.description }}</p>
-                        <small class="text-muted" *ngIf="event.doctorName">{{ event.doctorName }}</small>
-                      </div>
-                      <small class="text-muted">{{ formatDateTime(event.timestamp) }}</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Documenti -->
-            <div class="col-12" *ngIf="selectedAdmission.documents && selectedAdmission.documents.length > 0">
+            <!-- Sezione lettera di dimissione -->
+            <div class="col-12" *ngIf="selectedAdmission.status === 'DISCHARGED'">
               <hr>
               <h6 class="fw-semibold mb-3">
                 <i class="bi bi-file-earmark-medical me-2"></i>
-                Documenti associati
+                Documenti
               </h6>
-              <div class="list-group">
-                <div *ngFor="let doc of selectedAdmission.documents"
-                     class="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
-                    <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
-                    {{ doc.name }}
-                  </div>
-                  <button class="btn btn-sm btn-outline-primary" (click)="downloadDocument(doc)">
-                    <i class="bi bi-download"></i>
-                  </button>
-                </div>
-              </div>
+              <button class="btn btn-outline-primary" (click)="downloadDischargeLetter(selectedAdmission)">
+                <i class="bi bi-download me-1"></i>
+                Scarica lettera di dimissione
+              </button>
             </div>
           </div>
         </div>

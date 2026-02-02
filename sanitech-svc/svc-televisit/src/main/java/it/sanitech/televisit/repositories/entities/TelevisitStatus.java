@@ -5,6 +5,7 @@ package it.sanitech.televisit.repositories.entities;
  */
 public enum TelevisitStatus {
     CREATED,
+    SCHEDULED,
     ACTIVE,
     ENDED,
     CANCELED

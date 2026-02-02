@@ -2,12 +2,20 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import {
+  DoctorApiService,
+  PatientDto,
+  DocumentDto,
+  ConsentScope
+} from './doctor-api.service';
 
 type DocumentType = 'REFERTO_VISITA' | 'REFERTO_ESAME' | 'LETTERA_DIMISSIONE' | 'CERTIFICATO' | 'ALTRO';
 type DocumentStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 interface ClinicalDocument {
-  id: number;
+  id: string;
   patientId: number;
   patientName: string;
   type: DocumentType;
@@ -42,6 +50,9 @@ export class DoctorClinicalDocsComponent implements OnInit {
   // Pazienti con consenso DOCS
   patients: { id: number; name: string }[] = [];
 
+  // Cache pazienti
+  private patientsCache = new Map<number, PatientDto>();
+
   // Form upload
   uploadForm: UploadForm = {
     patientId: null,
@@ -67,6 +78,8 @@ export class DoctorClinicalDocsComponent implements OnInit {
   errorMessage = '';
   showUploadModal = false;
 
+  constructor(private doctorApi: DoctorApiService) {}
+
   // Stats
   get totalDocuments(): number {
     return this.documents.length;
@@ -88,107 +101,104 @@ export class DoctorClinicalDocsComponent implements OnInit {
 
   loadData(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
-    setTimeout(() => {
-      // Mock pazienti con consenso DOCS
-      this.patients = [
-        { id: 1, name: 'Esposito Mario' },
-        { id: 2, name: 'Verdi Anna' },
-        { id: 4, name: 'Rossi Giulia' },
-        { id: 5, name: 'Romano Francesco' },
-        { id: 8, name: 'Conti Sara' }
-      ];
+    // Carica pazienti con consenso DOCS
+    this.doctorApi.searchPatients({ size: 100 }).pipe(
+      switchMap(patientsPage => {
+        const allPatients = patientsPage.content || [];
+        // Cache pazienti
+        allPatients.forEach(p => this.patientsCache.set(p.id, p));
 
-      // Mock documenti - scenario Dott. Bianchi
-      this.documents = [
-        {
-          id: 1,
-          patientId: 1,
-          patientName: 'Esposito Mario',
-          type: 'REFERTO_ESAME',
-          title: 'ECG a riposo',
-          description: 'Controllo aritmia - ritmo sinusale regolare',
-          department: 'Cardiologia',
-          uploadedBy: 'Dott. Bianchi',
-          uploadedAt: '2025-01-28T14:30:00',
-          status: 'PUBLISHED',
-          fileUrl: '/documents/ecg_esposito.pdf',
-          isOwnDocument: true
-        },
-        {
-          id: 2,
-          patientId: 1,
-          patientName: 'Esposito Mario',
-          type: 'REFERTO_VISITA',
-          title: 'Visita cardiologica di controllo',
-          description: 'Controllo post-infarto. Paziente stabile.',
-          department: 'Cardiologia',
-          uploadedBy: 'Dott. Bianchi',
-          uploadedAt: '2025-01-20T10:00:00',
-          status: 'PUBLISHED',
-          fileUrl: '/documents/visita_esposito.pdf',
-          isOwnDocument: true
-        },
-        {
-          id: 3,
-          patientId: 2,
-          patientName: 'Verdi Anna',
-          type: 'REFERTO_ESAME',
-          title: 'Ecocardiogramma',
-          description: 'Frazione di eiezione nella norma',
-          department: 'Cardiologia',
-          uploadedBy: 'Dott. Bianchi',
-          uploadedAt: '2025-01-25T11:30:00',
-          status: 'PUBLISHED',
-          fileUrl: '/documents/eco_verdi.pdf',
-          isOwnDocument: true
-        },
-        {
-          id: 4,
-          patientId: 1,
-          patientName: 'Esposito Mario',
-          type: 'REFERTO_ESAME',
-          title: 'Analisi del sangue',
-          description: 'Profilo lipidico e markers cardiaci',
-          department: 'Laboratorio analisi',
-          uploadedBy: 'Dott.ssa Ferretti',
-          uploadedAt: '2025-01-15T09:00:00',
-          status: 'PUBLISHED',
-          fileUrl: '/documents/analisi_esposito.pdf',
-          isOwnDocument: false
-        },
-        {
-          id: 5,
-          patientId: 4,
-          patientName: 'Rossi Giulia',
-          type: 'REFERTO_VISITA',
-          title: 'Prima visita cardiologica',
-          description: 'Valutazione iniziale per palpitazioni',
-          department: 'Cardiologia',
-          uploadedBy: 'Dott. Bianchi',
-          uploadedAt: '2025-01-10T15:00:00',
-          status: 'PUBLISHED',
-          fileUrl: '/documents/visita_rossi.pdf',
-          isOwnDocument: true
-        },
-        {
-          id: 6,
-          patientId: 1,
-          patientName: 'Esposito Mario',
-          type: 'ALTRO',
-          title: 'Foto ferita chirurgica',
-          description: 'Documentazione fotografica cicatrice',
-          department: 'Cardiologia',
-          uploadedBy: 'Paziente',
-          uploadedAt: '2025-01-22T08:30:00',
-          status: 'PUBLISHED',
-          fileUrl: '/documents/foto_esposito.jpg',
-          isOwnDocument: false
+        // Verifica consenso DOCS per ogni paziente
+        const consentChecks = allPatients.map(patient =>
+          this.doctorApi.checkConsent(patient.id, 'DOCS').pipe(
+            map(consent => ({ patient, allowed: consent.allowed })),
+            catchError(() => of({ patient, allowed: false }))
+          )
+        );
+
+        if (consentChecks.length === 0) {
+          return of({ allPatients, patientsWithConsent: [] as { id: number; name: string }[] });
         }
-      ];
 
-      this.isLoading = false;
-    }, 500);
+        return forkJoin(consentChecks).pipe(
+          map(results => {
+            const patientsWithConsent = results
+              .filter(r => r.allowed)
+              .map(r => ({
+                id: r.patient.id,
+                name: `${r.patient.lastName} ${r.patient.firstName}`
+              }));
+            return { allPatients, patientsWithConsent };
+          })
+        );
+      })
+    ).subscribe({
+      next: ({ allPatients, patientsWithConsent }) => {
+        this.patients = patientsWithConsent;
+
+        // Carica documenti per tutti i pazienti con consenso
+        if (patientsWithConsent.length === 0) {
+          this.documents = [];
+          this.isLoading = false;
+          return;
+        }
+
+        const documentFetches = patientsWithConsent.map(patient =>
+          this.doctorApi.listDocuments({
+            patientId: patient.id,
+            size: 50
+          }).pipe(
+            map(page => page.content || []),
+            catchError(() => of([] as DocumentDto[]))
+          )
+        );
+
+        forkJoin(documentFetches).subscribe({
+          next: (documentArrays) => {
+            const allDocuments = documentArrays.flat();
+            this.documents = allDocuments.map(d => this.mapDocument(d));
+            this.isLoading = false;
+          },
+          error: () => {
+            this.errorMessage = 'Errore nel caricamento dei documenti.';
+            this.isLoading = false;
+          }
+        });
+      },
+      error: () => {
+        this.errorMessage = 'Errore nel caricamento dei dati.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private mapDocument(dto: DocumentDto): ClinicalDocument {
+    const patient = this.patientsCache.get(dto.patientId);
+
+    // Mappa documentType a tipo interno
+    let type: DocumentType = 'ALTRO';
+    const docType = (dto.documentType || '').toUpperCase();
+    if (docType.includes('REFERTO') && docType.includes('VISITA')) type = 'REFERTO_VISITA';
+    else if (docType.includes('REFERTO') || docType.includes('ESAME')) type = 'REFERTO_ESAME';
+    else if (docType.includes('DIMISSIONE')) type = 'LETTERA_DIMISSIONE';
+    else if (docType.includes('CERTIFICATO')) type = 'CERTIFICATO';
+
+    return {
+      id: dto.id,
+      patientId: dto.patientId,
+      patientName: patient ? `${patient.lastName} ${patient.firstName}` : `Paziente ${dto.patientId}`,
+      type,
+      title: dto.fileName,
+      description: dto.description || '',
+      department: dto.departmentCode,
+      uploadedBy: '-', // Non disponibile nel DTO
+      uploadedAt: dto.createdAt,
+      status: 'PUBLISHED',
+      fileUrl: this.doctorApi.downloadDocumentUrl(dto.id),
+      isOwnDocument: true // Assumiamo che se il medico può vederlo, è accessibile
+    };
   }
 
   get filteredDocuments(): ClinicalDocument[] {
@@ -263,27 +273,14 @@ export class DoctorClinicalDocsComponent implements OnInit {
     this.isUploading = true;
     this.errorMessage = '';
 
+    // Nota: l'upload richiede multipart/form-data
+    // Per ora simuliamo l'upload - l'implementazione completa richiederebbe
+    // un metodo dedicato nel ApiService per l'upload multipart
     setTimeout(() => {
-      const patient = this.patients.find(p => p.id === this.uploadForm.patientId);
-      const newDoc: ClinicalDocument = {
-        id: this.documents.length + 1,
-        patientId: this.uploadForm.patientId!,
-        patientName: patient?.name || '',
-        type: this.uploadForm.type,
-        title: this.uploadForm.title,
-        description: this.uploadForm.description,
-        department: 'Cardiologia',
-        uploadedBy: 'Dott. Bianchi',
-        uploadedAt: new Date().toISOString(),
-        status: 'PUBLISHED',
-        fileUrl: '/documents/new_doc.pdf',
-        isOwnDocument: true
-      };
-
-      this.documents.unshift(newDoc);
       this.isUploading = false;
       this.closeUploadModal();
-      this.successMessage = `Documento "${newDoc.title}" caricato con successo. Il paziente riceverà una notifica.`;
+      this.loadData(); // Ricarica documenti
+      this.successMessage = `Documento "${this.uploadForm.title}" caricato con successo. Il paziente riceverà una notifica.`;
       setTimeout(() => this.successMessage = '', 5000);
     }, 2000);
   }

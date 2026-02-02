@@ -2,6 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import {
+  DoctorApiService,
+  AdmissionDto,
+  PatientDto,
+  AdmissionStatus as ApiAdmissionStatus,
+  AdmissionType as ApiAdmissionType
+} from './doctor-api.service';
 
 type AdmissionStatus = 'ACTIVE' | 'DISCHARGED' | 'TRANSFERRED';
 type AdmissionType = 'EMERGENCY' | 'SCHEDULED' | 'TRANSFER';
@@ -37,6 +46,9 @@ export class DoctorAdmissionsComponent implements OnInit {
   // Ricoveri
   admissions: Admission[] = [];
 
+  // Cache pazienti
+  private patientsCache = new Map<number, PatientDto>();
+
   // Filtri
   statusFilter: 'ALL' | AdmissionStatus = 'ACTIVE';
   typeFilter: 'ALL' | AdmissionType = 'ALL';
@@ -64,6 +76,8 @@ export class DoctorAdmissionsComponent implements OnInit {
     followUp: '',
     medications: ''
   };
+
+  constructor(private doctorApi: DoctorApiService) {}
 
   // Stats
   get activeAdmissions(): number {
@@ -97,95 +111,90 @@ export class DoctorAdmissionsComponent implements OnInit {
 
   loadAdmissions(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
-    setTimeout(() => {
-      // Mock data - scenario Dott. Martini
-      this.admissions = [
-        {
-          id: 1,
-          patientId: 10,
-          patientName: 'Greco Giovanni',
-          patientAge: 68,
-          admittedAt: new Date().toISOString(),
-          type: 'SCHEDULED',
-          diagnosis: 'Polmonite acquisita in comunità',
-          bed: 'Letto 12A',
-          status: 'ACTIVE',
-          isReferent: true,
-          dailyNotes: [
-            { date: new Date().toISOString(), note: 'Ammissione. Iniziata terapia antibiotica ev. Richiesti esami ematochimici.', author: 'Dott. Martini' }
-          ]
-        },
-        {
-          id: 2,
-          patientId: 11,
-          patientName: 'Fontana Maria',
-          patientAge: 75,
-          admittedAt: this.getDaysAgo(2),
-          type: 'EMERGENCY',
-          diagnosis: 'Insufficienza respiratoria acuta',
-          bed: 'Letto 8B',
-          status: 'ACTIVE',
-          isReferent: true,
-          dailyNotes: [
-            { date: this.getDaysAgo(2), note: 'Ammissione da PS. Ossigenoterapia ad alti flussi.', author: 'Dott. Martini' },
-            { date: this.getDaysAgo(1), note: 'Miglioramento parametri respiratori. Riduzione FiO2.', author: 'Dott. Martini' },
-            { date: new Date().toISOString(), note: 'Stabile. Iniziata fisioterapia respiratoria.', author: 'Dott. Martini' }
-          ]
-        },
-        {
-          id: 3,
-          patientId: 12,
-          patientName: 'Rizzo Paolo',
-          patientAge: 55,
-          admittedAt: this.getDaysAgo(5),
-          type: 'SCHEDULED',
-          diagnosis: 'BPCO riacutizzata',
-          bed: 'Letto 5A',
-          status: 'ACTIVE',
-          isReferent: false,
-          dailyNotes: [
-            { date: this.getDaysAgo(5), note: 'Ammissione programmata per riacutizzazione.', author: 'Dott.ssa Neri' }
-          ]
-        },
-        {
-          id: 4,
-          patientId: 13,
-          patientName: 'Costa Anna',
-          patientAge: 62,
-          admittedAt: this.getDaysAgo(7),
-          dischargedAt: this.getDaysAgo(1),
-          type: 'SCHEDULED',
-          diagnosis: 'Polmonite interstiziale',
-          bed: 'Letto 3B',
-          status: 'DISCHARGED',
-          isReferent: true,
-          dailyNotes: [
-            { date: this.getDaysAgo(7), note: 'Ammissione. Avviata terapia steroidea.', author: 'Dott. Martini' },
-            { date: this.getDaysAgo(1), note: 'Dimissione con terapia domiciliare.', author: 'Dott. Martini' }
-          ]
-        },
-        {
-          id: 5,
-          patientId: 14,
-          patientName: 'Moretti Luigi',
-          patientAge: 71,
-          admittedAt: this.getDaysAgo(10),
-          dischargedAt: this.getDaysAgo(3),
-          type: 'TRANSFER',
-          diagnosis: 'Embolia polmonare',
-          bed: 'Letto 10A',
-          status: 'TRANSFERRED',
-          isReferent: false,
-          dailyNotes: [
-            { date: this.getDaysAgo(10), note: 'Trasferimento da altro ospedale.', author: 'Dott.ssa Neri' },
-            { date: this.getDaysAgo(3), note: 'Trasferito in cardiologia per follow-up.', author: 'Dott.ssa Neri' }
-          ]
+    const doctorId = this.doctorApi.getDoctorId();
+    const statusParam = this.statusFilter !== 'ALL' ? this.statusFilter as ApiAdmissionStatus : undefined;
+
+    this.doctorApi.listAdmissions({
+      status: statusParam,
+      size: 100
+    }).subscribe({
+      next: (page) => {
+        const dtos = page.content || [];
+
+        // Raccogli patientIds unici
+        const patientIds = new Set<number>();
+        dtos.forEach(dto => patientIds.add(dto.patientId));
+
+        // Fetch pazienti
+        const patientFetches = Array.from(patientIds)
+          .filter(id => !this.patientsCache.has(id))
+          .map(id => this.doctorApi.getPatient(id).pipe(
+            map(p => ({ id, patient: p })),
+            catchError(() => of({ id, patient: null as PatientDto | null }))
+          ));
+
+        if (patientFetches.length > 0) {
+          forkJoin(patientFetches).subscribe(results => {
+            results.forEach(r => {
+              if (r.patient) this.patientsCache.set(r.id, r.patient);
+            });
+            this.mapAdmissions(dtos, doctorId);
+            this.isLoading = false;
+          });
+        } else {
+          this.mapAdmissions(dtos, doctorId);
+          this.isLoading = false;
         }
-      ];
+      },
+      error: () => {
+        this.errorMessage = 'Errore nel caricamento dei ricoveri.';
+        this.isLoading = false;
+      }
+    });
+  }
 
-      this.isLoading = false;
-    }, 500);
+  private mapAdmissions(dtos: AdmissionDto[], doctorId: number | null): void {
+    this.admissions = dtos.map(dto => {
+      const patient = this.patientsCache.get(dto.patientId);
+
+      // Calcola età paziente
+      let patientAge = 0;
+      if (patient?.birthDate) {
+        const birth = new Date(patient.birthDate);
+        const today = new Date();
+        patientAge = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+          patientAge--;
+        }
+      }
+
+      return {
+        id: dto.id,
+        patientId: dto.patientId,
+        patientName: patient ? `${patient.lastName} ${patient.firstName}` : `Paziente ${dto.patientId}`,
+        patientAge,
+        admittedAt: dto.admittedAt,
+        dischargedAt: dto.dischargedAt,
+        type: this.mapAdmissionType(dto.admissionType),
+        diagnosis: dto.notes || '-',
+        bed: '-', // Il backend non ha questo campo
+        status: dto.status as AdmissionStatus,
+        isReferent: dto.attendingDoctorId === doctorId,
+        dailyNotes: dto.notes ? [{ date: dto.admittedAt, note: dto.notes, author: '-' }] : []
+      };
+    });
+  }
+
+  private mapAdmissionType(apiType: ApiAdmissionType): AdmissionType {
+    const mapping: Record<string, AdmissionType> = {
+      EMERGENCY: 'EMERGENCY',
+      SCHEDULED: 'SCHEDULED',
+      TRANSFER: 'TRANSFER'
+    };
+    return mapping[apiType] || 'SCHEDULED';
   }
 
   getDaysAgo(days: number): string {
@@ -233,6 +242,7 @@ export class DoctorAdmissionsComponent implements OnInit {
   }
 
   takeCharge(admission: Admission): void {
+    // Nota: il backend non ha un endpoint per questo, quindi aggiorniamo solo localmente
     admission.isReferent = true;
     this.successMessage = `Hai preso in carico il paziente ${admission.patientName}.`;
     setTimeout(() => this.successMessage = '', 5000);
@@ -241,10 +251,11 @@ export class DoctorAdmissionsComponent implements OnInit {
   addDailyNote(): void {
     if (!this.selectedAdmission || !this.newNote.trim()) return;
 
+    // Nota: il backend non ha un endpoint per le note giornaliere, aggiorniamo localmente
     this.selectedAdmission.dailyNotes.push({
       date: new Date().toISOString(),
       note: this.newNote,
-      author: 'Dott. Martini'
+      author: 'Medico'
     });
 
     this.newNote = '';
@@ -274,22 +285,22 @@ export class DoctorAdmissionsComponent implements OnInit {
     }
 
     this.isSaving = true;
+    this.errorMessage = '';
 
-    setTimeout(() => {
-      this.selectedAdmission!.status = 'DISCHARGED';
-      this.selectedAdmission!.dischargedAt = new Date().toISOString();
-      this.selectedAdmission!.dailyNotes.push({
-        date: new Date().toISOString(),
-        note: `Dimissione. ${this.dischargeForm.summary}`,
-        author: 'Dott. Martini'
-      });
-
-      this.isSaving = false;
-      this.closeDischargeModal();
-      this.closeDetailModal();
-      this.successMessage = `Paziente ${this.selectedAdmission!.patientName} dimesso. Lettera di dimissione generata.`;
-      setTimeout(() => this.successMessage = '', 5000);
-    }, 1500);
+    this.doctorApi.dischargeAdmission(this.selectedAdmission.id).subscribe({
+      next: (updated) => {
+        this.isSaving = false;
+        this.closeDischargeModal();
+        this.closeDetailModal();
+        this.loadAdmissions(); // Ricarica lista
+        this.successMessage = `Paziente ${this.selectedAdmission!.patientName} dimesso. Lettera di dimissione generata.`;
+        setTimeout(() => this.successMessage = '', 5000);
+      },
+      error: () => {
+        this.isSaving = false;
+        this.errorMessage = 'Errore nella dimissione del paziente.';
+      }
+    });
   }
 
   getStatusLabel(status: AdmissionStatus): string {

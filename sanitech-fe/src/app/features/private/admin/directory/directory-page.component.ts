@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import {
   DirectoryService,
   Facility,
@@ -22,7 +22,7 @@ type TabType = 'facilities' | 'departments' | 'doctors' | 'patients';
 @Component({
   selector: 'app-directory-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './directory-page.component.html'
 })
 export class DirectoryPageComponent implements OnInit {

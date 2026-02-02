@@ -11,16 +11,10 @@
       <h2 class="mb-1 fw-bold">I miei pagamenti</h2>
       <p class="text-muted mb-0">Gestisci i pagamenti e scarica le ricevute per la dichiarazione dei redditi</p>
     </div>
-    <div class="d-flex gap-2">
-      <button class="btn btn-outline-secondary" (click)="loadPayments()" [disabled]="isLoading">
-        <i class="bi bi-arrow-clockwise me-1"></i>
-        Aggiorna
-      </button>
-      <button class="btn btn-outline-primary" (click)="downloadAnnualSummary()">
-        <i class="bi bi-file-earmark-pdf me-1"></i>
-        Riepilogo {{ yearFilter }}
-      </button>
-    </div>
+    <button class="btn btn-outline-secondary" routerLink="/portal/patient">
+      <i class="bi bi-arrow-left me-1"></i>
+      Torna indietro
+    </button>
   </div>
 
   <!-- Alert messages -->
@@ -28,6 +22,12 @@
     <i class="bi bi-check-circle me-2"></i>
     {{ successMessage }}
     <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
+  </div>
+
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage" role="alert">
+    <i class="bi bi-exclamation-circle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="errorMessage = ''"></button>
   </div>
 
   <!-- Loading spinner -->
@@ -69,8 +69,8 @@
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-start">
                   <div>
-                    <small class="text-muted d-block">{{ payment.service }}</small>
-                    <span class="fw-bold">{{ formatCurrency(payment.amount) }}</span>
+                    <small class="text-muted d-block">{{ payment.description || 'Pagamento' }}</small>
+                    <span class="fw-bold">{{ formatCurrency(payment.amountCents, payment.currency) }}</span>
                   </div>
                   <span class="badge" [ngClass]="getStatusBadgeClass(payment.status)">
                     {{ getStatusLabel(payment.status) }}
@@ -168,9 +168,10 @@
           <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti gli stati</option>
             <option value="PENDING">Da pagare</option>
-            <option value="OVERDUE">Scaduti</option>
-            <option value="PAID">Pagati</option>
-            <option value="CANCELLED">Annullati</option>
+            <option value="AUTHORIZED">Autorizzati</option>
+            <option value="CAPTURED">Pagati</option>
+            <option value="FAILED">Falliti</option>
+            <option value="REFUNDED">Rimborsati</option>
           </select>
         </div>
         <div class="col-md-4">
@@ -201,35 +202,23 @@
             <tr>
               <th class="ps-4">Descrizione</th>
               <th>Importo</th>
-              <th>Data visita</th>
-              <th>Scadenza</th>
+              <th>Data creazione</th>
               <th>Stato</th>
               <th class="text-end pe-4">Azioni</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let payment of paginatedPayments"
-                [class.table-warning]="payment.status === 'PENDING'"
-                [class.table-danger]="payment.status === 'OVERDUE'"
-                [class.table-light]="payment.status === 'CANCELLED'">
+                [class.table-warning]="isPending(payment)"
+                [class.table-light]="payment.status === 'REFUNDED'">
               <td class="ps-4">
-                <div class="fw-semibold">{{ payment.description }}</div>
-                <small class="text-muted">{{ payment.service }}</small>
+                <div class="fw-semibold">{{ payment.description || 'Pagamento' }}</div>
+                <small class="text-muted">{{ payment.patientName }}</small>
               </td>
               <td>
-                <span class="fw-bold">{{ formatCurrency(payment.amount) }}</span>
+                <span class="fw-bold">{{ formatCurrency(payment.amountCents, payment.currency) }}</span>
               </td>
-              <td>{{ formatDate(payment.visitDate) }}</td>
-              <td>
-                <span *ngIf="payment.status === 'PENDING' || payment.status === 'OVERDUE'">
-                  {{ formatDate(payment.dueDate!) }}
-                </span>
-                <span *ngIf="payment.status === 'PAID'" class="text-success">
-                  <i class="bi bi-check-circle me-1"></i>
-                  Pagato il {{ formatDate(payment.paidAt!) }}
-                </span>
-                <span *ngIf="payment.status === 'CANCELLED'" class="text-muted">-</span>
-              </td>
+              <td>{{ formatDate(payment.createdAt) }}</td>
               <td>
                 <span class="badge" [ngClass]="getStatusBadgeClass(payment.status)">
                   {{ getStatusLabel(payment.status) }}
@@ -243,19 +232,19 @@
               </td>
               <td class="text-end pe-4">
                 <div class="btn-group btn-group-sm">
-                  <button *ngIf="payment.status === 'PENDING' || payment.status === 'OVERDUE'"
+                  <button *ngIf="isPending(payment)"
                           class="btn btn-warning"
                           (click)="openPaymentModal(payment)">
                     <i class="bi bi-credit-card me-1"></i>
                     Paga
                   </button>
-                  <button *ngIf="payment.status === 'PAID' && payment.receiptUrl"
+                  <button *ngIf="isPaid(payment)"
                           class="btn btn-outline-primary"
                           (click)="downloadReceipt(payment)"
                           title="Scarica ricevuta">
                     <i class="bi bi-download"></i>
                   </button>
-                  <button *ngIf="payment.status === 'PENDING' || payment.status === 'OVERDUE'"
+                  <button *ngIf="isPending(payment)"
                           class="btn btn-outline-secondary"
                           (click)="generateBankSlip(payment)"
                           title="Genera bollettino">
@@ -265,7 +254,7 @@
               </td>
             </tr>
             <tr *ngIf="filteredPayments.length === 0">
-              <td colspan="6" class="text-center py-5">
+              <td colspan="5" class="text-center py-5">
                 <div class="text-muted">
                   <i class="bi bi-credit-card fs-1 d-block mb-3"></i>
                   <p class="mb-0">Nessun pagamento trovato con i filtri selezionati.</p>
@@ -324,7 +313,7 @@
               <i class="bi bi-credit-card me-2 text-primary"></i>
               Effettua pagamento
             </h5>
-            <p class="text-muted small mb-0 mt-1">{{ selectedPayment.service }}</p>
+            <p class="text-muted small mb-0 mt-1">{{ selectedPayment.description || 'Pagamento' }}</p>
           </div>
           <button type="button" class="btn-close" aria-label="Chiudi" (click)="closePaymentModal()"></button>
         </div>
@@ -334,12 +323,12 @@
             <div class="card-body">
               <div class="row align-items-center">
                 <div class="col-md-8">
-                  <h6 class="mb-1">{{ selectedPayment.description }}</h6>
-                  <p class="text-muted mb-0 small">{{ selectedPayment.service }}</p>
-                  <small class="text-muted">Visita del {{ formatDate(selectedPayment.visitDate) }}</small>
+                  <h6 class="mb-1">{{ selectedPayment.description || 'Pagamento' }}</h6>
+                  <p class="text-muted mb-0 small">{{ selectedPayment.patientName }}</p>
+                  <small class="text-muted">Creato il {{ formatDate(selectedPayment.createdAt) }}</small>
                 </div>
                 <div class="col-md-4 text-md-end">
-                  <div class="fs-2 fw-bold text-primary">{{ formatCurrency(selectedPayment.amount) }}</div>
+                  <div class="fs-2 fw-bold text-primary">{{ formatCurrency(selectedPayment.amountCents, selectedPayment.currency) }}</div>
                 </div>
               </div>
             </div>
@@ -351,7 +340,7 @@
             Seleziona metodo di pagamento
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-4">
+            <div class="col-md-6">
               <div class="card h-100"
                    [class.border-primary]="paymentForm.method === 'CARD'"
                    [class.bg-primary]="paymentForm.method === 'CARD'"
@@ -365,21 +354,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-4">
-              <div class="card h-100"
-                   [class.border-primary]="paymentForm.method === 'PAYPAL'"
-                   [class.bg-primary]="paymentForm.method === 'PAYPAL'"
-                   [class.bg-opacity-10]="paymentForm.method === 'PAYPAL'"
-                   (click)="paymentForm.method = 'PAYPAL'"
-                   style="cursor: pointer;">
-                <div class="card-body text-center py-4">
-                  <i class="bi bi-paypal fs-1 mb-2" [class.text-primary]="paymentForm.method === 'PAYPAL'"></i>
-                  <h6 class="mb-1">PayPal</h6>
-                  <small class="text-muted">Account PayPal</small>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
               <div class="card h-100"
                    [class.border-primary]="paymentForm.method === 'BANK_TRANSFER'"
                    [class.bg-primary]="paymentForm.method === 'BANK_TRANSFER'"
@@ -426,7 +401,7 @@
           </button>
           <button type="button" class="btn btn-primary btn-lg" (click)="processPayment()" [disabled]="isProcessing">
             <span *ngIf="isProcessing" class="spinner-border spinner-border-sm me-1"></span>
-            {{ isProcessing ? 'Elaborazione...' : 'Paga ' + formatCurrency(selectedPayment.amount) }}
+            {{ isProcessing ? 'Elaborazione...' : 'Paga ' + formatCurrency(selectedPayment.amountCents, selectedPayment.currency) }}
           </button>
         </div>
       </div>

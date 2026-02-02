@@ -17,6 +17,7 @@ public class AppConstants {
     public static class ApiPath {
         public static final String API = "/api";
         public static final String TELEVISITS = API + "/televisits";
+        public static final String PATIENT_TELEVISITS = API + "/patient/televisits";
     }
 
     /**

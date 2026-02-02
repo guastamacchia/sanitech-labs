@@ -1,23 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-
-type PaymentStatus = 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
-type PaymentMethod = 'CARD' | 'PAYPAL' | 'BANK_TRANSFER';
-
-interface Payment {
-  id: number;
-  description: string;
-  service: string;
-  amount: number;
-  dueDate?: string;
-  paidAt?: string;
-  status: PaymentStatus;
-  method?: PaymentMethod;
-  receiptUrl?: string;
-  visitDate: string;
-}
+import { Subject, takeUntil } from 'rxjs';
+import {
+  PatientService,
+  PaymentOrderDto,
+  PaymentStatus,
+  PaymentMethod
+} from './services/patient.service';
 
 @Component({
   selector: 'app-patient-payments',
@@ -25,9 +16,11 @@ interface Payment {
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './patient-payments.component.html'
 })
-export class PatientPaymentsComponent implements OnInit {
+export class PatientPaymentsComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
   // Dati pagamenti
-  payments: Payment[] = [];
+  payments: PaymentOrderDto[] = [];
 
   // UI State
   isLoading = false;
@@ -35,7 +28,7 @@ export class PatientPaymentsComponent implements OnInit {
   successMessage = '';
   errorMessage = '';
   showPaymentModal = false;
-  selectedPayment: Payment | null = null;
+  selectedPayment: PaymentOrderDto | null = null;
 
   // Form pagamento
   paymentForm = {
@@ -54,9 +47,16 @@ export class PatientPaymentsComponent implements OnInit {
   // Anni disponibili per filtro
   availableYears: number[] = [];
 
+  constructor(private patientService: PatientService) {}
+
   ngOnInit(): void {
     this.loadPayments();
     this.initYearFilter();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   initYearFilter(): void {
@@ -66,98 +66,36 @@ export class PatientPaymentsComponent implements OnInit {
 
   loadPayments(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
-    // Dati mock - Scenario di Sara
-    setTimeout(() => {
-      this.payments = [
-        {
-          id: 1,
-          description: 'Ticket visita specialistica',
-          service: 'Visita cardiologica',
-          amount: 36.15,
-          dueDate: '2025-02-15',
-          status: 'PENDING',
-          visitDate: '2025-01-20'
+    this.patientService.getPayments({ size: 100, sort: 'createdAt,desc' })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.payments = response.content;
+          this.isLoading = false;
         },
-        {
-          id: 2,
-          description: 'Ticket esami di laboratorio',
-          service: 'Emocromo completo + Profilo lipidico',
-          amount: 22.50,
-          dueDate: '2025-02-01',
-          status: 'OVERDUE',
-          visitDate: '2025-01-10'
-        },
-        {
-          id: 3,
-          description: 'Ticket visita specialistica',
-          service: 'Visita dermatologica',
-          amount: 36.15,
-          paidAt: '2025-01-05T10:30:00',
-          status: 'PAID',
-          method: 'CARD',
-          receiptUrl: '/receipts/2025/003.pdf',
-          visitDate: '2024-12-20'
-        },
-        {
-          id: 4,
-          description: 'Ticket esami diagnostici',
-          service: 'ECG + Ecocardiogramma',
-          amount: 45.00,
-          paidAt: '2024-12-15T14:20:00',
-          status: 'PAID',
-          method: 'PAYPAL',
-          receiptUrl: '/receipts/2024/045.pdf',
-          visitDate: '2024-12-10'
-        },
-        {
-          id: 5,
-          description: 'Ticket visita specialistica',
-          service: 'Visita ortopedica',
-          amount: 36.15,
-          paidAt: '2024-11-20T09:15:00',
-          status: 'PAID',
-          method: 'CARD',
-          receiptUrl: '/receipts/2024/032.pdf',
-          visitDate: '2024-11-15'
-        },
-        {
-          id: 6,
-          description: 'Ticket esami di laboratorio',
-          service: 'Analisi del sangue complete',
-          amount: 28.00,
-          paidAt: '2024-10-05T11:00:00',
-          status: 'PAID',
-          method: 'BANK_TRANSFER',
-          receiptUrl: '/receipts/2024/028.pdf',
-          visitDate: '2024-09-28'
-        },
-        {
-          id: 7,
-          description: 'Ticket visita specialistica',
-          service: 'Visita neurologica',
-          amount: 36.15,
-          status: 'CANCELLED',
-          visitDate: '2024-09-15'
+        error: (err) => {
+          console.error('Errore caricamento pagamenti:', err);
+          this.errorMessage = 'Impossibile caricare i pagamenti. Riprova.';
+          this.isLoading = false;
         }
-      ];
-      this.isLoading = false;
-    }, 500);
+      });
   }
 
-  get filteredPayments(): Payment[] {
+  get filteredPayments(): PaymentOrderDto[] {
     return this.payments.filter(p => {
       if (this.statusFilter !== 'ALL' && p.status !== this.statusFilter) return false;
 
       // Filtro per anno
-      const paymentYear = new Date(p.visitDate).getFullYear();
+      const paymentYear = new Date(p.createdAt).getFullYear();
       if (paymentYear !== this.yearFilter) return false;
 
       return true;
     });
   }
 
-  get paginatedPayments(): Payment[] {
+  get paginatedPayments(): PaymentOrderDto[] {
     const start = (this.currentPage - 1) * this.pageSize;
     return this.filteredPayments.slice(start, start + this.pageSize);
   }
@@ -166,71 +104,75 @@ export class PatientPaymentsComponent implements OnInit {
     return Math.ceil(this.filteredPayments.length / this.pageSize) || 1;
   }
 
-  get pendingPayments(): Payment[] {
-    return this.payments.filter(p => p.status === 'PENDING' || p.status === 'OVERDUE');
+  get pendingPayments(): PaymentOrderDto[] {
+    return this.payments.filter(p => p.status === 'PENDING' || p.status === 'AUTHORIZED');
   }
 
   get pendingAmount(): number {
-    return this.pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+    return this.pendingPayments.reduce((sum, p) => sum + p.amountCents, 0);
   }
 
   get paidThisYear(): number {
     const currentYear = new Date().getFullYear();
     return this.payments
-      .filter(p => p.status === 'PAID' && p.paidAt && new Date(p.paidAt).getFullYear() === currentYear)
-      .reduce((sum, p) => sum + p.amount, 0);
+      .filter(p => p.status === 'CAPTURED' && new Date(p.updatedAt).getFullYear() === currentYear)
+      .reduce((sum, p) => sum + p.amountCents, 0);
   }
 
   get paidPaymentsCount(): number {
-    return this.payments.filter(p => p.status === 'PAID').length;
+    return this.payments.filter(p => p.status === 'CAPTURED').length;
   }
 
   getStatusLabel(status: PaymentStatus): string {
     const labels: Record<PaymentStatus, string> = {
       PENDING: 'Da pagare',
-      PAID: 'Pagato',
-      OVERDUE: 'Scaduto',
-      CANCELLED: 'Annullato'
+      AUTHORIZED: 'Autorizzato',
+      CAPTURED: 'Pagato',
+      FAILED: 'Fallito',
+      REFUNDED: 'Rimborsato'
     };
-    return labels[status];
+    return labels[status] || status;
   }
 
   getStatusBadgeClass(status: PaymentStatus): string {
     const classes: Record<PaymentStatus, string> = {
       PENDING: 'bg-warning text-dark',
-      PAID: 'bg-success',
-      OVERDUE: 'bg-danger',
-      CANCELLED: 'bg-secondary'
+      AUTHORIZED: 'bg-info',
+      CAPTURED: 'bg-success',
+      FAILED: 'bg-danger',
+      REFUNDED: 'bg-secondary'
     };
-    return classes[status];
+    return classes[status] || 'bg-secondary';
   }
 
-  getMethodLabel(method: PaymentMethod): string {
+  getMethodLabel(method: PaymentMethod | undefined): string {
+    if (!method) return '-';
     const labels: Record<PaymentMethod, string> = {
       CARD: 'Carta di credito/debito',
-      PAYPAL: 'PayPal',
-      BANK_TRANSFER: 'Bonifico bancario'
+      BANK_TRANSFER: 'Bonifico bancario',
+      MANUAL: 'Pagamento manuale'
     };
-    return labels[method];
+    return labels[method] || method;
   }
 
-  getMethodIcon(method: PaymentMethod): string {
+  getMethodIcon(method: PaymentMethod | undefined): string {
+    if (!method) return 'bi-cash';
     const icons: Record<PaymentMethod, string> = {
       CARD: 'bi-credit-card',
-      PAYPAL: 'bi-paypal',
-      BANK_TRANSFER: 'bi-bank'
+      BANK_TRANSFER: 'bi-bank',
+      MANUAL: 'bi-cash'
     };
-    return icons[method];
+    return icons[method] || 'bi-cash';
   }
 
-  formatCurrency(amount: number): string {
+  formatCurrency(amountCents: number, currency: string = 'EUR'): string {
     return new Intl.NumberFormat('it-IT', {
       style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
+      currency: currency
+    }).format(amountCents / 100);
   }
 
-  formatDate(dateStr: string): string {
+  formatDate(dateStr: string | undefined): string {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('it-IT', {
       day: '2-digit',
@@ -239,7 +181,7 @@ export class PatientPaymentsComponent implements OnInit {
     });
   }
 
-  formatDateTime(dateStr: string): string {
+  formatDateTime(dateStr: string | undefined): string {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('it-IT', {
       day: '2-digit',
@@ -250,12 +192,15 @@ export class PatientPaymentsComponent implements OnInit {
     });
   }
 
-  isOverdue(payment: Payment): boolean {
-    if (payment.status !== 'PENDING' || !payment.dueDate) return false;
-    return new Date(payment.dueDate) < new Date();
+  isPending(payment: PaymentOrderDto): boolean {
+    return payment.status === 'PENDING' || payment.status === 'AUTHORIZED';
   }
 
-  openPaymentModal(payment: Payment): void {
+  isPaid(payment: PaymentOrderDto): boolean {
+    return payment.status === 'CAPTURED';
+  }
+
+  openPaymentModal(payment: PaymentOrderDto): void {
     this.selectedPayment = payment;
     this.paymentForm = {
       method: 'CARD',
@@ -276,23 +221,35 @@ export class PatientPaymentsComponent implements OnInit {
     this.isProcessing = true;
     this.errorMessage = '';
 
-    // Simula elaborazione pagamento
-    setTimeout(() => {
-      const payment = this.selectedPayment!;
-      payment.status = 'PAID';
-      payment.paidAt = new Date().toISOString();
-      payment.method = this.paymentForm.method;
-      payment.receiptUrl = `/receipts/${new Date().getFullYear()}/${payment.id.toString().padStart(3, '0')}.pdf`;
+    // Genera un idempotency key unico
+    const idempotencyKey = `pay-${this.selectedPayment.id}-${Date.now()}`;
 
-      this.isProcessing = false;
-      this.closePaymentModal();
-      this.successMessage = `Pagamento di ${this.formatCurrency(payment.amount)} completato con successo! Ricevuta disponibile.`;
-      setTimeout(() => this.successMessage = '', 5000);
-    }, 2000);
+    this.patientService.createPayment({
+      appointmentId: this.selectedPayment.appointmentId,
+      amountCents: this.selectedPayment.amountCents,
+      currency: this.selectedPayment.currency,
+      method: this.paymentForm.method,
+      description: this.selectedPayment.description
+    }, idempotencyKey)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: () => {
+        this.isProcessing = false;
+        this.closePaymentModal();
+        this.loadPayments(); // Ricarica la lista
+        this.successMessage = `Pagamento di ${this.formatCurrency(this.selectedPayment!.amountCents, this.selectedPayment!.currency)} completato con successo!`;
+        setTimeout(() => this.successMessage = '', 5000);
+      },
+      error: (err) => {
+        console.error('Errore pagamento:', err);
+        this.errorMessage = 'Errore durante il pagamento. Riprova.';
+        this.isProcessing = false;
+      }
+    });
   }
 
-  downloadReceipt(payment: Payment): void {
-    this.successMessage = `Download della ricevuta per "${payment.service}" avviato.`;
+  downloadReceipt(payment: PaymentOrderDto): void {
+    this.successMessage = `Download della ricevuta avviato.`;
     setTimeout(() => this.successMessage = '', 3000);
   }
 
@@ -301,8 +258,8 @@ export class PatientPaymentsComponent implements OnInit {
     setTimeout(() => this.successMessage = '', 3000);
   }
 
-  generateBankSlip(payment: Payment): void {
-    this.successMessage = `Bollettino per "${payment.service}" generato. Importo: ${this.formatCurrency(payment.amount)}`;
+  generateBankSlip(payment: PaymentOrderDto): void {
+    this.successMessage = `Bollettino generato. Importo: ${this.formatCurrency(payment.amountCents, payment.currency)}`;
     setTimeout(() => this.successMessage = '', 5000);
   }
 }

@@ -2,12 +2,21 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import {
+  DoctorApiService,
+  TelevisitDto,
+  TelevisitStatus as ApiTelevisitStatus,
+  PatientDto
+} from './doctor-api.service';
 
 type TelevisitStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
 interface Televisit {
   id: number;
-  patientId: number;
+  patientId?: number;
+  patientSubject: string;
   patientName: string;
   scheduledAt: string;
   duration: number;
@@ -27,6 +36,11 @@ interface Televisit {
 export class DoctorTelevisitsComponent implements OnInit {
   // Televisite
   televisits: Televisit[] = [];
+
+  // Cache pazienti (per subject)
+  private patientsCache = new Map<string, string>();
+
+  constructor(private doctorApi: DoctorApiService) {}
 
   // Filtri
   statusFilter: 'ALL' | TelevisitStatus = 'ALL';
@@ -84,83 +98,36 @@ export class DoctorTelevisitsComponent implements OnInit {
 
   loadTelevisits(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
-    setTimeout(() => {
-      const now = new Date();
+    this.doctorApi.searchTelevisits({ size: 100 }).subscribe({
+      next: (page) => {
+        const dtos = page.content || [];
+        this.televisits = dtos.map(dto => this.mapTelevisit(dto));
+        this.isLoading = false;
+      },
+      error: () => {
+        this.errorMessage = 'Errore nel caricamento delle televisite.';
+        this.isLoading = false;
+      }
+    });
+  }
 
-      // Mock data - scenario Dott.ssa Neri
-      this.televisits = [
-        {
-          id: 1,
-          patientId: 3,
-          patientName: 'Bianchi Luigi',
-          scheduledAt: this.getTodayAt(16, 0),
-          duration: 30,
-          reason: 'Controllo post-operatorio ginocchio',
-          status: 'SCHEDULED',
-          roomUrl: 'https://meet.sanitech.it/room/abc123',
-          documents: [
-            { id: 1, name: 'RX ginocchio pre-intervento', type: 'image' },
-            { id: 2, name: 'Diario del dolore', type: 'document' },
-            { id: 3, name: 'Foto cicatrice', type: 'image' }
-          ]
-        },
-        {
-          id: 2,
-          patientId: 2,
-          patientName: 'Verdi Anna',
-          scheduledAt: this.getTodayAt(17, 0),
-          duration: 30,
-          reason: 'Consulto per dolore lombare',
-          status: 'SCHEDULED',
-          roomUrl: 'https://meet.sanitech.it/room/def456'
-        },
-        {
-          id: 3,
-          patientId: 8,
-          patientName: 'Conti Sara',
-          scheduledAt: this.getTomorrowAt(10, 30),
-          duration: 30,
-          reason: 'Follow-up terapia',
-          status: 'SCHEDULED',
-          roomUrl: 'https://meet.sanitech.it/room/ghi789'
-        },
-        {
-          id: 4,
-          patientId: 1,
-          patientName: 'Esposito Mario',
-          scheduledAt: this.getYesterdayAt(15, 0),
-          duration: 30,
-          reason: 'Controllo pressione',
-          status: 'COMPLETED',
-          notes: 'Paziente stabile. Pressione nella norma. Proseguire terapia attuale.',
-          roomUrl: 'https://meet.sanitech.it/room/jkl012'
-        },
-        {
-          id: 5,
-          patientId: 4,
-          patientName: 'Rossi Giulia',
-          scheduledAt: this.getYesterdayAt(11, 0),
-          duration: 30,
-          reason: 'Consulto dermatologico',
-          status: 'COMPLETED',
-          notes: 'Prescritto trattamento topico. Controllo tra 2 settimane.',
-          roomUrl: 'https://meet.sanitech.it/room/mno345'
-        },
-        {
-          id: 6,
-          patientId: 5,
-          patientName: 'Romano Francesco',
-          scheduledAt: this.getYesterdayAt(9, 0),
-          duration: 30,
-          reason: 'Prima visita',
-          status: 'NO_SHOW',
-          roomUrl: 'https://meet.sanitech.it/room/pqr678'
-        }
-      ];
+  private mapTelevisit(dto: TelevisitDto): Televisit {
+    // Il backend usa subject Keycloak, non ID paziente
+    // Potremmo fare una lookup, ma per ora usiamo il subject come placeholder
+    const patientName = this.patientsCache.get(dto.patientSubject) || `Paziente (${dto.patientSubject.substring(0, 8)}...)`;
 
-      this.isLoading = false;
-    }, 500);
+    return {
+      id: dto.id,
+      patientSubject: dto.patientSubject,
+      patientName,
+      scheduledAt: dto.scheduledAt,
+      duration: 30, // Default, il backend potrebbe non avere questo campo
+      reason: '-', // Il backend non ha un campo reason nel TelevisitDto
+      status: dto.status as TelevisitStatus,
+      roomUrl: dto.roomName ? `https://meet.sanitech.it/room/${dto.roomName}` : undefined
+    };
   }
 
   getTodayAt(hours: number, minutes: number): string {
@@ -229,28 +196,47 @@ export class DoctorTelevisitsComponent implements OnInit {
   startTelevisit(): void {
     if (!this.selectedTelevisit) return;
 
-    this.selectedTelevisit.status = 'IN_PROGRESS';
-    this.visitNotes = '';
-    this.showPreparationModal = false;
-    this.showVideoModal = true;
-    this.successMessage = 'Televisita avviata. In attesa che il paziente si colleghi...';
-    setTimeout(() => this.successMessage = '', 3000);
+    this.doctorApi.startTelevisit(this.selectedTelevisit.id).subscribe({
+      next: (updated) => {
+        if (this.selectedTelevisit) {
+          this.selectedTelevisit.status = 'IN_PROGRESS';
+        }
+        this.visitNotes = '';
+        this.showPreparationModal = false;
+        this.showVideoModal = true;
+        this.successMessage = 'Televisita avviata. In attesa che il paziente si colleghi...';
+        setTimeout(() => this.successMessage = '', 3000);
+      },
+      error: () => {
+        this.errorMessage = 'Errore nell\'avvio della televisita.';
+      }
+    });
   }
 
   endTelevisit(generateReport: boolean): void {
     if (!this.selectedTelevisit) return;
 
-    this.selectedTelevisit.status = 'COMPLETED';
-    this.selectedTelevisit.notes = this.visitNotes;
-    this.showVideoModal = false;
+    this.doctorApi.endTelevisit(this.selectedTelevisit.id).subscribe({
+      next: (updated) => {
+        if (this.selectedTelevisit) {
+          this.selectedTelevisit.status = 'COMPLETED';
+          this.selectedTelevisit.notes = this.visitNotes;
+        }
+        this.showVideoModal = false;
+        this.loadTelevisits(); // Ricarica lista
 
-    if (generateReport) {
-      this.successMessage = 'Televisita conclusa. Referto di visita generato.';
-    } else {
-      this.successMessage = 'Televisita conclusa.';
-    }
-    setTimeout(() => this.successMessage = '', 5000);
-    this.selectedTelevisit = null;
+        if (generateReport) {
+          this.successMessage = 'Televisita conclusa. Referto di visita generato.';
+        } else {
+          this.successMessage = 'Televisita conclusa.';
+        }
+        setTimeout(() => this.successMessage = '', 5000);
+        this.selectedTelevisit = null;
+      },
+      error: () => {
+        this.errorMessage = 'Errore nella conclusione della televisita.';
+      }
+    });
   }
 
   closeVideoModal(): void {

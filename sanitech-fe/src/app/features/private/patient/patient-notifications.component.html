@@ -9,18 +9,12 @@
         </ol>
       </nav>
       <h2 class="mb-1 fw-bold">Le mie notifiche</h2>
-      <p class="text-muted mb-0">Gestisci le notifiche e i promemoria</p>
+      <p class="text-muted mb-0">Visualizza le comunicazioni inviate dal sistema</p>
     </div>
-    <div class="d-flex gap-2">
-      <button class="btn btn-outline-secondary" (click)="toggleArchive()">
-        <i [class]="showArchive ? 'bi bi-inbox' : 'bi bi-archive'" class="me-1"></i>
-        {{ showArchive ? 'Torna alle notifiche' : 'Archivio' }}
-      </button>
-      <button class="btn btn-outline-primary" (click)="markAllAsRead()" [disabled]="unreadCount === 0" *ngIf="!showArchive">
-        <i class="bi bi-check-all me-1"></i>
-        Segna tutto come letto
-      </button>
-    </div>
+    <button class="btn btn-outline-secondary" routerLink="/portal/patient">
+      <i class="bi bi-arrow-left me-1"></i>
+      Torna indietro
+    </button>
   </div>
 
   <!-- Alert messages -->
@@ -28,6 +22,12 @@
     <i class="bi bi-check-circle me-2"></i>
     {{ successMessage }}
     <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
+  </div>
+
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage" role="alert">
+    <i class="bi bi-exclamation-circle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="errorMessage = ''"></button>
   </div>
 
   <!-- Loading spinner -->
@@ -39,32 +39,17 @@
   </div>
 
   <!-- Stats Cards -->
-  <div class="row g-3 mb-4" *ngIf="!showArchive">
-    <div class="col-md-4">
-      <div class="card card-glass h-100 border-0 shadow-sm" [class.border-danger]="unreadCount > 0" [class.border-2]="unreadCount > 0">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="rounded-circle p-3 me-3" [ngClass]="unreadCount > 0 ? 'bg-danger bg-opacity-10' : 'bg-secondary bg-opacity-10'">
-              <i class="bi bi-bell-fill fs-4" [ngClass]="unreadCount > 0 ? 'text-danger' : 'text-secondary'"></i>
-            </div>
-            <div>
-              <h3 class="mb-0 fw-bold">{{ unreadCount }}</h3>
-              <small class="text-muted">Non lette</small>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="row g-3 mb-4">
     <div class="col-md-4">
       <div class="card card-glass h-100 border-0 shadow-sm">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-              <i class="bi bi-calendar-day text-primary fs-4"></i>
+            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+              <i class="bi bi-hourglass-split text-warning fs-4"></i>
             </div>
             <div>
-              <h3 class="mb-0 fw-bold">{{ todayCount }}</h3>
-              <small class="text-muted">Oggi</small>
+              <h3 class="mb-0 fw-bold">{{ pendingCount }}</h3>
+              <small class="text-muted">In attesa</small>
             </div>
           </div>
         </div>
@@ -75,10 +60,25 @@
         <div class="card-body">
           <div class="d-flex align-items-center">
             <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
-              <i class="bi bi-inbox text-success fs-4"></i>
+              <i class="bi bi-check-circle text-success fs-4"></i>
             </div>
             <div>
-              <h3 class="mb-0 fw-bold">{{ activeNotificationsCount }}</h3>
+              <h3 class="mb-0 fw-bold">{{ sentCount }}</h3>
+              <small class="text-muted">Inviate</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card card-glass h-100 border-0 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-bell text-primary fs-4"></i>
+            </div>
+            <div>
+              <h3 class="mb-0 fw-bold">{{ totalCount }}</h3>
               <small class="text-muted">Totali</small>
             </div>
           </div>
@@ -87,41 +87,27 @@
     </div>
   </div>
 
-  <!-- Info Box -->
-  <div class="alert alert-info border-0 mb-4" role="alert" *ngIf="!showArchive">
-    <div class="d-flex">
-      <i class="bi bi-info-circle fs-5 me-3 mt-1"></i>
-      <div>
-        <h6 class="alert-heading mb-1">Trasparenza e controllo</h6>
-        <p class="mb-0 small">
-          Ricevi una notifica ogni volta che un medico accede ai tuoi dati clinici.
-          Puoi gestire le preferenze di notifica dal tuo <a routerLink="/portal/patient/profile" class="alert-link">profilo</a>.
-        </p>
-      </div>
-    </div>
-  </div>
-
   <!-- Filters -->
-  <div class="card card-glass border-0 shadow-sm mb-4" *ngIf="!showArchive">
+  <div class="card card-glass border-0 shadow-sm mb-4">
     <div class="card-body">
       <div class="row g-3 align-items-end">
         <div class="col-md-4">
-          <label class="form-label fw-semibold small text-muted">Filtra per tipo</label>
-          <select class="form-select" [(ngModel)]="typeFilter" (ngModelChange)="currentPage = 1">
-            <option value="ALL">Tutti i tipi</option>
-            <option value="APPOINTMENT">Appuntamenti</option>
-            <option value="DOCUMENT">Documenti</option>
-            <option value="CONSENT">Consensi</option>
-            <option value="PAYMENT">Pagamenti</option>
-            <option value="SYSTEM">Sistema</option>
+          <label class="form-label fw-semibold small text-muted">Filtra per stato</label>
+          <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
+            <option value="ALL">Tutti gli stati</option>
+            <option value="PENDING">In attesa</option>
+            <option value="SENT">Inviate</option>
+            <option value="FAILED">Fallite</option>
+            <option value="BOUNCED">Respinte</option>
           </select>
         </div>
         <div class="col-md-4">
-          <label class="form-label fw-semibold small text-muted">Filtra per stato</label>
-          <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
-            <option value="ALL">Tutti</option>
-            <option value="UNREAD">Non lette</option>
-            <option value="READ">Lette</option>
+          <label class="form-label fw-semibold small text-muted">Filtra per canale</label>
+          <select class="form-select" [(ngModel)]="channelFilter" (ngModelChange)="currentPage = 1">
+            <option value="ALL">Tutti i canali</option>
+            <option value="EMAIL">Email</option>
+            <option value="SMS">SMS</option>
+            <option value="PUSH">Push</option>
           </select>
         </div>
         <div class="col-md-4">
@@ -136,20 +122,12 @@
     </div>
   </div>
 
-  <!-- Archive Header -->
-  <div class="alert alert-secondary border-0 mb-4" *ngIf="showArchive">
-    <div class="d-flex align-items-center">
-      <i class="bi bi-archive me-2"></i>
-      <span>Stai visualizzando le notifiche archiviate. Le notifiche piu\' vecchie di 30 giorni vengono archiviate automaticamente.</span>
-    </div>
-  </div>
-
   <!-- Notifications List -->
   <div class="card card-glass border-0 shadow-sm">
     <div class="card-header bg-transparent border-bottom">
       <h5 class="mb-0 fw-semibold">
-        <i [class]="showArchive ? 'bi bi-archive' : 'bi bi-bell'" class="me-2"></i>
-        {{ showArchive ? 'Notifiche archiviate' : 'Elenco notifiche' }}
+        <i class="bi bi-bell me-2"></i>
+        Elenco notifiche
         <span class="badge bg-secondary ms-2">{{ filteredNotifications.length }}</span>
       </h5>
     </div>
@@ -157,43 +135,34 @@
       <div class="list-group list-group-flush">
         <div *ngFor="let notification of paginatedNotifications"
              class="list-group-item list-group-item-action p-3"
-             [class.bg-light]="notification.status === 'UNREAD'"
-             [class.border-start]="notification.status === 'UNREAD'"
-             [class.border-primary]="notification.status === 'UNREAD'"
-             [class.border-3]="notification.status === 'UNREAD'"
-             (click)="markAsRead(notification)">
+             [class.bg-light]="notification.status === 'PENDING'"
+             (click)="openDetailModal(notification)">
           <div class="d-flex">
             <div class="flex-shrink-0 me-3">
-              <div class="rounded-circle p-2" [ngClass]="'bg-' + getTypeColor(notification.type) + ' bg-opacity-10'">
-                <i [class]="'bi ' + getTypeIcon(notification.type) + ' text-' + getTypeColor(notification.type)"></i>
+              <div class="rounded-circle p-2" [ngClass]="getChannelBadgeClass(notification.channel)">
+                <i [class]="'bi ' + getChannelIcon(notification.channel)"></i>
               </div>
             </div>
             <div class="flex-grow-1">
               <div class="d-flex justify-content-between align-items-start mb-1">
                 <div>
-                  <h6 class="mb-0" [class.fw-bold]="notification.status === 'UNREAD'">
-                    {{ notification.title }}
-                    <span *ngIf="notification.status === 'UNREAD'" class="badge bg-primary ms-2">Nuova</span>
-                  </h6>
+                  <h6 class="mb-0 fw-semibold">{{ notification.subject }}</h6>
                 </div>
                 <small class="text-muted ms-2 text-nowrap">{{ formatDate(notification.createdAt) }}</small>
               </div>
-              <p class="text-muted mb-2 small">{{ notification.message }}</p>
+              <p class="text-muted mb-2 small text-truncate" style="max-width: 500px;">{{ notification.body }}</p>
               <div class="d-flex gap-2 align-items-center">
-                <span class="badge" [ngClass]="'bg-' + getTypeColor(notification.type) + ' bg-opacity-25 text-' + getTypeColor(notification.type)">
-                  {{ getTypeLabel(notification.type) }}
+                <span class="badge" [ngClass]="getStatusBadgeClass(notification.status)">
+                  {{ getStatusLabel(notification.status) }}
                 </span>
-                <a *ngIf="notification.link && notification.actionLabel"
-                   [routerLink]="notification.link"
-                   class="btn btn-sm btn-outline-primary">
-                  {{ notification.actionLabel }}
-                </a>
-                <button *ngIf="notification.status !== 'ARCHIVED'"
-                        class="btn btn-sm btn-link text-muted p-0 ms-auto"
-                        (click)="archiveNotification(notification); $event.stopPropagation()"
-                        title="Archivia">
-                  <i class="bi bi-archive"></i>
-                </button>
+                <span class="badge bg-light text-dark border">
+                  <i [class]="'bi ' + getChannelIcon(notification.channel) + ' me-1'"></i>
+                  {{ getChannelLabel(notification.channel) }}
+                </span>
+                <small class="text-muted" *ngIf="notification.toAddress">
+                  <i class="bi bi-arrow-right me-1"></i>
+                  {{ notification.toAddress }}
+                </small>
               </div>
             </div>
           </div>
@@ -202,9 +171,7 @@
         <div *ngIf="filteredNotifications.length === 0" class="text-center py-5">
           <div class="text-muted">
             <i class="bi bi-bell-slash fs-1 d-block mb-3"></i>
-            <p class="mb-0">
-              {{ showArchive ? 'Nessuna notifica archiviata.' : 'Nessuna notifica trovata con i filtri selezionati.' }}
-            </p>
+            <p class="mb-0">Nessuna notifica trovata con i filtri selezionati.</p>
           </div>
         </div>
       </div>
@@ -236,3 +203,81 @@
     </div>
   </div>
 </div>
+
+<!-- Modal: Dettaglio Notifica -->
+<ng-container *ngIf="showDetailModal && selectedNotification">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeDetailModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="detailModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055; overflow-y: auto;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <div>
+            <h5 class="modal-title fw-bold" id="detailModalTitle">
+              <i class="bi bi-bell me-2 text-primary"></i>
+              Dettaglio notifica
+            </h5>
+            <p class="text-muted small mb-0 mt-1">{{ selectedNotification.subject }}</p>
+          </div>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDetailModal()"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <div class="row g-4">
+            <div class="col-md-6">
+              <p class="mb-1 text-muted small"><strong>Canale</strong></p>
+              <span class="badge bg-light text-dark border">
+                <i [class]="'bi ' + getChannelIcon(selectedNotification.channel) + ' me-1'"></i>
+                {{ getChannelLabel(selectedNotification.channel) }}
+              </span>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-1 text-muted small"><strong>Stato</strong></p>
+              <span class="badge" [ngClass]="getStatusBadgeClass(selectedNotification.status)">
+                {{ getStatusLabel(selectedNotification.status) }}
+              </span>
+            </div>
+            <div class="col-md-6">
+              <p class="mb-1 text-muted small"><strong>Data creazione</strong></p>
+              <p class="mb-0">{{ formatDate(selectedNotification.createdAt) }}</p>
+            </div>
+            <div class="col-md-6" *ngIf="selectedNotification.sentAt">
+              <p class="mb-1 text-muted small"><strong>Data invio</strong></p>
+              <p class="mb-0">{{ formatDate(selectedNotification.sentAt) }}</p>
+            </div>
+            <div class="col-12" *ngIf="selectedNotification.toAddress">
+              <p class="mb-1 text-muted small"><strong>Destinatario</strong></p>
+              <p class="mb-0">{{ selectedNotification.toAddress }}</p>
+            </div>
+            <div class="col-12">
+              <hr>
+              <p class="mb-1 text-muted small"><strong>Oggetto</strong></p>
+              <p class="mb-0 fw-semibold">{{ selectedNotification.subject }}</p>
+            </div>
+            <div class="col-12">
+              <p class="mb-1 text-muted small"><strong>Contenuto</strong></p>
+              <div class="bg-light rounded p-3">
+                <p class="mb-0 white-space-pre-wrap">{{ selectedNotification.body }}</p>
+              </div>
+            </div>
+            <div class="col-12" *ngIf="selectedNotification.errorMessage">
+              <div class="alert alert-danger border-0 mb-0">
+                <p class="mb-1 small"><strong>Errore di invio</strong></p>
+                <p class="mb-0 small">{{ selectedNotification.errorMessage }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-primary" (click)="closeDetailModal()">Chiudi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>

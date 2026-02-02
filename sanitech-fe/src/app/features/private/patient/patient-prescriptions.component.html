@@ -11,9 +11,9 @@
       <h2 class="mb-1 fw-bold">Le mie prescrizioni</h2>
       <p class="text-muted mb-0">Consulta le prescrizioni e le terapie in corso</p>
     </div>
-    <button class="btn btn-outline-secondary" (click)="loadPrescriptions()" [disabled]="isLoading">
-      <i class="bi bi-arrow-clockwise me-1"></i>
-      Aggiorna
+    <button class="btn btn-outline-secondary" routerLink="/portal/patient">
+      <i class="bi bi-arrow-left me-1"></i>
+      Torna indietro
     </button>
   </div>
 
@@ -22,6 +22,12 @@
     <i class="bi bi-check-circle me-2"></i>
     {{ successMessage }}
     <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
+  </div>
+
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="errorMessage = ''"></button>
   </div>
 
   <!-- Loading spinner -->
@@ -33,7 +39,7 @@
   </div>
 
   <!-- Stats Cards -->
-  <div class="row g-3 mb-4">
+  <div class="row g-3 mb-4" *ngIf="!isLoading || prescriptions.length > 0">
     <div class="col-md-4">
       <div class="card card-glass h-100 border-0 shadow-sm">
         <div class="card-body">
@@ -58,7 +64,7 @@
             </div>
             <div>
               <h3 class="mb-0 fw-bold">{{ expiringPrescriptionsCount }}</h3>
-              <small class="text-muted">In scadenza (30gg)</small>
+              <small class="text-muted">Da rinnovare</small>
             </div>
           </div>
         </div>
@@ -82,7 +88,7 @@
   </div>
 
   <!-- Filters -->
-  <div class="card card-glass border-0 shadow-sm mb-4">
+  <div class="card card-glass border-0 shadow-sm mb-4" *ngIf="!isLoading || prescriptions.length > 0">
     <div class="card-body">
       <div class="row g-3 align-items-end">
         <div class="col-md-5">
@@ -99,10 +105,9 @@
           <label class="form-label fw-semibold small text-muted">Filtra per stato</label>
           <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti gli stati</option>
-            <option value="ACTIVE">Solo attive</option>
-            <option value="COMPLETED">Completate</option>
-            <option value="EXPIRED">Scadute</option>
-            <option value="SUSPENDED">Sospese</option>
+            <option value="ISSUED">Solo attive</option>
+            <option value="DISPENSED">Dispensate</option>
+            <option value="CANCELLED">Annullate</option>
           </select>
         </div>
         <div class="col-md-3">
@@ -118,7 +123,7 @@
   </div>
 
   <!-- Prescriptions List -->
-  <div class="card card-glass border-0 shadow-sm">
+  <div class="card card-glass border-0 shadow-sm" *ngIf="!isLoading || prescriptions.length > 0">
     <div class="card-header bg-transparent border-bottom">
       <h5 class="mb-0 fw-semibold">
         <i class="bi bi-prescription2 me-2"></i>
@@ -131,38 +136,35 @@
       <div class="list-group list-group-flush">
         <div *ngFor="let prescription of paginatedPrescriptions"
              class="list-group-item list-group-item-action p-4"
-             [class.bg-light]="prescription.status !== 'ACTIVE'">
+             [class.bg-light]="prescription.status !== 'ISSUED'">
           <div class="row align-items-center">
             <div class="col-md-5">
               <div class="d-flex align-items-start">
                 <div class="rounded-circle p-2 me-3"
-                     [ngClass]="prescription.status === 'ACTIVE' ? 'bg-success bg-opacity-10' : 'bg-secondary bg-opacity-10'">
+                     [ngClass]="prescription.status === 'ISSUED' ? 'bg-success bg-opacity-10' : 'bg-secondary bg-opacity-10'">
                   <i class="bi bi-capsule fs-5"
-                     [ngClass]="prescription.status === 'ACTIVE' ? 'text-success' : 'text-secondary'"></i>
+                     [ngClass]="prescription.status === 'ISSUED' ? 'text-success' : 'text-secondary'"></i>
                 </div>
                 <div>
-                  <h6 class="mb-1 fw-bold">{{ prescription.drug }}</h6>
-                  <p class="mb-1 text-muted small">{{ prescription.dosage }} - {{ prescription.frequency }}</p>
+                  <h6 class="mb-1 fw-bold">{{ getFirstMedication(prescription) }}</h6>
+                  <p class="mb-1 text-muted small">{{ getFirstDosage(prescription) }} - {{ getFirstFrequency(prescription) }}</p>
+                  <span *ngIf="prescription.items.length > 1" class="badge bg-info me-1">
+                    +{{ prescription.items.length - 1 }} farmaci
+                  </span>
                   <span class="badge" [ngClass]="getStatusBadgeClass(prescription.status)">
                     {{ getStatusLabel(prescription.status) }}
-                  </span>
-                  <span *ngIf="isExpiringSoon(prescription)" class="badge bg-warning text-dark ms-1">
-                    <i class="bi bi-clock me-1"></i>In scadenza
                   </span>
                 </div>
               </div>
             </div>
             <div class="col-md-3">
               <small class="text-muted d-block">Prescritto da</small>
-              <div class="fw-semibold">{{ prescription.doctorName }}</div>
-              <small class="text-muted">{{ prescription.doctorSpecialty }}</small>
+              <div class="fw-semibold">{{ prescription.doctorName || 'N/A' }}</div>
+              <small class="text-muted">{{ prescription.departmentName || '' }}</small>
             </div>
             <div class="col-md-2">
               <small class="text-muted d-block">Data prescrizione</small>
-              <div>{{ formatDate(prescription.prescribedAt) }}</div>
-              <small *ngIf="prescription.expiresAt" class="text-muted">
-                Scade: {{ formatDate(prescription.expiresAt) }}
-              </small>
+              <div>{{ formatDate(prescription.issuedAt || prescription.createdAt) }}</div>
             </div>
             <div class="col-md-2 text-end">
               <div class="btn-group btn-group-sm">
@@ -173,22 +175,21 @@
                   <i class="bi bi-download"></i>
                 </button>
               </div>
-              <div *ngIf="prescription.status === 'ACTIVE' && prescription.refillsRemaining !== undefined" class="mt-2">
-                <button class="btn btn-sm btn-outline-success" (click)="requestRefill(prescription)"
-                        *ngIf="prescription.refillsRemaining > 0">
+              <div *ngIf="prescription.status === 'ISSUED'" class="mt-2">
+                <button class="btn btn-sm btn-outline-success" (click)="requestRefill(prescription)">
                   <i class="bi bi-arrow-repeat me-1"></i>
-                  Rinnova ({{ prescription.refillsRemaining }})
+                  Rinnova
                 </button>
               </div>
             </div>
           </div>
           <!-- Instructions row -->
-          <div *ngIf="prescription.instructions || prescription.notes" class="mt-3 pt-3 border-top">
+          <div *ngIf="getFirstInstructions(prescription) || prescription.notes" class="mt-3 pt-3 border-top">
             <div class="row">
-              <div class="col-md-6" *ngIf="prescription.instructions">
+              <div class="col-md-6" *ngIf="getFirstInstructions(prescription)">
                 <small class="text-muted">
                   <i class="bi bi-info-circle me-1"></i>
-                  <strong>Istruzioni:</strong> {{ prescription.instructions }}
+                  <strong>Istruzioni:</strong> {{ getFirstInstructions(prescription) }}
                 </small>
               </div>
               <div class="col-md-6" *ngIf="prescription.notes">
@@ -257,7 +258,7 @@
               <i class="bi bi-prescription2 me-2 text-primary"></i>
               Dettaglio prescrizione
             </h5>
-            <p class="text-muted small mb-0 mt-1">{{ selectedPrescription.drug }}</p>
+            <p class="text-muted small mb-0 mt-1">{{ getMedicationSummary(selectedPrescription) }}</p>
           </div>
           <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDetailModal()"></button>
         </div>
@@ -265,56 +266,52 @@
           <!-- Status banner -->
           <div class="alert mb-4"
                [ngClass]="{
-                 'alert-success': selectedPrescription.status === 'ACTIVE',
-                 'alert-secondary': selectedPrescription.status === 'COMPLETED',
-                 'alert-warning': selectedPrescription.status === 'EXPIRED',
-                 'alert-danger': selectedPrescription.status === 'SUSPENDED'
+                 'alert-success': selectedPrescription.status === 'ISSUED',
+                 'alert-secondary': selectedPrescription.status === 'DISPENSED',
+                 'alert-danger': selectedPrescription.status === 'CANCELLED'
                }">
             <div class="d-flex align-items-center">
               <i class="bi bi-circle-fill me-2"></i>
               <strong>Stato: {{ getStatusLabel(selectedPrescription.status) }}</strong>
-              <span *ngIf="isExpiringSoon(selectedPrescription)" class="ms-2 badge bg-warning text-dark">
-                In scadenza tra {{ selectedPrescription.expiresAt }}
-              </span>
             </div>
           </div>
 
           <div class="row g-4">
-            <!-- Farmaco -->
+            <!-- Farmaci -->
             <div class="col-12">
               <div class="card bg-light border-0">
                 <div class="card-body">
                   <h6 class="fw-semibold text-primary mb-3">
                     <i class="bi bi-capsule me-2"></i>
-                    Farmaco e posologia
+                    Farmaci prescritti ({{ selectedPrescription.items.length }})
                   </h6>
-                  <div class="row">
-                    <div class="col-md-6">
-                      <p class="mb-1"><strong>Farmaco:</strong></p>
-                      <p class="mb-3 fs-5">{{ selectedPrescription.drug }}</p>
-                    </div>
-                    <div class="col-md-6">
-                      <p class="mb-1"><strong>Dosaggio:</strong></p>
-                      <p class="mb-3 fs-5">{{ selectedPrescription.dosage }}</p>
-                    </div>
-                    <div class="col-12">
-                      <p class="mb-1"><strong>Frequenza:</strong></p>
-                      <p class="mb-0 fs-5">{{ selectedPrescription.frequency }}</p>
+                  <div *ngFor="let item of selectedPrescription.items; let i = index"
+                       class="mb-3 pb-3"
+                       [class.border-bottom]="i < selectedPrescription.items.length - 1">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <p class="mb-1"><strong>Farmaco:</strong></p>
+                        <p class="mb-2 fs-5">{{ item.medicationName }}</p>
+                        <small class="text-muted">Codice: {{ item.medicationCode }}</small>
+                      </div>
+                      <div class="col-md-6">
+                        <p class="mb-1"><strong>Dosaggio:</strong></p>
+                        <p class="mb-2">{{ item.dosage }}</p>
+                        <p class="mb-1"><strong>Frequenza:</strong></p>
+                        <p class="mb-0">{{ item.frequency }}</p>
+                      </div>
+                      <div class="col-12 mt-2" *ngIf="item.instructions">
+                        <p class="mb-1"><strong>Istruzioni:</strong></p>
+                        <p class="mb-0 text-muted">{{ item.instructions }}</p>
+                      </div>
+                      <div class="col-12 mt-2" *ngIf="item.durationDays">
+                        <small class="text-muted">
+                          <i class="bi bi-calendar me-1"></i>
+                          Durata: {{ item.durationDays }} giorni
+                        </small>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Istruzioni -->
-            <div class="col-12" *ngIf="selectedPrescription.instructions">
-              <div class="card bg-info bg-opacity-10 border-0">
-                <div class="card-body">
-                  <h6 class="fw-semibold text-info mb-2">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Istruzioni per l'assunzione
-                  </h6>
-                  <p class="mb-0">{{ selectedPrescription.instructions }}</p>
                 </div>
               </div>
             </div>
@@ -322,34 +319,20 @@
             <!-- Medico prescrittore -->
             <div class="col-md-6">
               <p class="mb-1 text-muted small"><strong>Medico prescrittore</strong></p>
-              <p class="mb-0 fw-semibold">{{ selectedPrescription.doctorName }}</p>
-              <small class="text-muted">{{ selectedPrescription.doctorSpecialty }}</small>
+              <p class="mb-0 fw-semibold">{{ selectedPrescription.doctorName || 'N/A' }}</p>
+              <small class="text-muted">{{ selectedPrescription.departmentName || '' }}</small>
             </div>
 
             <!-- Date -->
             <div class="col-md-6">
               <p class="mb-1 text-muted small"><strong>Data prescrizione</strong></p>
-              <p class="mb-0">{{ formatDateLong(selectedPrescription.prescribedAt) }}</p>
-              <small *ngIf="selectedPrescription.expiresAt" class="text-muted">
-                Valida fino al {{ formatDateLong(selectedPrescription.expiresAt) }}
-              </small>
+              <p class="mb-0">{{ formatDateLong(selectedPrescription.issuedAt || selectedPrescription.createdAt) }}</p>
             </div>
 
             <!-- Note -->
             <div class="col-12" *ngIf="selectedPrescription.notes">
               <p class="mb-1 text-muted small"><strong>Note del medico</strong></p>
               <p class="mb-0 fst-italic">"{{ selectedPrescription.notes }}"</p>
-            </div>
-
-            <!-- Rinnovi -->
-            <div class="col-12" *ngIf="selectedPrescription.refillsRemaining !== undefined && selectedPrescription.status === 'ACTIVE'">
-              <div class="alert alert-info border-0 mb-0">
-                <i class="bi bi-arrow-repeat me-2"></i>
-                <strong>Rinnovi disponibili:</strong> {{ selectedPrescription.refillsRemaining }}
-                <span *ngIf="selectedPrescription.refillsRemaining > 0">
-                  - Puoi richiedere un rinnovo al medico
-                </span>
-              </div>
             </div>
           </div>
         </div>
