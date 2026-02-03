@@ -1,0 +1,34 @@
+/* SaniTech Labs - Account Theme */
+:root {
+    --sanitech-primary: #0d6efd;
+    --sanitech-primary-hover: #0b5ed7;
+    --sanitech-primary-light: #e8f3ff;
+}
+
+/* Override primary colors */
+.pf-v5-c-button.pf-m-primary,
+.pf-c-button.pf-m-primary {
+    background-color: var(--sanitech-primary);
+    border-color: var(--sanitech-primary);
+}
+
+.pf-v5-c-button.pf-m-primary:hover,
+.pf-c-button.pf-m-primary:hover {
+    background-color: var(--sanitech-primary-hover);
+    border-color: var(--sanitech-primary-hover);
+}
+
+/* Links */
+a {
+    color: var(--sanitech-primary);
+}
+
+a:hover {
+    color: var(--sanitech-primary-hover);
+}
+
+/* Navigation active state */
+.pf-v5-c-nav__link.pf-m-current,
+.pf-c-nav__link.pf-m-current {
+    border-left-color: var(--sanitech-primary);
+}

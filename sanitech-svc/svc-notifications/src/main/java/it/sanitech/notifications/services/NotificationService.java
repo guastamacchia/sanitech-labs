@@ -98,6 +98,21 @@ public class NotificationService {
         return repository.findByRecipientTypeAndRecipientId(recipientType, recipientId, pageable).map(mapper::toDto);
     }
 
+    /**
+     * Lista tutte le notifiche del sistema (per admin).
+     *
+     * @param recipientType filtro opzionale per tipo destinatario
+     * @param pageable paginazione
+     * @return pagina di notifiche
+     */
+    @Transactional(readOnly = true)
+    public Page<NotificationDto> listAll(RecipientType recipientType, Pageable pageable) {
+        if (recipientType != null) {
+            return repository.findByRecipientType(recipientType, pageable).map(mapper::toDto);
+        }
+        return repository.findAll(pageable).map(mapper::toDto);
+    }
+
     @Transactional
     public void delete(Long id) {
         Notification entity = repository.findById(id).orElseThrow(() -> NotFoundException.of("Notifica", id));

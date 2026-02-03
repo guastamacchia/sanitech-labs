@@ -454,6 +454,7 @@ export class ResourcePageState {
   };
   admissionForm = {
     patientId: null as number | null,
+    facilityCode: '',
     departmentCode: '',
     admissionType: 'INPATIENT' as 'INPATIENT' | 'DAY_HOSPITAL' | 'OBSERVATION',
     notes: '',
@@ -463,6 +464,8 @@ export class ResourcePageState {
   notificationsError = '';
   notificationsSuccess = '';
   showAdminNotificationModal = false;
+  showNotificationDetailModal = false;
+  selectedNotification: NotificationItem | null = null;
   showAdminPaymentModal = false;
   notificationForm = {
     recipient: '',
@@ -526,6 +529,7 @@ export class ResourcePageState {
   televisitForm = {
     doctorSubject: '',
     patientSubject: '',
+    facilityCode: '',
     department: '',
     scheduledAt: ''
   };
@@ -1320,6 +1324,20 @@ export class ResourcePageState {
     );
   }
 
+  get televisitDepartmentsFiltered(): DepartmentItem[] {
+    if (!this.televisitForm.facilityCode) {
+      return [];
+    }
+    return this.departments.filter(d => d.facilityCode === this.televisitForm.facilityCode);
+  }
+
+  get televisitDoctorsFiltered(): DoctorItem[] {
+    if (!this.televisitForm.department) {
+      return [];
+    }
+    return this.doctors.filter(d => d.departmentCode === this.televisitForm.department);
+  }
+
   get doctorSlotsByDate(): Array<{ date: string; slots: SchedulingSlot[] }> {
     if (!this.isDoctor) {
       return [];
@@ -1339,11 +1357,17 @@ export class ResourcePageState {
 
   getNotificationStatusLabel(status: string): string {
     const labels: Record<string, string> = {
+      PENDING: 'In coda',
       SENT: 'Inviata',
       DELIVERED: 'Consegnata',
       FAILED: 'Non consegnata'
     };
     return labels[status] ?? status;
+  }
+
+  truncateText(text: string | undefined, maxLength: number = 50): string {
+    if (!text) return '-';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   }
 
   getPrescriptionStatusLabel(status: string): string {
@@ -1970,18 +1994,59 @@ export class ResourcePageState {
     });
   }
 
+  // Getter: reparti filtrati per struttura selezionata
+  get filteredDepartments(): DepartmentItem[] {
+    if (!this.admissionForm.facilityCode) {
+      return [];
+    }
+    return this.departments.filter(
+      (dept) => dept.facilityCode === this.admissionForm.facilityCode
+    );
+  }
+
+  // Getter: medici filtrati per reparto selezionato
+  get filteredDoctors(): DoctorItem[] {
+    if (!this.admissionForm.departmentCode) {
+      return [];
+    }
+    return this.doctors.filter(
+      (doctor) => doctor.departmentCode === this.admissionForm.departmentCode
+    );
+  }
+
+  // Handler cambio struttura: reset reparto e medico
+  onAdmissionFacilityChange(): void {
+    this.admissionForm.departmentCode = '';
+    this.admissionForm.attendingDoctorId = null;
+  }
+
+  // Handler cambio reparto: reset medico
+  onAdmissionDepartmentChange(): void {
+    this.admissionForm.attendingDoctorId = null;
+  }
+
   submitAdmission(): void {
     this.isLoading = true;
     this.paymentsError = '';
 
-    // Validazione campi richiesti dal backend AdmissionCreateDto
+    // Validazione campi richiesti
     if (!this.admissionForm.patientId) {
       this.paymentsError = 'Seleziona un paziente.';
       this.isLoading = false;
       return;
     }
+    if (!this.admissionForm.facilityCode?.trim()) {
+      this.paymentsError = 'Seleziona una struttura.';
+      this.isLoading = false;
+      return;
+    }
     if (!this.admissionForm.departmentCode?.trim()) {
       this.paymentsError = 'Seleziona un reparto.';
+      this.isLoading = false;
+      return;
+    }
+    if (!this.admissionForm.attendingDoctorId) {
+      this.paymentsError = 'Seleziona un medico referente.';
       this.isLoading = false;
       return;
     }
@@ -1992,7 +2057,7 @@ export class ResourcePageState {
       departmentCode: this.admissionForm.departmentCode,
       admissionType: this.admissionForm.admissionType,
       notes: this.admissionForm.notes || null,
-      attendingDoctorId: this.admissionForm.attendingDoctorId || null
+      attendingDoctorId: this.admissionForm.attendingDoctorId
     };
 
     this.api.request<AdmissionItem>('POST', '/api/admissions', payload).subscribe({
@@ -2006,6 +2071,7 @@ export class ResourcePageState {
         // Reset form
         this.admissionForm = {
           patientId: null,
+          facilityCode: '',
           departmentCode: '',
           admissionType: 'INPATIENT',
           notes: '',
@@ -2111,6 +2177,15 @@ export class ResourcePageState {
     this.televisitError = '';
   }
 
+  onTelevisitFacilityChange(): void {
+    this.televisitForm.department = '';
+    this.televisitForm.doctorSubject = '';
+  }
+
+  onTelevisitDepartmentChange(): void {
+    this.televisitForm.doctorSubject = '';
+  }
+
   openAdminAdmissionModal(): void {
     this.paymentsError = '';
     this.showAdminAdmissionModal = true;
@@ -2124,7 +2199,8 @@ export class ResourcePageState {
   loadNotifications(): void {
     this.isLoading = true;
     this.notificationsError = '';
-    this.api.request<NotificationItem[] | NotificationPage>('GET', '/api/notifications').subscribe({
+    const endpoint = this.isAdmin ? '/api/admin/notifications' : '/api/notifications';
+    this.api.request<NotificationItem[] | NotificationPage>('GET', endpoint).subscribe({
       next: (notifications) => {
         const rawNotifications = Array.isArray(notifications) ? notifications : (notifications?.content ?? []);
         this.notifications = rawNotifications.map((n) => this.mapNotificationFromBackend(n));
@@ -2269,6 +2345,16 @@ export class ResourcePageState {
   closeAdminNotificationModal(): void {
     this.showAdminNotificationModal = false;
     this.notificationsError = '';
+  }
+
+  openNotificationDetailModal(notification: NotificationItem): void {
+    this.selectedNotification = notification;
+    this.showNotificationDetailModal = true;
+  }
+
+  closeNotificationDetailModal(): void {
+    this.showNotificationDetailModal = false;
+    this.selectedNotification = null;
   }
 
   openAdminPaymentModal(): void {
@@ -3047,6 +3133,7 @@ export class ResourcePageState {
         this.televisitForm = {
           doctorSubject: '',
           patientSubject: '',
+          facilityCode: '',
           department: '',
           scheduledAt: ''
         };

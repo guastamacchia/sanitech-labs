@@ -1520,28 +1520,45 @@
                           <thead>
                             <tr>
                               <th>ID</th>
+                              <th>Tipo</th>
                               <th>Destinatario</th>
                               <th>Canale</th>
                               <th>Oggetto</th>
                               <th>Messaggio</th>
-                              <th>Note</th>
                               <th>Stato</th>
-                              <th>Data e ora</th>
+                              <th>Data</th>
+                              <th></th>
                             </tr>
                           </thead>
                           <tbody>
                             <tr *ngFor="let notification of notifications | slice:getPageSliceStart('notifications'):getPageSliceEnd('notifications')">
                               <td>{{ notification.id }}</td>
-                              <td>{{ notification.recipient }}</td>
-                              <td>{{ notification.channel }}</td>
-                              <td>{{ notification.subject }}</td>
-                              <td>{{ notification.message }}</td>
-                              <td>{{ notification.notes || '-' }}</td>
-                              <td>{{ getNotificationStatusLabel(notification.status) }}</td>
-                              <td>{{ formatDateTime(notification.sentAt) }}</td>
+                              <td>
+                                <span class="badge bg-light text-dark">{{ notification.recipientType }}</span>
+                              </td>
+                              <td>{{ notification.toAddress || notification.recipientId }}</td>
+                              <td>
+                                <i class="bi" [ngClass]="notification.channel === 'EMAIL' ? 'bi-envelope' : 'bi-bell'" [title]="notification.channel"></i>
+                              </td>
+                              <td>{{ truncateText(notification.subject, 30) }}</td>
+                              <td>{{ truncateText(notification.body, 40) }}</td>
+                              <td>
+                                <span class="badge"
+                                      [class.bg-warning]="notification.status === 'PENDING'"
+                                      [class.bg-success]="notification.status === 'SENT'"
+                                      [class.bg-danger]="notification.status === 'FAILED'">
+                                  {{ getNotificationStatusLabel(notification.status) }}
+                                </span>
+                              </td>
+                              <td>{{ formatDateTime(notification.createdAt) }}</td>
+                              <td>
+                                <button class="btn btn-sm btn-outline-secondary" type="button" title="Visualizza dettagli" (click)="openNotificationDetailModal(notification)">
+                                  <i class="bi bi-eye"></i>
+                                </button>
+                              </td>
                             </tr>
                             <tr *ngIf="!notifications.length">
-                              <td colspan="8" class="text-center text-muted">Nessuna notifica presente.</td>
+                              <td colspan="9" class="text-center text-muted">Nessuna notifica presente.</td>
                             </tr>
                           </tbody>
                         </table>
@@ -1914,6 +1931,88 @@
                   </div>
                 </ng-container>
 
+                <!-- Modal Dettaglio Notifica -->
+                <ng-container *ngIf="showNotificationDetailModal && selectedNotification">
+                  <div
+                    class="modal-backdrop fade show"
+                    style="position: fixed; inset: 0; z-index: 1050;"
+                    (click)="closeNotificationDetailModal()"></div>
+                  <div
+                    class="modal d-flex align-items-center justify-content-center"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="notificationDetailModalTitle"
+                    style="position: fixed; inset: 0; z-index: 1055;">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                      <div class="modal-content shadow-lg border-0">
+                        <div class="modal-header border-0 pb-0">
+                          <div>
+                            <h5 class="modal-title fw-bold" id="notificationDetailModalTitle">
+                              <i class="bi bi-envelope-open me-2 text-primary"></i>
+                              Dettaglio notifica #{{ selectedNotification.id }}
+                            </h5>
+                            <p class="text-muted small mb-0 mt-1">
+                              <span class="badge me-2"
+                                    [class.bg-warning]="selectedNotification.status === 'PENDING'"
+                                    [class.bg-success]="selectedNotification.status === 'SENT'"
+                                    [class.bg-danger]="selectedNotification.status === 'FAILED'">
+                                {{ getNotificationStatusLabel(selectedNotification.status) }}
+                              </span>
+                              {{ formatDateTime(selectedNotification.createdAt) }}
+                            </p>
+                          </div>
+                          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeNotificationDetailModal()"></button>
+                        </div>
+                        <div class="modal-body pt-4">
+                          <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                              <label class="form-label fw-semibold small text-muted">Tipo destinatario</label>
+                              <div class="form-control-plaintext">
+                                <span class="badge bg-light text-dark">{{ selectedNotification.recipientType }}</span>
+                              </div>
+                            </div>
+                            <div class="col-md-6">
+                              <label class="form-label fw-semibold small text-muted">Canale</label>
+                              <div class="form-control-plaintext">
+                                <i class="bi me-1" [ngClass]="selectedNotification.channel === 'EMAIL' ? 'bi-envelope' : 'bi-bell'"></i>
+                                {{ selectedNotification.channel }}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">Destinatario</label>
+                            <div class="form-control-plaintext">{{ selectedNotification.toAddress || selectedNotification.recipientId }}</div>
+                          </div>
+                          <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">Oggetto</label>
+                            <div class="form-control-plaintext fw-semibold">{{ selectedNotification.subject }}</div>
+                          </div>
+                          <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted">Messaggio</label>
+                            <div class="form-control-plaintext bg-light p-3 rounded" style="white-space: pre-wrap;">{{ selectedNotification.body }}</div>
+                          </div>
+                          <div class="row g-3" *ngIf="selectedNotification.sentAt || selectedNotification.errorMessage">
+                            <div class="col-md-6" *ngIf="selectedNotification.sentAt">
+                              <label class="form-label fw-semibold small text-muted">Data invio</label>
+                              <div class="form-control-plaintext">{{ formatDateTime(selectedNotification.sentAt) }}</div>
+                            </div>
+                            <div class="col-12" *ngIf="selectedNotification.errorMessage">
+                              <label class="form-label fw-semibold small text-muted">Errore</label>
+                              <div class="alert alert-danger py-2 mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                {{ selectedNotification.errorMessage }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                          <button class="btn btn-outline-secondary" type="button" (click)="closeNotificationDetailModal()">Chiudi</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+
                 <ng-container *ngIf="showAdminPaymentModal">
                   <div
                     class="modal-backdrop fade show"
@@ -2002,21 +2101,34 @@
                               <th>Canale</th>
                               <th>Oggetto</th>
                               <th>Messaggio</th>
-                              <th>Note</th>
                               <th>Stato</th>
-                              <th>Data e ora</th>
+                              <th>Data</th>
+                              <th></th>
                             </tr>
                           </thead>
                           <tbody>
                             <tr *ngFor="let notification of notifications | slice:getPageSliceStart('notifications'):getPageSliceEnd('notifications')">
                               <td>{{ notification.id }}</td>
-                              <td>{{ notification.recipient }}</td>
-                              <td>{{ notification.channel }}</td>
-                              <td>{{ notification.subject }}</td>
-                              <td>{{ notification.message }}</td>
-                              <td>{{ notification.notes || '-' }}</td>
-                              <td>{{ getNotificationStatusLabel(notification.status) }}</td>
-                              <td>{{ formatDateTime(notification.sentAt) }}</td>
+                              <td>{{ notification.toAddress || notification.recipientId }}</td>
+                              <td>
+                                <i class="bi" [ngClass]="notification.channel === 'EMAIL' ? 'bi-envelope' : 'bi-bell'" [title]="notification.channel"></i>
+                              </td>
+                              <td>{{ truncateText(notification.subject, 30) }}</td>
+                              <td>{{ truncateText(notification.body, 40) }}</td>
+                              <td>
+                                <span class="badge"
+                                      [class.bg-warning]="notification.status === 'PENDING'"
+                                      [class.bg-success]="notification.status === 'SENT'"
+                                      [class.bg-danger]="notification.status === 'FAILED'">
+                                  {{ getNotificationStatusLabel(notification.status) }}
+                                </span>
+                              </td>
+                              <td>{{ formatDateTime(notification.createdAt) }}</td>
+                              <td>
+                                <button class="btn btn-sm btn-outline-secondary" type="button" title="Visualizza dettagli" (click)="openNotificationDetailModal(notification)">
+                                  <i class="bi bi-eye"></i>
+                                </button>
+                              </td>
                             </tr>
                             <tr *ngIf="!notifications.length">
                               <td colspan="8" class="text-center text-muted">Nessuna notifica presente.</td>
@@ -3582,7 +3694,7 @@
               <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                   <div class="modal-header">
-                    <h5 class="modal-title" id="adminTelevisitModalTitle">Converti in televisita</h5>
+                    <h5 class="modal-title" id="adminTelevisitModalTitle">Pianifica televisita</h5>
                     <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminTelevisitModal()"></button>
                   </div>
                   <div class="modal-body">
@@ -3598,26 +3710,33 @@
                           </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                          <label class="form-label">Medico</label>
-                          <select class="form-select" name="adminTelevisitDoctor" [(ngModel)]="televisitForm.doctorSubject" required>
-                            <option value="" disabled>Seleziona medico</option>
-                            <option *ngFor="let doctor of doctors" [value]="doctor.firstName + ' ' + doctor.lastName">
-                              {{ doctor.firstName }} {{ doctor.lastName }}
-                            </option>
-                          </select>
+                          <label class="form-label">Data e ora programmata</label>
+                          <input class="form-control" type="datetime-local" name="adminTelevisitScheduledAt" [(ngModel)]="televisitForm.scheduledAt" required />
                         </div>
                       </div>
                       <div class="row">
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Reparto</label>
-                          <select class="form-select" name="adminTelevisitDepartment" [(ngModel)]="televisitForm.department" required>
-                            <option value="" disabled>Seleziona reparto</option>
-                            <option *ngFor="let dept of departments" [value]="dept.code">{{ dept.name }}</option>
+                        <div class="col-md-4 mb-3">
+                          <label class="form-label">Struttura</label>
+                          <select class="form-select" name="adminTelevisitFacility" [(ngModel)]="televisitForm.facilityCode" (ngModelChange)="onTelevisitFacilityChange()" required>
+                            <option value="" disabled>Seleziona struttura</option>
+                            <option *ngFor="let facility of facilities" [value]="facility.code">{{ facility.name }}</option>
                           </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                          <label class="form-label">Data e ora programmata</label>
-                          <input class="form-control" type="datetime-local" name="adminTelevisitScheduledAt" [(ngModel)]="televisitForm.scheduledAt" required />
+                        <div class="col-md-4 mb-3">
+                          <label class="form-label">Reparto</label>
+                          <select class="form-select" name="adminTelevisitDepartment" [(ngModel)]="televisitForm.department" (ngModelChange)="onTelevisitDepartmentChange()" required [disabled]="!televisitForm.facilityCode">
+                            <option value="" disabled>Seleziona reparto</option>
+                            <option *ngFor="let dept of televisitDepartmentsFiltered" [value]="dept.code">{{ dept.name }}</option>
+                          </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                          <label class="form-label">Medico referente</label>
+                          <select class="form-select" name="adminTelevisitDoctor" [(ngModel)]="televisitForm.doctorSubject" required [disabled]="!televisitForm.department">
+                            <option value="" disabled>Seleziona medico</option>
+                            <option *ngFor="let doctor of televisitDoctorsFiltered" [value]="doctor.firstName + ' ' + doctor.lastName">
+                              {{ doctor.firstName }} {{ doctor.lastName }}
+                            </option>
+                          </select>
                         </div>
                       </div>
                       <div class="alert alert-info py-2">
@@ -3813,14 +3932,21 @@
                           </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                          <label class="form-label">Reparto</label>
-                          <select class="form-select" name="adminAdmissionDepartment" [(ngModel)]="admissionForm.departmentCode" required>
-                            <option value="" disabled>Seleziona reparto</option>
-                            <option *ngFor="let dept of departments" [value]="dept.code">{{ dept.name }}</option>
+                          <label class="form-label">Struttura</label>
+                          <select class="form-select" name="adminAdmissionFacility" [(ngModel)]="admissionForm.facilityCode" (ngModelChange)="onAdmissionFacilityChange()" required>
+                            <option value="" disabled>Seleziona struttura</option>
+                            <option *ngFor="let facility of facilities" [value]="facility.code">{{ facility.name }}</option>
                           </select>
                         </div>
                       </div>
                       <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Reparto</label>
+                          <select class="form-select" name="adminAdmissionDepartment" [(ngModel)]="admissionForm.departmentCode" (ngModelChange)="onAdmissionDepartmentChange()" required [disabled]="!admissionForm.facilityCode">
+                            <option value="" disabled>Seleziona reparto</option>
+                            <option *ngFor="let dept of filteredDepartments" [value]="dept.code">{{ dept.name }}</option>
+                          </select>
+                        </div>
                         <div class="col-md-6 mb-3">
                           <label class="form-label">Tipo ricovero</label>
                           <select class="form-select" name="adminAdmissionType" [(ngModel)]="admissionForm.admissionType" required>
@@ -3829,11 +3955,13 @@
                             <option value="OBSERVATION">Osservazione</option>
                           </select>
                         </div>
+                      </div>
+                      <div class="row">
                         <div class="col-md-6 mb-3">
                           <label class="form-label">Medico referente</label>
-                          <select class="form-select" name="adminAdmissionDoctor" [(ngModel)]="admissionForm.attendingDoctorId">
-                            <option [ngValue]="null">Nessuno (assegnazione automatica)</option>
-                            <option *ngFor="let doctor of doctors" [ngValue]="doctor.id">
+                          <select class="form-select" name="adminAdmissionDoctor" [(ngModel)]="admissionForm.attendingDoctorId" required [disabled]="!admissionForm.departmentCode">
+                            <option [ngValue]="null" disabled>Seleziona medico</option>
+                            <option *ngFor="let doctor of filteredDoctors" [ngValue]="doctor.id">
                               {{ doctor.firstName }} {{ doctor.lastName }}
                             </option>
                           </select>

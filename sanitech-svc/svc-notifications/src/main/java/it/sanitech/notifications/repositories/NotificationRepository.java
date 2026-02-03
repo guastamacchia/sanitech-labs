@@ -38,4 +38,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     List<Notification> lockPendingEmailBatch(@Param("limit") int limit);
 
     long countByStatus(NotificationStatus status);
+
+    /**
+     * Trova tutte le notifiche con filtro opzionale per tipo destinatario.
+     */
+    Page<Notification> findByRecipientType(RecipientType recipientType, Pageable pageable);
 }

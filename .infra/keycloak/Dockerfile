@@ -1,6 +1,14 @@
 FROM quay.io/keycloak/keycloak:26.0.7
 
 # -----------------------------------------------------
+# Tema personalizzato SaniTech
+# -----------------------------------------------------
+# Copia il tema personalizzato nella directory themes
+# di Keycloak. Il tema viene automaticamente rilevato
+# e reso disponibile per la selezione nel realm.
+COPY themes/sanitech /opt/keycloak/themes/sanitech
+
+# -----------------------------------------------------
 # Import automatico del realm
 # -----------------------------------------------------
 # Crea la directory standard utilizzata da Keycloak

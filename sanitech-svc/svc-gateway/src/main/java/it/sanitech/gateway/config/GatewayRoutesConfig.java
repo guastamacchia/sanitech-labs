@@ -108,7 +108,7 @@ public class GatewayRoutesConfig {
                 // Notifications
                 // =========================
                 .route(AppConstants.Services.NOTIFICATIONS, r -> r
-                        .path("/api/notifications/**")
+                        .path("/api/notifications/**", "/api/admin/notifications/**")
                         .filters(f -> standardFilters(f, AppConstants.Services.NOTIFICATIONS))
                         .uri(services.getNotifications())
                 )
