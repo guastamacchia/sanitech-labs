@@ -66,7 +66,7 @@ public class ConsentController {
     @PreAuthorize("hasRole('PATIENT')")
     public PrivacyConsentDto registerPrivacyConsent(@RequestBody @Valid PrivacyConsentCreateDto dto, Authentication auth) {
         Long patientId = requirePatientId(auth);
-        return service.registerPrivacyConsent(patientId, dto);
+        return service.registerPrivacyConsent(patientId, dto, auth);
     }
 
     /**
@@ -76,7 +76,7 @@ public class ConsentController {
     @PreAuthorize("hasRole('PATIENT')")
     public void deletePrivacyConsent(@PathVariable Long id, Authentication auth) {
         requirePatientId(auth);
-        service.deletePrivacyConsentById(id);
+        service.deletePrivacyConsentById(id, auth);
     }
 
     // ======================== Doctor Consent Endpoints ========================
@@ -98,7 +98,7 @@ public class ConsentController {
     @PreAuthorize("hasRole('PATIENT')")
     public ConsentDto grantDoctorConsent(@RequestBody @Valid ConsentCreateDto dto, Authentication auth) {
         Long patientId = requirePatientId(auth);
-        return service.grantForPatient(patientId, dto);
+        return service.grantForPatient(patientId, dto, auth);
     }
 
     /**
@@ -108,7 +108,7 @@ public class ConsentController {
     @PreAuthorize("hasRole('PATIENT')")
     public void revokeDoctorConsent(@PathVariable Long doctorId, @PathVariable ConsentScope scope, Authentication auth) {
         Long patientId = requirePatientId(auth);
-        service.revokeForPatient(patientId, doctorId, scope);
+        service.revokeForPatient(patientId, doctorId, scope, auth);
     }
 
     private static Long requirePatientId(Authentication auth) {

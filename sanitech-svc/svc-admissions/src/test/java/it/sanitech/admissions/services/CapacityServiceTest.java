@@ -69,7 +69,7 @@ class CapacityServiceTest {
         when(admissions.countByDepartmentCodeIgnoreCaseAndStatus("ORTHO", AdmissionStatus.ACTIVE))
                 .thenReturn(2L);
 
-        CapacityDto result = service.upsert(" ortho ", 5);
+        CapacityDto result = service.upsert(" ortho ", 5, null);
 
         assertThat(result.departmentCode()).isEqualTo("ORTHO");
         assertThat(result.totalBeds()).isEqualTo(5);
@@ -79,7 +79,7 @@ class CapacityServiceTest {
         verify(capacityRepository).save(captor.capture());
         assertThat(captor.getValue().getUpdatedAt()).isNotNull();
 
-        verify(domainEvents).publish(eq("DEPARTMENT_CAPACITY"), eq("ORTHO"), eq("CAPACITY_SET"), any(), eq("audits.events"));
+        verify(domainEvents).publish(eq("DEPARTMENT_CAPACITY"), eq("ORTHO"), eq("CAPACITY_SET"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -90,7 +90,7 @@ class CapacityServiceTest {
 
         CapacityService service = new CapacityService(capacityRepository, admissions, domainEvents);
 
-        assertThatThrownBy(() -> service.upsert("ORTHO", -1))
+        assertThatThrownBy(() -> service.upsert("ORTHO", -1, null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

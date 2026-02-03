@@ -110,11 +110,11 @@ class DoctorAdminControllerTest {
 
     @Test
     void shouldDeleteDoctor() throws Exception {
-        doNothing().when(doctorService).delete(13L);
+        doNothing().when(doctorService).delete(anyLong(), any());
 
         mockMvc.perform(delete(AppConstants.ApiPath.ADMIN_DOCTORS + "/{id}", 13L))
                 .andExpect(status().isOk());
 
-        verify(doctorService).delete(13L);
+        verify(doctorService).delete(anyLong(), any());
     }
 }

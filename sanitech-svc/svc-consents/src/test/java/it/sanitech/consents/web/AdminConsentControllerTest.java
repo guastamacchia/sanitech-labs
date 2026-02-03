@@ -1,5 +1,7 @@
 package it.sanitech.consents.web;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -70,6 +72,6 @@ class AdminConsentControllerTest {
                         .with(authentication(auth)))
                 .andExpect(status().isOk());
 
-        verify(consentService).deleteById(5L);
+        verify(consentService).deleteById(eq(5L), any());
     }
 }

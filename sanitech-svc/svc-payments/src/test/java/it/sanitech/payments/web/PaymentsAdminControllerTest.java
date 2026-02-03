@@ -96,7 +96,7 @@ class PaymentsAdminControllerTest {
                 Instant.parse("2024-01-01T00:00:00Z"),
                 Instant.parse("2024-01-01T00:00:00Z")
         );
-        when(paymentOrderService.adminPatch(eq(21L), any())).thenReturn(dto);
+        when(paymentOrderService.adminPatch(eq(21L), any(), any())).thenReturn(dto);
 
         Authentication auth = new TestingAuthenticationToken("admin", "pwd", AppConstants.Security.ROLE_ADMIN);
 
@@ -130,7 +130,7 @@ class PaymentsAdminControllerTest {
                 Instant.parse("2024-01-01T00:00:00Z"),
                 Instant.parse("2024-01-01T00:00:00Z")
         );
-        when(paymentOrderService.capture(22L)).thenReturn(dto);
+        when(paymentOrderService.capture(eq(22L), any())).thenReturn(dto);
 
         Authentication auth = new TestingAuthenticationToken("admin", "pwd", AppConstants.Security.ROLE_ADMIN);
 
@@ -157,7 +157,7 @@ class PaymentsAdminControllerTest {
                 Instant.parse("2024-01-01T00:00:00Z"),
                 Instant.parse("2024-01-01T00:00:00Z")
         );
-        when(paymentOrderService.fail(eq(23L), eq("ref"))).thenReturn(dto);
+        when(paymentOrderService.fail(eq(23L), eq("ref"), any())).thenReturn(dto);
 
         Authentication auth = new TestingAuthenticationToken("admin", "pwd", AppConstants.Security.ROLE_ADMIN);
 
@@ -186,7 +186,7 @@ class PaymentsAdminControllerTest {
                 Instant.parse("2024-01-01T00:00:00Z"),
                 Instant.parse("2024-01-01T00:00:00Z")
         );
-        when(paymentOrderService.cancel(24L)).thenReturn(dto);
+        when(paymentOrderService.cancel(eq(24L), any())).thenReturn(dto);
 
         Authentication auth = new TestingAuthenticationToken("admin", "pwd", AppConstants.Security.ROLE_ADMIN);
 
@@ -213,7 +213,7 @@ class PaymentsAdminControllerTest {
                 Instant.parse("2024-01-01T00:00:00Z"),
                 Instant.parse("2024-01-01T00:00:00Z")
         );
-        when(paymentOrderService.refund(25L)).thenReturn(dto);
+        when(paymentOrderService.refund(eq(25L), any())).thenReturn(dto);
 
         Authentication auth = new TestingAuthenticationToken("admin", "pwd", AppConstants.Security.ROLE_ADMIN);
 

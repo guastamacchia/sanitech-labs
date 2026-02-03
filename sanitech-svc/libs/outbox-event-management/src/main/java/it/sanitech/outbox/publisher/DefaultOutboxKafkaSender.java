@@ -44,6 +44,19 @@ public class DefaultOutboxKafkaSender implements OutboxKafkaSender {
         envelope.put("aggregateType", event.getAggregateType());
         envelope.put("aggregateId", event.getAggregateId());
         envelope.put("eventType", event.getEventType());
+
+        // Aggiungi informazioni sull'attore per il tracciamento audit
+        ObjectNode actor = objectMapper.createObjectNode();
+        actor.put("type", event.getActorType() != null ? event.getActorType() : "SYSTEM");
+        actor.put("id", event.getActorId() != null ? event.getActorId() : "system");
+        actor.put("name", event.getActorName());
+        envelope.set("actor", actor);
+
+        // Timestamp originale dell'evento
+        envelope.put("occurredAt", event.getOccurredAt() != null
+                ? event.getOccurredAt().toString()
+                : null);
+
         envelope.set("payload", event.getPayload() != null
                 ? event.getPayload()
                 : objectMapper.createObjectNode());

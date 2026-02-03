@@ -9,6 +9,7 @@ import it.sanitech.admissions.utilities.AppConstants.Outbox;
 import it.sanitech.commons.exception.ConflictException;
 import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +46,7 @@ public class CapacityService {
     }
 
     @Transactional
-    public CapacityDto upsert(String deptCode, int totalBeds) {
+    public CapacityDto upsert(String deptCode, int totalBeds, Authentication auth) {
         if (totalBeds < 0) {
             throw new IllegalArgumentException("totalBeds non può essere negativo");
         }
@@ -69,7 +70,8 @@ public class CapacityService {
                         "totalBeds", saved.getTotalBeds(),
                         "updatedAt", saved.getUpdatedAt().toString()
                 ),
-                Outbox.TOPIC_AUDITS_EVENTS
+                Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         return toDto(saved);

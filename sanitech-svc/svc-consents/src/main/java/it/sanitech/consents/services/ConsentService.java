@@ -18,6 +18,7 @@ import it.sanitech.outbox.core.DomainEventPublisher;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,7 +68,7 @@ public class ConsentService {
     }
 
     @Transactional
-    public ConsentDto grantForPatient(Long patientId, ConsentCreateDto dto) {
+    public ConsentDto grantForPatient(Long patientId, ConsentCreateDto dto, Authentication auth) {
         ConsentScope scope = dto.scope();
         Long doctorId = dto.doctorId();
 
@@ -95,7 +96,8 @@ public class ConsentService {
                             "status", saved.getStatus().name(),
                             "expiresAt", saved.getExpiresAt() == null ? null : saved.getExpiresAt().toString()
                     ),
-                    Outbox.TOPIC_AUDITS_EVENTS
+                    Outbox.TOPIC_AUDITS_EVENTS,
+                    auth
             );
 
             return mapper.toDto(saved);
@@ -107,7 +109,7 @@ public class ConsentService {
     }
 
     @Transactional
-    public void revokeForPatient(Long patientId, Long doctorId, ConsentScope scope) {
+    public void revokeForPatient(Long patientId, Long doctorId, ConsentScope scope, Authentication auth) {
         Consent consent = repository.findByPatientIdAndDoctorIdAndScope(patientId, doctorId, scope)
                 .orElseThrow(() -> NotFoundException.of("Consenso per patientId=%d, doctorId=%d, scope=%s"
                         .formatted(patientId, doctorId, scope)));
@@ -126,7 +128,8 @@ public class ConsentService {
                         "scope", saved.getScope().name(),
                         "status", saved.getStatus().name()
                 ),
-                Outbox.TOPIC_AUDITS_EVENTS
+                Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
     }
 
@@ -137,7 +140,7 @@ public class ConsentService {
     }
 
     @Transactional
-    public void deleteById(Long id) {
+    public void deleteById(Long id, Authentication auth) {
         Consent consent = repository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("Consenso", id));
         repository.delete(consent);
@@ -152,7 +155,8 @@ public class ConsentService {
                         "doctorId", consent.getDoctorId(),
                         "scope", consent.getScope().name()
                 ),
-                Outbox.TOPIC_AUDITS_EVENTS
+                Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
     }
 
@@ -174,7 +178,7 @@ public class ConsentService {
      * Registra o aggiorna un consenso privacy per il paziente.
      */
     @Transactional
-    public PrivacyConsentDto registerPrivacyConsent(Long patientId, PrivacyConsentCreateDto dto) {
+    public PrivacyConsentDto registerPrivacyConsent(Long patientId, PrivacyConsentCreateDto dto, Authentication auth) {
         PrivacyConsent consent = privacyRepository.findByPatientIdAndConsentType(patientId, dto.consentType())
                 .orElseGet(() -> PrivacyConsent.builder()
                         .patientId(patientId)
@@ -198,7 +202,8 @@ public class ConsentService {
                             "consentType", saved.getConsentType().name(),
                             "accepted", saved.isAccepted()
                     ),
-                    Outbox.TOPIC_AUDITS_EVENTS
+                    Outbox.TOPIC_AUDITS_EVENTS,
+                    auth
             );
 
             return privacyMapper.toDto(saved);
@@ -212,7 +217,7 @@ public class ConsentService {
      * Elimina un consenso privacy per ID.
      */
     @Transactional
-    public void deletePrivacyConsentById(Long id) {
+    public void deletePrivacyConsentById(Long id, Authentication auth) {
         PrivacyConsent consent = privacyRepository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("Consenso privacy", id));
         privacyRepository.delete(consent);
@@ -226,7 +231,8 @@ public class ConsentService {
                         "patientId", consent.getPatientId(),
                         "consentType", consent.getConsentType().name()
                 ),
-                Outbox.TOPIC_AUDITS_EVENTS
+                Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
     }
 }

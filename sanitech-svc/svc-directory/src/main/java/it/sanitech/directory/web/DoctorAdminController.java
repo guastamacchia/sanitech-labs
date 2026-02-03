@@ -52,23 +52,23 @@ public class DoctorAdminController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        doctorService.delete(id);
+    public void delete(@PathVariable Long id, Authentication auth) {
+        doctorService.delete(id, auth);
     }
 
     @PatchMapping("/{id}/activate")
-    public DoctorDto activate(@PathVariable Long id) {
-        return doctorService.activate(id);
+    public DoctorDto activate(@PathVariable Long id, Authentication auth) {
+        return doctorService.activate(id, auth);
     }
 
     @PatchMapping("/{id}/disable")
-    public DoctorDto disable(@PathVariable Long id) {
-        return doctorService.disableAccess(id);
+    public DoctorDto disable(@PathVariable Long id, Authentication auth) {
+        return doctorService.disableAccess(id, auth);
     }
 
     @PostMapping("/{id}/resend-activation")
-    public void resendActivation(@PathVariable Long id) {
-        doctorService.resendActivation(id);
+    public void resendActivation(@PathVariable Long id, Authentication auth) {
+        doctorService.resendActivation(id, auth);
     }
 
     @PatchMapping("/{id}/transfer")

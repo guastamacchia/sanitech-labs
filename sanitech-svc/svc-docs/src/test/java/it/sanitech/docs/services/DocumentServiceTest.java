@@ -100,7 +100,7 @@ class DocumentServiceTest {
         assertThat(docCaptor.getValue().getDepartmentCode()).isEqualTo("CARDIO");
 
         verify(storage).put(any(), any(InputStream.class), eq((long) file.getBytes().length), eq("application/pdf"));
-        verify(events).publish(eq("DOCUMENT"), any(), eq("DOCUMENT_UPLOADED"), any(), eq("audits.events"));
+        verify(events).publish(eq("DOCUMENT"), any(), eq("DOCUMENT_UPLOADED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -223,7 +223,7 @@ class DocumentServiceTest {
 
         verify(storage).delete("s3-key");
         verify(documents).delete(doc);
-        verify(events).publish(eq("DOCUMENT"), eq(docId.toString()), eq("DOCUMENT_DELETED"), any(), eq("audits.events"));
+        verify(events).publish(eq("DOCUMENT"), eq(docId.toString()), eq("DOCUMENT_DELETED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test

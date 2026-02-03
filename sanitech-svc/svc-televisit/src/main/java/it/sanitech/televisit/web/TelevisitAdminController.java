@@ -7,6 +7,7 @@ import it.sanitech.televisit.services.dto.create.TelevisitCreateDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -21,8 +22,8 @@ public class TelevisitAdminController {
     private final TelevisitService service;
 
     @PostMapping
-    public TelevisitDto create(@Valid @RequestBody TelevisitCreateDto dto) {
-        return service.create(dto);
+    public TelevisitDto create(@Valid @RequestBody TelevisitCreateDto dto, Authentication auth) {
+        return service.create(dto, auth);
     }
 
     @PostMapping("/{id}/token/patient")

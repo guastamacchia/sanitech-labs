@@ -48,6 +48,12 @@
 			<artifactId>micrometer-core</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!-- Spring Security (per ActorInfo e autenticazione) -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-core</artifactId>
+			<optional>true</optional>
+		</dependency>
 		<!-- Configuration processor solo a compile-time -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

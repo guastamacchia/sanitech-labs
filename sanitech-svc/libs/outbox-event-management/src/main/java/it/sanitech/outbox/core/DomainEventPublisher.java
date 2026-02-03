@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import it.sanitech.outbox.persistence.OutboxEvent;
 import it.sanitech.outbox.persistence.OutboxRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 
 import java.util.Objects;
 
@@ -33,12 +34,15 @@ public final class DomainEventPublisher {
     /**
      * Registra un evento outbox partendo dai singoli campi.
      * Usa il topic di default configurato nel microservizio.
+     *
+     * @deprecated Usare {@link #publish(String, String, String, Object, String, ActorInfo)} per tracciare l'attore
      */
+    @Deprecated
     public void publish(String aggregateType,
                         String aggregateId,
                         String eventType,
                         Object payload) {
-        publish(aggregateType, aggregateId, eventType, payload, null);
+        publish(aggregateType, aggregateId, eventType, payload, null, ActorInfo.SYSTEM);
     }
 
     /**
@@ -49,23 +53,70 @@ public final class DomainEventPublisher {
      * @param eventType     tipo evento (es. DOCTOR_CREATED)
      * @param payload       payload dell'evento
      * @param topic         topic Kafka di destinazione (se null, usa il default)
+     *
+     * @deprecated Usare {@link #publish(String, String, String, Object, String, ActorInfo)} per tracciare l'attore
      */
+    @Deprecated
     public void publish(String aggregateType,
                         String aggregateId,
                         String eventType,
                         Object payload,
                         String topic) {
+        publish(aggregateType, aggregateId, eventType, payload, topic, ActorInfo.SYSTEM);
+    }
+
+    /**
+     * Registra un evento outbox con informazioni complete sull'attore.
+     *
+     * @param aggregateType tipo aggregato (es. DOCTOR, PATIENT)
+     * @param aggregateId   identificativo aggregato
+     * @param eventType     tipo evento (es. DOCTOR_CREATED)
+     * @param payload       payload dell'evento
+     * @param topic         topic Kafka di destinazione (se null, usa il default)
+     * @param actor         informazioni sull'attore che ha generato l'evento
+     */
+    public void publish(String aggregateType,
+                        String aggregateId,
+                        String eventType,
+                        Object payload,
+                        String topic,
+                        ActorInfo actor) {
+
+        ActorInfo effectiveActor = actor != null ? actor : ActorInfo.SYSTEM;
 
         OutboxEvent event = new OutboxEvent();
         event.setAggregateType(Objects.requireNonNull(aggregateType, "aggregateType obbligatorio"));
         event.setAggregateId(Objects.requireNonNull(aggregateId, "aggregateId obbligatorio"));
         event.setEventType(Objects.requireNonNull(eventType, "eventType obbligatorio"));
         event.setTopic(topic);
+        event.setActorType(effectiveActor.actorType());
+        event.setActorId(effectiveActor.actorId());
+        event.setActorName(effectiveActor.actorName());
         event.setPayload(Objects.isNull(payload)
                 ? JsonNodeFactory.instance.objectNode()
                 : objectMapper.valueToTree(payload));
 
         publish(event);
+    }
+
+    /**
+     * Registra un evento outbox estraendo automaticamente le informazioni dell'attore
+     * dall'oggetto Authentication di Spring Security.
+     *
+     * @param aggregateType tipo aggregato (es. DOCTOR, PATIENT)
+     * @param aggregateId   identificativo aggregato
+     * @param eventType     tipo evento (es. DOCTOR_CREATED)
+     * @param payload       payload dell'evento
+     * @param topic         topic Kafka di destinazione (se null, usa il default)
+     * @param auth          Authentication da cui estrarre le informazioni dell'attore
+     */
+    public void publish(String aggregateType,
+                        String aggregateId,
+                        String eventType,
+                        Object payload,
+                        String topic,
+                        Authentication auth) {
+        publish(aggregateType, aggregateId, eventType, payload, topic, ActorInfo.from(auth));
     }
 
     /**

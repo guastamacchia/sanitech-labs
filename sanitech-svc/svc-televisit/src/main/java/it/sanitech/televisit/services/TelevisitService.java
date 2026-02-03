@@ -41,7 +41,7 @@ public class TelevisitService {
     private final LiveKitTokenService tokenService;
 
     @Transactional
-    public TelevisitDto create(TelevisitCreateDto dto) {
+    public TelevisitDto create(TelevisitCreateDto dto, Authentication auth) {
         String roomName = generateRoomName();
 
         TelevisitSession entity = TelevisitSession.builder()
@@ -71,7 +71,8 @@ public class TelevisitService {
                         "scheduledAt", entity.getScheduledAt().toString(),
                         "status", entity.getStatus().name()
                 ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         return mapper.toDto(entity);
@@ -135,7 +136,7 @@ public class TelevisitService {
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
-        ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS);
+        ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
 
         return mapper.toDto(s);
     }
@@ -155,7 +156,7 @@ public class TelevisitService {
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
-        ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS);
+        ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
 
         return mapper.toDto(s);
     }
@@ -175,7 +176,7 @@ public class TelevisitService {
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
                 "status", s.getStatus().name()
-        ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS);
+        ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
 
         return mapper.toDto(s);
     }

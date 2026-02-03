@@ -67,7 +67,12 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
                     .forEach(d -> addDeptAuthority(authorities, d));
         }
 
-        return new JwtAuthenticationToken(jwt, authorities, jwt.getSubject());
+        // Usa preferred_username (email) come principal name invece di subject (UUID Keycloak)
+        String principalName = jwt.getClaimAsString("preferred_username");
+        if (principalName == null || principalName.isBlank()) {
+            principalName = jwt.getSubject(); // fallback al subject se preferred_username non è presente
+        }
+        return new JwtAuthenticationToken(jwt, authorities, principalName);
     }
 
     /**

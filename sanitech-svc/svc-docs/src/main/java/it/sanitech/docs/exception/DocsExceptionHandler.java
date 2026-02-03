@@ -46,7 +46,8 @@ public class DocsExceptionHandler {
 
     private void publishAccessDeniedEvent(HttpServletRequest request, String reason) {
         try {
-            String actorId = Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String actorId = Optional.ofNullable(auth)
                     .map(Authentication::getName)
                     .orElse("anonymous");
 
@@ -61,7 +62,7 @@ public class DocsExceptionHandler {
                     "clientIp", clientIp,
                     "reason", reason,
                     "outcome", "DENIED"
-            ), it.sanitech.docs.utilities.AppConstants.Outbox.TOPIC_AUDITS_EVENTS);
+            ), it.sanitech.docs.utilities.AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
 
             log.info("Audit: accesso documenti negato. actor={}, patientId={}, uri={}", actorId, patientId, requestUri);
         } catch (Exception e) {

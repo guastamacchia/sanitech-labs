@@ -59,7 +59,8 @@ class TelevisitServiceTest {
         });
         when(mapper.toDto(any(TelevisitSession.class))).thenAnswer(invocation -> toDto(invocation.getArgument(0)));
 
-        TelevisitDto result = service.create(dto);
+        Authentication auth = new TestingAuthenticationToken("admin", "pwd", "ROLE_ADMIN");
+        TelevisitDto result = service.create(dto, auth);
 
         assertThat(result.id()).isEqualTo(10L);
         assertThat(result.status()).isEqualTo(TelevisitStatus.CREATED);
@@ -69,7 +70,7 @@ class TelevisitServiceTest {
         assertThat(captor.getValue().getRoomName()).startsWith("tv-");
 
         verify(roomService).ensureRoomExists(eq(captor.getValue().getRoomName()));
-        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("10"), eq(AppConstants.Outbox.EventType.CREATED), any(), eq("audits.events"));
+        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("10"), eq(AppConstants.Outbox.EventType.CREATED), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -160,7 +161,7 @@ class TelevisitServiceTest {
         TelevisitDto result = service.start(30L, auth);
 
         assertThat(result.status()).isEqualTo(TelevisitStatus.ACTIVE);
-        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("30"), eq(AppConstants.Outbox.EventType.STARTED), any(), eq("audits.events"));
+        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("30"), eq(AppConstants.Outbox.EventType.STARTED), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -217,7 +218,7 @@ class TelevisitServiceTest {
         TelevisitDto result = service.cancel(50L, auth);
 
         assertThat(result.status()).isEqualTo(TelevisitStatus.CANCELED);
-        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("50"), eq(AppConstants.Outbox.EventType.CANCELED), any(), eq("audits.events"));
+        verify(events).publish(eq(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION), eq("50"), eq(AppConstants.Outbox.EventType.CANCELED), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test

@@ -97,7 +97,8 @@ class AdmissionServiceTest {
                 eq("77"),
                 eq("ADMISSION_CREATED"),
                 any(Map.class),
-                eq("audits.events")
+                eq("audits.events"),
+                (org.springframework.security.core.Authentication) any()
         );
     }
 
@@ -176,7 +177,8 @@ class AdmissionServiceTest {
                 eq("5"),
                 eq("ADMISSION_DISCHARGED"),
                 any(Map.class),
-                eq("audits.events")
+                eq("audits.events"),
+                (org.springframework.security.core.Authentication) any()
         );
     }
 

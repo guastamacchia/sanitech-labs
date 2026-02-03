@@ -3914,6 +3914,7 @@ export class ResourcePageState {
     // Carica dati di supporto
     this.loadPatients();
     this.loadDoctors();
+    this.loadFacilities();
     this.loadDepartments();
     // Carica televisite da API
     this.api.request<PagedResponse<TelevisitItem>>('GET', '/api/televisits').subscribe({
@@ -3938,6 +3939,7 @@ export class ResourcePageState {
     // Carica dati di supporto
     this.loadPatients();
     this.loadDoctors();
+    this.loadFacilities();
     this.loadDepartments();
     // Carica ricoveri da API
     this.api.request<PagedResponse<AdmissionItem>>('GET', '/api/admissions').subscribe({
@@ -4020,6 +4022,29 @@ export class ResourcePageState {
       const discharged = new Date(adm.dischargedAt);
       return discharged >= startOfMonth;
     }).length;
+  }
+
+  private loadFacilities(): void {
+    this.api.request<FacilityItem[]>('GET', '/api/facilities').subscribe({
+      next: (facilities) => {
+        if (facilities.length > 0) {
+          this.facilities = facilities;
+        } else {
+          this.facilities = this.getMockFacilities();
+        }
+      },
+      error: () => {
+        this.facilities = this.getMockFacilities();
+      }
+    });
+  }
+
+  private getMockFacilities(): FacilityItem[] {
+    return [
+      { code: 'HQ', name: 'Sede Centrale' },
+      { code: 'NORD', name: 'Presidio Nord' },
+      { code: 'SUD', name: 'Presidio Sud' }
+    ];
   }
 
   private loadDepartments(): void {

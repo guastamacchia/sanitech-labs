@@ -32,33 +32,34 @@ public class PaymentsAdminController {
     }
 
     @PatchMapping("/{id}")
-    public PaymentOrderDto patch(@PathVariable long id, @RequestBody PaymentUpdateDto dto) {
-        return service.adminPatch(id, dto);
+    public PaymentOrderDto patch(@PathVariable long id, @RequestBody PaymentUpdateDto dto, Authentication auth) {
+        return service.adminPatch(id, dto, auth);
     }
 
     @PostMapping("/{id}/capture")
-    public PaymentOrderDto capture(@PathVariable long id) {
-        return service.capture(id);
+    public PaymentOrderDto capture(@PathVariable long id, Authentication auth) {
+        return service.capture(id, auth);
     }
 
     @PostMapping("/{id}/fail")
     public PaymentOrderDto fail(@PathVariable long id,
-                               @RequestParam(required = false) String providerReference) {
-        return service.fail(id, providerReference);
+                               @RequestParam(required = false) String providerReference,
+                               Authentication auth) {
+        return service.fail(id, providerReference, auth);
     }
 
     @PostMapping("/{id}/cancel")
-    public PaymentOrderDto cancel(@PathVariable long id) {
-        return service.cancel(id);
+    public PaymentOrderDto cancel(@PathVariable long id, Authentication auth) {
+        return service.cancel(id, auth);
     }
 
     @PostMapping("/{id}/refund")
-    public PaymentOrderDto refund(@PathVariable long id) {
-        return service.refund(id);
+    public PaymentOrderDto refund(@PathVariable long id, Authentication auth) {
+        return service.refund(id, auth);
     }
 
     @PostMapping("/{id}/reminder")
-    public PaymentOrderDto sendReminder(@PathVariable long id) {
-        return service.sendReminder(id);
+    public PaymentOrderDto sendReminder(@PathVariable long id, Authentication auth) {
+        return service.sendReminder(id, auth);
     }
 }

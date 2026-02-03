@@ -1,5 +1,6 @@
 package it.sanitech.admissions.web;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -38,7 +39,7 @@ class AdminCapacityControllerTest {
     @Test
     void setCapacityUpdatesDepartment() throws Exception {
         CapacityDto dto = new CapacityDto("CARDIO", 15, 4, 11, Instant.parse("2024-02-10T00:00:00Z"));
-        when(capacityService.upsert(eq("CARDIO"), anyInt())).thenReturn(dto);
+        when(capacityService.upsert(eq("CARDIO"), anyInt(), any())).thenReturn(dto);
 
         Authentication auth = new TestingAuthenticationToken("user", "pwd", "ROLE_ADMIN");
 

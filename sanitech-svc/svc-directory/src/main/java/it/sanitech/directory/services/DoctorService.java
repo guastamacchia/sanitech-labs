@@ -102,7 +102,8 @@ public class DoctorService {
                         "departmentCode", deptCode,
                         "facilityCode", department.getFacility().getCode()
                 ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
@@ -118,7 +119,7 @@ public class DoctorService {
         ));
 
         // Invia email di attivazione
-        publishActivationEmailEvent(saved);
+        publishActivationEmailEvent(saved, auth);
 
         return doctorMapper.toDto(saved);
     }
@@ -164,7 +165,8 @@ public class DoctorService {
                         "departmentCode", saved.getDepartment().getCode(),
                         "facilityCode", saved.getDepartment().getFacility().getCode()
                 ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
@@ -182,7 +184,7 @@ public class DoctorService {
         return doctorMapper.toDto(saved);
     }
 
-    public void delete(Long id) {
+    public void delete(Long id, Authentication auth) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
         keycloakAdminClient.disableUser(
                 entity.getEmail(),
@@ -199,11 +201,12 @@ public class DoctorService {
                 String.valueOf(id),
                 AppConstants.Outbox.EventType.DOCTOR_DELETED,
                 Map.of("id", id),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
     }
 
-    public DoctorDto disableAccess(Long id) {
+    public DoctorDto disableAccess(Long id, Authentication auth) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
         entity.setStatus(UserStatus.DISABLED);
         keycloakAdminClient.disableUser(
@@ -216,12 +219,12 @@ public class DoctorService {
         );
         Doctor saved = doctorRepository.save(entity);
 
-        publishAccountStatusEmailEvent(saved, AppConstants.Outbox.EventType.ACCOUNT_DISABLED_EMAIL_REQUESTED);
+        publishAccountStatusEmailEvent(saved, AppConstants.Outbox.EventType.ACCOUNT_DISABLED_EMAIL_REQUESTED, auth);
 
         return doctorMapper.toDto(saved);
     }
 
-    public DoctorDto activate(Long id) {
+    public DoctorDto activate(Long id, Authentication auth) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
         entity.setStatus(UserStatus.ACTIVE);
         entity.setActivatedAt(Instant.now());
@@ -235,23 +238,23 @@ public class DoctorService {
         );
         Doctor saved = doctorRepository.save(entity);
 
-        publishAccountStatusEmailEvent(saved, AppConstants.Outbox.EventType.ACCOUNT_ENABLED_EMAIL_REQUESTED);
+        publishAccountStatusEmailEvent(saved, AppConstants.Outbox.EventType.ACCOUNT_ENABLED_EMAIL_REQUESTED, auth);
 
         return doctorMapper.toDto(saved);
     }
 
-    public void resendActivation(Long id) {
+    public void resendActivation(Long id, Authentication auth) {
         Doctor entity = doctorRepository.findById(id).orElseThrow(() -> NotFoundException.of("Medico", id));
         if (entity.getStatus() != UserStatus.PENDING) {
             throw new IllegalArgumentException("Il medico non è in stato PENDING.");
         }
-        publishActivationEmailEvent(entity);
+        publishActivationEmailEvent(entity, auth);
     }
 
     /**
      * Pubblica evento per invio email di attivazione account.
      */
-    private void publishActivationEmailEvent(Doctor entity) {
+    private void publishActivationEmailEvent(Doctor entity, Authentication auth) {
         eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 String.valueOf(entity.getId()),
@@ -263,14 +266,15 @@ public class DoctorService {
                         "firstName", entity.getFirstName(),
                         "lastName", entity.getLastName()
                 ),
-                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS
+                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS,
+                auth
         );
     }
 
     /**
      * Pubblica evento per invio email di cambio stato account (attivazione/disattivazione).
      */
-    private void publishAccountStatusEmailEvent(Doctor entity, String eventType) {
+    private void publishAccountStatusEmailEvent(Doctor entity, String eventType, Authentication auth) {
         eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 String.valueOf(entity.getId()),
@@ -282,7 +286,8 @@ public class DoctorService {
                         "firstName", entity.getFirstName(),
                         "lastName", entity.getLastName()
                 ),
-                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS
+                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS,
+                auth
         );
     }
 

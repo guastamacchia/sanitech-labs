@@ -76,6 +76,24 @@ public class OutboxEvent {
     private String topic;
 
     /**
+     * Tipo di attore che ha generato l'evento (es. ADMIN, DOCTOR, PATIENT, SYSTEM).
+     */
+    @Column(name = "actor_type", length = 32)
+    private String actorType;
+
+    /**
+     * Identificativo dell'attore (es. email, userId).
+     */
+    @Column(name = "actor_id", length = 128)
+    private String actorId;
+
+    /**
+     * Nome visualizzabile dell'attore (opzionale).
+     */
+    @Column(name = "actor_name", length = 256)
+    private String actorName;
+
+    /**
      * Payload JSON (jsonb).
      * Policy: non nullo. Se mancante, viene forzato a "{}".
      */

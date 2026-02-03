@@ -107,7 +107,7 @@ class ConsentControllerTest {
                 Instant.parse("2025-01-01T00:00:00Z"),
                 Instant.parse("2024-01-02T00:00:00Z")
         );
-        when(consentService.grantForPatient(eq(77L), any())).thenReturn(dto);
+        when(consentService.grantForPatient(eq(77L), any(), any())).thenReturn(dto);
 
         JwtAuthenticationToken auth = patientAuth(77L);
 
@@ -132,7 +132,7 @@ class ConsentControllerTest {
         mockMvc.perform(delete(path).principal(auth))
                 .andExpect(status().isOk());
 
-        verify(consentService).revokeForPatient(77L, 12L, ConsentScope.DOCS);
+        verify(consentService).revokeForPatient(eq(77L), eq(12L), eq(ConsentScope.DOCS), any());
     }
 
     private static JwtAuthenticationToken patientAuth(Long patientId) {

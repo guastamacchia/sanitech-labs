@@ -5,6 +5,7 @@ import it.sanitech.consents.services.dto.ConsentDto;
 import it.sanitech.consents.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -27,7 +28,7 @@ public class AdminConsentController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.deleteById(id);
+    public void delete(@PathVariable Long id, Authentication auth) {
+        service.deleteById(id, auth);
     }
 }

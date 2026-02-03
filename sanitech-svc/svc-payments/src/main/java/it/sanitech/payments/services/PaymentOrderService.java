@@ -78,7 +78,8 @@ public class PaymentOrderService {
                         "method", saved.getMethod().name(),
                         "status", saved.getStatus().name()
                 ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         return mapper.toDto(saved);
@@ -116,7 +117,8 @@ public class PaymentOrderService {
                         "method", saved.getMethod().name(),
                         "status", saved.getStatus().name()
                 ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         return mapper.toDto(saved);
@@ -153,21 +155,21 @@ public class PaymentOrderService {
      * Aggiornamento parziale (admin).
      */
     @Transactional
-    public PaymentOrderDto adminPatch(long id, PaymentUpdateDto dto) {
+    public PaymentOrderDto adminPatch(long id, PaymentUpdateDto dto, Authentication auth) {
         PaymentOrder order = repository.findById(id).orElseThrow(() -> NotFoundException.of("PaymentOrder", id));
 
         mapper.patch(dto, order);
 
         // Se viene patchato lo status, pubblichiamo un evento di change
         if (dto.status() != null) {
-            publishStatusChanged(order);
+            publishStatusChanged(order, auth);
         }
 
         return mapper.toDto(repository.save(order));
     }
 
     @Transactional
-    public PaymentOrderDto capture(long id) {
+    public PaymentOrderDto capture(long id, Authentication auth) {
         PaymentOrder order = repository.findById(id).orElseThrow(() -> NotFoundException.of("PaymentOrder", id));
 
         if (order.getStatus() == PaymentStatus.CAPTURED) {
@@ -183,32 +185,32 @@ public class PaymentOrderService {
         order.markCaptured();
         PaymentOrder saved = repository.save(order);
 
-        publishStatusChanged(saved);
+        publishStatusChanged(saved, auth);
         return mapper.toDto(saved);
     }
 
     @Transactional
-    public PaymentOrderDto fail(long id, String providerReference) {
+    public PaymentOrderDto fail(long id, String providerReference, Authentication auth) {
         PaymentOrder order = repository.findById(id).orElseThrow(() -> NotFoundException.of("PaymentOrder", id));
         order.markFailed(providerReference);
 
         PaymentOrder saved = repository.save(order);
-        publishStatusChanged(saved);
+        publishStatusChanged(saved, auth);
         return mapper.toDto(saved);
     }
 
     @Transactional
-    public PaymentOrderDto cancel(long id) {
+    public PaymentOrderDto cancel(long id, Authentication auth) {
         PaymentOrder order = repository.findById(id).orElseThrow(() -> NotFoundException.of("PaymentOrder", id));
         order.markCancelled();
 
         PaymentOrder saved = repository.save(order);
-        publishStatusChanged(saved);
+        publishStatusChanged(saved, auth);
         return mapper.toDto(saved);
     }
 
     @Transactional
-    public PaymentOrderDto refund(long id) {
+    public PaymentOrderDto refund(long id, Authentication auth) {
         PaymentOrder order = repository.findById(id).orElseThrow(() -> NotFoundException.of("PaymentOrder", id));
         if (order.getStatus() != PaymentStatus.CAPTURED) {
             throw new IllegalArgumentException("Un rimborso è consentito solo per pagamenti CAPTURED.");
@@ -216,12 +218,13 @@ public class PaymentOrderService {
 
         order.markRefunded();
         PaymentOrder saved = repository.save(order);
-        publishStatusChanged(saved);
+        publishStatusChanged(saved, auth);
         return mapper.toDto(saved);
     }
 
     /**
      * Aggiornamento stato da webhook provider (identificazione per provider+reference).
+     * Nota: auth è null poiché proviene da webhook esterno (sistema).
      */
     @Transactional
     public PaymentOrderDto updateFromWebhook(String provider, String providerReference, PaymentStatus status) {
@@ -233,7 +236,7 @@ public class PaymentOrderService {
         }
 
         PaymentOrder saved = repository.save(order);
-        publishStatusChanged(saved);
+        publishStatusChanged(saved, null); // Webhook esterno, attore = SYSTEM
         return mapper.toDto(saved);
     }
 
@@ -246,7 +249,7 @@ public class PaymentOrderService {
      * </p>
      */
     @Transactional
-    public PaymentOrderDto sendReminder(long id) {
+    public PaymentOrderDto sendReminder(long id, Authentication auth) {
         PaymentOrder order = repository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("PaymentOrder", id));
 
@@ -277,13 +280,14 @@ public class PaymentOrderService {
                 String.valueOf(order.getId()),
                 AppConstants.Outbox.EVT_REMINDER_REQUESTED,
                 payload,
-                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS
+                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS,
+                auth
         );
 
         return mapper.toDto(order);
     }
 
-    private void publishStatusChanged(PaymentOrder order) {
+    private void publishStatusChanged(PaymentOrder order, Authentication auth) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("paymentId", order.getId());
         payload.put("status", order.getStatus().name());
@@ -298,7 +302,8 @@ public class PaymentOrderService {
                 String.valueOf(order.getId()),
                 AppConstants.Outbox.EVT_STATUS_CHANGED,
                 payload,
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
     }
 

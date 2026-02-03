@@ -130,7 +130,7 @@ class ConsentServiceTest {
             );
         });
 
-        ConsentDto result = service.grantForPatient(5L, dto);
+        ConsentDto result = service.grantForPatient(5L, dto, null);
 
         assertThat(result.id()).isEqualTo(22L);
         assertThat(result.status()).isEqualTo(ConsentStatus.GRANTED);
@@ -139,7 +139,7 @@ class ConsentServiceTest {
         verify(repository).save(consentCaptor.capture());
         assertThat(consentCaptor.getValue().getGrantedAt()).isNotNull();
 
-        verify(publisher).publish(eq("CONSENT"), eq("22"), eq("CONSENT_GRANTED"), any(), eq("audits.events"));
+        verify(publisher).publish(eq("CONSENT"), eq("22"), eq("CONSENT_GRANTED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -164,13 +164,13 @@ class ConsentServiceTest {
                 .thenReturn(Optional.of(consent));
         when(repository.save(any(Consent.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.revokeForPatient(5L, 7L, ConsentScope.RECORDS);
+        service.revokeForPatient(5L, 7L, ConsentScope.RECORDS, null);
 
         ArgumentCaptor<Consent> consentCaptor = ArgumentCaptor.forClass(Consent.class);
         verify(repository).save(consentCaptor.capture());
         assertThat(consentCaptor.getValue().getStatus()).isEqualTo(ConsentStatus.REVOKED);
 
-        verify(publisher).publish(eq("CONSENT"), eq("31"), eq("CONSENT_REVOKED"), any(), eq("audits.events"));
+        verify(publisher).publish(eq("CONSENT"), eq("31"), eq("CONSENT_REVOKED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -209,9 +209,9 @@ class ConsentServiceTest {
 
         when(repository.findById(55L)).thenReturn(Optional.of(consent));
 
-        service.deleteById(55L);
+        service.deleteById(55L, null);
 
         verify(repository).delete(consent);
-        verify(publisher).publish(eq("CONSENT"), eq("55"), eq("CONSENT_DELETED"), any(), eq("audits.events"));
+        verify(publisher).publish(eq("CONSENT"), eq("55"), eq("CONSENT_DELETED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 }

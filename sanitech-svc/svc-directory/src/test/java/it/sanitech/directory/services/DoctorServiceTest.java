@@ -104,7 +104,7 @@ class DoctorServiceTest {
         assertThat(syncEvent.roleToAssign()).isEqualTo("ROLE_DOCTOR");
         assertThat(syncEvent.previousEmail()).isNull();
 
-        verify(eventPublisher).publish(eq("DOCTOR"), eq("11"), eq("DOCTOR_CREATED"), any(), eq("audits.events"));
+        verify(eventPublisher).publish(eq("DOCTOR"), eq("11"), eq("DOCTOR_CREATED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -158,7 +158,7 @@ class DoctorServiceTest {
         assertThat(syncEvent.roleToAssign()).isNull();
         assertThat(syncEvent.previousEmail()).isEqualTo("vecchia@email.it");
 
-        verify(eventPublisher).publish(eq("DOCTOR"), eq("9"), eq("DOCTOR_UPDATED"), any(), eq("audits.events"));
+        verify(eventPublisher).publish(eq("DOCTOR"), eq("9"), eq("DOCTOR_UPDATED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -167,11 +167,11 @@ class DoctorServiceTest {
 
         when(doctorRepository.findById(4L)).thenReturn(Optional.of(existing));
 
-        doctorService.delete(4L);
+        doctorService.delete(4L, null);
 
         verify(keycloakAdminClient).disableUser("paola.neri@email.it", "Paola", "Neri", null, "DOCTOR", 4L);
         verify(doctorRepository).delete(existing);
-        verify(eventPublisher).publish(eq("DOCTOR"), eq("4"), eq("DOCTOR_DELETED"), any(), eq("audits.events"));
+        verify(eventPublisher).publish(eq("DOCTOR"), eq("4"), eq("DOCTOR_DELETED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test

@@ -87,7 +87,7 @@ class PaymentOrderServiceTest {
         assertThat(captor.getValue().getStatus()).isEqualTo(PaymentStatus.CREATED);
         assertThat(captor.getValue().getIdempotencyKey()).isEqualTo("idem-1");
 
-        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("55"), eq(AppConstants.Outbox.EVT_CREATED), any(), eq("audits.events"));
+        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("55"), eq(AppConstants.Outbox.EVT_CREATED), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -190,10 +190,10 @@ class PaymentOrderServiceTest {
             );
         });
 
-        PaymentOrderDto result = service.capture(22L);
+        PaymentOrderDto result = service.capture(22L, null);
 
         assertThat(result.status()).isEqualTo(PaymentStatus.CAPTURED);
-        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("22"), eq(AppConstants.Outbox.EVT_STATUS_CHANGED), any(), eq("audits.events"));
+        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("22"), eq(AppConstants.Outbox.EVT_STATUS_CHANGED), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -212,7 +212,7 @@ class PaymentOrderServiceTest {
 
         when(repository.findById(33L)).thenReturn(Optional.of(order));
 
-        assertThatThrownBy(() -> service.refund(33L))
+        assertThatThrownBy(() -> service.refund(33L, null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -261,10 +261,10 @@ class PaymentOrderServiceTest {
 
         PaymentUpdateDto updateDto = new PaymentUpdateDto(PaymentStatus.CAPTURED, "ref", "note");
 
-        PaymentOrderDto result = service.adminPatch(44L, updateDto);
+        PaymentOrderDto result = service.adminPatch(44L, updateDto, null);
 
         assertThat(result.status()).isEqualTo(PaymentStatus.CAPTURED);
-        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("44"), eq(AppConstants.Outbox.EVT_STATUS_CHANGED), any(), eq("audits.events"));
+        verify(publisher).publish(eq(AppConstants.Outbox.AGGREGATE_TYPE_PAYMENT), eq("44"), eq(AppConstants.Outbox.EVT_STATUS_CHANGED), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test

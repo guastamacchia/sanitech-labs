@@ -124,7 +124,8 @@ public class PatientService {
                         "phone", saved.getPhone(),
                         "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
                 ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
@@ -140,7 +141,7 @@ public class PatientService {
         ));
 
         // Invia email di attivazione
-        publishActivationEmailEvent(saved);
+        publishActivationEmailEvent(saved, auth);
 
         return patientMapper.toDto(saved);
     }
@@ -209,7 +210,8 @@ public class PatientService {
                         "phone", saved.getPhone(),
                         "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
                 ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
@@ -227,7 +229,7 @@ public class PatientService {
         return patientMapper.toDto(saved);
     }
 
-    public void delete(Long id) {
+    public void delete(Long id, Authentication auth) {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
         keycloakAdminClient.disableUser(
                 entity.getEmail(),
@@ -244,11 +246,12 @@ public class PatientService {
                 String.valueOf(id),
                 AppConstants.Outbox.EventType.PATIENT_DELETED,
                 Map.of("id", id),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
     }
 
-    public PatientDto disableAccess(Long id) {
+    public PatientDto disableAccess(Long id, Authentication auth) {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
         entity.setStatus(UserStatus.DISABLED);
         keycloakAdminClient.disableUser(
@@ -261,12 +264,12 @@ public class PatientService {
         );
         Patient saved = patientRepository.save(entity);
 
-        publishAccountStatusEmailEvent(saved, AppConstants.Outbox.EventType.ACCOUNT_DISABLED_EMAIL_REQUESTED);
+        publishAccountStatusEmailEvent(saved, AppConstants.Outbox.EventType.ACCOUNT_DISABLED_EMAIL_REQUESTED, auth);
 
         return patientMapper.toDto(saved);
     }
 
-    public PatientDto activate(Long id) {
+    public PatientDto activate(Long id, Authentication auth) {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
         entity.setStatus(UserStatus.ACTIVE);
         entity.setActivatedAt(Instant.now());
@@ -280,23 +283,23 @@ public class PatientService {
         );
         Patient saved = patientRepository.save(entity);
 
-        publishAccountStatusEmailEvent(saved, AppConstants.Outbox.EventType.ACCOUNT_ENABLED_EMAIL_REQUESTED);
+        publishAccountStatusEmailEvent(saved, AppConstants.Outbox.EventType.ACCOUNT_ENABLED_EMAIL_REQUESTED, auth);
 
         return patientMapper.toDto(saved);
     }
 
-    public void resendActivation(Long id) {
+    public void resendActivation(Long id, Authentication auth) {
         Patient entity = patientRepository.findById(id).orElseThrow(() -> NotFoundException.of("Paziente", id));
         if (entity.getStatus() != UserStatus.PENDING) {
             throw new IllegalArgumentException("Il paziente non è in stato PENDING.");
         }
-        publishActivationEmailEvent(entity);
+        publishActivationEmailEvent(entity, auth);
     }
 
     /**
      * Pubblica evento per invio email di attivazione account.
      */
-    private void publishActivationEmailEvent(Patient entity) {
+    private void publishActivationEmailEvent(Patient entity, Authentication auth) {
         eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.PATIENT,
                 String.valueOf(entity.getId()),
@@ -308,14 +311,15 @@ public class PatientService {
                         "firstName", entity.getFirstName(),
                         "lastName", entity.getLastName()
                 ),
-                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS
+                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS,
+                auth
         );
     }
 
     /**
      * Pubblica evento per invio email di cambio stato account (attivazione/disattivazione).
      */
-    private void publishAccountStatusEmailEvent(Patient entity, String eventType) {
+    private void publishAccountStatusEmailEvent(Patient entity, String eventType, Authentication auth) {
         eventPublisher.publish(
                 AppConstants.Outbox.AggregateType.PATIENT,
                 String.valueOf(entity.getId()),
@@ -327,7 +331,8 @@ public class PatientService {
                         "firstName", entity.getFirstName(),
                         "lastName", entity.getLastName()
                 ),
-                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS
+                AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS,
+                auth
         );
     }
 
@@ -345,7 +350,7 @@ public class PatientService {
      * Aggiorna il numero di telefono del paziente identificato dalla propria email.
      * L'email non può essere modificata perché corrisponde allo username del portale.
      */
-    public PatientDto updatePhone(String email, PatientPhoneUpdateDto dto) {
+    public PatientDto updatePhone(String email, PatientPhoneUpdateDto dto, Authentication auth) {
         Patient entity = patientRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> NotFoundException.of("Paziente", email));
 
@@ -366,7 +371,8 @@ public class PatientService {
                         "phone", saved.getPhone(),
                         "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
                 ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(

@@ -47,7 +47,12 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
                 authorities.add(new SimpleGrantedAuthority(AppConstants.Security.AUTHORITY_PREFIX_DEPT + dept.toUpperCase(Locale.ROOT)))
         );
 
-        return new JwtAuthenticationToken(jwt, authorities, jwt.getSubject());
+        // Usa preferred_username (email) come principal name invece di subject (UUID Keycloak)
+        String principalName = jwt.getClaimAsString("preferred_username");
+        if (principalName == null || principalName.isBlank()) {
+            principalName = jwt.getSubject(); // fallback al subject se preferred_username non è presente
+        }
+        return new JwtAuthenticationToken(jwt, authorities, principalName);
     }
 
     private static String normalizeRole(String role) {

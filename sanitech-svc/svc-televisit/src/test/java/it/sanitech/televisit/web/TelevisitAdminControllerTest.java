@@ -46,7 +46,7 @@ class TelevisitAdminControllerTest {
     @Test
     void createReturnsDto() throws Exception {
         TelevisitDto dto = sampleDto(10L);
-        when(service.create(any(TelevisitCreateDto.class))).thenReturn(dto);
+        when(service.create(any(TelevisitCreateDto.class), any())).thenReturn(dto);
 
         TelevisitCreateDto request = new TelevisitCreateDto(
                 "doc-subject",

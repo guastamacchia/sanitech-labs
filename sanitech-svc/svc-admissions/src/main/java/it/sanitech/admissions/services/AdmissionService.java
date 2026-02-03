@@ -78,7 +78,8 @@ public class AdmissionService {
                         "admissionType", saved.getAdmissionType().name(),
                         "admittedAt", saved.getAdmittedAt().toString()
                 ),
-                Outbox.TOPIC_AUDITS_EVENTS
+                Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         return mapper.toDto(saved);
@@ -113,7 +114,8 @@ public class AdmissionService {
                         "departmentCode", saved.getDepartmentCode(),
                         "dischargedAt", saved.getDischargedAt().toString()
                 ),
-                Outbox.TOPIC_AUDITS_EVENTS
+                Outbox.TOPIC_AUDITS_EVENTS,
+                auth
         );
 
         return mapper.toDto(saved);

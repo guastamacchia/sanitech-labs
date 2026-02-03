@@ -42,6 +42,6 @@ public class PatientProfileController {
      */
     @PatchMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public PatientDto updatePhone(@Valid @RequestBody PatientPhoneUpdateDto dto, Authentication auth) {
-        return patientService.updatePhone(auth.getName(), dto);
+        return patientService.updatePhone(auth.getName(), dto, auth);
     }
 }
