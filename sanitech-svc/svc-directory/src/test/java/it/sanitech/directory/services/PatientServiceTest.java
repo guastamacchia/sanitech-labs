@@ -109,8 +109,6 @@ class PatientServiceTest {
         assertThat(syncEvent.enabled()).isFalse();  // Utente disabilitato fino ad attivazione admin
         assertThat(syncEvent.roleToAssign()).isEqualTo("ROLE_PATIENT");
         assertThat(syncEvent.previousEmail()).isNull();
-
-        verify(eventPublisher).publish(eq("PATIENT"), eq("1"), eq("PATIENT_CREATED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -174,8 +172,6 @@ class PatientServiceTest {
         assertThat(syncEvent.enabled()).isTrue();
         assertThat(syncEvent.roleToAssign()).isNull();
         assertThat(syncEvent.previousEmail()).isEqualTo("vecchia@email.it");
-
-        verify(eventPublisher).publish(eq("PATIENT"), eq("7"), eq("PATIENT_UPDATED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test
@@ -194,7 +190,6 @@ class PatientServiceTest {
 
         verify(keycloakAdminClient).disableUser("paolo.verdi@email.it", "Paolo", "Verdi", null, "PATIENT", 5L);
         verify(patientRepository).delete(existing);
-        verify(eventPublisher).publish(eq("PATIENT"), eq("5"), eq("PATIENT_DELETED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
     }
 
     @Test

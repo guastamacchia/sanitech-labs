@@ -1,5 +1,6 @@
 package it.sanitech.directory.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.directory.services.DoctorService;
 import it.sanitech.directory.services.dto.DoctorDto;
 import it.sanitech.directory.services.dto.create.DoctorCreateDto;
@@ -29,11 +30,13 @@ public class DoctorAdminController {
     private final DoctorService doctorService;
 
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @Auditable(aggregateType = "DOCTOR", eventType = "DOCTOR_CREATED", aggregateIdSpel = "id")
     public DoctorDto create(@Valid @RequestBody DoctorCreateDto dto, Authentication auth) {
         return doctorService.create(dto, auth);
     }
 
     @PatchMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Auditable(aggregateType = "DOCTOR", eventType = "DOCTOR_UPDATED", aggregateIdParam = "id")
     public DoctorDto patch(@PathVariable Long id, @Valid @RequestBody DoctorUpdateDto dto, Authentication auth) {
         return doctorService.patch(id, dto, auth);
     }
@@ -52,26 +55,31 @@ public class DoctorAdminController {
     }
 
     @DeleteMapping("/{id}")
+    @Auditable(aggregateType = "DOCTOR", eventType = "DOCTOR_DELETED", aggregateIdParam = "id")
     public void delete(@PathVariable Long id, Authentication auth) {
         doctorService.delete(id, auth);
     }
 
     @PatchMapping("/{id}/activate")
+    @Auditable(aggregateType = "DOCTOR", eventType = "DOCTOR_ACTIVATED", aggregateIdParam = "id")
     public DoctorDto activate(@PathVariable Long id, Authentication auth) {
         return doctorService.activate(id, auth);
     }
 
     @PatchMapping("/{id}/disable")
+    @Auditable(aggregateType = "DOCTOR", eventType = "DOCTOR_DISABLED", aggregateIdParam = "id")
     public DoctorDto disable(@PathVariable Long id, Authentication auth) {
         return doctorService.disableAccess(id, auth);
     }
 
     @PostMapping("/{id}/resend-activation")
+    @Auditable(aggregateType = "DOCTOR", eventType = "DOCTOR_ACTIVATION_RESENT", aggregateIdParam = "id")
     public void resendActivation(@PathVariable Long id, Authentication auth) {
         doctorService.resendActivation(id, auth);
     }
 
     @PatchMapping("/{id}/transfer")
+    @Auditable(aggregateType = "DOCTOR", eventType = "DOCTOR_TRANSFERRED", aggregateIdParam = "id")
     public DoctorDto transfer(@PathVariable Long id, @RequestParam String departmentCode) {
         return doctorService.transfer(id, departmentCode);
     }

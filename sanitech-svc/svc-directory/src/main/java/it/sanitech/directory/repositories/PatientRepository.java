@@ -40,4 +40,6 @@ public interface PatientRepository extends JpaRepository<Patient, Long>, JpaSpec
      * Restituisce il paziente con l'email indicata (case-insensitive).
      */
     Optional<Patient> findByEmailIgnoreCase(String email);
+
+    Optional<Patient> findByFirstNameIgnoreCaseAndLastNameIgnoreCase(String firstName, String lastName);
 }

@@ -1,5 +1,6 @@
 package it.sanitech.scheduling.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.scheduling.services.AppointmentService;
 import it.sanitech.scheduling.services.dto.AppointmentDto;
 import it.sanitech.scheduling.services.dto.create.AppointmentCreateDto;
@@ -24,6 +25,7 @@ public class AppointmentController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','PATIENT')")
+    @Auditable(aggregateType = "APPOINTMENT", eventType = "APPOINTMENT_BOOKED", aggregateIdSpel = "id")
     public AppointmentDto book(@Valid @RequestBody AppointmentCreateDto dto, Authentication auth) {
         return appointmentService.book(dto, auth);
     }
@@ -44,6 +46,7 @@ public class AppointmentController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','PATIENT')")
+    @Auditable(aggregateType = "APPOINTMENT", eventType = "APPOINTMENT_CANCELLED", aggregateIdParam = "id")
     public void cancel(@PathVariable Long id, Authentication auth) {
         appointmentService.cancel(id, auth);
     }

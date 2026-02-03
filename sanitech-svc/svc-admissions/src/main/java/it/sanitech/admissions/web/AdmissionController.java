@@ -6,6 +6,7 @@ import it.sanitech.admissions.services.AdmissionService;
 import it.sanitech.admissions.services.dto.AdmissionDto;
 import it.sanitech.admissions.services.dto.create.AdmissionCreateDto;
 import it.sanitech.admissions.utilities.AppConstants;
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.commons.utilities.SortUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +59,7 @@ public class AdmissionController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+    @Auditable(aggregateType = "ADMISSION", eventType = "ADMISSION_CREATED", aggregateIdSpel = "id")
     public ResponseEntity<AdmissionDto> admit(@Valid @RequestBody AdmissionCreateDto body, Authentication auth) {
         AdmissionDto created = admissionService.admit(body, auth);
         return ResponseEntity
@@ -70,6 +72,7 @@ public class AdmissionController {
      */
     @PostMapping("/{id}/discharge")
     @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+    @Auditable(aggregateType = "ADMISSION", eventType = "ADMISSION_DISCHARGED", aggregateIdParam = "id")
     public AdmissionDto discharge(@PathVariable("id") Long id, Authentication auth) {
         return admissionService.discharge(id, auth);
     }

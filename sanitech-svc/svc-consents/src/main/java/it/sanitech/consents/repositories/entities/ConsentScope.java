@@ -9,5 +9,6 @@ package it.sanitech.consents.repositories.entities;
 public enum ConsentScope {
     RECORDS,
     DOCS,
-    PRESCRIPTIONS
+    PRESCRIPTIONS,
+    TELEVISIT
 }

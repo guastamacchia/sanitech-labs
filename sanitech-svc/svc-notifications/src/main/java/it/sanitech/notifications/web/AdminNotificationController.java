@@ -1,5 +1,6 @@
 package it.sanitech.notifications.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.notifications.repositories.entities.RecipientType;
 import it.sanitech.notifications.services.NotificationService;
 import it.sanitech.notifications.services.dto.NotificationDto;
@@ -52,11 +53,13 @@ public class AdminNotificationController {
     }
 
     @PostMapping
+    @Auditable(aggregateType = "NOTIFICATION", eventType = "NOTIFICATION_CREATED", aggregateIdSpel = "id")
     public NotificationDto create(@Valid @RequestBody NotificationCreateDto dto) {
         return service.create(dto);
     }
 
     @PostMapping("/_bulk")
+    @Auditable(aggregateType = "NOTIFICATION", eventType = "NOTIFICATIONS_BULK_CREATED", aggregateIdSpel = "size()")
     public List<NotificationDto> bulkCreate(@Valid @RequestBody List<NotificationCreateDto> dtos) {
         return service.bulkCreate(dtos);
     }
@@ -67,6 +70,7 @@ public class AdminNotificationController {
     }
 
     @DeleteMapping("/{id}")
+    @Auditable(aggregateType = "NOTIFICATION", eventType = "NOTIFICATION_DELETED", aggregateIdParam = "id")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }

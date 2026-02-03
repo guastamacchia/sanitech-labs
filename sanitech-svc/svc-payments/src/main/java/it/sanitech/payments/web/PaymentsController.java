@@ -1,6 +1,7 @@
 package it.sanitech.payments.web;
 
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.payments.services.PaymentOrderService;
 import it.sanitech.payments.services.dto.PaymentOrderDto;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Set;
 
 /**
- * API “utente” per consultare e creare pagamenti.
+ * API "utente" per consultare e creare pagamenti.
  *
  * <p>
  * Un PATIENT vede solo i propri ordini; un ADMIN vede tutti.
@@ -67,6 +68,7 @@ public class PaymentsController {
      * </p>
      */
     @PostMapping
+    @Auditable(aggregateType = "PAYMENT", eventType = "PAYMENT_INITIATED", aggregateIdSpel = "id")
     public PaymentOrderDto create(@Valid @RequestBody PaymentCreateDto dto,
                                   @RequestHeader(value = AppConstants.Headers.X_IDEMPOTENCY_KEY, required = false) String idempotencyKey,
                                   Authentication auth) {

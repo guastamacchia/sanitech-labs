@@ -95,7 +95,7 @@ class PatientAdminControllerTest {
                 null
         );
 
-        when(patientService.searchAdmin(any(), any(), any(), anyInt(), anyInt(), any()))
+        when(patientService.searchAdmin(any(), any(), any(), any(), anyInt(), anyInt(), any()))
                 .thenReturn(new PageImpl<>(List.of(patient)));
 
         mockMvc.perform(get(AppConstants.ApiPath.ADMIN_PATIENTS)

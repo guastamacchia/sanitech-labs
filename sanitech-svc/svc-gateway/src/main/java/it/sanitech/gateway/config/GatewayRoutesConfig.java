@@ -56,6 +56,17 @@ public class GatewayRoutesConfig {
                 )
 
                 // =========================
+                // Televisit
+                // NOTA: deve precedere Directory per evitare che /api/patient/**
+                //       catturi /api/patient/televisits/**
+                // =========================
+                .route(AppConstants.Services.TELEVISIT, r -> r
+                        .path("/api/televisits/**", "/api/patient/televisits/**")
+                        .filters(f -> standardFilters(f, AppConstants.Services.TELEVISIT))
+                        .uri(services.getTelevisit())
+                )
+
+                // =========================
                 // Directory (medici/pazienti)
                 // =========================
                 .route(AppConstants.Services.DIRECTORY, r -> r
@@ -120,15 +131,6 @@ public class GatewayRoutesConfig {
                         .path("/api/audit/**")
                         .filters(f -> standardFilters(f, AppConstants.Services.AUDIT))
                         .uri(services.getAudit())
-                )
-
-                // =========================
-                // Televisit
-                // =========================
-                .route(AppConstants.Services.TELEVISIT, r -> r
-                        .path("/api/televisits/**", "/api/patient/televisits/**")
-                        .filters(f -> standardFilters(f, AppConstants.Services.TELEVISIT))
-                        .uri(services.getTelevisit())
                 )
 
                 // =========================

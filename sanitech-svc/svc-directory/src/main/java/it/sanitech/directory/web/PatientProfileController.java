@@ -1,5 +1,6 @@
 package it.sanitech.directory.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.directory.services.PatientService;
 import it.sanitech.directory.services.dto.PatientDto;
 import it.sanitech.directory.services.dto.update.PatientPhoneUpdateDto;
@@ -41,6 +42,7 @@ public class PatientProfileController {
      * L'email non può essere modificata.
      */
     @PatchMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @Auditable(aggregateType = "PATIENT", eventType = "PATIENT_PHONE_UPDATED", aggregateIdSpel = "id")
     public PatientDto updatePhone(@Valid @RequestBody PatientPhoneUpdateDto dto, Authentication auth) {
         return patientService.updatePhone(auth.getName(), dto, auth);
     }

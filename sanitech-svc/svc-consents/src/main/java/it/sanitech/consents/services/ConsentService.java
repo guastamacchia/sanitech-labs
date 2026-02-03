@@ -22,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -84,18 +85,19 @@ public class ConsentService {
         try {
             Consent saved = repository.save(consent);
 
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("consentId", saved.getId());
+            payload.put("patientId", saved.getPatientId());
+            payload.put("doctorId", saved.getDoctorId());
+            payload.put("scope", saved.getScope().name());
+            payload.put("status", saved.getStatus().name());
+            payload.put("expiresAt", saved.getExpiresAt() == null ? null : saved.getExpiresAt().toString());
+
             domainEventPublisher.publish(
                     AGGREGATE_TYPE,
                     String.valueOf(saved.getId()),
                     "CONSENT_GRANTED",
-                    Map.of(
-                            "consentId", saved.getId(),
-                            "patientId", saved.getPatientId(),
-                            "doctorId", saved.getDoctorId(),
-                            "scope", saved.getScope().name(),
-                            "status", saved.getStatus().name(),
-                            "expiresAt", saved.getExpiresAt() == null ? null : saved.getExpiresAt().toString()
-                    ),
+                    payload,
                     Outbox.TOPIC_AUDITS_EVENTS,
                     auth
             );
@@ -137,6 +139,23 @@ public class ConsentService {
     public ConsentDto getById(Long id) {
         return mapper.toDto(repository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("Consenso", id)));
+    }
+
+    /**
+     * Restituisce gli ID dei pazienti che hanno concesso consenso TELEVISIT attivo al medico specificato.
+     *
+     * @param doctorId ID del medico
+     * @return lista di patient ID con consenso TELEVISIT valido
+     */
+    @Transactional(readOnly = true)
+    @Bulkhead(name = "consentsRead")
+    public List<Long> getPatientIdsWithTelevisitConsent(Long doctorId) {
+        return repository.findByDoctorIdAndScopeAndStatus(doctorId, ConsentScope.TELEVISIT, it.sanitech.consents.repositories.entities.ConsentStatus.GRANTED)
+                .stream()
+                .filter(Consent::isCurrentlyGranted)
+                .map(Consent::getPatientId)
+                .distinct()
+                .toList();
     }
 
     @Transactional

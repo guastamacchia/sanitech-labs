@@ -20,6 +20,7 @@ public class AppConstants {
         public static final String WEBHOOK_BASE = "/api/webhooks";
 
         public static final String PAYMENTS = "/payments";
+        public static final String SERVICES = "/services";
     }
 
     @UtilityClass
@@ -57,6 +58,13 @@ public class AppConstants {
         public static final String EVT_CREATED = "PAYMENT_CREATED";
         public static final String EVT_STATUS_CHANGED = "PAYMENT_STATUS_CHANGED";
         public static final String EVT_REMINDER_REQUESTED = "PAYMENT_REMINDER_REQUESTED";
+
+        // Costanti per ServicePerformed
+        public static final String AGGREGATE_TYPE_SERVICE = "SERVICE_PERFORMED";
+        public static final String EVT_SERVICE_CREATED = "SERVICE_PERFORMED_CREATED";
+        public static final String EVT_SERVICE_STATUS_CHANGED = "SERVICE_PERFORMED_STATUS_CHANGED";
+        public static final String EVT_SERVICE_REMINDER_REQUESTED = "SERVICE_PERFORMED_REMINDER_REQUESTED";
+        public static final String EVT_SERVICE_DELETED = "SERVICE_PERFORMED_DELETED";
 
         /** Topic per notifiche (solleciti, conferme, etc.) */
         public static final String TOPIC_NOTIFICATIONS_EVENTS = "notifications.events";

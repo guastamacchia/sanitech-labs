@@ -1,5 +1,6 @@
 package it.sanitech.consents.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.consents.repositories.entities.ConsentScope;
 import it.sanitech.consents.security.AuthClaims;
 import it.sanitech.consents.services.ConsentService;
@@ -64,6 +65,7 @@ public class ConsentController {
      */
     @PostMapping("/me")
     @PreAuthorize("hasRole('PATIENT')")
+    @Auditable(aggregateType = "CONSENT", eventType = "PRIVACY_CONSENT_CREATED", aggregateIdSpel = "id")
     public PrivacyConsentDto registerPrivacyConsent(@RequestBody @Valid PrivacyConsentCreateDto dto, Authentication auth) {
         Long patientId = requirePatientId(auth);
         return service.registerPrivacyConsent(patientId, dto, auth);
@@ -74,6 +76,7 @@ public class ConsentController {
      */
     @DeleteMapping("/me/{id}")
     @PreAuthorize("hasRole('PATIENT')")
+    @Auditable(aggregateType = "CONSENT", eventType = "PRIVACY_CONSENT_DELETED", aggregateIdParam = "id")
     public void deletePrivacyConsent(@PathVariable Long id, Authentication auth) {
         requirePatientId(auth);
         service.deletePrivacyConsentById(id, auth);
@@ -96,6 +99,7 @@ public class ConsentController {
      */
     @PostMapping("/me/doctors")
     @PreAuthorize("hasRole('PATIENT')")
+    @Auditable(aggregateType = "CONSENT", eventType = "DOCTOR_CONSENT_GRANTED", aggregateIdSpel = "id")
     public ConsentDto grantDoctorConsent(@RequestBody @Valid ConsentCreateDto dto, Authentication auth) {
         Long patientId = requirePatientId(auth);
         return service.grantForPatient(patientId, dto, auth);
@@ -106,9 +110,26 @@ public class ConsentController {
      */
     @DeleteMapping("/me/doctors/{doctorId}/{scope}")
     @PreAuthorize("hasRole('PATIENT')")
+    @Auditable(aggregateType = "CONSENT", eventType = "DOCTOR_CONSENT_REVOKED", aggregateIdParam = "doctorId")
     public void revokeDoctorConsent(@PathVariable Long doctorId, @PathVariable ConsentScope scope, Authentication auth) {
         Long patientId = requirePatientId(auth);
         service.revokeForPatient(patientId, doctorId, scope, auth);
+    }
+
+    /**
+     * Restituisce gli ID dei pazienti che hanno concesso consenso TELEVISIT attivo al medico specificato.
+     * <p>
+     * Utilizzato dal pannello admin per filtrare i pazienti selezionabili nella pianificazione televisite.
+     * </p>
+     *
+     * @param doctorId ID del medico per cui cercare i pazienti con consenso
+     * @return lista di patient ID con consenso TELEVISIT valido
+     */
+    @GetMapping("/patients-with-televisit-consent")
+    @RateLimiter(name = "consentsApi")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+    public List<Long> getPatientsWithTelevisitConsent(@RequestParam Long doctorId, Authentication auth) {
+        return service.getPatientIdsWithTelevisitConsent(doctorId);
     }
 
     private static Long requirePatientId(Authentication auth) {

@@ -1,5 +1,6 @@
 package it.sanitech.docs.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.docs.repositories.entities.Document;
 import it.sanitech.docs.services.DocumentService;
 import it.sanitech.docs.services.dto.DocumentDto;
@@ -81,9 +82,10 @@ public class DocumentController {
     }
 
     @PostMapping(value = AppConstants.ApiPath.DOCS + "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR','PATIENT')")
+    @Auditable(aggregateType = "DOCUMENT", eventType = "DOCUMENT_UPLOADED", aggregateIdSpel = "id")
     public ResponseEntity<DocumentDto> upload(@RequestPart("file") MultipartFile file,
-                                              @RequestParam Long patientId,
+                                              @RequestParam(required = false) Long patientId,
                                               @RequestParam String departmentCode,
                                               @RequestParam String documentType,
                                               @RequestParam(required = false) String description,
@@ -95,6 +97,7 @@ public class DocumentController {
 
     @DeleteMapping(AppConstants.ApiPath.ADMIN_DOCS + "/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Auditable(aggregateType = "DOCUMENT", eventType = "DOCUMENT_DELETED", aggregateIdParam = "id")
     public ResponseEntity<Void> delete(@PathVariable UUID id, Authentication auth) {
         service.delete(id, auth);
         return ResponseEntity.noContent().build();

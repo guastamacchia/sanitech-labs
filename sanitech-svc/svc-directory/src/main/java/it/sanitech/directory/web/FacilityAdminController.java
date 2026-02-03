@@ -1,5 +1,6 @@
 package it.sanitech.directory.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.directory.services.FacilityService;
 import it.sanitech.directory.services.dto.FacilityDto;
 import it.sanitech.directory.services.dto.create.FacilityCreateDto;
@@ -30,11 +31,13 @@ public class FacilityAdminController {
     private final FacilityService service;
 
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @Auditable(aggregateType = "FACILITY", eventType = "FACILITY_CREATED", aggregateIdSpel = "id")
     public FacilityDto create(@Valid @RequestBody FacilityCreateDto dto) {
         return service.create(dto);
     }
 
     @PutMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Auditable(aggregateType = "FACILITY", eventType = "FACILITY_UPDATED", aggregateIdParam = "id")
     public FacilityDto update(@PathVariable Long id, @Valid @RequestBody FacilityUpdateDto dto) {
         return service.update(id, dto);
     }
@@ -45,6 +48,7 @@ public class FacilityAdminController {
     }
 
     @DeleteMapping("/{id}")
+    @Auditable(aggregateType = "FACILITY", eventType = "FACILITY_DELETED", aggregateIdParam = "id")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }

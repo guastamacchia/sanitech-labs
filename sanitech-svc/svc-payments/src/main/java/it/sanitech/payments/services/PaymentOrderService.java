@@ -267,7 +267,7 @@ public class PaymentOrderService {
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("recipientType", "PATIENT");
-        payload.put("recipientId", String.valueOf(order.getPatientId()));
+        payload.put("recipientId", order.getPatientEmail());
         payload.put("email", order.getPatientEmail());
         payload.put("patientName", order.getPatientName());
         payload.put("paymentId", order.getId());

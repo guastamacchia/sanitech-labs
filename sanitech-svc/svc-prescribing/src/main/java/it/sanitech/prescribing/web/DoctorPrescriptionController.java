@@ -1,5 +1,6 @@
 package it.sanitech.prescribing.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.prescribing.services.PrescriptionService;
 import it.sanitech.prescribing.services.dto.PrescriptionDto;
@@ -42,6 +43,7 @@ public class DoctorPrescriptionController {
     @PostMapping
     @PreAuthorize("hasAnyRole('DOCTOR','ADMIN') or hasAuthority('SCOPE_prescriptions.write')")
     @RateLimiter(name = "prescribingApi")
+    @Auditable(aggregateType = "PRESCRIPTION", eventType = "PRESCRIPTION_CREATED", aggregateIdSpel = "id")
     public PrescriptionDto create(@Valid @RequestBody PrescriptionCreateDto dto, Authentication auth) {
         return service.create(dto, auth);
     }
@@ -85,6 +87,7 @@ public class DoctorPrescriptionController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('DOCTOR','ADMIN') or hasAuthority('SCOPE_prescriptions.write')")
     @RateLimiter(name = "prescribingApi")
+    @Auditable(aggregateType = "PRESCRIPTION", eventType = "PRESCRIPTION_UPDATED", aggregateIdParam = "id")
     public PrescriptionDto update(
             @PathVariable("id") Long id,
             @Valid @RequestBody PrescriptionUpdateDto dto,
@@ -99,6 +102,7 @@ public class DoctorPrescriptionController {
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyRole('DOCTOR','ADMIN') or hasAuthority('SCOPE_prescriptions.write')")
     @RateLimiter(name = "prescribingApi")
+    @Auditable(aggregateType = "PRESCRIPTION", eventType = "PRESCRIPTION_PATCHED", aggregateIdParam = "id")
     public PrescriptionDto patch(
             @PathVariable("id") Long id,
             @RequestBody PrescriptionPatchDto dto,
@@ -113,6 +117,7 @@ public class DoctorPrescriptionController {
     @PostMapping("/{id}/cancel")
     @PreAuthorize("hasAnyRole('DOCTOR','ADMIN') or hasAuthority('SCOPE_prescriptions.write')")
     @RateLimiter(name = "prescribingApi")
+    @Auditable(aggregateType = "PRESCRIPTION", eventType = "PRESCRIPTION_CANCELLED", aggregateIdParam = "id")
     public void cancel(@PathVariable("id") Long id, Authentication auth) {
         service.cancel(id, auth);
     }

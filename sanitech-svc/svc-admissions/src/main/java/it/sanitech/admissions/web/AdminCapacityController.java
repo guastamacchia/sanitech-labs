@@ -3,6 +3,7 @@ package it.sanitech.admissions.web;
 import it.sanitech.admissions.services.CapacityService;
 import it.sanitech.admissions.services.dto.CapacityDto;
 import it.sanitech.admissions.services.dto.update.CapacityUpsertDto;
+import it.sanitech.commons.audit.Auditable;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +22,7 @@ public class AdminCapacityController {
 
     @PutMapping("/{dept}/capacity")
     @PreAuthorize("hasRole('ADMIN')")
+    @Auditable(aggregateType = "CAPACITY", eventType = "CAPACITY_UPDATED", aggregateIdParam = "dept")
     public CapacityDto setCapacity(@PathVariable("dept") String dept, @Valid @RequestBody CapacityUpsertDto body, Authentication auth) {
         return capacityService.upsert(dept, body.totalBeds(), auth);
     }

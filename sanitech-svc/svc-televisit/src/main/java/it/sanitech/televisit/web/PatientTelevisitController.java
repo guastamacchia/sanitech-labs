@@ -1,6 +1,7 @@
 package it.sanitech.televisit.web;
 
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.televisit.repositories.entities.TelevisitStatus;
 import it.sanitech.televisit.services.TelevisitService;
@@ -75,6 +76,7 @@ public class PatientTelevisitController {
      */
     @PostMapping("/{id}/token")
     @RateLimiter(name = "televisitApi")
+    @Auditable(aggregateType = "TELEVISIT", eventType = "TELEVISIT_PATIENT_TOKEN_GENERATED", aggregateIdParam = "id")
     public LiveKitTokenDto getMyToken(@PathVariable Long id, Authentication auth) {
         TelevisitDto televisit = service.getById(id);
         // Verifica che la televisita appartenga al paziente

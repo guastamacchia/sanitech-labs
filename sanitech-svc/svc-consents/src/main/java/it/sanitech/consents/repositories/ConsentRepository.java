@@ -22,4 +22,6 @@ public interface ConsentRepository extends JpaRepository<Consent, Long> {
     List<Consent> findByPatientIdOrderByUpdatedAtDesc(Long patientId);
 
     Page<Consent> findByDoctorIdOrderByUpdatedAtDesc(Long doctorId, Pageable pageable);
+
+    List<Consent> findByDoctorIdAndScopeAndStatus(Long doctorId, ConsentScope scope, ConsentStatus status);
 }

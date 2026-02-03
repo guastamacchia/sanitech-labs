@@ -1,5 +1,6 @@
 package it.sanitech.consents.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.consents.services.ConsentService;
 import it.sanitech.consents.services.dto.ConsentDto;
 import it.sanitech.consents.utilities.AppConstants;
@@ -28,6 +29,7 @@ public class AdminConsentController {
     }
 
     @DeleteMapping("/{id}")
+    @Auditable(aggregateType = "CONSENT", eventType = "CONSENT_DELETED", aggregateIdParam = "id")
     public void delete(@PathVariable Long id, Authentication auth) {
         service.deleteById(id, auth);
     }

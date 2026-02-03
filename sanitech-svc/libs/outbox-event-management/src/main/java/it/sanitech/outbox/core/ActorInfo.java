@@ -28,6 +28,11 @@ public record ActorInfo(
     public static final ActorInfo SYSTEM = new ActorInfo("SYSTEM", "system", "Sistema");
 
     /**
+     * Attore anonimo per operazioni pubbliche senza autenticazione.
+     */
+    public static final ActorInfo ANONYMOUS = new ActorInfo("ANONYMOUS", "anonymous", "Utente Anonimo");
+
+    /**
      * Crea ActorInfo da un oggetto Authentication Spring Security.
      * <p>
      * Estrae automaticamente:

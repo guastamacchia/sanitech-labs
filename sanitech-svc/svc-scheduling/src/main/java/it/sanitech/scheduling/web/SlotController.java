@@ -1,6 +1,7 @@
 package it.sanitech.scheduling.web;
 
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.scheduling.repositories.entities.VisitMode;
 import it.sanitech.scheduling.services.SlotService;
 import it.sanitech.scheduling.services.dto.SlotDto;
@@ -30,6 +31,7 @@ public class SlotController {
      * Crea un nuovo slot. Richiede autenticazione e autorizzazione sul reparto.
      */
     @PostMapping
+    @Auditable(aggregateType = "SLOT", eventType = "SLOT_CREATED", aggregateIdSpel = "id")
     public SlotDto create(@Valid @RequestBody SlotCreateDto dto, Authentication auth) {
         return slotService.createSlot(dto, auth);
     }

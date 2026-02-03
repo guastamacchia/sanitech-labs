@@ -48,4 +48,13 @@ public class DoctorController {
     public DoctorDto get(@PathVariable Long id) {
         return doctorService.get(id);
     }
+
+    /**
+     * Lookup interno per nome e cognome (case-insensitive).
+     * Utilizzato dal servizio notifiche per recuperare email medico nelle televisite.
+     */
+    @GetMapping(value = "/internal/by-name", produces = MediaType.APPLICATION_JSON_VALUE)
+    public DoctorDto findByName(@RequestParam String firstName, @RequestParam String lastName) {
+        return doctorService.findByName(firstName, lastName).orElse(null);
+    }
 }

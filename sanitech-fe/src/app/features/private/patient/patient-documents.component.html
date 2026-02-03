@@ -11,10 +11,16 @@
       <h2 class="mb-1 fw-bold">I miei documenti</h2>
       <p class="text-muted mb-0">Cartella clinica, referti e documenti caricati</p>
     </div>
-    <button class="btn btn-outline-secondary" routerLink="/portal/patient">
-      <i class="bi bi-arrow-left me-1"></i>
-      Torna indietro
-    </button>
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" (click)="openUploadModal()">
+        <i class="bi bi-upload me-1"></i>
+        Carica documento
+      </button>
+      <button class="btn btn-outline-secondary" routerLink="/portal/patient">
+        <i class="bi bi-arrow-left me-1"></i>
+        Torna indietro
+      </button>
+    </div>
   </div>
 
   <!-- Alert messages -->

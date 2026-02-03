@@ -40,4 +40,6 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long>, JpaSpecif
      */
     @Query("SELECT d.department.id, COUNT(d) FROM Doctor d WHERE d.department.id IN :departmentIds GROUP BY d.department.id")
     List<Object[]> countByDepartmentIds(@Param("departmentIds") List<Long> departmentIds);
+
+    java.util.Optional<Doctor> findByFirstNameIgnoreCaseAndLastNameIgnoreCase(String firstName, String lastName);
 }

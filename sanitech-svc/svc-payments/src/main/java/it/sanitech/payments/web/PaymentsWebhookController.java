@@ -1,5 +1,6 @@
 package it.sanitech.payments.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.payments.properties.PaymentWebhookProperties;
 import it.sanitech.payments.services.PaymentOrderService;
 import it.sanitech.payments.services.dto.PaymentOrderDto;
@@ -30,6 +31,7 @@ public class PaymentsWebhookController {
     }
 
     @PostMapping("/provider")
+    @Auditable(aggregateType = "PAYMENT", eventType = "PAYMENT_WEBHOOK_RECEIVED", aggregateIdSpel = "id")
     public PaymentOrderDto providerUpdate(@Valid @RequestBody PaymentWebhookDto dto,
                                           @RequestHeader(value = AppConstants.Headers.X_WEBHOOK_SECRET, required = false) String secret) {
         if (secret == null || !secret.equals(webhookProperties.getSecret())) {

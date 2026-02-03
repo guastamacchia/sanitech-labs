@@ -5,6 +5,7 @@ import it.sanitech.commons.exception.DepartmentAccessDeniedException;
 import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.directory.integrations.keycloak.KeycloakAdminClient;
 import it.sanitech.directory.repositories.DepartmentRepository;
+import it.sanitech.directory.repositories.DoctorRepository;
 import it.sanitech.directory.repositories.PatientRepository;
 import it.sanitech.directory.repositories.entities.Department;
 import it.sanitech.directory.repositories.entities.Patient;
@@ -51,6 +52,7 @@ public class PatientService {
 
     private final PatientRepository patientRepository;
     private final DepartmentRepository departmentRepository;
+    private final DoctorRepository doctorRepository;
 
     private final PatientMapper patientMapper;
     private final DomainEventPublisher eventPublisher;
@@ -111,22 +113,6 @@ public class PatientService {
                 .build();
 
         Patient saved = patientRepository.save(entity);
-
-        eventPublisher.publish(
-                AppConstants.Outbox.AggregateType.PATIENT,
-                String.valueOf(saved.getId()),
-                AppConstants.Outbox.EventType.PATIENT_CREATED,
-                Map.of(
-                        "id", saved.getId(),
-                        "firstName", saved.getFirstName(),
-                        "lastName", saved.getLastName(),
-                        "email", saved.getEmail(),
-                        "phone", saved.getPhone(),
-                        "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
-                ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
-                auth
-        );
 
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
                 AppConstants.Outbox.AggregateType.PATIENT,
@@ -198,22 +184,6 @@ public class PatientService {
 
         Patient saved = patientRepository.save(entity);
 
-        eventPublisher.publish(
-                AppConstants.Outbox.AggregateType.PATIENT,
-                String.valueOf(saved.getId()),
-                AppConstants.Outbox.EventType.PATIENT_UPDATED,
-                Map.of(
-                        "id", saved.getId(),
-                        "firstName", saved.getFirstName(),
-                        "lastName", saved.getLastName(),
-                        "email", saved.getEmail(),
-                        "phone", saved.getPhone(),
-                        "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
-                ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
-                auth
-        );
-
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
                 AppConstants.Outbox.AggregateType.PATIENT,
                 saved.getId(),
@@ -240,15 +210,6 @@ public class PatientService {
                 entity.getId()
         );
         patientRepository.delete(entity);
-
-        eventPublisher.publish(
-                AppConstants.Outbox.AggregateType.PATIENT,
-                String.valueOf(id),
-                AppConstants.Outbox.EventType.PATIENT_DELETED,
-                Map.of("id", id),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
-                auth
-        );
     }
 
     public PatientDto disableAccess(Long id, Authentication auth) {
@@ -306,7 +267,7 @@ public class PatientService {
                 AppConstants.Outbox.EventType.ACTIVATION_EMAIL_REQUESTED,
                 Map.of(
                         "recipientType", AppConstants.Outbox.AggregateType.PATIENT,
-                        "recipientId", String.valueOf(entity.getId()),
+                        "recipientId", entity.getEmail(),
                         "email", entity.getEmail(),
                         "firstName", entity.getFirstName(),
                         "lastName", entity.getLastName()
@@ -326,7 +287,7 @@ public class PatientService {
                 eventType,
                 Map.of(
                         "recipientType", AppConstants.Outbox.AggregateType.PATIENT,
-                        "recipientId", String.valueOf(entity.getId()),
+                        "recipientId", entity.getEmail(),
                         "email", entity.getEmail(),
                         "firstName", entity.getFirstName(),
                         "lastName", entity.getLastName()
@@ -359,22 +320,6 @@ public class PatientService {
 
         Patient saved = patientRepository.save(entity);
 
-        eventPublisher.publish(
-                AppConstants.Outbox.AggregateType.PATIENT,
-                String.valueOf(saved.getId()),
-                AppConstants.Outbox.EventType.PATIENT_UPDATED,
-                Map.of(
-                        "id", saved.getId(),
-                        "firstName", saved.getFirstName(),
-                        "lastName", saved.getLastName(),
-                        "email", saved.getEmail(),
-                        "phone", saved.getPhone(),
-                        "departments", saved.getDepartments().stream().map(Department::getCode).collect(Collectors.toSet())
-                ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
-                auth
-        );
-
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
                 AppConstants.Outbox.AggregateType.PATIENT,
                 saved.getId(),
@@ -392,7 +337,7 @@ public class PatientService {
 
     @Transactional(readOnly = true)
     @Bulkhead(name = "directoryRead", type = Bulkhead.Type.SEMAPHORE)
-    public Page<PatientDto> searchAdmin(String q, String departmentCode, String status, int page, int size, String[] sort) {
+    public Page<PatientDto> searchAdmin(String q, String departmentCode, String status, Long doctorId, int page, int size, String[] sort) {
         Sort safeSort = SortUtils.safeSort(sort, AppConstants.SortField.PATIENT_ALLOWED, "id");
         Pageable pageable = PageableUtils.pageRequest(page, size, MAX_PAGE_SIZE, safeSort);
 
@@ -405,8 +350,16 @@ public class PatientService {
             }
         }
 
+        // Se doctorId è presente, filtra i pazienti per il reparto del medico
+        String effectiveDepartmentCode = departmentCode;
+        if (doctorId != null && effectiveDepartmentCode == null) {
+            effectiveDepartmentCode = doctorRepository.findById(doctorId)
+                    .map(doctor -> doctor.getDepartment().getCode())
+                    .orElse(null);
+        }
+
         Page<Patient> result = patientRepository.findAll(
-                PatientSpecifications.search(q, departmentCode, userStatus),
+                PatientSpecifications.search(q, effectiveDepartmentCode, userStatus),
                 pageable
         );
 
@@ -462,5 +415,22 @@ public class PatientService {
                 .filter(s -> !s.isBlank())
                 .map(s -> s.toUpperCase(Locale.ROOT))
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Trova un paziente per nome e cognome (case-insensitive).
+     * Utilizzato internamente per il lookup email nelle notifiche televisita.
+     *
+     * @param firstName nome del paziente
+     * @param lastName cognome del paziente
+     * @return Optional contenente il DTO del paziente se trovato
+     */
+    @Transactional(readOnly = true)
+    public Optional<PatientDto> findByName(String firstName, String lastName) {
+        if (firstName == null || lastName == null) {
+            return Optional.empty();
+        }
+        return patientRepository.findByFirstNameIgnoreCaseAndLastNameIgnoreCase(firstName.trim(), lastName.trim())
+                .map(patientMapper::toDto);
     }
 }

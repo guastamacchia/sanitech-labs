@@ -84,6 +84,44 @@ interface PaymentPage {
   content: PaymentItem[];
 }
 
+// Allineato a ServicePerformedDto backend
+interface ServicePerformedItem {
+  id: number;
+  serviceType: 'MEDICAL_VISIT' | 'HOSPITALIZATION';
+  sourceType: 'TELEVISIT' | 'ADMISSION';
+  sourceId: number;
+  patientId: number;
+  patientSubject?: string;
+  patientName?: string;
+  patientEmail?: string;
+  departmentCode?: string;
+  description?: string;
+  amountCents: number;
+  currency: string;
+  status: 'PENDING' | 'PAID' | 'FREE' | 'CANCELLED';
+  performedAt: string;
+  startedAt?: string;
+  daysCount?: number;
+  reminderCount: number;
+  lastReminderAt?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+  // Campi calcolati per UI
+  amount?: number; // amountCents / 100
+}
+
+interface ServicePerformedStats {
+  totalServices: number;
+  paidWithin7Days: number;
+  paidWithReminder: number;
+  stillPending: number;
+  percentWithin7Days: number;
+  percentWithReminder: number;
+  percentPending: number;
+  filteredCount: number;
+}
+
 // Allineato a AdmissionDto backend
 interface AdmissionItem {
   id: number;
@@ -279,7 +317,7 @@ interface AuditEventDetail {
   id: number;
   eventType: 'CONSENT_GRANTED' | 'CONSENT_REVOKED' | 'DOCUMENT_ACCESS' | 'PRESCRIPTION_VIEW' | 'APPOINTMENT_BOOKED' | 'APPOINTMENT_CANCELLED' | 'PROFILE_UPDATE';
   action: string;
-  actorType: 'DOCTOR' | 'PATIENT' | 'ADMIN' | 'SYSTEM';
+  actorType: 'USER' | 'SERVICE' | 'SYSTEM' | 'ANONYMOUS';
   actorId: string;
   actorName: string;
   actorRole?: string;
@@ -295,7 +333,7 @@ interface AuditEventDetail {
   consentValidAtAccess?: boolean;
   serviceName: string;
   ipAddress?: string;
-  outcome: 'SUCCESS' | 'DENIED' | 'ERROR';
+  outcome: 'SUCCESS' | 'DENIED' | 'FAILURE';
   outcomeReason?: string;
   occurredAt: string;
   integrityHash: string;
@@ -452,6 +490,34 @@ export class ResourcePageState {
     service: '',
     amount: 0
   };
+  // ServicePerformed (prestazioni sanitarie)
+  servicesPerformed: ServicePerformedItem[] = [];
+  filteredServices: ServicePerformedItem[] = [];
+  serviceStats: ServicePerformedStats = {
+    totalServices: 0,
+    paidWithin7Days: 0,
+    paidWithReminder: 0,
+    stillPending: 0,
+    percentWithin7Days: 0,
+    percentWithReminder: 0,
+    percentPending: 0,
+    filteredCount: 0
+  };
+  serviceStatusFilter: 'ALL' | 'PENDING' | 'PAID' | 'FREE' | 'CANCELLED' = 'ALL';
+  serviceDaysFilter: number | null = null;
+  selectedServiceIds = new Set<number>();
+  servicesError = '';
+  servicesSuccess = '';
+  showServiceEditModal = false;
+  showServiceFreeModal = false;
+  selectedService: ServicePerformedItem | null = null;
+  serviceFreeReason = '';
+  serviceEditForm = {
+    amountCents: 0,
+    patientName: '',
+    patientEmail: '',
+    notes: ''
+  };
   admissionForm = {
     patientId: null as number | null,
     facilityCode: '',
@@ -460,6 +526,7 @@ export class ResourcePageState {
     notes: '',
     attendingDoctorId: null as number | null
   };
+  filteredAdmissionPatients: PatientItem[] = [];
   notifications: NotificationItem[] = [];
   notificationsError = '';
   notificationsSuccess = '';
@@ -527,12 +594,13 @@ export class ResourcePageState {
   televisitRescheduleDate = '';
   televisitRescheduleTime = '';
   televisitForm = {
-    doctorSubject: '',
-    patientSubject: '',
+    doctorId: null as number | null,
+    patientId: null as number | null,
     facilityCode: '',
     department: '',
     scheduledAt: ''
   };
+  televisitPatientsFiltered: PatientItem[] = [];
   showAdminTelevisitModal = false;
   showAdminAdmissionModal = false;
   showSlotModal = false;
@@ -580,52 +648,18 @@ export class ResourcePageState {
     email: '',
     phone: ''
   };
-  auditEvents: AuditItem[] = [];
   auditError = '';
 
-  // Audit & Compliance - Stato esteso
-  auditSearchCriteria: AuditSearchCriteria = {
-    subjectType: 'PATIENT',
-    subjectIdentifier: '',
-    fiscalCode: '',
-    dateFrom: '',
-    dateTo: '',
-    eventTypes: [],
-    actorTypes: [],
-    outcomes: []
-  };
+  // Audit & Compliance - Stato semplificato
   auditDetailedEvents: AuditEventDetail[] = [];
   auditFilteredEvents: AuditEventDetail[] = [];
-  auditConsents: ConsentSnapshot[] = [];
-  auditReportSummary: AuditReportSummary | null = null;
+  auditSearchText = '';
   auditSelectedEvent: AuditEventDetail | null = null;
-  auditSearchPerformed = false;
-  auditExporting = false;
-  auditPatientFound: { id: string; name: string; fiscalCode: string } | null = null;
-  auditSubjectFound: AuditSubjectFound | null = null;
-
-  // Tipi di evento disponibili per il filtro
-  auditEventTypeOptions = [
-    { value: 'CONSENT_GRANTED', label: 'Consenso concesso' },
-    { value: 'CONSENT_REVOKED', label: 'Consenso revocato' },
-    { value: 'DOCUMENT_ACCESS', label: 'Accesso documento' },
-    { value: 'PRESCRIPTION_VIEW', label: 'Visualizzazione prescrizione' },
-    { value: 'APPOINTMENT_BOOKED', label: 'Appuntamento prenotato' },
-    { value: 'APPOINTMENT_CANCELLED', label: 'Appuntamento cancellato' },
-    { value: 'PROFILE_UPDATE', label: 'Aggiornamento profilo' }
-  ];
-
-  auditActorTypeOptions = [
-    { value: 'DOCTOR', label: 'Medico' },
-    { value: 'PATIENT', label: 'Paziente' },
-    { value: 'ADMIN', label: 'Amministratore' },
-    { value: 'SYSTEM', label: 'Sistema' }
-  ];
 
   auditOutcomeOptions = [
     { value: 'SUCCESS', label: 'Successo' },
     { value: 'DENIED', label: 'Negato' },
-    { value: 'ERROR', label: 'Errore' }
+    { value: 'FAILURE', label: 'Fallito' }
   ];
 
   showPaymentQuestionModal = false;
@@ -699,7 +733,7 @@ export class ResourcePageState {
     if (this.mode === 'notifications') {
       this.loadNotifications();
       if (this.isAdmin) {
-        this.loadPayments();
+        this.loadServicesPerformed();
         this.loadPatients();
       }
     }
@@ -1953,6 +1987,279 @@ export class ResourcePageState {
     });
   }
 
+  // ========== GESTIONE PRESTAZIONI (ServicePerformed) ==========
+
+  loadServicesPerformed(): void {
+    this.isLoading = true;
+    this.servicesError = '';
+    this.servicesSuccess = '';
+
+    // Carica statistiche
+    this.api.request<ServicePerformedStats>('GET', '/api/admin/services/stats').subscribe({
+      next: (stats) => {
+        this.serviceStats = stats;
+      },
+      error: () => {}
+    });
+
+    // Carica lista prestazioni
+    const statusParam = this.serviceStatusFilter !== 'ALL' ? `?status=${this.serviceStatusFilter}` : '';
+    this.api.request<{ content: ServicePerformedItem[] } | ServicePerformedItem[]>('GET', `/api/admin/services${statusParam}`).subscribe({
+      next: (services) => {
+        const rawServices = Array.isArray(services) ? services : (services?.content ?? []);
+        this.servicesPerformed = rawServices.map((s) => this.mapServiceFromBackend(s));
+        this.updateFilteredServices();
+        this.isLoading = false;
+      },
+      error: () => {
+        this.servicesError = 'Impossibile caricare le prestazioni.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private mapServiceFromBackend(s: ServicePerformedItem): ServicePerformedItem {
+    return {
+      ...s,
+      amount: s.amountCents ? s.amountCents / 100 : 0
+    };
+  }
+
+  private updateFilteredServices(): void {
+    let filtered = [...this.servicesPerformed];
+
+    // Filtra per stato
+    if (this.serviceStatusFilter !== 'ALL') {
+      filtered = filtered.filter(s => s.status === this.serviceStatusFilter);
+    }
+
+    // Filtra per giorni dalla prestazione
+    if (this.serviceDaysFilter !== null) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - this.serviceDaysFilter);
+      filtered = filtered.filter(s => new Date(s.performedAt) < cutoffDate);
+    }
+
+    this.filteredServices = filtered;
+    this.serviceStats = { ...this.serviceStats, filteredCount: filtered.length };
+  }
+
+  onServiceStatusFilterChange(): void {
+    this.updateFilteredServices();
+  }
+
+  onServiceDaysFilterChange(): void {
+    this.updateFilteredServices();
+  }
+
+  toggleServiceSelection(id: number): void {
+    if (this.selectedServiceIds.has(id)) {
+      this.selectedServiceIds.delete(id);
+    } else {
+      this.selectedServiceIds.add(id);
+    }
+  }
+
+  isServiceSelected(id: number): boolean {
+    return this.selectedServiceIds.has(id);
+  }
+
+  toggleAllServicesSelection(): void {
+    const pendingServices = this.filteredServices.filter(s => s.status === 'PENDING');
+    if (this.selectedServiceIds.size === pendingServices.length) {
+      this.selectedServiceIds.clear();
+    } else {
+      pendingServices.forEach(s => this.selectedServiceIds.add(s.id));
+    }
+  }
+
+  // Segna come pagato
+  markServiceAsPaid(service: ServicePerformedItem): void {
+    if (service.status === 'PAID') return;
+    this.isLoading = true;
+    this.servicesError = '';
+    this.api.request<ServicePerformedItem>('POST', `/api/admin/services/${service.id}/paid`).subscribe({
+      next: (updated) => {
+        this.servicesPerformed = this.servicesPerformed.map(s => s.id === updated.id ? this.mapServiceFromBackend(updated) : s);
+        this.updateFilteredServices();
+        this.servicesSuccess = `Prestazione #${service.id} segnata come pagata.`;
+        this.isLoading = false;
+        this.loadServicesPerformed();
+      },
+      error: () => {
+        this.servicesError = `Impossibile confermare il pagamento della prestazione #${service.id}.`;
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // Apri modal per convertire in gratuito
+  openServiceFreeModal(service: ServicePerformedItem): void {
+    this.selectedService = service;
+    this.serviceFreeReason = '';
+    this.showServiceFreeModal = true;
+  }
+
+  closeServiceFreeModal(): void {
+    this.showServiceFreeModal = false;
+    this.selectedService = null;
+    this.serviceFreeReason = '';
+  }
+
+  // Converti in gratuito
+  confirmMarkServiceAsFree(): void {
+    if (!this.selectedService) return;
+    this.isLoading = true;
+    this.servicesError = '';
+    const reasonParam = this.serviceFreeReason ? `?reason=${encodeURIComponent(this.serviceFreeReason)}` : '';
+    this.api.request<ServicePerformedItem>('POST', `/api/admin/services/${this.selectedService.id}/free${reasonParam}`).subscribe({
+      next: (updated) => {
+        this.servicesPerformed = this.servicesPerformed.map(s => s.id === updated.id ? this.mapServiceFromBackend(updated) : s);
+        this.updateFilteredServices();
+        this.servicesSuccess = `Prestazione #${this.selectedService!.id} convertita in gratuita.`;
+        this.closeServiceFreeModal();
+        this.isLoading = false;
+        this.loadServicesPerformed();
+      },
+      error: () => {
+        this.servicesError = `Impossibile convertire la prestazione #${this.selectedService!.id} in gratuita.`;
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // Apri modal per modifica
+  openServiceEditModal(service: ServicePerformedItem): void {
+    this.selectedService = service;
+    this.serviceEditForm = {
+      amountCents: service.amountCents,
+      patientName: service.patientName || '',
+      patientEmail: service.patientEmail || '',
+      notes: service.notes || ''
+    };
+    this.showServiceEditModal = true;
+  }
+
+  closeServiceEditModal(): void {
+    this.showServiceEditModal = false;
+    this.selectedService = null;
+  }
+
+  // Salva modifiche
+  saveServiceEdit(): void {
+    if (!this.selectedService) return;
+    this.isLoading = true;
+    this.servicesError = '';
+
+    const payload = {
+      amountCents: this.serviceEditForm.amountCents,
+      patientName: this.serviceEditForm.patientName || null,
+      patientEmail: this.serviceEditForm.patientEmail || null,
+      notes: this.serviceEditForm.notes || null
+    };
+
+    this.api.request<ServicePerformedItem>('PATCH', `/api/admin/services/${this.selectedService.id}`, payload).subscribe({
+      next: (updated) => {
+        this.servicesPerformed = this.servicesPerformed.map(s => s.id === updated.id ? this.mapServiceFromBackend(updated) : s);
+        this.updateFilteredServices();
+        this.servicesSuccess = `Prestazione #${this.selectedService!.id} aggiornata.`;
+        this.closeServiceEditModal();
+        this.isLoading = false;
+      },
+      error: () => {
+        this.servicesError = `Impossibile aggiornare la prestazione #${this.selectedService!.id}.`;
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // Elimina prestazione
+  deleteService(service: ServicePerformedItem): void {
+    if (!confirm(`Sei sicuro di voler eliminare la prestazione #${service.id}?`)) return;
+    this.isLoading = true;
+    this.servicesError = '';
+    this.api.request<void>('DELETE', `/api/admin/services/${service.id}`).subscribe({
+      next: () => {
+        this.servicesPerformed = this.servicesPerformed.filter(s => s.id !== service.id);
+        this.selectedServiceIds.delete(service.id);
+        this.updateFilteredServices();
+        this.servicesSuccess = `Prestazione #${service.id} eliminata.`;
+        this.isLoading = false;
+        this.loadServicesPerformed();
+      },
+      error: () => {
+        this.servicesError = `Impossibile eliminare la prestazione #${service.id}.`;
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // Invia sollecito singolo
+  sendServiceReminder(service: ServicePerformedItem): void {
+    if (service.status !== 'PENDING') return;
+    this.isLoading = true;
+    this.servicesError = '';
+    this.api.request<ServicePerformedItem>('POST', `/api/admin/services/${service.id}/reminder`).subscribe({
+      next: (updated) => {
+        this.servicesPerformed = this.servicesPerformed.map(s => s.id === updated.id ? this.mapServiceFromBackend(updated) : s);
+        this.updateFilteredServices();
+        this.servicesSuccess = `Sollecito inviato per prestazione #${service.id}.`;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.servicesError = `Impossibile inviare sollecito per la prestazione #${service.id}. Verifica che l'email del paziente sia presente.`;
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // Invia solleciti multipli
+  sendBulkServiceReminders(): void {
+    if (this.selectedServiceIds.size === 0) return;
+    this.isLoading = true;
+    this.servicesError = '';
+    const ids = Array.from(this.selectedServiceIds);
+    this.api.request<void>('POST', '/api/admin/services/bulk-reminders', ids).subscribe({
+      next: () => {
+        this.servicesSuccess = `Solleciti inviati a ${ids.length} pazienti.`;
+        this.selectedServiceIds.clear();
+        this.isLoading = false;
+        this.loadServicesPerformed();
+      },
+      error: () => {
+        this.servicesError = 'Impossibile inviare i solleciti.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  getServiceTypeLabel(type: string): string {
+    switch (type) {
+      case 'MEDICAL_VISIT': return 'Visita medica';
+      case 'HOSPITALIZATION': return 'Ricovero';
+      default: return type;
+    }
+  }
+
+  getServiceStatusLabel(status: string): string {
+    switch (status) {
+      case 'PENDING': return 'In attesa';
+      case 'PAID': return 'Pagato';
+      case 'FREE': return 'Gratuito';
+      case 'CANCELLED': return 'Annullato';
+      default: return status;
+    }
+  }
+
+  getServiceDaysOverdue(service: ServicePerformedItem): number {
+    if (!service.performedAt) return 0;
+    const performedDate = new Date(service.performedAt);
+    const today = new Date();
+    const diffTime = today.getTime() - performedDate.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  // ========== FINE GESTIONE PRESTAZIONI ==========
 
   submitPayment(): void {
     if (!this.paymentForm.paymentId) {
@@ -2014,15 +2321,43 @@ export class ResourcePageState {
     );
   }
 
-  // Handler cambio struttura: reset reparto e medico
+  // Handler cambio struttura: reset reparto, medico e paziente
   onAdmissionFacilityChange(): void {
     this.admissionForm.departmentCode = '';
     this.admissionForm.attendingDoctorId = null;
+    this.admissionForm.patientId = null;
+    this.filteredAdmissionPatients = [];
   }
 
-  // Handler cambio reparto: reset medico
+  // Handler cambio reparto: reset medico e paziente
   onAdmissionDepartmentChange(): void {
     this.admissionForm.attendingDoctorId = null;
+    this.admissionForm.patientId = null;
+    this.filteredAdmissionPatients = [];
+  }
+
+  // Handler cambio medico: carica pazienti associati al medico (con consenso)
+  onAdmissionDoctorChange(): void {
+    this.admissionForm.patientId = null;
+    this.filteredAdmissionPatients = [];
+
+    if (!this.admissionForm.attendingDoctorId) {
+      return;
+    }
+
+    // Carica i pazienti associati al medico selezionato
+    this.api.get<PatientItem[] | PagedResponse<PatientItem>>(
+      `/api/admin/patients`,
+      { doctorId: this.admissionForm.attendingDoctorId.toString(), size: '100' }
+    ).subscribe({
+      next: (res) => {
+        const list = Array.isArray(res) ? res : (res as PagedResponse<PatientItem>).content || [];
+        this.filteredAdmissionPatients = list;
+      },
+      error: () => {
+        this.filteredAdmissionPatients = [];
+      }
+    });
   }
 
   submitAdmission(): void {
@@ -2077,6 +2412,7 @@ export class ResourcePageState {
           notes: '',
           attendingDoctorId: null
         };
+        this.filteredAdmissionPatients = [];
         if (this.showAdminAdmissionModal) {
           this.closeAdminAdmissionModal();
         }
@@ -2179,11 +2515,34 @@ export class ResourcePageState {
 
   onTelevisitFacilityChange(): void {
     this.televisitForm.department = '';
-    this.televisitForm.doctorSubject = '';
+    this.televisitForm.doctorId = null;
+    this.televisitForm.patientId = null;
+    this.televisitPatientsFiltered = [];
   }
 
   onTelevisitDepartmentChange(): void {
-    this.televisitForm.doctorSubject = '';
+    this.televisitForm.doctorId = null;
+    this.televisitForm.patientId = null;
+    this.televisitPatientsFiltered = [];
+  }
+
+  onTelevisitDoctorChange(): void {
+    this.televisitForm.patientId = null;
+    this.televisitPatientsFiltered = [];
+
+    if (!this.televisitForm.doctorId) {
+      return;
+    }
+
+    // Carica i pazienti che hanno dato consenso TELEVISIT a questo medico
+    this.api.request<number[]>('GET', `/api/consents/patients-with-televisit-consent?doctorId=${this.televisitForm.doctorId}`).subscribe({
+      next: (patientIds) => {
+        this.televisitPatientsFiltered = this.patients.filter(p => patientIds.includes(p.id));
+      },
+      error: () => {
+        this.televisitPatientsFiltered = [];
+      }
+    });
   }
 
   openAdminAdmissionModal(): void {
@@ -2782,10 +3141,6 @@ export class ResourcePageState {
 
   openTelevisitModal(): void {
     this.televisitError = '';
-    // Se medico, precompila il doctorSubject con il nome del medico corrente
-    if (this.isDoctor && this.currentDoctorName) {
-      this.televisitForm.doctorSubject = this.currentDoctorName;
-    }
     this.showTelevisitModal = true;
   }
 
@@ -3091,12 +3446,12 @@ export class ResourcePageState {
     this.televisitError = '';
 
     // Validazione campi richiesti dal backend TelevisitCreateDto
-    if (!this.televisitForm.doctorSubject?.trim()) {
+    if (!this.televisitForm.doctorId) {
       this.televisitError = 'Seleziona un medico.';
       this.isLoading = false;
       return;
     }
-    if (!this.televisitForm.patientSubject?.trim()) {
+    if (!this.televisitForm.patientId) {
       this.televisitError = 'Seleziona un paziente.';
       this.isLoading = false;
       return;
@@ -3112,10 +3467,20 @@ export class ResourcePageState {
       return;
     }
 
+    // Converti ID in nomi per il backend (TelevisitCreateDto usa subject come nome)
+    const doctor = this.doctors.find(d => d.id === this.televisitForm.doctorId);
+    const patient = this.televisitPatientsFiltered.find(p => p.id === this.televisitForm.patientId);
+
+    if (!doctor || !patient) {
+      this.televisitError = 'Medico o paziente non trovato.';
+      this.isLoading = false;
+      return;
+    }
+
     // Payload allineato a TelevisitCreateDto backend
     const payload = {
-      doctorSubject: this.televisitForm.doctorSubject,
-      patientSubject: this.televisitForm.patientSubject,
+      doctorSubject: `${doctor.firstName} ${doctor.lastName}`,
+      patientSubject: `${patient.firstName} ${patient.lastName}`,
       department: this.televisitForm.department,
       scheduledAt: new Date(this.televisitForm.scheduledAt).toISOString()
     };
@@ -3131,12 +3496,13 @@ export class ResourcePageState {
         this.televisits = [...this.televisits, mappedTelevisit];
         // Reset form
         this.televisitForm = {
-          doctorSubject: '',
-          patientSubject: '',
+          doctorId: null,
+          patientId: null,
           facilityCode: '',
           department: '',
           scheduledAt: ''
         };
+        this.televisitPatientsFiltered = [];
         if (this.showAdminTelevisitModal) {
           this.closeAdminTelevisitModal();
         } else {
@@ -3556,147 +3922,26 @@ export class ResourcePageState {
   }
 
   loadAudit(): void {
-    this.auditSearchPerformed = false;
     this.auditDetailedEvents = [];
     this.auditFilteredEvents = [];
-    this.auditConsents = [];
-    this.auditReportSummary = null;
+    this.auditSearchText = '';
     this.auditSelectedEvent = null;
-    this.auditPatientFound = null;
-    this.auditSubjectFound = null;
     this.auditError = '';
-    const today = new Date();
-    const ninetyDaysAgo = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
-    this.auditSearchCriteria.dateTo = today.toISOString().split('T')[0];
-    this.auditSearchCriteria.dateFrom = ninetyDaysAgo.toISOString().split('T')[0];
-    this.auditSearchCriteria.subjectType = 'PATIENT';
-    this.auditSearchCriteria.subjectIdentifier = '';
-  }
-
-  get auditSubjectLabel(): string {
-    switch (this.auditSearchCriteria.subjectType) {
-      case 'PATIENT': return 'Codice Fiscale Paziente';
-      case 'DOCTOR': return 'Email Medico';
-      case 'ADMIN': return 'Username Amministratore';
-      default: return 'Identificativo';
-    }
-  }
-
-  get auditSubjectPlaceholder(): string {
-    switch (this.auditSearchCriteria.subjectType) {
-      case 'PATIENT': return 'Es: SPSGPP65M15H501X';
-      case 'DOCTOR': return 'Es: marco.bianchi@sanitech.it';
-      case 'ADMIN': return 'Es: admin.rossi';
-      default: return 'Inserisci identificativo';
-    }
-  }
-
-  get auditSubjectFoundTitle(): string {
-    if (!this.auditSubjectFound) return 'Soggetto Identificato';
-    switch (this.auditSubjectFound.type) {
-      case 'PATIENT': return 'Paziente Identificato';
-      case 'DOCTOR': return 'Medico Identificato';
-      case 'ADMIN': return 'Amministratore Identificato';
-      default: return 'Soggetto Identificato';
-    }
-  }
-
-  searchAuditEvents(): void {
-    if (!this.auditSearchCriteria.subjectIdentifier.trim()) {
-      this.auditError = `Inserisci l'identificativo per avviare la ricerca.`;
-      return;
-    }
-    this.isLoading = true;
-    this.auditError = '';
-    this.auditSearchPerformed = false;
-
-    const identifier = this.auditSearchCriteria.subjectType === 'DOCTOR'
-      ? this.auditSearchCriteria.subjectIdentifier.trim().toLowerCase()
-      : this.auditSearchCriteria.subjectIdentifier.toUpperCase().trim();
-    const subjectType = this.auditSearchCriteria.subjectType;
-
-    // Step 1: Cerca il soggetto nel directory
-    this.lookupSubject(subjectType, identifier).then((subject) => {
-      if (!subject) {
-        this.auditError = `Nessun ${this.getSubjectTypeLabel(subjectType).toLowerCase()} trovato con l'identificativo specificato.`;
-        this.auditSubjectFound = null;
-        this.isLoading = false;
-        return;
-      }
-      this.auditSubjectFound = subject;
-
-      // Step 2: Costruisci parametri per API audit
-      const params: Record<string, string> = { size: '500' };
-      params['actorId'] = identifier;
-      if (this.auditSearchCriteria.dateFrom) {
-        params['from'] = new Date(this.auditSearchCriteria.dateFrom).toISOString();
-      }
-      if (this.auditSearchCriteria.dateTo) {
-        const toDate = new Date(this.auditSearchCriteria.dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        params['to'] = toDate.toISOString();
-      }
-
-      // Step 3: Chiama API audit
-      this.api.get<SpringPage<AuditEventResponse>>('/api/audit/events', params).subscribe({
-        next: (response) => {
-          this.auditDetailedEvents = this.mapAuditEventsToDetail(response.content, subject);
-          if (subjectType === 'PATIENT') {
-            this.loadConsentsForPatient(subject.id);
-          } else {
-            this.auditConsents = [];
-          }
-          this.applyAuditFilters();
-          this.generateAuditSummary();
-          this.auditSearchPerformed = true;
-          this.isLoading = false;
-        },
-        error: (err) => {
-          if (err.status === 403) {
-            this.auditError = 'Non hai i permessi per accedere ai dati di audit.';
-          } else {
-            this.auditError = 'Errore durante la ricerca degli eventi audit.';
-          }
-          this.isLoading = false;
-        }
-      });
-    }).catch(() => {
-      this.auditError = 'Errore durante la ricerca del soggetto.';
-      this.isLoading = false;
-    });
+    // Carica automaticamente tutti gli eventi
+    this.loadAllAuditEvents();
   }
 
   /**
-   * Carica tutti gli eventi di audit senza filtro soggetto.
-   * Utile per amministratori che vogliono vedere tutta l'attivita' del sistema.
+   * Carica tutti gli eventi di audit.
    */
   loadAllAuditEvents(): void {
     this.isLoading = true;
     this.auditError = '';
-    this.auditSearchPerformed = false;
-    this.auditSubjectFound = null;
 
-    // Costruisci parametri per API audit (solo filtri temporali se presenti)
-    const params: Record<string, string> = { size: '500' };
-    if (this.auditSearchCriteria.dateFrom) {
-      params['from'] = new Date(this.auditSearchCriteria.dateFrom).toISOString();
-    }
-    if (this.auditSearchCriteria.dateTo) {
-      const toDate = new Date(this.auditSearchCriteria.dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      params['to'] = toDate.toISOString();
-    }
-
-    // Chiama API audit senza filtro actorId
-    this.api.get<SpringPage<AuditEventResponse>>('/api/audit/events', params).subscribe({
+    this.api.get<SpringPage<AuditEventResponse>>('/api/audit/events', { size: '500' }).subscribe({
       next: (response) => {
-        // Mappiamo gli eventi senza un soggetto specifico
-        const genericSubject: AuditSubjectFound = { id: 'ALL', name: 'Tutti gli eventi', identifier: '-', identifierLabel: '-', type: 'ADMIN' };
-        this.auditDetailedEvents = this.mapAuditEventsToDetail(response.content, genericSubject);
-        this.auditConsents = [];
-        this.applyAuditFilters();
-        this.generateAuditSummaryAll();
-        this.auditSearchPerformed = true;
+        this.auditDetailedEvents = this.mapAuditEventsToDetailSimple(response.content);
+        this.filterAuditByText();
         this.isLoading = false;
       },
       error: (err) => {
@@ -3710,84 +3955,49 @@ export class ResourcePageState {
     });
   }
 
-  private generateAuditSummaryAll(): void {
-    const events = this.auditFilteredEvents;
-    const uniqueActors = new Set(events.map(e => e.actorId));
-    this.auditReportSummary = {
-      totalEvents: events.length,
-      consentChanges: events.filter(e => e.eventType === 'CONSENT_GRANTED' || e.eventType === 'CONSENT_REVOKED').length,
-      documentAccesses: events.filter(e => e.eventType === 'DOCUMENT_ACCESS').length,
-      prescriptionViews: events.filter(e => e.eventType === 'PRESCRIPTION_VIEW').length,
-      appointmentEvents: events.filter(e => e.eventType === 'APPOINTMENT_BOOKED' || e.eventType === 'APPOINTMENT_CANCELLED').length,
-      deniedAccesses: events.filter(e => e.outcome === 'DENIED').length,
-      uniqueActors: uniqueActors.size,
-      dateRange: { from: this.auditSearchCriteria.dateFrom || events[events.length - 1]?.occurredAt || '', to: this.auditSearchCriteria.dateTo || events[0]?.occurredAt || '' },
-      patientInfo: { id: 'ALL', name: 'Tutti gli eventi di sistema', fiscalCode: '-' },
-      generatedAt: new Date().toISOString(),
-      integrityHash: this.generateIntegrityHash(events)
-    };
-  }
-
-  private generateIntegrityHash(events: AuditEventDetail[]): string {
-    const data = events.map(e => `${e.id}:${e.occurredAt}:${e.action}`).join('|');
-    let hash = 0;
-    for (let i = 0; i < data.length; i++) {
-      const char = data.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
+  /**
+   * Filtra gli eventi audit in base al testo di ricerca full-text.
+   */
+  filterAuditByText(): void {
+    if (!this.auditSearchText.trim()) {
+      this.auditFilteredEvents = [...this.auditDetailedEvents];
+      return;
     }
-    return Math.abs(hash).toString(16).padStart(8, '0').toUpperCase();
+    const searchLower = this.auditSearchText.toLowerCase();
+    this.auditFilteredEvents = this.auditDetailedEvents.filter(e =>
+      e.action.toLowerCase().includes(searchLower) ||
+      e.actorId.toLowerCase().includes(searchLower) ||
+      e.actorName.toLowerCase().includes(searchLower) ||
+      (e.actorType?.toLowerCase().includes(searchLower)) ||
+      (e.resourceType?.toLowerCase().includes(searchLower)) ||
+      (e.resourceId?.toLowerCase().includes(searchLower)) ||
+      e.outcome.toLowerCase().includes(searchLower) ||
+      (e.serviceName?.toLowerCase().includes(searchLower))
+    );
   }
 
-  private async lookupSubject(type: 'PATIENT' | 'DOCTOR' | 'ADMIN', identifier: string): Promise<AuditSubjectFound | null> {
-    try {
-      if (type === 'PATIENT') {
-        const response = await this.api.get<SpringPage<PatientDirectoryDto>>('/api/admin/patients', { q: identifier, size: '1' }).toPromise();
-        if (response && response.content && response.content.length > 0) {
-          const patient = response.content[0];
-          return { id: String(patient.id), name: `${patient.firstName} ${patient.lastName}`, identifier: patient.fiscalCode || identifier, identifierLabel: 'Codice Fiscale', type: 'PATIENT' };
-        }
-      } else if (type === 'DOCTOR') {
-        // I medici non hanno codice fiscale, cerchiamo per email
-        const response = await this.api.get<SpringPage<DoctorDirectoryDto>>('/api/admin/doctors', { q: identifier, size: '1' }).toPromise();
-        if (response && response.content && response.content.length > 0) {
-          const doctor = response.content[0];
-          return { id: String(doctor.id), name: `Dr. ${doctor.firstName} ${doctor.lastName}`, identifier: doctor.email || identifier, identifierLabel: 'Email', role: doctor.specialization || 'Medico', type: 'DOCTOR' };
-        }
-      } else if (type === 'ADMIN' && identifier.trim().length > 0) {
-        // Gli amministratori non hanno codice fiscale, usiamo lo username
-        return { id: 'ADMIN-' + identifier, name: 'Amministratore ' + identifier, identifier: identifier, identifierLabel: 'Username', role: 'Amministratore Sistema', type: 'ADMIN' };
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  private mapAuditEventsToDetail(events: AuditEventResponse[], subject: AuditSubjectFound): AuditEventDetail[] {
+  private mapAuditEventsToDetailSimple(events: AuditEventResponse[]): AuditEventDetail[] {
     return events.map((event) => ({
       id: event.id,
       eventType: this.mapActionToEventType(event.action),
       action: event.action,
-      actorType: (event.actorType as 'DOCTOR' | 'PATIENT' | 'ADMIN' | 'SYSTEM') || 'SYSTEM',
-      actorId: event.actorId,
-      actorName: event.actorId === subject.identifier ? subject.name : (event.actorId || 'Sconosciuto'),
-      actorRole: event.actorType === 'DOCTOR' ? 'Medico' : (event.actorType === 'ADMIN' ? 'Amministratore' : undefined),
+      actorType: (event.actorType as 'USER' | 'SERVICE' | 'SYSTEM' | 'ANONYMOUS') || 'SYSTEM',
+      actorId: event.actorId || 'system',
+      actorName: event.actorId || 'system',
       subjectType: this.mapResourceToSubjectType(event.resourceType),
       subjectId: event.resourceId || `EVT-${event.id}`,
-      subjectPatientId: subject.type === 'PATIENT' ? subject.id : undefined,
-      subjectPatientName: subject.type === 'PATIENT' ? subject.name : undefined,
-      subjectPatientFiscalCode: subject.type === 'PATIENT' ? subject.identifier : undefined,
       resourceType: event.resourceType,
       resourceId: event.resourceId,
-      resourceName: this.resolveResourceName(event),
+      resourceName: event.resourceType || '-',
       serviceName: event.source || 'unknown',
       ipAddress: event.ip,
-      outcome: (event.outcome as 'SUCCESS' | 'DENIED' | 'ERROR') || 'SUCCESS',
+      outcome: (event.outcome as 'SUCCESS' | 'DENIED' | 'FAILURE') || 'SUCCESS',
       occurredAt: event.occurredAt,
       integrityHash: event.traceId || this.generateHash()
     }));
   }
+
+  private generateHash(): string { const chars = 'abcdef0123456789'; let hash = ''; for (let i = 0; i < 64; i++) { hash += chars.charAt(Math.floor(Math.random() * chars.length)); } return hash; }
 
   private mapActionToEventType(action: string): AuditEventDetail['eventType'] {
     const a = action.toLowerCase();
@@ -3812,101 +4022,11 @@ export class ResourcePageState {
     return 'DOCUMENT';
   }
 
-  private resolveResourceName(event: AuditEventResponse): string {
-    if (event.details && typeof event.details === 'object') {
-      const d = event.details as Record<string, unknown>;
-      if (d['resourceName']) return String(d['resourceName']);
-      if (d['documentName']) return String(d['documentName']);
-    }
-    return event.resourceType || 'Risorsa';
-  }
-
-  private loadConsentsForPatient(patientId: string): void {
-    this.api.get<SpringPage<ConsentApiDto>>('/api/consents', { patientId, status: 'ACTIVE' }).subscribe({
-      next: (response) => {
-        this.auditConsents = (response.content || []).map(c => ({
-          id: c.id, patientId: String(c.patientId), patientFiscalCode: this.auditSubjectFound?.identifier || '',
-          doctorId: String(c.doctorId), doctorName: c.doctorName || `Medico ${c.doctorId}`,
-          scope: (c.scope as ConsentSnapshot['scope']) || 'DOCS', status: (c.status as ConsentSnapshot['status']) || 'ACTIVE',
-          grantedAt: c.grantedAt || new Date().toISOString(), revokedAt: c.revokedAt, expiresAt: c.expiresAt
-        }));
-      },
-      error: () => { this.auditConsents = []; }
-    });
-  }
-
-  private getSubjectTypeLabel(type: string): string {
-    switch (type) {
-      case 'PATIENT': return 'Paziente';
-      case 'DOCTOR': return 'Medico';
-      case 'ADMIN': return 'Amministratore';
-      default: return 'Soggetto';
-    }
-  }
-
-  private generateHash(): string { const chars = 'abcdef0123456789'; let hash = ''; for (let i = 0; i < 64; i++) { hash += chars.charAt(Math.floor(Math.random() * chars.length)); } return hash; }
-
-  applyAuditFilters(): void {
-    let filtered = [...this.auditDetailedEvents];
-    if (this.auditSearchCriteria.dateFrom) { const fromDate = new Date(this.auditSearchCriteria.dateFrom); filtered = filtered.filter(e => new Date(e.occurredAt) >= fromDate); }
-    if (this.auditSearchCriteria.dateTo) { const toDate = new Date(this.auditSearchCriteria.dateTo); toDate.setHours(23, 59, 59, 999); filtered = filtered.filter(e => new Date(e.occurredAt) <= toDate); }
-    if (this.auditSearchCriteria.eventTypes.length > 0) { filtered = filtered.filter(e => this.auditSearchCriteria.eventTypes.includes(e.eventType)); }
-    if (this.auditSearchCriteria.actorTypes.length > 0) { filtered = filtered.filter(e => this.auditSearchCriteria.actorTypes.includes(e.actorType)); }
-    if (this.auditSearchCriteria.outcomes.length > 0) { filtered = filtered.filter(e => this.auditSearchCriteria.outcomes.includes(e.outcome)); }
-    this.auditFilteredEvents = filtered;
-    this.generateAuditSummary();
-  }
-
-  private generateAuditSummary(): void {
-    const events = this.auditFilteredEvents;
-    const uniqueActors = new Set(events.map(e => e.actorId));
-    const subjectInfo = this.auditSubjectFound ? { id: this.auditSubjectFound.id, name: this.auditSubjectFound.name, fiscalCode: this.auditSubjectFound.identifier } : { id: '', name: '', fiscalCode: '' };
-    this.auditReportSummary = { totalEvents: events.length, documentAccesses: events.filter(e => e.eventType === 'DOCUMENT_ACCESS').length, consentChanges: events.filter(e => e.eventType === 'CONSENT_GRANTED' || e.eventType === 'CONSENT_REVOKED').length, prescriptionViews: events.filter(e => e.eventType === 'PRESCRIPTION_VIEW').length, appointmentEvents: events.filter(e => e.eventType === 'APPOINTMENT_BOOKED' || e.eventType === 'APPOINTMENT_CANCELLED').length, deniedAccesses: events.filter(e => e.outcome === 'DENIED').length, uniqueActors: uniqueActors.size, dateRange: { from: this.auditSearchCriteria.dateFrom, to: this.auditSearchCriteria.dateTo }, patientInfo: subjectInfo, generatedAt: new Date().toISOString(), integrityHash: this.generateHash() };
-  }
-
   selectAuditEvent(event: AuditEventDetail): void { this.auditSelectedEvent = event; }
   closeAuditEventDetail(): void { this.auditSelectedEvent = null; }
-  toggleEventTypeFilter(eventType: string): void { const idx = this.auditSearchCriteria.eventTypes.indexOf(eventType); if (idx >= 0) { this.auditSearchCriteria.eventTypes.splice(idx, 1); } else { this.auditSearchCriteria.eventTypes.push(eventType); } if (this.auditSearchPerformed) { this.applyAuditFilters(); } }
-  toggleActorTypeFilter(actorType: string): void { const idx = this.auditSearchCriteria.actorTypes.indexOf(actorType); if (idx >= 0) { this.auditSearchCriteria.actorTypes.splice(idx, 1); } else { this.auditSearchCriteria.actorTypes.push(actorType); } if (this.auditSearchPerformed) { this.applyAuditFilters(); } }
-  toggleOutcomeFilter(outcome: string): void { const idx = this.auditSearchCriteria.outcomes.indexOf(outcome); if (idx >= 0) { this.auditSearchCriteria.outcomes.splice(idx, 1); } else { this.auditSearchCriteria.outcomes.push(outcome); } if (this.auditSearchPerformed) { this.applyAuditFilters(); } }
-  isEventTypeSelected(eventType: string): boolean { return this.auditSearchCriteria.eventTypes.includes(eventType); }
-  isActorTypeSelected(actorType: string): boolean { return this.auditSearchCriteria.actorTypes.includes(actorType); }
-  isOutcomeSelected(outcome: string): boolean { return this.auditSearchCriteria.outcomes.includes(outcome); }
-  getEventTypeLabel(eventType: string): string { return this.auditEventTypeOptions.find(o => o.value === eventType)?.label ?? eventType; }
-  getActorTypeLabel(actorType: string): string { return this.auditActorTypeOptions.find(o => o.value === actorType)?.label ?? actorType; }
   getOutcomeLabel(outcome: string): string { return this.auditOutcomeOptions.find(o => o.value === outcome)?.label ?? outcome; }
-  getOutcomeBadgeClass(outcome: string): string { switch (outcome) { case 'SUCCESS': return 'bg-success'; case 'DENIED': return 'bg-danger'; case 'ERROR': return 'bg-warning text-dark'; default: return 'bg-secondary'; } }
-  getEventTypeBadgeClass(eventType: string): string { switch (eventType) { case 'CONSENT_GRANTED': return 'bg-success'; case 'CONSENT_REVOKED': return 'bg-warning text-dark'; case 'DOCUMENT_ACCESS': return 'bg-primary'; case 'PRESCRIPTION_VIEW': return 'bg-info'; case 'APPOINTMENT_BOOKED': return 'bg-info'; default: return 'bg-secondary'; } }
+  getOutcomeBadgeClass(outcome: string): string { switch (outcome) { case 'SUCCESS': return 'bg-success'; case 'DENIED': return 'bg-danger'; case 'FAILURE': return 'bg-warning text-dark'; default: return 'bg-secondary'; } }
   formatAuditDate(isoDate: string): string { return new Date(isoDate).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
-  formatAuditDateShort(isoDate: string): string { return new Date(isoDate).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
-  getConsentForEvent(event: AuditEventDetail): ConsentSnapshot | null { if (!event.actorId || event.actorType !== 'DOCTOR') return null; return this.auditConsents.find(c => c.doctorId === event.actorId && c.status === 'ACTIVE') || null; }
-
-  exportAuditReport(): void {
-    if (!this.auditReportSummary) return;
-    this.auditExporting = true;
-    setTimeout(() => {
-      const summary = this.auditReportSummary!;
-      const subjectLabel = this.auditSubjectFound?.type === 'PATIENT' ? 'PAZIENTE' : (this.auditSubjectFound?.type === 'DOCTOR' ? 'MEDICO' : 'AMMINISTRATORE');
-      let content = `REPORT AUDIT & COMPLIANCE\n====================================\n${subjectLabel}: ${summary.patientInfo.name} (${summary.patientInfo.fiscalCode})\nPERIODO: ${this.formatAuditDateShort(summary.dateRange.from)} - ${this.formatAuditDateShort(summary.dateRange.to)}\n\nRIEPILOGO:\n- Totale eventi: ${summary.totalEvents}\n- Accessi documenti: ${summary.documentAccesses}\n- Modifiche consensi: ${summary.consentChanges}\n- Accessi negati: ${summary.deniedAccesses}\n`;
-      if (this.auditConsents.length > 0) {
-        content += `\nCONSENSI ATTIVI:\n`;
-        this.auditConsents.forEach(c => { content += `- ${c.doctorName} (${c.scope}) dal ${this.formatAuditDateShort(c.grantedAt)}\n`; });
-      }
-      content += `\nDETTAGLIO EVENTI:\n`;
-      this.auditFilteredEvents.forEach(e => { content += `[${this.formatAuditDate(e.occurredAt)}] ${e.action} - ${e.actorName} - ${e.outcome}\n`; });
-      content += `\nHash integrità: ${summary.integrityHash}\nGenerato: ${this.formatAuditDate(summary.generatedAt)}\n`;
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `audit_report_${this.auditSubjectFound?.identifier}_${new Date().toISOString().split('T')[0]}.txt`;
-      link.click();
-      window.URL.revokeObjectURL(url);
-      this.auditExporting = false;
-    }, 1500);
-  }
-
-  clearAuditSearch(): void { this.auditSearchCriteria = { subjectType: 'PATIENT', subjectIdentifier: '', fiscalCode: '', dateFrom: '', dateTo: '', eventTypes: [], actorTypes: [], outcomes: [] }; this.auditDetailedEvents = []; this.auditFilteredEvents = []; this.auditConsents = []; this.auditReportSummary = null; this.auditSelectedEvent = null; this.auditSearchPerformed = false; this.auditPatientFound = null; this.auditSubjectFound = null; this.auditError = ''; this.loadAudit(); }
 
   loadAdminTelevisit(): void {
     this.televisitError = '';

@@ -1,5 +1,6 @@
 package it.sanitech.directory.web;
 
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.directory.integrations.captcha.CaptchaService;
 import it.sanitech.directory.services.PatientService;
 import it.sanitech.directory.services.dto.PatientDto;
@@ -28,6 +29,7 @@ public class PublicPatientController {
     private final CaptchaService captchaService;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Auditable(aggregateType = "PATIENT", eventType = "PATIENT_REGISTERED", aggregateIdSpel = "id")
     public PatientDto register(@Valid @RequestBody PublicPatientRegistrationDto request) {
         // Verifica CAPTCHA prima di procedere con la registrazione
         captchaService.verify(request.captchaToken());

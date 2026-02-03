@@ -1,6 +1,7 @@
 package it.sanitech.televisit.web;
 
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import it.sanitech.commons.audit.Auditable;
 import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.televisit.repositories.entities.TelevisitStatus;
 import it.sanitech.televisit.services.TelevisitService;
@@ -52,24 +53,28 @@ public class TelevisitController {
     @PostMapping("/{id}/token/doctor")
     @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
     @RateLimiter(name = "televisitApi")
+    @Auditable(aggregateType = "TELEVISIT", eventType = "TELEVISIT_DOCTOR_TOKEN_GENERATED", aggregateIdParam = "id")
     public LiveKitTokenDto doctorToken(@PathVariable Long id, Authentication auth) {
         return service.issueDoctorToken(id, auth);
     }
 
     @PostMapping("/{id}/start")
     @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
+    @Auditable(aggregateType = "TELEVISIT", eventType = "TELEVISIT_STARTED", aggregateIdParam = "id")
     public TelevisitDto start(@PathVariable Long id, Authentication auth) {
         return service.start(id, auth);
     }
 
     @PostMapping("/{id}/end")
     @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
+    @Auditable(aggregateType = "TELEVISIT", eventType = "TELEVISIT_ENDED", aggregateIdParam = "id")
     public TelevisitDto end(@PathVariable Long id, Authentication auth) {
         return service.end(id, auth);
     }
 
     @PostMapping("/{id}/cancel")
     @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
+    @Auditable(aggregateType = "TELEVISIT", eventType = "TELEVISIT_CANCELLED", aggregateIdParam = "id")
     public TelevisitDto cancel(@PathVariable Long id, Authentication auth) {
         return service.cancel(id, auth);
     }

@@ -37,7 +37,7 @@ public class PatientController {
             Authentication auth
     ) {
         return SecurityUtils.isAdmin(auth)
-                ? patientService.searchAdmin(q, department, null, page, size, sort)
+                ? patientService.searchAdmin(q, department, null, null, page, size, sort)
                 : patientService.searchForDoctor(q, page, size, sort, auth);
     }
 
@@ -46,5 +46,14 @@ public class PatientController {
         return SecurityUtils.isAdmin(auth)
                 ? patientService.get(id)
                 : patientService.getForDoctor(id, auth);
+    }
+
+    /**
+     * Lookup interno per nome e cognome (case-insensitive).
+     * Utilizzato dal servizio notifiche per recuperare email paziente nelle televisite.
+     */
+    @GetMapping(value = "/internal/by-name", produces = MediaType.APPLICATION_JSON_VALUE)
+    public PatientDto findByName(@RequestParam String firstName, @RequestParam String lastName) {
+        return patientService.findByName(firstName, lastName).orElse(null);
     }
 }

@@ -65,13 +65,28 @@ public class DocumentService {
 
         JwtAuthenticationToken jwt = AuthUtils.requireJwt(auth);
 
-        if (!SecurityUtils.isAdmin(auth) && !SecurityUtils.isDoctor(auth)) {
-            throw new AccessDeniedException("Solo ADMIN o DOCTOR possono caricare documenti.");
+        // Risoluzione patientId in base al ruolo
+        Long effectivePatientId;
+        if (SecurityUtils.isPatient(auth)) {
+            // PATIENT: carica solo per sé stesso, ID estratto dal JWT claim "pid"
+            effectivePatientId = AuthUtils.patientId(auth)
+                    .orElseThrow(() -> new AccessDeniedException("Claim pid mancante per utenza PATIENT."));
+        } else if (SecurityUtils.isAdmin(auth) || SecurityUtils.isDoctor(auth)) {
+            // ADMIN/DOCTOR: patientId obbligatorio dalla request
+            if (patientId == null || patientId <= 0) {
+                throw new IllegalArgumentException("patientId non valido.");
+            }
+            effectivePatientId = patientId;
+
+            // ABAC: DOCTOR può caricare solo per i propri reparti
+            if (SecurityUtils.isDoctor(auth)) {
+                deptGuard.checkCanManage(departmentCode, auth);
+            }
+        } else {
+            throw new AccessDeniedException("Non autorizzato al caricamento documenti.");
         }
 
-        if (patientId == null || patientId <= 0) {
-            throw new IllegalArgumentException("patientId non valido.");
-        }
+        // Validazioni comuni
         if (departmentCode == null || departmentCode.isBlank()) {
             throw new IllegalArgumentException("departmentCode obbligatorio.");
         }
@@ -80,11 +95,6 @@ public class DocumentService {
         }
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("file obbligatorio.");
-        }
-
-        // ABAC: un DOCTOR può caricare documenti solo per i propri reparti.
-        if (SecurityUtils.isDoctor(auth)) {
-            deptGuard.checkCanManage(departmentCode, auth);
         }
 
         String normalizedDept = departmentCode.trim().toUpperCase();
@@ -103,7 +113,7 @@ public class DocumentService {
 
         String sha256 = sha256Hex(bytes);
 
-        String s3Key = "docs/" + patientId + "/" + UUID.randomUUID();
+        String s3Key = "docs/" + effectivePatientId + "/" + UUID.randomUUID();
 
         // 1) Upload su storage
         try {
@@ -115,7 +125,7 @@ public class DocumentService {
         // 2) Persistenza metadati + outbox (stessa TX)
         try {
             Document saved = documents.save(Document.builder()
-                    .patientId(patientId)
+                    .patientId(effectivePatientId)
                     .uploadedBy(jwt.getName())
                     .departmentCode(normalizedDept)
                     .documentType(normalizedType)

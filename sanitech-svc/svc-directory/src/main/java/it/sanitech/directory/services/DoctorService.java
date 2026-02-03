@@ -90,22 +90,6 @@ public class DoctorService {
 
         Doctor saved = doctorRepository.save(entity);
 
-        eventPublisher.publish(
-                AppConstants.Outbox.AggregateType.DOCTOR,
-                String.valueOf(saved.getId()),
-                AppConstants.Outbox.EventType.DOCTOR_CREATED,
-                Map.of(
-                        "id", saved.getId(),
-                        "firstName", saved.getFirstName(),
-                        "lastName", saved.getLastName(),
-                        "email", saved.getEmail(),
-                        "departmentCode", deptCode,
-                        "facilityCode", department.getFacility().getCode()
-                ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
-                auth
-        );
-
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 saved.getId(),
@@ -153,22 +137,6 @@ public class DoctorService {
 
         Doctor saved = doctorRepository.save(entity);
 
-        eventPublisher.publish(
-                AppConstants.Outbox.AggregateType.DOCTOR,
-                String.valueOf(saved.getId()),
-                AppConstants.Outbox.EventType.DOCTOR_UPDATED,
-                Map.of(
-                        "id", saved.getId(),
-                        "firstName", saved.getFirstName(),
-                        "lastName", saved.getLastName(),
-                        "email", saved.getEmail(),
-                        "departmentCode", saved.getDepartment().getCode(),
-                        "facilityCode", saved.getDepartment().getFacility().getCode()
-                ),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
-                auth
-        );
-
         applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
                 AppConstants.Outbox.AggregateType.DOCTOR,
                 saved.getId(),
@@ -195,15 +163,6 @@ public class DoctorService {
                 entity.getId()
         );
         doctorRepository.delete(entity);
-
-        eventPublisher.publish(
-                AppConstants.Outbox.AggregateType.DOCTOR,
-                String.valueOf(id),
-                AppConstants.Outbox.EventType.DOCTOR_DELETED,
-                Map.of("id", id),
-                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
-                auth
-        );
     }
 
     public DoctorDto disableAccess(Long id, Authentication auth) {
@@ -261,7 +220,7 @@ public class DoctorService {
                 AppConstants.Outbox.EventType.ACTIVATION_EMAIL_REQUESTED,
                 Map.of(
                         "recipientType", AppConstants.Outbox.AggregateType.DOCTOR,
-                        "recipientId", String.valueOf(entity.getId()),
+                        "recipientId", entity.getEmail(),
                         "email", entity.getEmail(),
                         "firstName", entity.getFirstName(),
                         "lastName", entity.getLastName()
@@ -281,7 +240,7 @@ public class DoctorService {
                 eventType,
                 Map.of(
                         "recipientType", AppConstants.Outbox.AggregateType.DOCTOR,
-                        "recipientId", String.valueOf(entity.getId()),
+                        "recipientId", entity.getEmail(),
                         "email", entity.getEmail(),
                         "firstName", entity.getFirstName(),
                         "lastName", entity.getLastName()
@@ -359,5 +318,22 @@ public class DoctorService {
             throw new IllegalArgumentException(errorMessage);
         }
         return normalized;
+    }
+
+    /**
+     * Trova un medico per nome e cognome (case-insensitive).
+     * Utilizzato internamente per il lookup email nelle notifiche televisita.
+     *
+     * @param firstName nome del medico
+     * @param lastName cognome del medico
+     * @return Optional contenente il DTO del medico se trovato
+     */
+    @Transactional(readOnly = true)
+    public Optional<DoctorDto> findByName(String firstName, String lastName) {
+        if (firstName == null || lastName == null) {
+            return Optional.empty();
+        }
+        return doctorRepository.findByFirstNameIgnoreCaseAndLastNameIgnoreCase(firstName.trim(), lastName.trim())
+                .map(doctorMapper::toDto);
     }
 }

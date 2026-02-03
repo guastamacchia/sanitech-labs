@@ -75,6 +75,11 @@ spring:
       properties:
         acks: ${KAFKA_PRODUCER_ACKS:all}
         linger.ms: ${KAFKA_PRODUCER_LINGER_MS:5}
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: true
 
 # =========================
 # Sanitech Commons
@@ -83,6 +88,16 @@ sanitech:
   payments:
     webhook:
       secret: ${SANITECH_PAYMENTS_WEBHOOK_SECRET:change-me}
+    # Importi default prestazioni (in centesimi)
+    service-defaults:
+      medical-visit-amount-cents: ${SERVICE_MEDICAL_VISIT_AMOUNT:10000}  # 100 EUR
+      hospitalization-daily-amount-cents: ${SERVICE_HOSPITALIZATION_DAILY_AMOUNT:2000}  # 20 EUR/giorno
+
+  # Consumer per eventi prestazioni (televisite e ricoveri completati)
+  service-events-consumer:
+    enabled: ${SERVICE_EVENTS_CONSUMER_ENABLED:true}
+    topic: ${SERVICE_EVENTS_TOPIC:audits.events}
+    group-id: ${SERVICE_EVENTS_GROUP_ID:svc-payments-service-events}
 
   outbox:
     publisher:
