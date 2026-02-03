@@ -5,7 +5,8 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build -- --configuration=production
+ARG BUILD_ENV=local
+RUN npm run build -- --configuration=${BUILD_ENV}
 
 FROM nginx:alpine AS runtime
 COPY nginx.conf /etc/nginx/conf.d/default.conf

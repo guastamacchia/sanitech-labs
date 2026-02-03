@@ -16,6 +16,9 @@ public class NotificationsProperties {
 
     private Mail mail = new Mail();
     private Dispatcher dispatcher = new Dispatcher();
+    private ConsumerConfig activationConsumer = new ConsumerConfig();
+    private ConsumerConfig paymentReminderConsumer = new ConsumerConfig();
+    private ConsumerConfig accountStatusConsumer = new ConsumerConfig();
 
     @Getter
     @Setter
@@ -38,5 +41,24 @@ public class NotificationsProperties {
          * Numero massimo di notifiche EMAIL PENDING processate per ciclo.
          */
         private int batchSize = 50;
+    }
+
+    @Getter
+    @Setter
+    public static class ConsumerConfig {
+        /**
+         * Abilita/disabilita il consumer.
+         */
+        private boolean enabled = true;
+
+        /**
+         * Topic Kafka da cui consumare.
+         */
+        private String topic = "notifications.events";
+
+        /**
+         * Group ID Kafka per il consumer.
+         */
+        private String groupId;
     }
 }

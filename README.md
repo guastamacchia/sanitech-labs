@@ -289,8 +289,7 @@ bash .script/services/svc-gateway/circuit-breaker.sh
 | Documento | Descrizione |
 |-----------|-------------|
 | [RUNBOOK.md](RUNBOOK.md) | Procedure operative e troubleshooting |
-| [MANIFEST.md](MANIFEST.md) | Manifest e metadati del repository |
 
 ## Licenza
 
-Proprietario - Tutti i diritti riservati.
+Vedi il file [LICENSE](LICENSE) per i dettagli sulla licenza.

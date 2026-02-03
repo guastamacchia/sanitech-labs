@@ -38,7 +38,7 @@ public class PaymentReminderConsumer {
 
     @KafkaListener(
             topics = "${sanitech.notifications.payment-reminder-consumer.topic:notifications.events}",
-            groupId = "${spring.kafka.consumer.group-id}"
+            groupId = "${sanitech.notifications.payment-reminder-consumer.group-id:svc-notifications-payment-reminder}"
     )
     public void onMessage(ConsumerRecord<String, String> record) {
         try {

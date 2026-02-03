@@ -146,9 +146,15 @@ sanitech:
     activation-consumer:
       enabled: ${ACTIVATION_CONSUMER_ENABLED:true}
       topic: ${NOTIFICATIONS_EVENTS_TOPIC:notifications.events}
+      group-id: ${ACTIVATION_CONSUMER_GROUP_ID:svc-notifications-activation}
     payment-reminder-consumer:
       enabled: ${PAYMENT_REMINDER_CONSUMER_ENABLED:true}
       topic: ${NOTIFICATIONS_EVENTS_TOPIC:notifications.events}
+      group-id: ${PAYMENT_REMINDER_CONSUMER_GROUP_ID:svc-notifications-payment-reminder}
+    account-status-consumer:
+      enabled: ${ACCOUNT_STATUS_CONSUMER_ENABLED:true}
+      topic: ${NOTIFICATIONS_EVENTS_TOPIC:notifications.events}
+      group-id: ${ACCOUNT_STATUS_CONSUMER_GROUP_ID:svc-notifications-account-status}
 
 # =========================
 # Management / Actuator

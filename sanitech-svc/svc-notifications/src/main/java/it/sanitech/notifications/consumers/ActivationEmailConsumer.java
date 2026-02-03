@@ -35,7 +35,7 @@ public class ActivationEmailConsumer {
 
     @KafkaListener(
             topics = "${sanitech.notifications.activation-consumer.topic:notifications.events}",
-            groupId = "${spring.kafka.consumer.group-id}"
+            groupId = "${sanitech.notifications.activation-consumer.group-id:svc-notifications-activation}"
     )
     public void onMessage(ConsumerRecord<String, String> record) {
         try {
