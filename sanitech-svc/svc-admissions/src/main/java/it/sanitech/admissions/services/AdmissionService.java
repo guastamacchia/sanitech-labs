@@ -7,6 +7,7 @@ import it.sanitech.admissions.repositories.DepartmentCapacityRepository;
 import it.sanitech.admissions.repositories.entities.*;
 import it.sanitech.admissions.services.dto.AdmissionDto;
 import it.sanitech.admissions.services.dto.create.AdmissionCreateDto;
+import it.sanitech.admissions.services.dto.update.AdmissionUpdateDto;
 import it.sanitech.admissions.services.mapper.AdmissionMapper;
 import it.sanitech.commons.exception.ConflictException;
 import it.sanitech.commons.exception.NotFoundException;
@@ -37,6 +38,7 @@ public class AdmissionService {
     private static final String AGGREGATE_TYPE = "ADMISSION";
     private static final String EVT_CREATED = "ADMISSION_CREATED";
     private static final String EVT_DISCHARGED = "ADMISSION_DISCHARGED";
+    private static final String EVT_UPDATED = "ADMISSION_UPDATED";
 
     private final AdmissionRepository admissions;
     private final DepartmentCapacityRepository capacityRepository;
@@ -113,6 +115,56 @@ public class AdmissionService {
                         "patientId", saved.getPatientId(),
                         "departmentCode", saved.getDepartmentCode(),
                         "dischargedAt", saved.getDischargedAt().toString()
+                ),
+                Outbox.TOPIC_AUDITS_EVENTS,
+                auth
+        );
+
+        return mapper.toDto(saved);
+    }
+
+    /**
+     * Aggiorna parzialmente un ricovero attivo (referente e/o note).
+     */
+    @Transactional
+    public AdmissionDto update(Long admissionId, AdmissionUpdateDto dto, Authentication auth) {
+        Admission admission = admissions.findById(admissionId)
+                .orElseThrow(() -> NotFoundException.of("Ricovero", admissionId));
+
+        deptGuard.checkCanManage(admission.getDepartmentCode(), auth);
+
+        if (admission.getStatus() != AdmissionStatus.ACTIVE) {
+            throw new ConflictException("Impossibile modificare un ricovero non attivo: stato=" + admission.getStatus());
+        }
+
+        boolean changed = false;
+
+        if (dto.attendingDoctorId() != null) {
+            admission.setAttendingDoctorId(dto.attendingDoctorId());
+            changed = true;
+        }
+
+        if (dto.notes() != null) {
+            admission.setNotes(dto.notes());
+            changed = true;
+        }
+
+        if (!changed) {
+            return mapper.toDto(admission);
+        }
+
+        Admission saved = admissions.save(admission);
+
+        domainEvents.publish(
+                AGGREGATE_TYPE,
+                String.valueOf(saved.getId()),
+                EVT_UPDATED,
+                Map.of(
+                        "admissionId", saved.getId(),
+                        "patientId", saved.getPatientId(),
+                        "departmentCode", saved.getDepartmentCode(),
+                        "attendingDoctorId", saved.getAttendingDoctorId() != null ? saved.getAttendingDoctorId() : "",
+                        "notes", saved.getNotes() != null ? saved.getNotes() : ""
                 ),
                 Outbox.TOPIC_AUDITS_EVENTS,
                 auth

@@ -5,6 +5,7 @@ import it.sanitech.admissions.repositories.entities.AdmissionStatus;
 import it.sanitech.admissions.services.AdmissionService;
 import it.sanitech.admissions.services.dto.AdmissionDto;
 import it.sanitech.admissions.services.dto.create.AdmissionCreateDto;
+import it.sanitech.admissions.services.dto.update.AdmissionUpdateDto;
 import it.sanitech.admissions.utilities.AppConstants;
 import it.sanitech.commons.audit.Auditable;
 import it.sanitech.commons.utilities.SortUtils;
@@ -65,6 +66,16 @@ public class AdmissionController {
         return ResponseEntity
                 .created(URI.create("/api/admissions/" + created.id()))
                 .body(created);
+    }
+
+    /**
+     * Aggiorna parzialmente un ricovero attivo (referente e/o note).
+     */
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+    @Auditable(aggregateType = "ADMISSION", eventType = "ADMISSION_UPDATED", aggregateIdParam = "id")
+    public AdmissionDto update(@PathVariable("id") Long id, @Valid @RequestBody AdmissionUpdateDto body, Authentication auth) {
+        return admissionService.update(id, body, auth);
     }
 
     /**

@@ -264,6 +264,33 @@ public class ConsentService {
                 .toList();
     }
 
+    /**
+     * Restituisce gli ID dei medici che hanno ricevuto consenso attivo dal paziente per lo scope specificato.
+     *
+     * @param patientId ID del paziente
+     * @param scope tipo di consenso richiesto (opzionale, se null ritorna tutti i medici con almeno un consenso attivo)
+     * @return lista di doctor ID con consenso valido
+     */
+    @Transactional(readOnly = true)
+    @Bulkhead(name = "consentsRead")
+    public List<Long> getDoctorIdsWithConsent(Long patientId, ConsentScope scope) {
+        if (scope != null) {
+            return repository.findByPatientIdAndScopeAndStatus(patientId, scope, it.sanitech.consents.repositories.entities.ConsentStatus.GRANTED)
+                    .stream()
+                    .filter(Consent::isCurrentlyGranted)
+                    .map(Consent::getDoctorId)
+                    .distinct()
+                    .toList();
+        }
+        // Se scope e' null, restituisci tutti i medici con almeno un consenso attivo
+        return repository.findByPatientIdOrderByUpdatedAtDesc(patientId)
+                .stream()
+                .filter(Consent::isCurrentlyGranted)
+                .map(Consent::getDoctorId)
+                .distinct()
+                .toList();
+    }
+
     @Transactional
     public void deleteById(Long id, Authentication auth) {
         Consent consent = repository.findById(id)

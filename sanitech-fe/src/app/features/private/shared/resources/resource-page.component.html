@@ -11,16 +11,10 @@
         <h2 class="mb-1 fw-bold">{{ title }}</h2>
         <p class="text-muted mb-0">{{ description }}</p>
       </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary" type="button" (click)="refresh()" [disabled]="isLoading">
-          <i class="bi bi-arrow-clockwise me-1" [class.spin]="isLoading"></i>
-          Aggiorna
-        </button>
-        <button class="btn btn-outline-secondary" type="button" (click)="goToPortalHome()">
-          <i class="bi bi-arrow-left me-1"></i>
-          Torna indietro
-        </button>
-      </div>
+      <button class="btn btn-outline-secondary" type="button" (click)="goToPortalHome()">
+        <i class="bi bi-arrow-left me-1"></i>
+        Torna indietro
+      </button>
     </div>
 
     <ng-template #paginationFooter let-key="key" let-total="total">
@@ -28,7 +22,7 @@
         <div class="d-flex align-items-center gap-2">
           <small class="text-muted">Elementi per pagina</small>
           <select class="form-select form-select-sm w-auto" [(ngModel)]="pageSize" (ngModelChange)="resetPagination()">
-            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+            <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
           </select>
         </div>
         <nav aria-label="Paginazione">
@@ -3387,6 +3381,9 @@
                           <i class="bi bi-x-lg"></i>
                         </button>
                       </div>
+                      <button class="btn btn-outline-primary" (click)="loadAllAuditEvents()" [disabled]="isLoading">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Aggiorna
+                      </button>
                     </div>
                   </div>
                   <div class="alert alert-danger py-2" *ngIf="auditError">{{ auditError }}</div>
@@ -3696,7 +3693,7 @@
 
       <!-- LAYOUT ADMIN RICOVERI -->
       <ng-template #adminAdmissionsLayout>
-        <ng-container *ngIf="mode === 'admin-admissions'; else apiLayout">
+        <ng-container *ngIf="mode === 'admin-admissions'; else adminNotificationsLayout">
           <div class="row g-4">
             <!-- Statistiche ricoveri -->
             <div class="col-12">
@@ -3805,21 +3802,23 @@
                                 class="btn btn-outline-primary btn-sm"
                                 type="button"
                                 title="Modifica referente"
-                                [disabled]="admission.status !== 'ACTIVE'">
+                                [disabled]="admission.status !== 'ACTIVE'"
+                                (click)="openChangeReferentModal(admission)">
                                 👨‍⚕️
                               </button>
                               <button
                                 class="btn btn-outline-success btn-sm"
                                 type="button"
                                 title="Dimetti"
-                                [disabled]="admission.status !== 'ACTIVE'">
+                                [disabled]="admission.status !== 'ACTIVE'"
+                                (click)="openDischargeModal(admission)">
                                 ✓
                               </button>
                               <button
                                 class="btn btn-outline-secondary btn-sm"
                                 type="button"
                                 title="Note"
-                                (click)="openAdmissionNoteModal(admission)">
+                                (click)="openAdmissionEditNoteModal(admission)">
                                 📝
                               </button>
                             </div>
@@ -3958,6 +3957,473 @@
               </div>
             </div>
           </ng-container>
+
+          <!-- Modal Cambia Referente -->
+          <ng-container *ngIf="showChangeReferentModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeChangeReferentModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="changeReferentModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="changeReferentModalTitle">Cambia medico referente</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeChangeReferentModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="mb-3">Paziente: <strong>{{ getPatientLabel(changeReferentTarget?.patientId) }}</strong></p>
+                    <p class="mb-3">Referente attuale: <strong>{{ getDoctorLabel(changeReferentTarget?.attendingDoctorId) }}</strong></p>
+                    <form (ngSubmit)="submitChangeReferent()" #changeReferentFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Nuovo medico referente</label>
+                        <select class="form-select" name="changeReferentSelectedDoctorId" [(ngModel)]="changeReferentSelectedDoctorId" required>
+                          <option [ngValue]="null" disabled>Seleziona medico...</option>
+                          <option *ngFor="let doc of changeReferentDoctors" [ngValue]="doc.id">
+                            {{ doc.firstName }} {{ doc.lastName }}
+                          </option>
+                        </select>
+                        <small class="text-muted">Solo medici con consenso del paziente</small>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="changeReferentError">{{ changeReferentError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeChangeReferentModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="changeReferentFormRef.invalid || isLoading">
+                          {{ isLoading ? 'Salvataggio...' : 'Conferma cambio' }}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Modal Conferma Dimissione -->
+          <ng-container *ngIf="showDischargeModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeDischargeModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="dischargeModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="dischargeModalTitle">Conferma dimissione</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDischargeModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Stai per dimettere il paziente:</p>
+                    <p><strong>{{ getPatientLabel(dischargeTarget?.patientId) }}</strong></p>
+                    <p class="text-muted">Reparto: {{ getDepartmentLabel(dischargeTarget?.departmentCode) }}</p>
+                    <p class="text-muted">Data ammissione: {{ formatDate(dischargeTarget?.admittedAt) }}</p>
+                    <div class="alert alert-warning py-2">
+                      <small>Questa azione cambierà lo stato del ricovero in "Dimesso".</small>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="dischargeError">{{ dischargeError }}</div>
+                    <div class="d-flex justify-content-end gap-2">
+                      <button class="btn btn-outline-secondary" type="button" (click)="closeDischargeModal()">Annulla</button>
+                      <button class="btn btn-success" type="button" (click)="submitDischarge()" [disabled]="isLoading">
+                        {{ isLoading ? 'Elaborazione...' : 'Conferma dimissione' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Modal Note Ricovero -->
+          <ng-container *ngIf="showAdmissionEditNoteModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeAdmissionEditNoteModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="admissionEditNoteModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="admissionEditNoteModalTitle">Note ricovero</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdmissionEditNoteModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p class="mb-3">Paziente: <strong>{{ getPatientLabel(admissionEditNoteTarget?.patientId) }}</strong></p>
+                    <form (ngSubmit)="submitAdmissionNote()" #admissionEditNoteFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label">Note</label>
+                        <textarea class="form-control" rows="4" name="admissionEditNoteText" [(ngModel)]="admissionEditNoteText" placeholder="Inserisci note sul ricovero..."></textarea>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="admissionNoteError">{{ admissionNoteError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeAdmissionEditNoteModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="isLoading">
+                          {{ isLoading ? 'Salvataggio...' : 'Salva note' }}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </ng-container>
+      </ng-template>
+
+      <!-- LAYOUT ADMIN NOTIFICHE -->
+      <ng-template #adminNotificationsLayout>
+        <ng-container *ngIf="mode === 'admin-notifications'; else adminPaymentsLayout">
+          <div class="row g-4">
+            <!-- Statistiche notifiche -->
+            <div class="col-12">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-primary">{{ notifications.length }}</div>
+                    <div class="small text-muted">Totale notifiche</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-success">{{ notificationsSentCount }}</div>
+                    <div class="small text-muted">Inviate</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-warning">{{ notificationsPendingCount }}</div>
+                    <div class="small text-muted">In attesa</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-danger">{{ notificationsFailedCount }}</div>
+                    <div class="small text-muted">Fallite</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabella notifiche -->
+            <div class="col-lg-8">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="fw-semibold mb-0">Elenco notifiche</h5>
+                  </div>
+                  <div class="alert alert-success py-2" *ngIf="notificationsSuccess">{{ notificationsSuccess }}</div>
+                  <div class="alert alert-danger py-2" *ngIf="notificationsError">{{ notificationsError }}</div>
+                  <div class="table-responsive">
+                    <table class="table align-middle table-hover">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Canale</th>
+                          <th>Destinatario</th>
+                          <th>Oggetto</th>
+                          <th>Stato</th>
+                          <th>Data</th>
+                          <th>Azioni</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let notification of notifications | slice:getPageSliceStart('adminNotifications'):getPageSliceEnd('adminNotifications')">
+                          <td>{{ notification.id }}</td>
+                          <td>
+                            <span class="badge" [class.bg-primary]="notification.channel === 'EMAIL'" [class.bg-info]="notification.channel === 'IN_APP'">
+                              {{ notification.channel }}
+                            </span>
+                          </td>
+                          <td>{{ notification.toAddress || notification.recipientId }}</td>
+                          <td>{{ notification.subject }}</td>
+                          <td>
+                            <span class="badge"
+                                  [class.bg-success]="notification.status === 'SENT'"
+                                  [class.bg-warning]="notification.status === 'PENDING'"
+                                  [class.bg-danger]="notification.status === 'FAILED'">
+                              {{ getNotificationStatusLabel(notification.status) }}
+                            </span>
+                          </td>
+                          <td>{{ formatDateTime(notification.createdAt) }}</td>
+                          <td>
+                            <button
+                              class="btn btn-outline-primary btn-sm"
+                              type="button"
+                              title="Dettaglio"
+                              (click)="openNotificationDetailModal(notification)">
+                              🔍
+                            </button>
+                          </td>
+                        </tr>
+                        <tr *ngIf="!notifications.length">
+                          <td colspan="7" class="text-center text-muted">Nessuna notifica registrata.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminNotifications', total: notifications.length }"></ng-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form invio notifica -->
+            <div class="col-lg-4">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Invia notifica</h5>
+                  <form (ngSubmit)="submitNotification()" #adminNotificationFormRef="ngForm">
+                    <div class="mb-3">
+                      <label class="form-label">Destinatario</label>
+                      <input class="form-control" type="email" name="notificationRecipient" [(ngModel)]="notificationForm.recipient" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Canale</label>
+                      <select class="form-select" name="notificationChannel" [(ngModel)]="notificationForm.channel" required>
+                        <option value="EMAIL">Email</option>
+                        <option value="SMS">SMS</option>
+                        <option value="APP">App</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Oggetto</label>
+                      <input class="form-control" type="text" name="notificationSubject" [(ngModel)]="notificationForm.subject" required />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Messaggio</label>
+                      <textarea class="form-control" rows="4" name="notificationMessage" [(ngModel)]="notificationForm.message" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Note</label>
+                      <textarea class="form-control" rows="2" name="notificationNotes" [(ngModel)]="notificationForm.notes"></textarea>
+                    </div>
+                    <button class="btn btn-primary w-100" type="submit" [disabled]="adminNotificationFormRef.invalid || isLoading">
+                      {{ isLoading ? 'Invio...' : 'Invia notifica' }}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Dettaglio Notifica -->
+          <ng-container *ngIf="showNotificationDetailModal && selectedNotification">
+            <div class="modal-backdrop fade show" style="position: fixed; inset: 0; z-index: 1050;" (click)="closeNotificationDetailModal()"></div>
+            <div class="modal d-flex align-items-center justify-content-center" role="dialog" aria-modal="true" style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Dettaglio Notifica</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeNotificationDetailModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">ID</label>
+                        <div>{{ selectedNotification.id }}</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Canale</label>
+                        <div><span class="badge" [class.bg-primary]="selectedNotification.channel === 'EMAIL'" [class.bg-info]="selectedNotification.channel === 'IN_APP'">{{ selectedNotification.channel }}</span></div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Destinatario</label>
+                        <div>{{ selectedNotification.toAddress || selectedNotification.recipientId }}</div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Stato</label>
+                        <div>
+                          <span class="badge"
+                                [class.bg-success]="selectedNotification.status === 'SENT'"
+                                [class.bg-warning]="selectedNotification.status === 'PENDING'"
+                                [class.bg-danger]="selectedNotification.status === 'FAILED'">
+                            {{ getNotificationStatusLabel(selectedNotification.status) }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Data creazione</label>
+                        <div>{{ formatDateTime(selectedNotification.createdAt) }}</div>
+                      </div>
+                      <div class="col-md-6" *ngIf="selectedNotification.sentAt">
+                        <label class="form-label small fw-semibold">Data invio</label>
+                        <div>{{ formatDateTime(selectedNotification.sentAt) }}</div>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label small fw-semibold">Oggetto</label>
+                        <div>{{ selectedNotification.subject }}</div>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label small fw-semibold">Messaggio</label>
+                        <div class="bg-light rounded p-3">{{ selectedNotification.body }}</div>
+                      </div>
+                      <div class="col-12" *ngIf="selectedNotification.errorMessage">
+                        <div class="alert alert-danger mb-0">
+                          <label class="form-label small fw-semibold">Errore</label>
+                          <div>{{ selectedNotification.errorMessage }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button class="btn btn-secondary" (click)="closeNotificationDetailModal()">Chiudi</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </ng-container>
+      </ng-template>
+
+      <!-- LAYOUT ADMIN PAGAMENTI -->
+      <ng-template #adminPaymentsLayout>
+        <ng-container *ngIf="mode === 'admin-payments'; else apiLayout">
+          <div class="row g-4">
+            <!-- Statistiche pagamenti -->
+            <div class="col-12">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-primary">{{ payments.length }}</div>
+                    <div class="small text-muted">Totale pagamenti</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-success">{{ paymentsCapturedCount }}</div>
+                    <div class="small text-muted">Completati</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-warning">{{ paymentsPendingCount }}</div>
+                    <div class="small text-muted">In attesa</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-danger">{{ paymentsFailedCount }}</div>
+                    <div class="small text-muted">Falliti</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabella pagamenti -->
+            <div class="col-12">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                      <h5 class="fw-semibold mb-1">Elenco pagamenti</h5>
+                      <small class="text-muted">Gestione pagamenti e solleciti</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button class="btn btn-outline-warning btn-sm" type="button" (click)="sendBulkReminders()" [disabled]="!hasSelectedPayments || isLoading">
+                        Sollecita selezionati
+                      </button>
+                    </div>
+                  </div>
+                  <div class="alert alert-success py-2" *ngIf="paymentsSuccess">{{ paymentsSuccess }}</div>
+                  <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
+                  <div class="table-responsive">
+                    <table class="table align-middle table-hover">
+                      <thead>
+                        <tr>
+                          <th style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" (change)="toggleAllPaymentsSelection()" [checked]="areAllPaymentsSelected" />
+                          </th>
+                          <th>ID</th>
+                          <th>Paziente</th>
+                          <th>Prestazione</th>
+                          <th>Importo</th>
+                          <th>Metodo</th>
+                          <th>Stato</th>
+                          <th>Data</th>
+                          <th>Azioni</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let payment of payments | slice:getPageSliceStart('adminPayments'):getPageSliceEnd('adminPayments')"
+                            [class.table-success]="payment.status === 'CAPTURED'"
+                            [class.table-warning]="payment.status === 'CREATED'"
+                            [class.table-danger]="payment.status === 'FAILED' || payment.status === 'CANCELLED'">
+                          <td>
+                            <input type="checkbox" class="form-check-input"
+                                   [checked]="isPaymentSelected(payment.id)"
+                                   (change)="togglePaymentSelection(payment.id)"
+                                   [disabled]="payment.status !== 'CREATED'" />
+                          </td>
+                          <td>{{ payment.id }}</td>
+                          <td>{{ payment.patientName || getPatientLabel(payment.patientId) }}</td>
+                          <td>{{ payment.service || payment.description || '-' }}</td>
+                          <td>{{ (payment.amount || payment.amountCents / 100) | number:'1.2-2' }} {{ payment.currency }}</td>
+                          <td>
+                            <span class="badge bg-light text-dark">{{ getPaymentMethodLabel(payment.method) }}</span>
+                          </td>
+                          <td>
+                            <span class="badge"
+                                  [class.bg-success]="payment.status === 'CAPTURED'"
+                                  [class.bg-warning]="payment.status === 'CREATED'"
+                                  [class.bg-danger]="payment.status === 'FAILED' || payment.status === 'CANCELLED'"
+                                  [class.bg-info]="payment.status === 'REFUNDED'">
+                              {{ getPaymentStatusLabel(payment) }}
+                            </span>
+                          </td>
+                          <td>{{ formatDateTime(payment.createdAt) }}</td>
+                          <td>
+                            <div class="d-flex flex-wrap gap-1">
+                              <button
+                                class="btn btn-outline-success btn-sm"
+                                type="button"
+                                title="Conferma pagamento"
+                                [disabled]="payment.status !== 'CREATED'"
+                                (click)="capturePayment(payment)">
+                                ✓
+                              </button>
+                              <button
+                                class="btn btn-outline-warning btn-sm"
+                                type="button"
+                                title="Invia sollecito"
+                                [disabled]="payment.status !== 'CREATED'"
+                                (click)="sendPaymentReminder(payment)">
+                                📧
+                              </button>
+                              <button
+                                class="btn btn-outline-danger btn-sm"
+                                type="button"
+                                title="Annulla pagamento"
+                                [disabled]="payment.status !== 'CREATED'"
+                                (click)="cancelPayment(payment)">
+                                ✕
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr *ngIf="!payments.length">
+                          <td colspan="9" class="text-center text-muted">Nessun pagamento registrato.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminPayments', total: payments.length }"></ng-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </ng-container>
       </ng-template>
 

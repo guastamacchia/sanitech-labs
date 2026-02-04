@@ -195,6 +195,27 @@ public class ConsentController {
         return service.getPatientIdsWithConsent(resolvedDoctorId, scope);
     }
 
+    /**
+     * Restituisce gli ID dei medici che hanno ricevuto consenso attivo dal paziente specificato.
+     * <p>
+     * Utilizzato dal pannello admin per la selezione del nuovo medico referente durante
+     * il cambio referente di un ricovero: mostra solo i medici autorizzati dal paziente.
+     * </p>
+     *
+     * @param patientId ID del paziente
+     * @param scope tipo di consenso richiesto (opzionale, se null ritorna tutti i medici con almeno un consenso attivo)
+     * @return lista di doctor ID con consenso valido
+     */
+    @GetMapping("/doctors-with-consent")
+    @RateLimiter(name = "consentsApi")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<Long> getDoctorsWithConsent(
+            @RequestParam Long patientId,
+            @RequestParam(required = false) ConsentScope scope,
+            Authentication auth) {
+        return service.getDoctorIdsWithConsent(patientId, scope);
+    }
+
     private static Long requirePatientId(Authentication auth) {
         return AuthClaims.patientId(auth)
                 .orElseThrow(() -> new AccessDeniedException("Token privo della claim patient id (pid)."));

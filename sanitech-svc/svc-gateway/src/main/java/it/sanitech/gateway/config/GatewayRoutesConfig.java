@@ -50,7 +50,7 @@ public class GatewayRoutesConfig {
                 //       catturi /api/departments/capacity/**
                 // =========================
                 .route(AppConstants.Services.ADMISSIONS, r -> r
-                        .path("/api/admissions/**", "/api/beds/**", "/api/departments/capacity/**")
+                        .path("/api/admissions/**", "/api/beds/**", "/api/departments/capacity", "/api/departments/capacity/**")
                         .filters(f -> standardFilters(f, AppConstants.Services.ADMISSIONS))
                         .uri(services.getAdmissions())
                 )

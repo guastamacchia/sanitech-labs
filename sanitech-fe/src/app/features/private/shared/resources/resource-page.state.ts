@@ -413,7 +413,9 @@ export class ResourcePageState {
     | 'admin-directory'
     | 'admin-audit'
     | 'admin-televisit'
-    | 'admin-admissions' = 'api';
+    | 'admin-admissions'
+    | 'admin-notifications'
+    | 'admin-payments' = 'api';
   slots: SchedulingSlot[] = [];
   appointments: SchedulingAppointment[] = [];
   schedulingError = '';
@@ -488,8 +490,12 @@ export class ResourcePageState {
     paymentId: null as number | null,
     receiptName: '',
     service: '',
-    amount: 0
+    amount: 0,
+    doctorId: null as number | null,
+    patientId: null as number | null,
+    performedAt: ''
   };
+  filteredPatientsForPayment: PatientItem[] = [];
   // ServicePerformed (prestazioni sanitarie)
   servicesPerformed: ServicePerformedItem[] = [];
   filteredServices: ServicePerformedItem[] = [];
@@ -510,7 +516,9 @@ export class ResourcePageState {
   servicesSuccess = '';
   showServiceEditModal = false;
   showServiceFreeModal = false;
+  showServiceDetailModal = false;
   selectedService: ServicePerformedItem | null = null;
+  selectedServiceDetail: ServicePerformedItem | null = null;
   serviceFreeReason = '';
   serviceEditForm = {
     amountCents: 0,
@@ -603,6 +611,21 @@ export class ResourcePageState {
   televisitPatientsFiltered: PatientItem[] = [];
   showAdminTelevisitModal = false;
   showAdminAdmissionModal = false;
+  // Modale cambia referente
+  showChangeReferentModal = false;
+  changeReferentTarget: AdmissionItem | null = null;
+  changeReferentDoctors: DoctorItem[] = [];
+  changeReferentSelectedDoctorId: number | null = null;
+  changeReferentError = '';
+  // Modale dimissione
+  showDischargeModal = false;
+  dischargeTarget: AdmissionItem | null = null;
+  dischargeError = '';
+  // Modale note editabile
+  showAdmissionEditNoteModal = false;
+  admissionEditNoteTarget: AdmissionItem | null = null;
+  admissionEditNoteText = '';
+  admissionEditNoteError = '';
   showSlotModal = false;
   doctors: DoctorItem[] = [];
   patients: PatientItem[] = [];
@@ -709,7 +732,9 @@ export class ResourcePageState {
         | 'admin-directory'
         | 'admin-audit'
         | 'admin-televisit'
-        | 'admin-admissions') ??
+        | 'admin-admissions'
+        | 'admin-notifications'
+        | 'admin-payments') ??
       'api';
     this.endpoints = (data['endpoints'] as ResourceEndpoint[]) ?? [];
     this.selectedEndpoint = this.endpoints[0];
@@ -758,6 +783,14 @@ export class ResourcePageState {
     if (this.mode === 'admin-admissions') {
       this.loadAdminAdmissions();
     }
+    if (this.mode === 'admin-notifications') {
+      this.loadNotifications();
+      this.loadPatients();
+    }
+    if (this.mode === 'admin-payments') {
+      this.loadPayments();
+      this.loadPatients();
+    }
   }
 
   selectEndpoint(endpoint: ResourceEndpoint): void {
@@ -802,6 +835,12 @@ export class ResourcePageState {
     }
     if (this.mode === 'admin-admissions') {
       this.loadAdminAdmissions();
+    }
+    if (this.mode === 'admin-notifications') {
+      this.loadNotifications();
+    }
+    if (this.mode === 'admin-payments') {
+      this.loadPayments();
     }
   }
 
@@ -2184,6 +2223,30 @@ export class ResourcePageState {
     this.selectedService = null;
   }
 
+  openServiceDetailModal(service: ServicePerformedItem): void {
+    this.selectedServiceDetail = service;
+    this.showServiceDetailModal = true;
+  }
+
+  closeServiceDetailModal(): void {
+    this.showServiceDetailModal = false;
+    this.selectedServiceDetail = null;
+  }
+
+  getDepartmentNameByCode(code: string | undefined): string {
+    if (!code) return '-';
+    const dept = this.departments.find(d => d.code === code);
+    return dept?.name ?? code;
+  }
+
+  getFacilityNameByDepartmentCode(code: string | undefined): string {
+    if (!code) return '-';
+    const dept = this.departments.find(d => d.code === code);
+    if (!dept?.facilityCode) return '-';
+    const facility = this.facilities.find(f => f.code === dept.facilityCode);
+    return facility?.name ?? dept.facilityCode;
+  }
+
   // Salva modifiche
   saveServiceEdit(): void {
     if (!this.selectedService) return;
@@ -2340,6 +2403,65 @@ export class ResourcePageState {
     });
   }
 
+  submitNewPayment(): void {
+    if (!this.paymentForm.doctorId) {
+      this.paymentsError = 'Seleziona un medico.';
+      return;
+    }
+    if (!this.paymentForm.patientId) {
+      this.paymentsError = 'Seleziona un paziente.';
+      return;
+    }
+    if (!this.paymentForm.service.trim()) {
+      this.paymentsError = 'Inserisci la descrizione della prestazione.';
+      return;
+    }
+    if (!this.paymentForm.amount || this.paymentForm.amount <= 0) {
+      this.paymentsError = "Inserisci l'importo del pagamento.";
+      return;
+    }
+    if (!this.paymentForm.performedAt) {
+      this.paymentsError = 'Inserisci la data della prestazione.';
+      return;
+    }
+    this.isLoading = true;
+    this.paymentsError = '';
+    this.paymentsSuccess = '';
+
+    const payload = {
+      doctorId: this.paymentForm.doctorId,
+      patientId: this.paymentForm.patientId,
+      serviceType: 'CUSTOM',
+      description: this.paymentForm.service,
+      amountCents: Math.round(this.paymentForm.amount * 100),
+      performedAt: new Date(this.paymentForm.performedAt).toISOString()
+    };
+
+    this.api.request<ServicePerformedItem>('POST', '/api/admin/services', payload).subscribe({
+      next: (service) => {
+        const mappedService = this.mapServiceFromBackend(service);
+        this.servicesPerformed = [mappedService, ...this.servicesPerformed];
+        this.updateFilteredServices();
+        this.paymentsSuccess = `Pagamento #${service.id} creato con successo.`;
+        this.paymentForm.doctorId = null;
+        this.paymentForm.patientId = null;
+        this.paymentForm.service = '';
+        this.paymentForm.amount = 0;
+        this.paymentForm.performedAt = '';
+        this.filteredPatientsForPayment = [];
+        this.isLoading = false;
+        setTimeout(() => {
+          this.closeAdminPaymentModal();
+          this.paymentsSuccess = '';
+        }, 1500);
+      },
+      error: () => {
+        this.paymentsError = 'Impossibile creare il pagamento.';
+        this.isLoading = false;
+      }
+    });
+  }
+
   // Getter: reparti filtrati per struttura selezionata
   get filteredDepartments(): DepartmentItem[] {
     if (!this.admissionForm.facilityCode) {
@@ -2375,7 +2497,16 @@ export class ResourcePageState {
     this.filteredAdmissionPatients = [];
   }
 
-  // Handler cambio medico: carica pazienti associati al medico (con consenso)
+  // Getter per i posti disponibili nel reparto selezionato
+  get selectedDepartmentAvailableBeds(): number | null {
+    if (!this.admissionForm.departmentCode) return null;
+    const capacity = this.departmentCapacities.find(
+      c => c.departmentCode.toUpperCase() === this.admissionForm.departmentCode.toUpperCase()
+    );
+    return capacity?.availableBeds ?? null;
+  }
+
+  // Handler cambio medico: carica pazienti con consenso RECORDS per il medico
   onAdmissionDoctorChange(): void {
     this.admissionForm.patientId = null;
     this.filteredAdmissionPatients = [];
@@ -2384,14 +2515,11 @@ export class ResourcePageState {
       return;
     }
 
-    // Carica i pazienti associati al medico selezionato
-    this.api.get<PatientItem[] | PagedResponse<PatientItem>>(
-      `/api/admin/patients`,
-      { doctorId: this.admissionForm.attendingDoctorId.toString(), size: '100' }
-    ).subscribe({
-      next: (res) => {
-        const list = Array.isArray(res) ? res : (res as PagedResponse<PatientItem>).content || [];
-        this.filteredAdmissionPatients = list;
+    // Carica i pazienti che hanno dato consenso RECORDS al medico selezionato
+    this.api.request<number[]>('GET', `/api/consents/patients-with-consent?scope=RECORDS&doctorId=${this.admissionForm.attendingDoctorId}`).subscribe({
+      next: (patientIds) => {
+        // Filtra i pazienti già caricati per mostrare solo quelli con consenso
+        this.filteredAdmissionPatients = this.patients.filter(p => patientIds.includes(p.id));
       },
       error: () => {
         this.filteredAdmissionPatients = [];
@@ -2495,6 +2623,138 @@ export class ResourcePageState {
   closeAdmissionNoteModal(): void {
     this.showAdmissionNoteModal = false;
     this.admissionNoteTarget = null;
+  }
+
+  // ======================== Cambia Referente ========================
+
+  openChangeReferentModal(admission: AdmissionItem): void {
+    this.changeReferentTarget = admission;
+    this.changeReferentSelectedDoctorId = admission.attendingDoctorId ?? null;
+    this.changeReferentError = '';
+    this.changeReferentDoctors = [];
+
+    // Carica i medici con consenso dal paziente
+    this.api.get<number[]>('/api/consents/doctors-with-consent', { patientId: admission.patientId }).subscribe({
+      next: (doctorIds) => {
+        // Filtra i medici dalla lista caricata
+        this.changeReferentDoctors = this.doctors.filter(d => doctorIds.includes(d.id));
+        this.showChangeReferentModal = true;
+      },
+      error: () => {
+        // Fallback: mostra tutti i medici
+        this.changeReferentDoctors = [...this.doctors];
+        this.showChangeReferentModal = true;
+      }
+    });
+  }
+
+  closeChangeReferentModal(): void {
+    this.showChangeReferentModal = false;
+    this.changeReferentTarget = null;
+    this.changeReferentDoctors = [];
+    this.changeReferentSelectedDoctorId = null;
+    this.changeReferentError = '';
+  }
+
+  submitChangeReferent(): void {
+    if (!this.changeReferentTarget || !this.changeReferentSelectedDoctorId) {
+      this.changeReferentError = 'Seleziona un medico referente.';
+      return;
+    }
+    this.isLoading = true;
+    this.api.request<AdmissionItem>('PATCH', `/api/admissions/${this.changeReferentTarget.id}`, {
+      attendingDoctorId: this.changeReferentSelectedDoctorId
+    }).subscribe({
+      next: (updated) => {
+        const idx = this.admissions.findIndex(a => a.id === updated.id);
+        if (idx !== -1) {
+          this.admissions[idx] = { ...this.admissions[idx], ...updated };
+          this.admissions = [...this.admissions];
+        }
+        this.isLoading = false;
+        this.closeChangeReferentModal();
+      },
+      error: () => {
+        this.changeReferentError = 'Impossibile aggiornare il referente.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // ======================== Dimissione ========================
+
+  openDischargeModal(admission: AdmissionItem): void {
+    this.dischargeTarget = admission;
+    this.dischargeError = '';
+    this.showDischargeModal = true;
+  }
+
+  closeDischargeModal(): void {
+    this.showDischargeModal = false;
+    this.dischargeTarget = null;
+    this.dischargeError = '';
+  }
+
+  submitDischarge(): void {
+    if (!this.dischargeTarget) {
+      return;
+    }
+    this.isLoading = true;
+    this.api.request<AdmissionItem>('POST', `/api/admissions/${this.dischargeTarget.id}/discharge`, {}).subscribe({
+      next: (updated) => {
+        const idx = this.admissions.findIndex(a => a.id === updated.id);
+        if (idx !== -1) {
+          this.admissions[idx] = { ...this.admissions[idx], ...updated };
+          this.admissions = [...this.admissions];
+        }
+        this.isLoading = false;
+        this.closeDischargeModal();
+      },
+      error: () => {
+        this.dischargeError = 'Impossibile dimettere il paziente.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // ======================== Note Ricovero ========================
+
+  openAdmissionEditNoteModal(admission: AdmissionItem): void {
+    this.admissionEditNoteTarget = admission;
+    this.admissionEditNoteText = admission.notes ?? '';
+    this.admissionEditNoteError = '';
+    this.showAdmissionEditNoteModal = true;
+  }
+
+  closeAdmissionEditNoteModal(): void {
+    this.showAdmissionEditNoteModal = false;
+    this.admissionEditNoteTarget = null;
+    this.admissionEditNoteText = '';
+    this.admissionEditNoteError = '';
+  }
+
+  submitAdmissionNote(): void {
+    if (!this.admissionEditNoteTarget) {
+      return;
+    }
+    this.isLoading = true;
+    this.api.request<AdmissionItem>('PATCH', `/api/admissions/${this.admissionEditNoteTarget.id}`, {
+      notes: this.admissionEditNoteText
+    }).subscribe({
+      next: (updated) => {
+        const idx = this.admissions.findIndex(a => a.id === updated.id);
+        if (idx !== -1) {
+          this.admissions[idx] = { ...this.admissions[idx], ...updated };
+          this.admissions = [...this.admissions];
+        }
+        this.isLoading = false;
+        this.closeAdmissionEditNoteModal();
+      },
+      error: () => {
+        this.admissionEditNoteError = 'Impossibile aggiornare le note.';
+        this.isLoading = false;
+      }
+    });
   }
 
   submitAdmissionProposal(): void {
@@ -2758,10 +3018,29 @@ export class ResourcePageState {
   openAdminPaymentModal(): void {
     this.paymentsError = '';
     this.paymentsSuccess = '';
-    if (!this.paymentForm.paymentId && this.payments.length) {
-      this.paymentForm.paymentId = this.payments[0].id;
-    }
+    this.paymentForm.doctorId = null;
+    this.paymentForm.patientId = null;
+    this.paymentForm.service = '';
+    this.paymentForm.amount = 0;
+    this.paymentForm.performedAt = '';
+    this.filteredPatientsForPayment = [];
     this.showAdminPaymentModal = true;
+  }
+
+  onPaymentDoctorChange(): void {
+    this.paymentForm.patientId = null;
+    this.filteredPatientsForPayment = [];
+    if (!this.paymentForm.doctorId) {
+      return;
+    }
+    this.api.request<number[]>('GET', `/api/consents/patients-with-consent?scope=RECORDS&doctorId=${this.paymentForm.doctorId}`).subscribe({
+      next: (patientIds) => {
+        this.filteredPatientsForPayment = this.patients.filter(p => patientIds.includes(p.id));
+      },
+      error: () => {
+        this.paymentsError = 'Impossibile caricare i pazienti per questo medico.';
+      }
+    });
   }
 
   closeAdminPaymentModal(): void {
@@ -2994,6 +3273,48 @@ export class ResourcePageState {
 
   get selectedPaymentsCount(): number {
     return this.selectedPaymentIds.size;
+  }
+
+  get hasSelectedPayments(): boolean {
+    return this.selectedPaymentIds.size > 0;
+  }
+
+  get areAllPaymentsSelected(): boolean {
+    const pendingPayments = this.payments.filter((p) => p.status === 'CREATED');
+    return pendingPayments.length > 0 && this.selectedPaymentIds.size === pendingPayments.length;
+  }
+
+  get notificationsSentCount(): number {
+    return this.notifications.filter((n) => n.status === 'SENT').length;
+  }
+
+  get notificationsPendingCount(): number {
+    return this.notifications.filter((n) => n.status === 'PENDING').length;
+  }
+
+  get notificationsFailedCount(): number {
+    return this.notifications.filter((n) => n.status === 'FAILED').length;
+  }
+
+  get paymentsCapturedCount(): number {
+    return this.payments.filter((p) => p.status === 'CAPTURED').length;
+  }
+
+  get paymentsPendingCount(): number {
+    return this.payments.filter((p) => p.status === 'CREATED').length;
+  }
+
+  get paymentsFailedCount(): number {
+    return this.payments.filter((p) => p.status === 'FAILED' || p.status === 'CANCELLED').length;
+  }
+
+  getPaymentMethodLabel(method: string): string {
+    const labels: Record<string, string> = {
+      CARD: 'Carta',
+      BANK_TRANSFER: 'Bonifico',
+      CASH: 'Contanti'
+    };
+    return labels[method] ?? method;
   }
 
   openBulkReminderModal(): void {
