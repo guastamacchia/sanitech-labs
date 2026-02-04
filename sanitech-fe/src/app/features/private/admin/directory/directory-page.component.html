@@ -4,21 +4,21 @@
     <div>
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-2">
-          <li class="breadcrumb-item"><a routerLink="/portal/admin">Area riservata admin</a></li>
-          <li class="breadcrumb-item active" aria-current="page">Directory</li>
+          <li class="breadcrumb-item"><a routerLink="/portal/admin">Area riservata</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Anagrafiche</li>
         </ol>
       </nav>
-      <h2 class="mb-1 fw-bold">Directory & Anagrafiche</h2>
+      <h2 class="mb-1 fw-bold">Anagrafiche</h2>
       <p class="text-muted mb-0">Gestione strutture, reparti, medici e pazienti</p>
     </div>
     <div class="d-flex gap-2">
-      <button class="btn btn-outline-secondary" (click)="goBack()">
-        <i class="bi bi-arrow-left me-1"></i>
-        Torna indietro
-      </button>
       <button class="btn btn-outline-secondary" (click)="loadAllData()" [disabled]="isLoading">
         <i class="bi bi-arrow-clockwise me-1" [class.spin]="isLoading"></i>
         Aggiorna
+      </button>
+      <button class="btn btn-outline-secondary" (click)="goBack()">
+        <i class="bi bi-arrow-left me-1"></i>
+        Torna indietro
       </button>
     </div>
   </div>

@@ -766,6 +766,45 @@ export class ResourcePageState {
     this.responseBody = '';
   }
 
+  refresh(): void {
+    if (this.mode === 'scheduling') {
+      this.loadScheduling();
+    }
+    if (this.mode === 'docs') {
+      this.loadDocs();
+    }
+    if (this.mode === 'payments') {
+      this.loadPayments();
+    }
+    if (this.mode === 'admissions') {
+      this.loadAdmissions();
+    }
+    if (this.mode === 'notifications') {
+      this.loadNotifications();
+      if (this.isAdmin) {
+        this.loadServicesPerformed();
+      }
+    }
+    if (this.mode === 'prescribing') {
+      this.loadPrescriptions();
+    }
+    if (this.mode === 'televisit') {
+      this.loadTelevisits();
+    }
+    if (this.mode === 'admin-directory') {
+      this.loadDirectory();
+    }
+    if (this.mode === 'admin-audit') {
+      this.loadAudit();
+    }
+    if (this.mode === 'admin-televisit') {
+      this.loadAdminTelevisit();
+    }
+    if (this.mode === 'admin-admissions') {
+      this.loadAdminAdmissions();
+    }
+  }
+
   getPage(key: string): number {
     return this.pageState[key] ?? 1;
   }
@@ -1059,7 +1098,7 @@ export class ResourcePageState {
 
   get portalHomeLabel(): string {
     if (this.auth.hasRole('ROLE_ADMIN')) {
-      return 'Area riservata admin';
+      return 'Area riservata';
     }
     if (this.auth.hasRole('ROLE_DOCTOR')) {
       return 'Area riservata medico';

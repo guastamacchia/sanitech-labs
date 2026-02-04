@@ -38,7 +38,7 @@ export const adminRoutes: Routes = [
     component: ResourcePageComponent,
     canActivate: [roleGuard('ROLE_ADMIN')],
     data: {
-      title: 'Notifiche',
+      title: 'Notifiche & Pagamenti',
       description: 'Monitoraggio e invio notifiche per tutta la piattaforma.',
       endpoints: notificationsEndpoints,
       view: 'notifications'

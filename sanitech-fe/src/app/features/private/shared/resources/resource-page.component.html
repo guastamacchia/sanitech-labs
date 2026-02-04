@@ -11,10 +11,16 @@
         <h2 class="mb-1 fw-bold">{{ title }}</h2>
         <p class="text-muted mb-0">{{ description }}</p>
       </div>
-      <button class="btn btn-outline-secondary" type="button" (click)="goToPortalHome()">
-        <i class="bi bi-arrow-left me-1"></i>
-        Torna indietro
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" type="button" (click)="refresh()" [disabled]="isLoading">
+          <i class="bi bi-arrow-clockwise me-1" [class.spin]="isLoading"></i>
+          Aggiorna
+        </button>
+        <button class="btn btn-outline-secondary" type="button" (click)="goToPortalHome()">
+          <i class="bi bi-arrow-left me-1"></i>
+          Torna indietro
+        </button>
+      </div>
     </div>
 
     <ng-template #paginationFooter let-key="key" let-total="total">
@@ -22,7 +28,7 @@
         <div class="d-flex align-items-center gap-2">
           <small class="text-muted">Elementi per pagina</small>
           <select class="form-select form-select-sm w-auto" [(ngModel)]="pageSize" (ngModelChange)="resetPagination()">
-            <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
           </select>
         </div>
         <nav aria-label="Paginazione">
@@ -3381,9 +3387,6 @@
                           <i class="bi bi-x-lg"></i>
                         </button>
                       </div>
-                      <button class="btn btn-outline-primary" (click)="loadAllAuditEvents()" [disabled]="isLoading">
-                        <i class="bi bi-arrow-clockwise me-1"></i>Aggiorna
-                      </button>
                     </div>
                   </div>
                   <div class="alert alert-danger py-2" *ngIf="auditError">{{ auditError }}</div>
