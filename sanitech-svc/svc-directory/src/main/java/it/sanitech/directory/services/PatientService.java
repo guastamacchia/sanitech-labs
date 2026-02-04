@@ -6,12 +6,15 @@ import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.directory.integrations.keycloak.KeycloakAdminClient;
 import it.sanitech.directory.repositories.DepartmentRepository;
 import it.sanitech.directory.repositories.DoctorRepository;
+import it.sanitech.directory.repositories.NotificationPreferenceRepository;
 import it.sanitech.directory.repositories.PatientRepository;
 import it.sanitech.directory.repositories.entities.Department;
+import it.sanitech.directory.repositories.entities.NotificationPreference;
 import it.sanitech.directory.repositories.entities.Patient;
 import it.sanitech.directory.repositories.entities.UserStatus;
 import it.sanitech.directory.repositories.spec.PatientSpecifications;
 import it.sanitech.commons.security.DeptGuard;
+import it.sanitech.directory.services.dto.NotificationPreferenceDto;
 import it.sanitech.directory.services.dto.PatientDto;
 import it.sanitech.directory.services.dto.create.PatientCreateDto;
 import it.sanitech.directory.services.dto.update.PatientPhoneUpdateDto;
@@ -53,6 +56,7 @@ public class PatientService {
     private final PatientRepository patientRepository;
     private final DepartmentRepository departmentRepository;
     private final DoctorRepository doctorRepository;
+    private final NotificationPreferenceRepository notificationPreferenceRepository;
 
     private final PatientMapper patientMapper;
     private final DomainEventPublisher eventPublisher;
@@ -123,7 +127,8 @@ public class PatientService {
                 saved.getPhone(),
                 false,  // Utente disabilitato fino all'attivazione da parte dell'admin
                 PATIENT_ROLE,
-                null
+                null,
+                null  // Pazienti non hanno un singolo reparto
         ));
 
         // Invia email di attivazione
@@ -193,7 +198,8 @@ public class PatientService {
                 saved.getPhone(),
                 true,
                 null,
-                previousEmail
+                previousEmail,
+                null  // Pazienti non hanno un singolo reparto
         ));
 
         return patientMapper.toDto(saved);
@@ -207,7 +213,8 @@ public class PatientService {
                 entity.getLastName(),
                 entity.getPhone(),
                 AppConstants.Outbox.AggregateType.PATIENT,
-                entity.getId()
+                entity.getId(),
+                null  // Pazienti non hanno un singolo reparto
         );
         patientRepository.delete(entity);
     }
@@ -221,7 +228,8 @@ public class PatientService {
                 entity.getLastName(),
                 entity.getPhone(),
                 AppConstants.Outbox.AggregateType.PATIENT,
-                entity.getId()
+                entity.getId(),
+                null  // Pazienti non hanno un singolo reparto
         );
         Patient saved = patientRepository.save(entity);
 
@@ -240,7 +248,8 @@ public class PatientService {
                 entity.getLastName(),
                 entity.getPhone(),
                 AppConstants.Outbox.AggregateType.PATIENT,
-                entity.getId()
+                entity.getId(),
+                null  // Pazienti non hanno un singolo reparto
         );
         Patient saved = patientRepository.save(entity);
 
@@ -329,7 +338,8 @@ public class PatientService {
                 saved.getPhone(),
                 true,
                 null,
-                null
+                null,
+                null  // Pazienti non hanno un singolo reparto
         ));
 
         return patientMapper.toDto(saved);
@@ -432,5 +442,63 @@ public class PatientService {
         }
         return patientRepository.findByFirstNameIgnoreCaseAndLastNameIgnoreCase(firstName.trim(), lastName.trim())
                 .map(patientMapper::toDto);
+    }
+
+    // ==================== NOTIFICATION PREFERENCES ====================
+
+    /**
+     * Restituisce le preferenze di notifica del paziente identificato dalla propria email.
+     * Se non esistono preferenze salvate, restituisce i valori di default.
+     *
+     * @param email email del paziente (username)
+     * @return DTO con le preferenze di notifica
+     */
+    @Transactional(readOnly = true)
+    public NotificationPreferenceDto getNotificationPreferences(String email) {
+        Patient patient = patientRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> NotFoundException.of("Paziente", email));
+
+        return notificationPreferenceRepository.findByPatientId(patient.getId())
+                .map(this::toDto)
+                .orElse(NotificationPreferenceDto.defaults());
+    }
+
+    /**
+     * Aggiorna le preferenze di notifica del paziente identificato dalla propria email.
+     * Se non esistono preferenze, le crea.
+     *
+     * @param email email del paziente (username)
+     * @param dto   DTO con le nuove preferenze
+     * @return DTO con le preferenze aggiornate
+     */
+    public NotificationPreferenceDto updateNotificationPreferences(String email, NotificationPreferenceDto dto) {
+        Patient patient = patientRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> NotFoundException.of("Paziente", email));
+
+        NotificationPreference preference = notificationPreferenceRepository.findByPatientId(patient.getId())
+                .orElseGet(() -> NotificationPreference.builder()
+                        .patient(patient)
+                        .build());
+
+        preference.setEmailReminders(dto.emailReminders());
+        preference.setSmsReminders(dto.smsReminders());
+        preference.setEmailDocuments(dto.emailDocuments());
+        preference.setSmsDocuments(dto.smsDocuments());
+        preference.setEmailPayments(dto.emailPayments());
+        preference.setSmsPayments(dto.smsPayments());
+
+        NotificationPreference saved = notificationPreferenceRepository.save(preference);
+        return toDto(saved);
+    }
+
+    private NotificationPreferenceDto toDto(NotificationPreference entity) {
+        return new NotificationPreferenceDto(
+                entity.isEmailReminders(),
+                entity.isSmsReminders(),
+                entity.isEmailDocuments(),
+                entity.isSmsDocuments(),
+                entity.isEmailPayments(),
+                entity.isSmsPayments()
+        );
     }
 }

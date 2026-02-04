@@ -2,17 +2,8 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
-import { PatientService, PatientDto } from './services/patient.service';
-
-interface NotificationPreferences {
-  emailReminders: boolean;
-  smsReminders: boolean;
-  emailDocuments: boolean;
-  smsDocuments: boolean;
-  emailPayments: boolean;
-  smsPayments: boolean;
-}
+import { Subject, takeUntil, forkJoin } from 'rxjs';
+import { PatientService, PatientDto, NotificationPreferenceDto } from './services/patient.service';
 
 @Component({
   selector: 'app-patient-profile',
@@ -31,8 +22,8 @@ export class PatientProfileComponent implements OnInit, OnDestroy {
     phone: ''
   };
 
-  // Preferenze notifiche (gestite localmente per ora - il backend non ha questo endpoint)
-  notificationPrefs: NotificationPreferences = {
+  // Preferenze notifiche caricate dal backend
+  notificationPrefs: NotificationPreferenceDto = {
     emailReminders: true,
     smsReminders: false,
     emailDocuments: true,
@@ -52,7 +43,7 @@ export class PatientProfileComponent implements OnInit, OnDestroy {
   constructor(private patientService: PatientService) {}
 
   ngOnInit(): void {
-    this.loadProfile();
+    this.loadProfileAndPreferences();
   }
 
   ngOnDestroy(): void {
@@ -60,15 +51,19 @@ export class PatientProfileComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  loadProfile(): void {
+  loadProfileAndPreferences(): void {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.patientService.getMyProfile()
+    forkJoin({
+      profile: this.patientService.getMyProfile(),
+      preferences: this.patientService.getNotificationPreferences()
+    })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (profile) => {
+        next: ({ profile, preferences }) => {
           this.profile = profile;
+          this.notificationPrefs = preferences;
           this.isLoading = false;
         },
         error: (err) => {
@@ -138,14 +133,24 @@ export class PatientProfileComponent implements OnInit, OnDestroy {
 
   savePreferences(): void {
     this.isSaving = true;
-    // Le preferenze notifiche non sono gestite dal backend attualmente
-    // Salvataggio locale simulato
-    setTimeout(() => {
-      this.isSaving = false;
-      this.showPreferencesModal = false;
-      this.successMessage = 'Preferenze di notifica aggiornate!';
-      setTimeout(() => this.successMessage = '', 5000);
-    }, 500);
+    this.errorMessage = '';
+
+    this.patientService.updateNotificationPreferences(this.notificationPrefs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updatedPrefs) => {
+          this.notificationPrefs = updatedPrefs;
+          this.isSaving = false;
+          this.showPreferencesModal = false;
+          this.successMessage = 'Preferenze di notifica aggiornate!';
+          setTimeout(() => this.successMessage = '', 5000);
+        },
+        error: (err) => {
+          console.error('Errore salvataggio preferenze:', err);
+          this.errorMessage = 'Impossibile salvare le preferenze. Riprova.';
+          this.isSaving = false;
+        }
+      });
   }
 
   formatDate(dateStr: string | undefined): string {

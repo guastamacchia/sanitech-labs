@@ -438,13 +438,23 @@ export class DoctorApiService {
     );
   }
 
+  /**
+   * Aggiorna il numero di telefono del medico autenticato.
+   * L'email non può essere modificata.
+   */
+  updateMyPhone(phone: string | null): Observable<DoctorDto> {
+    return this.api.patch<DoctorDto>('/api/doctor/me', { phone });
+  }
+
   // ---------------------------------------------------------------------------
   // CONSENTS
   // ---------------------------------------------------------------------------
 
   checkConsent(patientId: number, scope: ConsentScope): Observable<ConsentCheckResponse> {
+    const doctorId = this.getDoctorId();
     return this.api.get<ConsentCheckResponse>('/api/consents/check', {
       patientId,
+      ...(doctorId && { doctorId }),
       scope
     });
   }
@@ -462,6 +472,23 @@ export class DoctorApiService {
         results.forEach(r => map.set(r.scope, r.allowed));
         return map;
       })
+    );
+  }
+
+  /**
+   * Restituisce gli ID dei pazienti che hanno concesso consenso attivo al medico per lo scope specificato.
+   * Se doctorId non è fornito, viene usato l'ID del medico autenticato.
+   */
+  getPatientsWithConsent(scope: ConsentScope, doctorId?: number): Observable<number[]> {
+    const resolvedDoctorId = doctorId ?? this.getDoctorId();
+    if (!resolvedDoctorId) {
+      return of([]);
+    }
+    return this.api.get<number[]>('/api/consents/patients-with-consent', {
+      scope,
+      doctorId: resolvedDoctorId
+    }).pipe(
+      catchError(() => of([]))
     );
   }
 
@@ -508,6 +535,10 @@ export class DoctorApiService {
 
   downloadDocumentUrl(documentId: string): string {
     return `/api/docs/${documentId}/download`;
+  }
+
+  deleteDocument(documentId: string): Observable<void> {
+    return this.api.delete<void>(`/api/docs/${documentId}`);
   }
 }
 

@@ -25,6 +25,7 @@ public class KeycloakAdminClient {
     private static final String PHONE_ATTR = "phone";
     private static final String PID_ATTR = "pid";
     private static final String DID_ATTR = "did";
+    private static final String DEPT_ATTR = "dept";
     private static final String AGGREGATE_TYPE_PATIENT = "PATIENT";
     private static final String AGGREGATE_TYPE_DOCTOR = "DOCTOR";
     private static final String DEFAULT_ROLE_NAME = "default-roles-sanitech";
@@ -66,10 +67,11 @@ public class KeycloakAdminClient {
      * @param phone telefono (opzionale)
      * @param aggregateType tipo aggregato (DOCTOR/PATIENT)
      * @param aggregateId ID dell'entità locale
+     * @param departmentCode codice reparto (solo per DOCTOR)
      */
     @Retry(name = "keycloakSync")
     public void disableUser(String email, String firstName, String lastName, String phone,
-                            String aggregateType, Long aggregateId) {
+                            String aggregateType, Long aggregateId, String departmentCode) {
         KeycloakUserRepresentation existing = findUserByEmail(email);
         if (existing == null) {
             return;
@@ -82,7 +84,8 @@ public class KeycloakAdminClient {
                 false,
                 null,
                 aggregateType,
-                aggregateId
+                aggregateId,
+                departmentCode
         ));
     }
 
@@ -95,10 +98,11 @@ public class KeycloakAdminClient {
      * @param phone telefono (opzionale)
      * @param aggregateType tipo aggregato (DOCTOR/PATIENT)
      * @param aggregateId ID dell'entità locale
+     * @param departmentCode codice reparto (solo per DOCTOR)
      */
     @Retry(name = "keycloakSync")
     public void enableUser(String email, String firstName, String lastName, String phone,
-                           String aggregateType, Long aggregateId) {
+                           String aggregateType, Long aggregateId, String departmentCode) {
         KeycloakUserRepresentation existing = findUserByEmail(email);
         if (existing == null) {
             log.warn("Utente Keycloak con email '{}' non trovato per abilitazione.", email);
@@ -112,7 +116,8 @@ public class KeycloakAdminClient {
                 true,
                 null,
                 aggregateType,
-                aggregateId
+                aggregateId,
+                departmentCode
         ));
     }
 
@@ -185,6 +190,9 @@ public class KeycloakAdminClient {
                 attributes.put(PID_ATTR, List.of(idValue));
             } else if (AGGREGATE_TYPE_DOCTOR.equals(request.aggregateType())) {
                 attributes.put(DID_ATTR, List.of(idValue));
+                if (request.departmentCode() != null && !request.departmentCode().isBlank()) {
+                    attributes.put(DEPT_ATTR, List.of(request.departmentCode()));
+                }
             }
         }
 

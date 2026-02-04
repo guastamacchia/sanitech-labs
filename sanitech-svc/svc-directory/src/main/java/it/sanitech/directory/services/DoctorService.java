@@ -12,6 +12,7 @@ import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.directory.integrations.keycloak.KeycloakAdminClient;
 import it.sanitech.directory.services.dto.DoctorDto;
 import it.sanitech.directory.services.dto.create.DoctorCreateDto;
+import it.sanitech.directory.services.dto.update.DoctorPhoneUpdateDto;
 import it.sanitech.directory.services.dto.update.DoctorUpdateDto;
 import it.sanitech.directory.services.events.KeycloakUserSyncEvent;
 import it.sanitech.directory.services.mapper.DoctorMapper;
@@ -99,7 +100,8 @@ public class DoctorService {
                 saved.getPhone(),
                 false,  // Utente disabilitato fino all'attivazione da parte dell'admin
                 DOCTOR_ROLE,
-                null
+                null,
+                saved.getDepartment().getCode()
         ));
 
         // Invia email di attivazione
@@ -146,7 +148,8 @@ public class DoctorService {
                 saved.getPhone(),
                 true,
                 null,
-                previousEmail
+                previousEmail,
+                saved.getDepartment().getCode()
         ));
 
         return doctorMapper.toDto(saved);
@@ -160,7 +163,8 @@ public class DoctorService {
                 entity.getLastName(),
                 entity.getPhone(),
                 AppConstants.Outbox.AggregateType.DOCTOR,
-                entity.getId()
+                entity.getId(),
+                entity.getDepartment().getCode()
         );
         doctorRepository.delete(entity);
     }
@@ -174,7 +178,8 @@ public class DoctorService {
                 entity.getLastName(),
                 entity.getPhone(),
                 AppConstants.Outbox.AggregateType.DOCTOR,
-                entity.getId()
+                entity.getId(),
+                entity.getDepartment().getCode()
         );
         Doctor saved = doctorRepository.save(entity);
 
@@ -193,7 +198,8 @@ public class DoctorService {
                 entity.getLastName(),
                 entity.getPhone(),
                 AppConstants.Outbox.AggregateType.DOCTOR,
-                entity.getId()
+                entity.getId(),
+                entity.getDepartment().getCode()
         );
         Doctor saved = doctorRepository.save(entity);
 
@@ -335,5 +341,52 @@ public class DoctorService {
         }
         return doctorRepository.findByFirstNameIgnoreCaseAndLastNameIgnoreCase(firstName.trim(), lastName.trim())
                 .map(doctorMapper::toDto);
+    }
+
+    /**
+     * Restituisce i dati del medico identificato dalla propria email (utilizzata come username).
+     *
+     * @param email email del medico (username)
+     * @return DTO del medico
+     */
+    @Transactional(readOnly = true)
+    public DoctorDto getByEmail(String email) {
+        Doctor entity = doctorRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> NotFoundException.of("Medico", email));
+        return doctorMapper.toDto(entity);
+    }
+
+    /**
+     * Aggiorna il numero di telefono del medico identificato dalla propria email.
+     * L'email non può essere modificata perché corrisponde allo username del portale.
+     *
+     * @param email email del medico (username)
+     * @param dto   DTO con il nuovo numero di telefono
+     * @param auth  contesto di autenticazione
+     * @return DTO del medico aggiornato
+     */
+    public DoctorDto updatePhone(String email, DoctorPhoneUpdateDto dto, Authentication auth) {
+        Doctor entity = doctorRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> NotFoundException.of("Medico", email));
+
+        String phone = dto.phone();
+        entity.setPhone(Objects.isNull(phone) || phone.isBlank() ? null : phone.trim());
+
+        Doctor saved = doctorRepository.save(entity);
+
+        applicationEventPublisher.publishEvent(new KeycloakUserSyncEvent(
+                AppConstants.Outbox.AggregateType.DOCTOR,
+                saved.getId(),
+                saved.getEmail(),
+                saved.getFirstName(),
+                saved.getLastName(),
+                saved.getPhone(),
+                true,
+                null,
+                null,
+                saved.getDepartment().getCode()
+        ));
+
+        return doctorMapper.toDto(saved);
     }
 }

@@ -97,6 +97,15 @@ public class Consent {
     }
 
     /**
+     * Aggiorna la scadenza del consenso.
+     *
+     * @param expiresAt nuova scadenza (null per rimuovere la scadenza)
+     */
+    public void updateExpiry(Instant expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
+    /**
      * @return {@code true} se il consenso è concesso e non scaduto.
      */
     public boolean isCurrentlyGranted() {

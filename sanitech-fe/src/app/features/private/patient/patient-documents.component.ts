@@ -24,6 +24,8 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
   successMessage = '';
   errorMessage = '';
   showUploadModal = false;
+  showDeleteModal = false;
+  documentToDelete: DocumentDto | null = null;
 
   // Filtri
   typeFilter: 'ALL' | string = 'ALL';
@@ -260,6 +262,42 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Errore apertura documento:', err);
           this.errorMessage = 'Impossibile aprire il documento. Riprova.';
+        }
+      });
+  }
+
+  confirmDeleteDocument(doc: DocumentDto): void {
+    this.documentToDelete = doc;
+    this.errorMessage = '';
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+    this.documentToDelete = null;
+  }
+
+  deleteDocument(): void {
+    if (!this.documentToDelete) return;
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    const fileName = this.documentToDelete.fileName;
+
+    this.patientService.deleteDocument(this.documentToDelete.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.documents = this.documents.filter(d => d.id !== this.documentToDelete!.id);
+          this.isLoading = false;
+          this.closeDeleteModal();
+          this.successMessage = `Documento "${fileName}" eliminato con successo.`;
+          setTimeout(() => this.successMessage = '', 5000);
+        },
+        error: (err) => {
+          console.error('Errore eliminazione documento:', err);
+          this.errorMessage = 'Impossibile eliminare il documento. Riprova.';
+          this.isLoading = false;
         }
       });
   }

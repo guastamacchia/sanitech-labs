@@ -5,11 +5,9 @@ import { RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import {
   SchedulingService,
-  DoctorDto,
   DepartmentDto,
   FacilityDto,
   SlotDto,
-  AppointmentDto,
   VisitMode,
   AppointmentStatus,
   DoctorWithDetails,
@@ -107,6 +105,7 @@ export class AppointmentBookingComponent implements OnInit {
 
   private loadData(): void {
     this.isLoading = true;
+    this.errorMessage = '';
 
     forkJoin({
       bookingData: this.schedulingService.loadBookingData(),
@@ -121,105 +120,25 @@ export class AppointmentBookingComponent implements OnInit {
           bookingData.facilities
         );
 
-        // Se non ci sono dati dal backend, usa mock
-        if (this.doctors.length === 0) {
-          this.loadMockData();
-        } else {
-          // Trasforma gli appuntamenti
-          const enrichedAppts = this.schedulingService.enrichAppointmentData(
-            appointments.content,
-            bookingData.doctors,
-            bookingData.departments,
-            bookingData.facilities
-          );
-          this.appointments = this.transformAppointments(enrichedAppts);
-        }
+        // Trasforma gli appuntamenti
+        const enrichedAppts = this.schedulingService.enrichAppointmentData(
+          appointments.content,
+          bookingData.doctors,
+          bookingData.departments,
+          bookingData.facilities
+        );
+        this.appointments = this.transformAppointments(enrichedAppts);
 
         this.dataLoaded = true;
         this.isLoading = false;
       },
-      error: () => {
-        // Fallback a mock data
-        this.loadMockData();
+      error: (err) => {
+        console.error('Errore nel caricamento dei dati:', err);
+        this.errorMessage = 'Errore nel caricamento dei dati. Riprova più tardi.';
         this.dataLoaded = true;
         this.isLoading = false;
       }
     });
-  }
-
-  private loadMockData(): void {
-    // Mock departments (reparti = specializzazioni)
-    this.departments = [
-      { id: 1, code: 'MED_GEN', name: 'Medicina Generale', facilityCode: 'POLIAM_NORD' },
-      { id: 2, code: 'CARDIO', name: 'Cardiologia', facilityCode: 'OSP_SANGIOVANNI' },
-      { id: 3, code: 'ORTOPED', name: 'Ortopedia', facilityCode: 'CLIN_AURORA' },
-      { id: 4, code: 'DERMAT', name: 'Dermatologia', facilityCode: 'CENTRO_TUSC' },
-      { id: 5, code: 'NEURO', name: 'Neurologia', facilityCode: 'OSP_SANGIOVANNI' },
-      { id: 6, code: 'GINECO', name: 'Ginecologia', facilityCode: 'POLIAM_NORD' },
-      { id: 7, code: 'OCULIST', name: 'Oculistica', facilityCode: 'CENTRO_PRATI' },
-      { id: 8, code: 'OTORIN', name: 'Otorinolaringoiatria', facilityCode: 'CLIN_AURORA' }
-    ];
-
-    this.facilities = [
-      { id: 1, code: 'POLIAM_NORD', name: 'Poliambulatorio Roma Nord' },
-      { id: 2, code: 'OSP_SANGIOVANNI', name: 'Ospedale San Giovanni' },
-      { id: 3, code: 'CLIN_AURORA', name: 'Clinica Villa Aurora' },
-      { id: 4, code: 'CENTRO_TUSC', name: 'Centro Medico Tuscolano' },
-      { id: 5, code: 'CENTRO_PRATI', name: 'Centro Oculistico Prati' }
-    ];
-
-    // Mock doctors
-    const mockDoctors: DoctorDto[] = [
-      { id: 1, firstName: 'Marco', lastName: 'Bianchi', email: 'marco.bianchi@sanitech.it', departmentCode: 'MED_GEN', facilityCode: 'POLIAM_NORD' },
-      { id: 2, firstName: 'Laura', lastName: 'Verdi', email: 'laura.verdi@sanitech.it', departmentCode: 'CARDIO', facilityCode: 'OSP_SANGIOVANNI' },
-      { id: 3, firstName: 'Giuseppe', lastName: 'Russo', email: 'giuseppe.russo@sanitech.it', departmentCode: 'ORTOPED', facilityCode: 'CLIN_AURORA' },
-      { id: 4, firstName: 'Anna', lastName: 'Esposito', email: 'anna.esposito@sanitech.it', departmentCode: 'DERMAT', facilityCode: 'CENTRO_TUSC' },
-      { id: 5, firstName: 'Luca', lastName: 'Romano', email: 'luca.romano@sanitech.it', departmentCode: 'NEURO', facilityCode: 'OSP_SANGIOVANNI' },
-      { id: 6, firstName: 'Francesca', lastName: 'Conti', email: 'francesca.conti@sanitech.it', departmentCode: 'GINECO', facilityCode: 'POLIAM_NORD' },
-      { id: 7, firstName: 'Alessandro', lastName: 'Martini', email: 'alessandro.martini@sanitech.it', departmentCode: 'OCULIST', facilityCode: 'CENTRO_PRATI' },
-      { id: 8, firstName: 'Chiara', lastName: 'Fontana', email: 'chiara.fontana@sanitech.it', departmentCode: 'OTORIN', facilityCode: 'CLIN_AURORA' }
-    ];
-
-    this.doctors = this.schedulingService.enrichDoctorData(mockDoctors, this.departments, this.facilities);
-
-    // Mock appointments
-    this.appointments = [
-      {
-        id: 1, slotId: 101, patientId: 1, doctorId: 2,
-        doctorName: 'Dr.ssa Laura Verdi', departmentName: 'Cardiologia',
-        facilityName: 'Ospedale San Giovanni',
-        date: '2026-02-05', startTime: '10:00', endTime: '10:30',
-        mode: 'IN_PERSON', status: 'CONFIRMED',
-        reason: 'Visita di controllo cardiologica'
-      },
-      {
-        id: 2, slotId: 102, patientId: 1, doctorId: 1,
-        doctorName: 'Dr. Marco Bianchi', departmentName: 'Medicina Generale',
-        facilityName: 'Poliambulatorio Roma Nord',
-        date: '2026-02-12', startTime: '14:30', endTime: '15:00',
-        mode: 'TELEVISIT', status: 'BOOKED',
-        reason: 'Consulto generico'
-      },
-      {
-        id: 3, slotId: 103, patientId: 1, doctorId: 4,
-        doctorName: 'Dr.ssa Anna Esposito', departmentName: 'Dermatologia',
-        facilityName: 'Centro Medico Tuscolano',
-        date: '2026-01-15', startTime: '11:00', endTime: '11:30',
-        mode: 'IN_PERSON', status: 'COMPLETED',
-        reason: 'Controllo nei'
-      },
-      {
-        id: 4, slotId: 104, patientId: 1, doctorId: 3,
-        doctorName: 'Dr. Giuseppe Russo', departmentName: 'Ortopedia',
-        facilityName: 'Clinica Villa Aurora',
-        date: '2026-01-10', startTime: '09:00', endTime: '09:30',
-        mode: 'IN_PERSON', status: 'CANCELLED',
-        reason: 'Dolore alla spalla'
-      }
-    ];
-
-    // Genera mock slots
-    this.generateMockSlots();
   }
 
   private transformAppointments(appts: AppointmentWithDetails[]): DisplayAppointment[] {
@@ -244,38 +163,6 @@ export class AppointmentBookingComponent implements OnInit {
     });
   }
 
-  private generateMockSlots(): void {
-    const slots: TimeSlot[] = [];
-    let slotId = 1000;
-    const times = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
-
-    for (const doctor of this.doctors) {
-      for (let dayOffset = 1; dayOffset <= 14; dayOffset++) {
-        const date = new Date();
-        date.setDate(date.getDate() + dayOffset);
-        if (date.getDay() === 0 || date.getDay() === 6) continue;
-
-        const dateStr = date.toISOString().split('T')[0];
-        const availableTimes = times.filter(() => Math.random() > 0.4);
-
-        for (const time of availableTimes) {
-          const endTime = this.addMinutes(time, 30);
-          slots.push({
-            id: slotId++,
-            doctorId: doctor.id,
-            date: dateStr,
-            startTime: time,
-            endTime: endTime,
-            mode: Math.random() > 0.7 ? 'TELEVISIT' : 'IN_PERSON',
-            status: Math.random() > 0.2 ? 'AVAILABLE' : 'BOOKED'
-          });
-        }
-      }
-    }
-
-    this.availableSlots = slots;
-  }
-
   private loadSlotsForDoctor(doctorId: number): void {
     const from = new Date();
     const to = new Date();
@@ -288,49 +175,13 @@ export class AppointmentBookingComponent implements OnInit {
       size: 200
     }).subscribe({
       next: (response) => {
-        if (response.content.length > 0) {
-          this.availableSlots = response.content.map(s => this.transformSlot(s));
-        }
-        // Se non ci sono slot dal backend, genera mock
-        if (this.availableSlots.filter(s => s.doctorId === doctorId).length === 0) {
-          this.generateMockSlotsForDoctor(doctorId);
-        }
+        this.availableSlots = response.content.map(s => this.transformSlot(s));
       },
-      error: () => {
-        this.generateMockSlotsForDoctor(doctorId);
+      error: (err) => {
+        console.error('Errore nel caricamento degli slot:', err);
+        this.availableSlots = [];
       }
     });
-  }
-
-  private generateMockSlotsForDoctor(doctorId: number): void {
-    const existingSlots = this.availableSlots.filter(s => s.doctorId !== doctorId);
-    const newSlots: TimeSlot[] = [];
-    let slotId = Math.max(...this.availableSlots.map(s => s.id), 0) + 1;
-    const times = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
-
-    for (let dayOffset = 1; dayOffset <= 14; dayOffset++) {
-      const date = new Date();
-      date.setDate(date.getDate() + dayOffset);
-      if (date.getDay() === 0 || date.getDay() === 6) continue;
-
-      const dateStr = date.toISOString().split('T')[0];
-      const availableTimes = times.filter(() => Math.random() > 0.4);
-
-      for (const time of availableTimes) {
-        const endTime = this.addMinutes(time, 30);
-        newSlots.push({
-          id: slotId++,
-          doctorId,
-          date: dateStr,
-          startTime: time,
-          endTime: endTime,
-          mode: Math.random() > 0.7 ? 'TELEVISIT' : 'IN_PERSON',
-          status: 'AVAILABLE'
-        });
-      }
-    }
-
-    this.availableSlots = [...existingSlots, ...newSlots];
   }
 
   private transformSlot(slot: SlotDto): TimeSlot {
@@ -594,43 +445,16 @@ export class AppointmentBookingComponent implements OnInit {
       error: (err) => {
         this.isLoading = false;
         if (err.status === 400 || err.status === 409) {
-          this.errorMessage = 'Lo slot non e\' piu\' disponibile. Seleziona un altro orario.';
+          this.errorMessage = 'Lo slot non è più disponibile. Seleziona un altro orario.';
           // Ricarica gli slot
           if (this.selectedDoctor) {
             this.loadSlotsForDoctor(this.selectedDoctor.id);
           }
         } else {
-          // Fallback: simula successo per demo
-          this.simulateBooking();
+          this.errorMessage = 'Errore durante la prenotazione. Riprova più tardi.';
         }
       }
     });
-  }
-
-  private simulateBooking(): void {
-    const newAppt: DisplayAppointment = {
-      id: Math.max(...this.appointments.map(a => a.id), 0) + 1,
-      slotId: this.selectedSlot!.id,
-      patientId: 1,
-      doctorId: this.selectedDoctor!.id,
-      doctorName: `Dr. ${this.selectedDoctor!.firstName} ${this.selectedDoctor!.lastName}`,
-      departmentName: this.selectedDoctor!.departmentName || this.selectedDoctor!.departmentCode,
-      facilityName: this.selectedDoctor!.facilityName || this.selectedDoctor!.facilityCode,
-      date: this.selectedSlot!.date,
-      startTime: this.selectedSlot!.startTime,
-      endTime: this.selectedSlot!.endTime,
-      mode: this.selectedSlot!.mode,
-      status: 'BOOKED',
-      reason: this.bookingReason
-    };
-
-    const slot = this.availableSlots.find(s => s.id === this.selectedSlot!.id);
-    if (slot) slot.status = 'BOOKED';
-
-    this.appointments = [newAppt, ...this.appointments];
-    this.isLoading = false;
-    this.closeBookingModal();
-    this.showConfirmationModal = true;
   }
 
   closeConfirmationModal(): void {
@@ -660,9 +484,12 @@ export class AppointmentBookingComponent implements OnInit {
       next: () => {
         this.updateAppointmentAsCancelled(appointmentId);
       },
-      error: () => {
-        // Fallback per demo
-        this.updateAppointmentAsCancelled(appointmentId);
+      error: (err) => {
+        console.error('Errore durante la cancellazione:', err);
+        this.isLoading = false;
+        this.closeCancelModal();
+        this.errorMessage = 'Errore durante la cancellazione. Riprova più tardi.';
+        setTimeout(() => this.errorMessage = '', 5000);
       }
     });
   }

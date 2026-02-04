@@ -2,6 +2,7 @@ package it.sanitech.directory.web;
 
 import it.sanitech.commons.audit.Auditable;
 import it.sanitech.directory.services.PatientService;
+import it.sanitech.directory.services.dto.NotificationPreferenceDto;
 import it.sanitech.directory.services.dto.PatientDto;
 import it.sanitech.directory.services.dto.update.PatientPhoneUpdateDto;
 import it.sanitech.directory.utilities.AppConstants;
@@ -45,5 +46,26 @@ public class PatientProfileController {
     @Auditable(aggregateType = "PATIENT", eventType = "PATIENT_PHONE_UPDATED", aggregateIdSpel = "id")
     public PatientDto updatePhone(@Valid @RequestBody PatientPhoneUpdateDto dto, Authentication auth) {
         return patientService.updatePhone(auth.getName(), dto, auth);
+    }
+
+    // ==================== NOTIFICATION PREFERENCES ====================
+
+    /**
+     * Restituisce le preferenze di notifica del paziente autenticato.
+     */
+    @GetMapping(value = "/preferences", produces = MediaType.APPLICATION_JSON_VALUE)
+    public NotificationPreferenceDto getNotificationPreferences(Authentication auth) {
+        return patientService.getNotificationPreferences(auth.getName());
+    }
+
+    /**
+     * Aggiorna le preferenze di notifica del paziente autenticato.
+     */
+    @PutMapping(value = "/preferences", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Auditable(aggregateType = "PATIENT", eventType = "PATIENT_PREFERENCES_UPDATED", aggregateIdSpel = "id")
+    public NotificationPreferenceDto updateNotificationPreferences(
+            @RequestBody NotificationPreferenceDto dto,
+            Authentication auth) {
+        return patientService.updateNotificationPreferences(auth.getName(), dto);
     }
 }

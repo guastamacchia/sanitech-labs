@@ -4,9 +4,11 @@ import it.sanitech.commons.audit.Auditable;
 import it.sanitech.consents.repositories.entities.ConsentScope;
 import it.sanitech.consents.security.AuthClaims;
 import it.sanitech.consents.services.ConsentService;
+import it.sanitech.consents.services.dto.ConsentBulkCreateDto;
 import it.sanitech.consents.services.dto.ConsentCheckResponse;
 import it.sanitech.consents.services.dto.ConsentCreateDto;
 import it.sanitech.consents.services.dto.ConsentDto;
+import it.sanitech.consents.services.dto.ConsentUpdateDto;
 import it.sanitech.consents.services.dto.PrivacyConsentCreateDto;
 import it.sanitech.consents.services.dto.PrivacyConsentDto;
 import it.sanitech.consents.utilities.AppConstants;
@@ -106,6 +108,26 @@ public class ConsentController {
     }
 
     /**
+     * Concede consensi multipli (bulk) per un singolo medico.
+     * Ogni scope genera un record separato in tabella.
+     * <p>
+     * Questo endpoint permette al paziente di associare ad un medico tutti i consensi
+     * (DOCS, PRESCRIPTIONS, TELEVISIT) in una sola operazione.
+     * </p>
+     *
+     * @param dto DTO con doctorId, set di scope e scadenza opzionale
+     * @param auth autenticazione corrente
+     * @return lista dei consensi concessi (un record per ogni scope)
+     */
+    @PostMapping("/me/doctors/bulk")
+    @PreAuthorize("hasRole('PATIENT')")
+    @Auditable(aggregateType = "CONSENT", eventType = "DOCTOR_CONSENTS_BULK_GRANTED", aggregateIdSpel = "#dto.doctorId")
+    public List<ConsentDto> grantDoctorConsentsBulk(@RequestBody @Valid ConsentBulkCreateDto dto, Authentication auth) {
+        Long patientId = requirePatientId(auth);
+        return service.grantBulkForPatient(patientId, dto, auth);
+    }
+
+    /**
      * Revoca un consenso (paziente → medico) per l'utente paziente autenticato.
      */
     @DeleteMapping("/me/doctors/{doctorId}/{scope}")
@@ -114,6 +136,22 @@ public class ConsentController {
     public void revokeDoctorConsent(@PathVariable Long doctorId, @PathVariable ConsentScope scope, Authentication auth) {
         Long patientId = requirePatientId(auth);
         service.revokeForPatient(patientId, doctorId, scope, auth);
+    }
+
+    /**
+     * Aggiorna un consenso esistente (paziente → medico) per l'utente paziente autenticato.
+     * Permette di modificare la scadenza del consenso.
+     */
+    @PatchMapping("/me/doctors/{doctorId}/{scope}")
+    @PreAuthorize("hasRole('PATIENT')")
+    @Auditable(aggregateType = "CONSENT", eventType = "DOCTOR_CONSENT_UPDATED", aggregateIdParam = "doctorId")
+    public ConsentDto updateDoctorConsent(
+            @PathVariable Long doctorId,
+            @PathVariable ConsentScope scope,
+            @RequestBody @Valid ConsentUpdateDto dto,
+            Authentication auth) {
+        Long patientId = requirePatientId(auth);
+        return service.updateForPatient(patientId, doctorId, scope, dto, auth);
     }
 
     /**
@@ -130,6 +168,31 @@ public class ConsentController {
     @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
     public List<Long> getPatientsWithTelevisitConsent(@RequestParam Long doctorId, Authentication auth) {
         return service.getPatientIdsWithTelevisitConsent(doctorId);
+    }
+
+    /**
+     * Restituisce gli ID dei pazienti che hanno concesso consenso attivo al medico per lo scope specificato.
+     * <p>
+     * Utilizzato dalla dashboard medico per filtrare i pazienti in base al tipo di consenso
+     * (es. PRESCRIPTIONS per le prescrizioni, DOCS per i documenti clinici).
+     * </p>
+     * <p>
+     * Se doctorId non è fornito, viene usato l'ID del medico autenticato dal claim "did".
+     * </p>
+     *
+     * @param scope tipo di consenso richiesto
+     * @param doctorId ID del medico (opzionale, default dal token)
+     * @return lista di patient ID con consenso valido per lo scope
+     */
+    @GetMapping("/patients-with-consent")
+    @RateLimiter(name = "consentsApi")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+    public List<Long> getPatientsWithConsent(
+            @RequestParam ConsentScope scope,
+            @RequestParam(required = false) Long doctorId,
+            Authentication auth) {
+        Long resolvedDoctorId = resolveDoctorId(doctorId, auth);
+        return service.getPatientIdsWithConsent(resolvedDoctorId, scope);
     }
 
     private static Long requirePatientId(Authentication auth) {

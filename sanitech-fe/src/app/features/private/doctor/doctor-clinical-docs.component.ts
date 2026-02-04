@@ -74,9 +74,12 @@ export class DoctorClinicalDocsComponent implements OnInit {
   // UI State
   isLoading = false;
   isUploading = false;
+  isDeleting = false;
   successMessage = '';
   errorMessage = '';
   showUploadModal = false;
+  showDeleteModal = false;
+  documentToDelete: ClinicalDocument | null = null;
 
   constructor(private doctorApi: DoctorApiService) {}
 
@@ -330,12 +333,45 @@ export class DoctorClinicalDocsComponent implements OnInit {
   }
 
   viewDocument(doc: ClinicalDocument): void {
-    this.successMessage = `Apertura documento "${doc.title}"...`;
-    setTimeout(() => this.successMessage = '', 2000);
+    const url = this.doctorApi.downloadDocumentUrl(doc.id);
+    window.open(url, '_blank');
   }
 
   downloadDocument(doc: ClinicalDocument): void {
-    this.successMessage = `Download di "${doc.title}" avviato.`;
-    setTimeout(() => this.successMessage = '', 3000);
+    const url = this.doctorApi.downloadDocumentUrl(doc.id);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = doc.title;
+    link.click();
+  }
+
+  deleteDocument(doc: ClinicalDocument): void {
+    this.documentToDelete = doc;
+    this.showDeleteModal = true;
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal = false;
+    this.documentToDelete = null;
+  }
+
+  confirmDelete(): void {
+    if (!this.documentToDelete) return;
+
+    this.isDeleting = true;
+    this.doctorApi.deleteDocument(this.documentToDelete.id).subscribe({
+      next: () => {
+        this.successMessage = `Documento "${this.documentToDelete?.title}" eliminato con successo.`;
+        this.closeDeleteModal();
+        this.loadData();
+        this.isDeleting = false;
+        setTimeout(() => this.successMessage = '', 3000);
+      },
+      error: () => {
+        this.errorMessage = `Errore durante l'eliminazione del documento.`;
+        this.isDeleting = false;
+        setTimeout(() => this.errorMessage = '', 5000);
+      }
+    });
   }
 }

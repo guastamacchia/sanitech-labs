@@ -130,40 +130,35 @@ export class DoctorPrescriptionsComponent implements OnInit {
     this.isLoading = true;
     this.errorMessage = '';
 
-    // Carica pazienti con consenso PRESCRIPTIONS
-    this.doctorApi.searchPatients({ size: 100 }).pipe(
-      switchMap(patientsPage => {
-        const allPatients = patientsPage.content || [];
-        // Cache pazienti
-        allPatients.forEach(p => this.patientsCache.set(p.id, p));
+    // Carica direttamente i pazienti con consenso PRESCRIPTIONS attivo per il medico
+    this.doctorApi.getPatientsWithConsent('PRESCRIPTIONS').pipe(
+      switchMap(patientIds => {
+        if (patientIds.length === 0) {
+          return of({ patientsWithConsent: [] as { id: number; name: string }[] });
+        }
 
-        // Verifica consenso PRESCRIPTIONS per ogni paziente
-        const consentChecks = allPatients.map(patient =>
-          this.doctorApi.checkConsent(patient.id, 'PRESCRIPTIONS').pipe(
-            map(consent => ({ patient, allowed: consent.allowed })),
-            catchError(() => of({ patient, allowed: false }))
+        // Carica i dettagli dei pazienti
+        const patientFetches = patientIds.map(id =>
+          this.doctorApi.getPatient(id).pipe(
+            map(patient => {
+              this.patientsCache.set(patient.id, patient);
+              return {
+                id: patient.id,
+                name: `${patient.lastName} ${patient.firstName}`
+              };
+            }),
+            catchError(() => of(null))
           )
         );
 
-        if (consentChecks.length === 0) {
-          return of({ allPatients, patientsWithConsent: [] as { id: number; name: string }[] });
-        }
-
-        return forkJoin(consentChecks).pipe(
-          map(results => {
-            // Filtra pazienti con consenso
-            const patientsWithConsent = results
-              .filter(r => r.allowed)
-              .map(r => ({
-                id: r.patient.id,
-                name: `${r.patient.lastName} ${r.patient.firstName}`
-              }));
-            return { allPatients, patientsWithConsent };
-          })
+        return forkJoin(patientFetches).pipe(
+          map(results => ({
+            patientsWithConsent: results.filter((p): p is { id: number; name: string } => p !== null)
+          }))
         );
       })
     ).subscribe({
-      next: ({ allPatients, patientsWithConsent }) => {
+      next: ({ patientsWithConsent }) => {
         this.patients = patientsWithConsent;
 
         // Carica prescrizioni per ogni paziente con consenso

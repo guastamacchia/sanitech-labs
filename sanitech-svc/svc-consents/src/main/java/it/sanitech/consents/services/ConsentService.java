@@ -7,8 +7,10 @@ import it.sanitech.consents.repositories.entities.PrivacyConsent;
 import it.sanitech.consents.repositories.ConsentRepository;
 import it.sanitech.consents.repositories.PrivacyConsentRepository;
 import it.sanitech.consents.services.dto.ConsentCheckResponse;
+import it.sanitech.consents.services.dto.ConsentBulkCreateDto;
 import it.sanitech.consents.services.dto.ConsentCreateDto;
 import it.sanitech.consents.services.dto.ConsentDto;
+import it.sanitech.consents.services.dto.ConsentUpdateDto;
 import it.sanitech.consents.services.dto.PrivacyConsentCreateDto;
 import it.sanitech.consents.services.dto.PrivacyConsentDto;
 import it.sanitech.consents.services.mapper.ConsentMapper;
@@ -22,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,6 +113,64 @@ public class ConsentService {
         }
     }
 
+    /**
+     * Concede consensi multipli (bulk) per un singolo medico.
+     * Ogni scope genera un record separato in tabella.
+     * L'operazione e' transazionale: o tutti i consensi vengono concessi o nessuno.
+     *
+     * @param patientId ID del paziente
+     * @param dto DTO con doctorId, set di scope e scadenza opzionale
+     * @param auth autenticazione corrente
+     * @return lista dei consensi concessi
+     */
+    @Transactional
+    public List<ConsentDto> grantBulkForPatient(Long patientId, ConsentBulkCreateDto dto, Authentication auth) {
+        Long doctorId = dto.doctorId();
+        List<ConsentDto> results = new ArrayList<>();
+
+        for (ConsentScope scope : dto.scopes()) {
+            Consent consent = repository.findByPatientIdAndDoctorIdAndScope(patientId, doctorId, scope)
+                    .orElseGet(() -> Consent.builder()
+                            .patientId(patientId)
+                            .doctorId(doctorId)
+                            .scope(scope)
+                            .build());
+
+            consent.grant(dto.expiresAt());
+
+            try {
+                Consent saved = repository.save(consent);
+
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("consentId", saved.getId());
+                payload.put("patientId", saved.getPatientId());
+                payload.put("doctorId", saved.getDoctorId());
+                payload.put("scope", saved.getScope().name());
+                payload.put("status", saved.getStatus().name());
+                payload.put("expiresAt", saved.getExpiresAt() == null ? null : saved.getExpiresAt().toString());
+
+                domainEventPublisher.publish(
+                        AGGREGATE_TYPE,
+                        String.valueOf(saved.getId()),
+                        "CONSENT_GRANTED",
+                        payload,
+                        Outbox.TOPIC_AUDITS_EVENTS,
+                        auth
+                );
+
+                results.add(mapper.toDto(saved));
+
+            } catch (DataIntegrityViolationException ex) {
+                throw new IllegalStateException(
+                        "Impossibile concedere il consenso per scope %s: esiste già un record concorrente.".formatted(scope),
+                        ex
+                );
+            }
+        }
+
+        return results;
+    }
+
     @Transactional
     public void revokeForPatient(Long patientId, Long doctorId, ConsentScope scope, Authentication auth) {
         Consent consent = repository.findByPatientIdAndDoctorIdAndScope(patientId, doctorId, scope)
@@ -135,6 +196,38 @@ public class ConsentService {
         );
     }
 
+    @Transactional
+    public ConsentDto updateForPatient(Long patientId, Long doctorId, ConsentScope scope, ConsentUpdateDto dto, Authentication auth) {
+        Consent consent = repository.findByPatientIdAndDoctorIdAndScope(patientId, doctorId, scope)
+                .orElseThrow(() -> NotFoundException.of("Consenso per patientId=%d, doctorId=%d, scope=%s"
+                        .formatted(patientId, doctorId, scope)));
+
+        if (consent.getStatus() != it.sanitech.consents.repositories.entities.ConsentStatus.GRANTED) {
+            throw new IllegalStateException("Non e' possibile modificare un consenso revocato.");
+        }
+
+        consent.updateExpiry(dto.expiresAt());
+        Consent saved = repository.save(consent);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("consentId", saved.getId());
+        payload.put("patientId", saved.getPatientId());
+        payload.put("doctorId", saved.getDoctorId());
+        payload.put("scope", saved.getScope().name());
+        payload.put("expiresAt", saved.getExpiresAt() == null ? null : saved.getExpiresAt().toString());
+
+        domainEventPublisher.publish(
+                AGGREGATE_TYPE,
+                String.valueOf(saved.getId()),
+                "CONSENT_UPDATED",
+                payload,
+                Outbox.TOPIC_AUDITS_EVENTS,
+                auth
+        );
+
+        return mapper.toDto(saved);
+    }
+
     @Transactional(readOnly = true)
     public ConsentDto getById(Long id) {
         return mapper.toDto(repository.findById(id)
@@ -150,7 +243,20 @@ public class ConsentService {
     @Transactional(readOnly = true)
     @Bulkhead(name = "consentsRead")
     public List<Long> getPatientIdsWithTelevisitConsent(Long doctorId) {
-        return repository.findByDoctorIdAndScopeAndStatus(doctorId, ConsentScope.TELEVISIT, it.sanitech.consents.repositories.entities.ConsentStatus.GRANTED)
+        return getPatientIdsWithConsent(doctorId, ConsentScope.TELEVISIT);
+    }
+
+    /**
+     * Restituisce gli ID dei pazienti che hanno concesso consenso attivo al medico per lo scope specificato.
+     *
+     * @param doctorId ID del medico
+     * @param scope tipo di consenso richiesto
+     * @return lista di patient ID con consenso valido per lo scope
+     */
+    @Transactional(readOnly = true)
+    @Bulkhead(name = "consentsRead")
+    public List<Long> getPatientIdsWithConsent(Long doctorId, ConsentScope scope) {
+        return repository.findByDoctorIdAndScopeAndStatus(doctorId, scope, it.sanitech.consents.repositories.entities.ConsentStatus.GRANTED)
                 .stream()
                 .filter(Consent::isCurrentlyGranted)
                 .map(Consent::getPatientId)

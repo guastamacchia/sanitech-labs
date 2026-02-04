@@ -8,5 +8,6 @@ public record KeycloakUserSyncRequest(
         boolean enabled,
         String roleToAssign,
         String aggregateType,
-        Long aggregateId
+        Long aggregateId,
+        String departmentCode
 ) {}

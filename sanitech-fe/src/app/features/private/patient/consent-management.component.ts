@@ -75,20 +75,37 @@ export class ConsentManagementComponent implements OnInit {
   isLoading = false;
   showGrantModal = false;
   showRevokeModal = false;
+  showViewModal = false;
+  showEditModal = false;
   successMessage = '';
   errorMessage = '';
+  editErrorMessage = '';
   loadError = '';
 
-  // Form per nuovo consenso
+  // Form per nuovo consenso (selezione multipla scope)
   grantForm = {
     doctorId: null as number | null,
-    scope: 'DOCS' as ConsentScope,
+    scopes: ['DOCS'] as ConsentScope[],
     hasExpiry: false,
     expiryDate: ''
   };
 
-  // Consenso selezionato per revoca
+  // Lista degli scope disponibili per selezione multipla
+  availableScopes: ConsentScope[] = ['DOCS', 'PRESCRIPTIONS', 'TELEVISIT'];
+
+  // Consenso selezionato per revoca/visualizzazione/modifica
   selectedConsentForRevoke: DoctorConsent | null = null;
+  selectedConsentForView: DoctorConsent | null = null;
+  selectedConsentForEdit: DoctorConsent | null = null;
+
+  // Form per modifica consenso
+  editForm = {
+    hasExpiry: false,
+    expiryDate: ''
+  };
+
+  // Data minima per scadenza (domani)
+  minExpiryDate = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
   // Filtri
   statusFilter: 'ALL' | 'GRANTED' | 'REVOKED' = 'ALL';
@@ -231,12 +248,37 @@ export class ConsentManagementComponent implements OnInit {
   openGrantModal(): void {
     this.grantForm = {
       doctorId: null,
-      scope: 'DOCS',
+      scopes: [],
       hasExpiry: false,
       expiryDate: ''
     };
     this.errorMessage = '';
     this.showGrantModal = true;
+  }
+
+  /** Toggle selezione scope (per selezione multipla) */
+  toggleScope(scope: ConsentScope): void {
+    const idx = this.grantForm.scopes.indexOf(scope);
+    if (idx === -1) {
+      this.grantForm.scopes = [...this.grantForm.scopes, scope];
+    } else {
+      this.grantForm.scopes = this.grantForm.scopes.filter(s => s !== scope);
+    }
+  }
+
+  /** Verifica se uno scope e' selezionato */
+  isScopeSelected(scope: ConsentScope): boolean {
+    return this.grantForm.scopes.includes(scope);
+  }
+
+  /** Seleziona tutti gli scope */
+  selectAllScopes(): void {
+    this.grantForm.scopes = [...this.availableScopes];
+  }
+
+  /** Deseleziona tutti gli scope */
+  deselectAllScopes(): void {
+    this.grantForm.scopes = [];
   }
 
   closeGrantModal(): void {
@@ -253,9 +295,85 @@ export class ConsentManagementComponent implements OnInit {
     this.selectedConsentForRevoke = null;
   }
 
+  openViewModal(consent: DoctorConsent): void {
+    this.selectedConsentForView = consent;
+    this.showViewModal = true;
+  }
+
+  closeViewModal(): void {
+    this.showViewModal = false;
+    this.selectedConsentForView = null;
+  }
+
+  openEditModal(consent: DoctorConsent): void {
+    this.selectedConsentForEdit = consent;
+    this.editForm = {
+      hasExpiry: !!consent.expiresAt,
+      expiryDate: consent.expiresAt ? consent.expiresAt.split('T')[0] : ''
+    };
+    this.editErrorMessage = '';
+    this.showEditModal = true;
+  }
+
+  closeEditModal(): void {
+    this.showEditModal = false;
+    this.selectedConsentForEdit = null;
+  }
+
+  isExpired(dateStr: string): boolean {
+    return new Date(dateStr) < new Date();
+  }
+
+  submitEdit(): void {
+    if (!this.selectedConsentForEdit) return;
+
+    const consent = this.selectedConsentForEdit;
+    this.isLoading = true;
+    this.editErrorMessage = '';
+
+    const body = {
+      doctorId: consent.doctorId,
+      scope: consent.scope,
+      expiresAt: this.editForm.hasExpiry && this.editForm.expiryDate
+        ? new Date(this.editForm.expiryDate).toISOString()
+        : null
+    };
+
+    this.api.request<ConsentDto>(
+      'PATCH',
+      `/api/consents/me/doctors/${consent.doctorId}/${consent.scope}`,
+      body
+    ).subscribe({
+      next: (updated) => {
+        const idx = this.doctorConsents.findIndex(c => c.id === consent.id);
+        if (idx !== -1) {
+          this.doctorConsents[idx] = {
+            ...this.doctorConsents[idx],
+            expiresAt: updated.expiresAt
+          };
+          this.doctorConsents = [...this.doctorConsents];
+        }
+        this.isLoading = false;
+        this.closeEditModal();
+        this.successMessage = 'Consenso modificato con successo.';
+        setTimeout(() => this.successMessage = '', 5000);
+      },
+      error: (err) => {
+        console.error('Errore modifica consenso:', err);
+        this.isLoading = false;
+        this.editErrorMessage = err.error?.message || 'Errore durante la modifica del consenso.';
+      }
+    });
+  }
+
   submitGrant(): void {
     if (!this.grantForm.doctorId) {
       this.errorMessage = 'Seleziona un medico.';
+      return;
+    }
+
+    if (this.grantForm.scopes.length === 0) {
+      this.errorMessage = 'Seleziona almeno un ambito.';
       return;
     }
 
@@ -270,15 +388,15 @@ export class ConsentManagementComponent implements OnInit {
 
     const body = {
       doctorId: this.grantForm.doctorId,
-      scope: this.grantForm.scope,
+      scopes: this.grantForm.scopes,
       expiresAt: this.grantForm.hasExpiry && this.grantForm.expiryDate
         ? new Date(this.grantForm.expiryDate).toISOString()
         : null
     };
 
-    this.api.request<ConsentDto>('POST', '/api/consents/me/doctors', body).subscribe({
-      next: (consent) => {
-        const enriched: DoctorConsent = {
+    this.api.request<ConsentDto[]>('POST', '/api/consents/me/doctors/bulk', body).subscribe({
+      next: (consents) => {
+        const enriched: DoctorConsent[] = consents.map(consent => ({
           id: consent.id,
           doctorId: consent.doctorId,
           doctorName: `Dr. ${doctor.firstName} ${doctor.lastName}`,
@@ -287,20 +405,21 @@ export class ConsentManagementComponent implements OnInit {
           status: consent.status,
           grantedAt: consent.grantedAt,
           expiresAt: consent.expiresAt
-        };
-        this.doctorConsents = [enriched, ...this.doctorConsents];
+        }));
+        this.doctorConsents = [...enriched, ...this.doctorConsents];
         this.isLoading = false;
         this.closeGrantModal();
-        this.successMessage = `Consenso concesso con successo a ${doctor.firstName} ${doctor.lastName}`;
+        const scopeLabels = this.grantForm.scopes.map(s => this.getScopeLabel(s)).join(', ');
+        this.successMessage = `Consensi concessi con successo a ${doctor.firstName} ${doctor.lastName} per: ${scopeLabels}`;
         setTimeout(() => this.successMessage = '', 5000);
       },
       error: (err) => {
-        console.error('Errore concessione consenso:', err);
+        console.error('Errore concessione consensi:', err);
         this.isLoading = false;
         if (err.status === 409 || err.error?.message?.includes('esiste')) {
-          this.errorMessage = 'Esiste gia\' un consenso attivo per questo medico e ambito.';
+          this.errorMessage = 'Esiste gia\' un consenso attivo per questo medico e uno degli ambiti selezionati.';
         } else {
-          this.errorMessage = err.error?.message || 'Errore durante la concessione del consenso.';
+          this.errorMessage = err.error?.message || 'Errore durante la concessione dei consensi.';
         }
       }
     });

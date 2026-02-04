@@ -26,7 +26,8 @@ public class KeycloakUserSyncListener {
                         event.lastName(),
                         event.phone(),
                         event.aggregateType(),
-                        event.aggregateId()
+                        event.aggregateId(),
+                        event.departmentCode()
                 );
             }
             keycloakAdminClient.syncUser(new KeycloakUserSyncRequest(
@@ -37,7 +38,8 @@ public class KeycloakUserSyncListener {
                     event.enabled(),
                     event.roleToAssign(),
                     event.aggregateType(),
-                    event.aggregateId()
+                    event.aggregateId(),
+                    event.departmentCode()
             ));
         } catch (Exception ex) {
             log.error(

@@ -2,18 +2,12 @@
   <!-- Header -->
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
     <div>
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <a routerLink="/portal/doctor" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-arrow-left me-1"></i>
-          Torna Indietro
-        </a>
-        <nav aria-label="breadcrumb" class="mb-0">
-          <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a routerLink="/portal/doctor">Home</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Documenti clinici</li>
-          </ol>
-        </nav>
-      </div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a routerLink="/portal/doctor">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Documenti clinici</li>
+        </ol>
+      </nav>
       <h2 class="mb-1 fw-bold">Documenti clinici</h2>
       <p class="text-muted mb-0">Gestisci referti ed esami dei tuoi pazienti</p>
     </div>
@@ -25,6 +19,10 @@
       <button class="btn btn-primary" (click)="openUploadModal()">
         <i class="bi bi-upload me-1"></i>
         Carica documento
+      </button>
+      <button class="btn btn-outline-secondary" routerLink="/portal/doctor">
+        <i class="bi bi-arrow-left me-1"></i>
+        Torna indietro
       </button>
     </div>
   </div>
@@ -126,6 +124,17 @@
     </div>
   </div>
 
+  <!-- Info box -->
+  <div class="alert alert-info border-0 mb-4" *ngIf="!isLoading || documents.length > 0">
+    <div class="d-flex">
+      <i class="bi bi-info-circle me-3 mt-1"></i>
+      <div>
+        <h6 class="alert-heading mb-1">Visibilità documenti</h6>
+        <p class="mb-0 small">Puoi visualizzare tutti i documenti dei pazienti che ti hanno concesso il consenso per l'ambito DOCS. I documenti caricati dal paziente stesso e quelli di altri colleghi sono visibili per darti un quadro clinico completo.</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Lista documenti -->
   <div class="card card-glass border-0 shadow-sm" *ngIf="!isLoading || documents.length > 0">
     <div class="card-header bg-transparent border-bottom">
@@ -162,11 +171,14 @@
                   <i class="bi bi-person me-1"></i>{{ doc.uploadedBy }}
                 </span>
                 <div class="ms-auto d-flex gap-1">
-                  <button class="btn btn-sm btn-outline-primary" (click)="viewDocument(doc)">
-                    <i class="bi bi-eye me-1"></i>Visualizza
+                  <button class="btn btn-sm btn-outline-primary" (click)="viewDocument(doc)" title="Visualizza">
+                    <i class="bi bi-eye"></i>
                   </button>
-                  <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument(doc)">
+                  <button class="btn btn-sm btn-outline-secondary" (click)="downloadDocument(doc)" title="Scarica">
                     <i class="bi bi-download"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteDocument(doc)" title="Elimina" *ngIf="doc.isOwnDocument">
+                    <i class="bi bi-trash"></i>
                   </button>
                 </div>
               </div>
@@ -209,16 +221,6 @@
     </div>
   </div>
 
-  <!-- Info box -->
-  <div class="alert alert-info border-0 mt-4">
-    <div class="d-flex">
-      <i class="bi bi-info-circle me-3 mt-1"></i>
-      <div>
-        <h6 class="alert-heading mb-1">Visibilità documenti</h6>
-        <p class="mb-0 small">Puoi visualizzare tutti i documenti dei pazienti che ti hanno concesso il consenso per l'ambito DOCS. I documenti caricati dal paziente stesso e quelli di altri colleghi sono visibili per darti un quadro clinico completo.</p>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Modal upload documento -->
@@ -288,6 +290,36 @@
           <button type="button" class="btn btn-primary" (click)="uploadDocument()" [disabled]="isUploading">
             <span class="spinner-border spinner-border-sm me-1" *ngIf="isUploading"></span>
             Carica documento
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal conferma eliminazione -->
+<ng-container *ngIf="showDeleteModal && documentToDelete">
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+            Conferma eliminazione
+          </h5>
+          <button type="button" class="btn-close" (click)="closeDeleteModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Sei sicuro di voler eliminare il documento:</p>
+          <p class="fw-bold">{{ documentToDelete.title }}</p>
+          <p class="text-muted small mb-0">Questa azione non può essere annullata.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeDeleteModal()">Annulla</button>
+          <button type="button" class="btn btn-danger" (click)="confirmDelete()" [disabled]="isDeleting">
+            <span class="spinner-border spinner-border-sm me-1" *ngIf="isDeleting"></span>
+            Elimina
           </button>
         </div>
       </div>

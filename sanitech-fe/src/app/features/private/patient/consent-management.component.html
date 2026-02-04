@@ -196,17 +196,31 @@
                 </small>
               </td>
               <td class="text-end pe-4">
-                <button
-                  *ngIf="canRevoke(consent)"
-                  class="btn btn-outline-danger btn-sm"
-                  (click)="openRevokeModal(consent)"
-                  title="Revoca consenso">
-                  <i class="bi bi-x-circle me-1"></i>
-                  Revoca
-                </button>
-                <span *ngIf="consent.status === 'REVOKED'" class="text-muted small">
-                  Revocato il {{ formatDate(consent.revokedAt) }}
-                </span>
+                <div class="btn-group btn-group-sm">
+                  <!-- Visualizza -->
+                  <button
+                    class="btn btn-outline-secondary"
+                    (click)="openViewModal(consent)"
+                    title="Visualizza dettaglio">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <!-- Modifica -->
+                  <button
+                    *ngIf="canRevoke(consent)"
+                    class="btn btn-outline-primary"
+                    (click)="openEditModal(consent)"
+                    title="Modifica consenso">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <!-- Revoca -->
+                  <button
+                    *ngIf="canRevoke(consent)"
+                    class="btn btn-outline-danger"
+                    (click)="openRevokeModal(consent)"
+                    title="Revoca consenso">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </div>
               </td>
             </tr>
             <tr *ngIf="filteredConsents.length === 0">
@@ -293,55 +307,81 @@
               </select>
             </div>
 
-            <!-- Selezione ambito -->
+            <!-- Selezione ambito (multipla) -->
             <div class="mb-4">
-              <label class="form-label fw-semibold">
-                <i class="bi bi-shield-lock me-1"></i>
-                Ambito del consenso
-              </label>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label fw-semibold mb-0">
+                  <i class="bi bi-shield-lock me-1"></i>
+                  Ambito del consenso
+                </label>
+                <div class="btn-group btn-group-sm">
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="selectAllScopes()">
+                    <i class="bi bi-check-all me-1"></i>Seleziona tutti
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" (click)="deselectAllScopes()">
+                    <i class="bi bi-x-lg me-1"></i>Deseleziona
+                  </button>
+                </div>
+              </div>
+              <small class="text-muted d-block mb-3">Puoi selezionare piu' ambiti contemporaneamente. Verra' creato un consenso separato per ogni ambito selezionato.</small>
               <div class="row g-3">
                 <div class="col-md-4">
-                  <div class="card h-100 cursor-pointer"
-                       [class.border-primary]="grantForm.scope === 'DOCS'"
-                       [class.bg-primary]="grantForm.scope === 'DOCS'"
-                       [class.bg-opacity-10]="grantForm.scope === 'DOCS'"
-                       (click)="grantForm.scope = 'DOCS'"
+                  <div class="card h-100 position-relative"
+                       [class.border-primary]="isScopeSelected('DOCS')"
+                       [class.bg-primary]="isScopeSelected('DOCS')"
+                       [class.bg-opacity-10]="isScopeSelected('DOCS')"
+                       (click)="toggleScope('DOCS')"
                        style="cursor: pointer;">
+                    <div class="position-absolute top-0 end-0 p-2" *ngIf="isScopeSelected('DOCS')">
+                      <i class="bi bi-check-circle-fill text-primary"></i>
+                    </div>
                     <div class="card-body text-center py-4">
-                      <i class="bi bi-file-earmark-medical fs-1 mb-2" [class.text-primary]="grantForm.scope === 'DOCS'"></i>
+                      <i class="bi bi-file-earmark-medical fs-1 mb-2" [class.text-primary]="isScopeSelected('DOCS')"></i>
                       <h6 class="mb-1">Documenti clinici</h6>
                       <small class="text-muted">Referti, cartella clinica, esami</small>
                     </div>
                   </div>
                 </div>
                 <div class="col-md-4">
-                  <div class="card h-100"
-                       [class.border-primary]="grantForm.scope === 'PRESCRIPTIONS'"
-                       [class.bg-primary]="grantForm.scope === 'PRESCRIPTIONS'"
-                       [class.bg-opacity-10]="grantForm.scope === 'PRESCRIPTIONS'"
-                       (click)="grantForm.scope = 'PRESCRIPTIONS'"
+                  <div class="card h-100 position-relative"
+                       [class.border-primary]="isScopeSelected('PRESCRIPTIONS')"
+                       [class.bg-primary]="isScopeSelected('PRESCRIPTIONS')"
+                       [class.bg-opacity-10]="isScopeSelected('PRESCRIPTIONS')"
+                       (click)="toggleScope('PRESCRIPTIONS')"
                        style="cursor: pointer;">
+                    <div class="position-absolute top-0 end-0 p-2" *ngIf="isScopeSelected('PRESCRIPTIONS')">
+                      <i class="bi bi-check-circle-fill text-primary"></i>
+                    </div>
                     <div class="card-body text-center py-4">
-                      <i class="bi bi-capsule fs-1 mb-2" [class.text-primary]="grantForm.scope === 'PRESCRIPTIONS'"></i>
+                      <i class="bi bi-capsule fs-1 mb-2" [class.text-primary]="isScopeSelected('PRESCRIPTIONS')"></i>
                       <h6 class="mb-1">Prescrizioni</h6>
                       <small class="text-muted">Ricette, terapie farmacologiche</small>
                     </div>
                   </div>
                 </div>
                 <div class="col-md-4">
-                  <div class="card h-100"
-                       [class.border-primary]="grantForm.scope === 'TELEVISIT'"
-                       [class.bg-primary]="grantForm.scope === 'TELEVISIT'"
-                       [class.bg-opacity-10]="grantForm.scope === 'TELEVISIT'"
-                       (click)="grantForm.scope = 'TELEVISIT'"
+                  <div class="card h-100 position-relative"
+                       [class.border-primary]="isScopeSelected('TELEVISIT')"
+                       [class.bg-primary]="isScopeSelected('TELEVISIT')"
+                       [class.bg-opacity-10]="isScopeSelected('TELEVISIT')"
+                       (click)="toggleScope('TELEVISIT')"
                        style="cursor: pointer;">
+                    <div class="position-absolute top-0 end-0 p-2" *ngIf="isScopeSelected('TELEVISIT')">
+                      <i class="bi bi-check-circle-fill text-primary"></i>
+                    </div>
                     <div class="card-body text-center py-4">
-                      <i class="bi bi-camera-video fs-1 mb-2" [class.text-primary]="grantForm.scope === 'TELEVISIT'"></i>
+                      <i class="bi bi-camera-video fs-1 mb-2" [class.text-primary]="isScopeSelected('TELEVISIT')"></i>
                       <h6 class="mb-1">Televisite</h6>
                       <small class="text-muted">Visite in videochiamata</small>
                     </div>
                   </div>
                 </div>
+              </div>
+              <div class="mt-2" *ngIf="grantForm.scopes.length > 0">
+                <small class="text-success">
+                  <i class="bi bi-info-circle me-1"></i>
+                  {{ grantForm.scopes.length }} ambito/i selezionato/i: verranno creati {{ grantForm.scopes.length }} consensi separati
+                </small>
               </div>
             </div>
 
@@ -376,8 +416,8 @@
               <div class="d-flex">
                 <i class="bi bi-exclamation-triangle me-2"></i>
                 <div>
-                  <strong>Attenzione:</strong> Concedendo questo consenso, autorizzi il medico selezionato ad accedere ai tuoi dati nell'ambito specificato.
-                  Potrai revocare il consenso in qualsiasi momento.
+                  <strong>Attenzione:</strong> Concedendo {{ grantForm.scopes.length === 1 ? 'questo consenso' : 'questi consensi' }}, autorizzi il medico selezionato ad accedere ai tuoi dati {{ grantForm.scopes.length === 1 ? 'nell\'ambito specificato' : 'negli ambiti selezionati' }}.
+                  Potrai revocare {{ grantForm.scopes.length === 1 ? 'il consenso' : 'i consensi' }} in qualsiasi momento.
                 </div>
               </div>
             </div>
@@ -394,9 +434,9 @@
             type="button"
             class="btn btn-primary"
             (click)="submitGrant()"
-            [disabled]="!grantForm.doctorId || isLoading">
+            [disabled]="!grantForm.doctorId || grantForm.scopes.length === 0 || isLoading">
             <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
-            {{ isLoading ? 'Salvataggio...' : 'Concedi consenso' }}
+            {{ isLoading ? 'Salvataggio...' : (grantForm.scopes.length <= 1 ? 'Concedi consenso' : 'Concedi ' + grantForm.scopes.length + ' consensi') }}
           </button>
         </div>
       </div>
@@ -467,6 +507,212 @@
             [disabled]="isLoading">
             <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
             {{ isLoading ? 'Revoca in corso...' : 'Conferma revoca' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal: Visualizza Consenso -->
+<ng-container *ngIf="showViewModal && selectedConsentForView">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeViewModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="viewConsentModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <div>
+            <h5 class="modal-title fw-bold" id="viewConsentModalTitle">
+              <i class="bi bi-eye me-2 text-primary"></i>
+              Dettaglio consenso
+            </h5>
+            <p class="text-muted small mb-0 mt-1">Informazioni sul consenso concesso</p>
+          </div>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeViewModal()"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <!-- Medico -->
+          <div class="mb-4">
+            <label class="form-label small text-muted fw-semibold mb-1">Medico</label>
+            <div class="d-flex align-items-center">
+              <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
+                <i class="bi bi-person text-primary"></i>
+              </div>
+              <div>
+                <div class="fw-semibold">{{ selectedConsentForView.doctorName }}</div>
+                <small class="text-muted">{{ selectedConsentForView.doctorSpecialty }}</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ambito -->
+          <div class="mb-4">
+            <label class="form-label small text-muted fw-semibold mb-1">Ambito</label>
+            <div class="d-flex align-items-center">
+              <i [class]="getScopeIcon(selectedConsentForView.scope) + ' me-2 text-muted fs-5'"></i>
+              <span class="fw-medium">{{ getScopeLabel(selectedConsentForView.scope) }}</span>
+            </div>
+          </div>
+
+          <!-- Stato -->
+          <div class="mb-4">
+            <label class="form-label small text-muted fw-semibold mb-1">Stato</label>
+            <div>
+              <span class="badge" [ngClass]="getStatusBadgeClass(selectedConsentForView)">
+                {{ getStatusLabel(selectedConsentForView) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Date -->
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label small text-muted fw-semibold mb-1">Data concessione</label>
+              <div class="fw-medium">{{ formatDate(selectedConsentForView.grantedAt) }}</div>
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label small text-muted fw-semibold mb-1">Scadenza</label>
+              <div class="fw-medium" [class.text-danger]="selectedConsentForView.expiresAt && isExpired(selectedConsentForView.expiresAt)">
+                {{ formatExpiryDate(selectedConsentForView.expiresAt) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Data revoca (se revocato) -->
+          <div class="mb-3" *ngIf="selectedConsentForView.status === 'REVOKED'">
+            <label class="form-label small text-muted fw-semibold mb-1">Data revoca</label>
+            <div class="fw-medium text-danger">{{ formatDate(selectedConsentForView.revokedAt) }}</div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeViewModal()">Chiudi</button>
+          <button
+            *ngIf="canRevoke(selectedConsentForView)"
+            type="button"
+            class="btn btn-primary"
+            (click)="closeViewModal(); openEditModal(selectedConsentForView)">
+            <i class="bi bi-pencil me-1"></i>
+            Modifica
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal: Modifica Consenso -->
+<ng-container *ngIf="showEditModal && selectedConsentForEdit">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeEditModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="editConsentModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <div>
+            <h5 class="modal-title fw-bold" id="editConsentModalTitle">
+              <i class="bi bi-pencil me-2 text-primary"></i>
+              Modifica consenso
+            </h5>
+            <p class="text-muted small mb-0 mt-1">Modifica le impostazioni del consenso</p>
+          </div>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeEditModal()"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <!-- Info medico (non modificabile) -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-person-badge me-1"></i>
+              Medico
+            </label>
+            <div class="d-flex align-items-center p-3 bg-light rounded">
+              <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-3">
+                <i class="bi bi-person text-primary"></i>
+              </div>
+              <div>
+                <div class="fw-semibold">{{ selectedConsentForEdit.doctorName }}</div>
+                <small class="text-muted">{{ selectedConsentForEdit.doctorSpecialty }}</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ambito (non modificabile) -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-shield-lock me-1"></i>
+              Ambito del consenso
+            </label>
+            <div class="d-flex align-items-center p-3 bg-light rounded">
+              <i [class]="getScopeIcon(selectedConsentForEdit.scope) + ' me-2 text-muted fs-5'"></i>
+              <span class="fw-medium">{{ getScopeLabel(selectedConsentForEdit.scope) }}</span>
+            </div>
+            <small class="text-muted">L'ambito non puo' essere modificato. Per cambiarlo, revoca questo consenso e creane uno nuovo.</small>
+          </div>
+
+          <!-- Scadenza (modificabile) -->
+          <div class="mb-4">
+            <div class="form-check mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="editHasExpiry"
+                [(ngModel)]="editForm.hasExpiry">
+              <label class="form-check-label fw-semibold" for="editHasExpiry">
+                <i class="bi bi-calendar-event me-1"></i>
+                Imposta una data di scadenza
+              </label>
+            </div>
+            <div class="collapse" [class.show]="editForm.hasExpiry">
+              <input
+                type="date"
+                class="form-control mt-2"
+                [(ngModel)]="editForm.expiryDate"
+                [min]="minExpiryDate">
+              <small class="text-muted">Il consenso scadra' automaticamente alla data selezionata</small>
+            </div>
+            <div *ngIf="!editForm.hasExpiry" class="mt-2">
+              <small class="text-muted">Senza scadenza, il consenso rimarra' attivo fino alla revoca manuale.</small>
+            </div>
+          </div>
+
+          <!-- Warning box -->
+          <div class="alert alert-info border-0 mb-0">
+            <div class="d-flex">
+              <i class="bi bi-info-circle me-2"></i>
+              <div>
+                <strong>Nota:</strong> Le modifiche alla scadenza saranno effettive immediatamente.
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-danger py-2 mt-3" *ngIf="editErrorMessage">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            {{ editErrorMessage }}
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeEditModal()">Annulla</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="submitEdit()"
+            [disabled]="isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+            {{ isLoading ? 'Salvataggio...' : 'Salva modifiche' }}
           </button>
         </div>
       </div>

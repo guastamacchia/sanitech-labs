@@ -309,6 +309,22 @@
                         "multivalued": "false",
                         "aggregate.attrs": "false"
                     }
+                },
+                {
+                    "name": "department-mapper",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "user.attribute": "dept",
+                        "claim.name": "dept",
+                        "jsonType.label": "String",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "userinfo.token.claim": "true",
+                        "multivalued": "true",
+                        "aggregate.attrs": "true"
+                    }
                 }
             ]
         }
@@ -688,13 +704,8 @@
             "enabled": true,
             "email": "mario.rossi.dr@sanitech.example",
             "attributes": {
-                "dept": [
-                    "CARD_CENTRAL",
-                    "NEUR_CENTRAL"
-                ],
-                "did": [
-                    "1"
-                ]
+                "dept": ["CARD_CENTRAL"],
+                "did": ["1"]
             },
             "credentials": [
                 {

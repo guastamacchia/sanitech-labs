@@ -109,6 +109,7 @@ class PatientServiceTest {
         assertThat(syncEvent.enabled()).isFalse();  // Utente disabilitato fino ad attivazione admin
         assertThat(syncEvent.roleToAssign()).isEqualTo("ROLE_PATIENT");
         assertThat(syncEvent.previousEmail()).isNull();
+        assertThat(syncEvent.departmentCode()).isNull();  // Pazienti non hanno un singolo reparto
     }
 
     @Test
@@ -172,6 +173,7 @@ class PatientServiceTest {
         assertThat(syncEvent.enabled()).isTrue();
         assertThat(syncEvent.roleToAssign()).isNull();
         assertThat(syncEvent.previousEmail()).isEqualTo("vecchia@email.it");
+        assertThat(syncEvent.departmentCode()).isNull();  // Pazienti non hanno un singolo reparto
     }
 
     @Test
@@ -188,7 +190,7 @@ class PatientServiceTest {
 
         patientService.delete(5L, null);
 
-        verify(keycloakAdminClient).disableUser("paolo.verdi@email.it", "Paolo", "Verdi", null, "PATIENT", 5L);
+        verify(keycloakAdminClient).disableUser("paolo.verdi@email.it", "Paolo", "Verdi", null, "PATIENT", 5L, null);
         verify(patientRepository).delete(existing);
     }
 

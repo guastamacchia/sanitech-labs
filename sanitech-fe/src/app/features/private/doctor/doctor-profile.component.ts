@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { DoctorApiService, DoctorDto } from './doctor-api.service';
+import { DoctorApiService, DoctorDto, SlotDto } from './doctor-api.service';
 
 interface DoctorProfile {
   firstName: string;
@@ -21,10 +21,11 @@ interface Availability {
   afternoon: string;
 }
 
-interface SpecializationRequest {
-  name: string;
-  certificate: File | null;
-  notes: string;
+interface NotificationPreferences {
+  emailConsents: boolean;
+  emailAppointments: boolean;
+  emailDocuments: boolean;
+  emailAdmissions: boolean;
 }
 
 interface DoctorStats {
@@ -58,24 +59,19 @@ export class DoctorProfileComponent implements OnInit {
     phone: ''
   };
 
-  // Disponibilità settimanale (statico per ora - potrebbe essere un'API in futuro)
-  availability: Availability[] = [
-    { day: 'Lunedì', morning: '08:00 - 13:00', afternoon: '14:00 - 18:00' },
-    { day: 'Martedì', morning: '08:00 - 13:00', afternoon: '-' },
-    { day: 'Mercoledì', morning: '08:00 - 13:00', afternoon: '14:00 - 18:00' },
-    { day: 'Giovedì', morning: '-', afternoon: '14:00 - 18:00' },
-    { day: 'Venerdì', morning: '08:00 - 13:00', afternoon: '-' }
-  ];
+  // Disponibilità settimanale (caricata dalla API slots)
+  availability: Availability[] = [];
+  isLoadingAvailability = false;
 
-  // Specializzazioni
-  specializations: string[] = [];
-
-  // Richiesta nuova specializzazione
-  specializationRequest: SpecializationRequest = {
-    name: '',
-    certificate: null,
-    notes: ''
+  // Preferenze notifiche
+  notificationPreferences: NotificationPreferences = {
+    emailConsents: true,
+    emailAppointments: true,
+    emailDocuments: false,
+    emailAdmissions: true
   };
+  isEditingPreferences = false;
+  isSavingPreferences = false;
 
   // Statistiche (caricate da API separate)
   stats: DoctorStats = {
@@ -91,12 +87,12 @@ export class DoctorProfileComponent implements OnInit {
   isSaving = false;
   successMessage = '';
   errorMessage = '';
-  showSpecializationModal = false;
 
   constructor(private doctorApi: DoctorApiService) {}
 
   ngOnInit(): void {
     this.loadProfile();
+    this.loadWeeklyAvailability();
   }
 
   loadProfile(): void {
@@ -133,10 +129,121 @@ export class DoctorProfileComponent implements OnInit {
     };
 
     this.editForm.phone = this.profile.phone;
+  }
 
-    if (doctor.specialization) {
-      this.specializations = [doctor.specialization];
+  private loadWeeklyAvailability(): void {
+    const doctorId = this.doctorApi.getDoctorId();
+    if (!doctorId) {
+      this.availability = this.getEmptyWeekAvailability();
+      return;
     }
+
+    this.isLoadingAvailability = true;
+
+    // Calcola inizio e fine della settimana corrente (lunedì - domenica)
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = domenica, 1 = lunedì, ...
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    this.doctorApi.searchSlots({
+      doctorId,
+      from: monday.toISOString(),
+      to: sunday.toISOString(),
+      size: 500
+    }).subscribe({
+      next: (page) => {
+        this.availability = this.aggregateSlotsToAvailability(page.content, monday);
+        this.isLoadingAvailability = false;
+      },
+      error: () => {
+        this.availability = this.getEmptyWeekAvailability();
+        this.isLoadingAvailability = false;
+      }
+    });
+  }
+
+  private getEmptyWeekAvailability(): Availability[] {
+    return [
+      { day: 'Lunedì', morning: '-', afternoon: '-' },
+      { day: 'Martedì', morning: '-', afternoon: '-' },
+      { day: 'Mercoledì', morning: '-', afternoon: '-' },
+      { day: 'Giovedì', morning: '-', afternoon: '-' },
+      { day: 'Venerdì', morning: '-', afternoon: '-' }
+    ];
+  }
+
+  private aggregateSlotsToAvailability(slots: SlotDto[], weekStart: Date): Availability[] {
+    const dayNames = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
+    const result: Availability[] = dayNames.map(day => ({ day, morning: '-', afternoon: '-' }));
+
+    // Raggruppa gli slot per giorno della settimana
+    const slotsByDay: Map<number, SlotDto[]> = new Map();
+    for (let i = 0; i < 5; i++) {
+      slotsByDay.set(i, []);
+    }
+
+    for (const slot of slots) {
+      const slotDate = new Date(slot.startAt);
+      const dayIndex = this.getDayIndex(slotDate, weekStart);
+
+      // Solo giorni feriali (lunedì=0 ... venerdì=4)
+      if (dayIndex >= 0 && dayIndex <= 4) {
+        slotsByDay.get(dayIndex)?.push(slot);
+      }
+    }
+
+    // Per ogni giorno, calcola le fasce orarie mattina e pomeriggio
+    for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+      const daySlots = slotsByDay.get(dayIndex) || [];
+      if (daySlots.length === 0) continue;
+
+      // Separa slot mattina (prima delle 13) e pomeriggio (dalle 13 in poi)
+      const morningSlots: SlotDto[] = [];
+      const afternoonSlots: SlotDto[] = [];
+
+      for (const slot of daySlots) {
+        const startHour = new Date(slot.startAt).getHours();
+        if (startHour < 13) {
+          morningSlots.push(slot);
+        } else {
+          afternoonSlots.push(slot);
+        }
+      }
+
+      result[dayIndex].morning = this.formatTimeRange(morningSlots);
+      result[dayIndex].afternoon = this.formatTimeRange(afternoonSlots);
+    }
+
+    return result;
+  }
+
+  private getDayIndex(date: Date, weekStart: Date): number {
+    const diffMs = date.getTime() - weekStart.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }
+
+  private formatTimeRange(slots: SlotDto[]): string {
+    if (slots.length === 0) return '-';
+
+    // Ordina per ora di inizio
+    slots.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+
+    const firstStart = new Date(slots[0].startAt);
+    const lastEnd = new Date(slots[slots.length - 1].endAt);
+
+    const formatTime = (d: Date) =>
+      `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+
+    return `${formatTime(firstStart)} - ${formatTime(lastEnd)}`;
   }
 
   private loadStats(): void {
@@ -185,53 +292,49 @@ export class DoctorProfileComponent implements OnInit {
     this.isSaving = true;
     this.errorMessage = '';
 
-    // Nota: il backend non ha un endpoint per l'aggiornamento del profilo medico
-    // Questo sarebbe un'estensione futura
-    setTimeout(() => {
-      this.profile.phone = this.editForm.phone;
-      this.isEditing = false;
-      this.isSaving = false;
-      this.successMessage = 'Profilo aggiornato con successo!';
-      setTimeout(() => this.successMessage = '', 5000);
-    }, 1000);
+    this.doctorApi.updateMyPhone(this.editForm.phone.trim()).subscribe({
+      next: (doctor) => {
+        this.mapDoctorToProfile(doctor);
+        this.isEditing = false;
+        this.isSaving = false;
+        this.successMessage = 'Profilo aggiornato con successo!';
+        setTimeout(() => this.successMessage = '', 5000);
+      },
+      error: () => {
+        this.isSaving = false;
+        this.errorMessage = 'Errore durante il salvataggio. Riprova.';
+      }
+    });
   }
 
-  openSpecializationModal(): void {
-    this.specializationRequest = { name: '', certificate: null, notes: '' };
-    this.showSpecializationModal = true;
+  startEditingPreferences(): void {
+    this.isEditingPreferences = true;
+    this.successMessage = '';
+    this.errorMessage = '';
   }
 
-  closeSpecializationModal(): void {
-    this.showSpecializationModal = false;
+  cancelEditingPreferences(): void {
+    this.isEditingPreferences = false;
+    // Reset alle preferenze salvate (in futuro caricate da API)
+    this.notificationPreferences = {
+      emailConsents: true,
+      emailAppointments: true,
+      emailDocuments: false,
+      emailAdmissions: true
+    };
   }
 
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      this.specializationRequest.certificate = input.files[0];
-    }
-  }
-
-  submitSpecializationRequest(): void {
-    if (!this.specializationRequest.name.trim()) {
-      this.errorMessage = 'Inserisci il nome della specializzazione.';
-      return;
-    }
-    if (!this.specializationRequest.certificate) {
-      this.errorMessage = 'Allega il certificato di specializzazione.';
-      return;
-    }
-
-    this.isSaving = true;
+  saveNotificationPreferences(): void {
+    this.isSavingPreferences = true;
     this.errorMessage = '';
 
-    // Nota: il backend non ha un endpoint per le richieste di specializzazione
+    // Nota: il backend non ha un endpoint per le preferenze notifiche
     // Questo sarebbe un'estensione futura
     setTimeout(() => {
-      this.isSaving = false;
-      this.showSpecializationModal = false;
-      this.successMessage = 'Richiesta di aggiunta specializzazione inviata all\'amministratore. Riceverai una notifica dopo la verifica.';
-      setTimeout(() => this.successMessage = '', 7000);
-    }, 1500);
+      this.isSavingPreferences = false;
+      this.isEditingPreferences = false;
+      this.successMessage = 'Preferenze di notifica salvate con successo!';
+      setTimeout(() => this.successMessage = '', 5000);
+    }, 1000);
   }
 }

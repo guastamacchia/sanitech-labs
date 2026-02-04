@@ -49,6 +49,7 @@ public class AppConstants {
         public static final String PUBLIC_PATIENTS = PUBLIC + "/patients";
 
         public static final String PATIENT_ME = API + "/patient/me";
+        public static final String DOCTOR_ME = API + "/doctor/me";
     }
 
     /**

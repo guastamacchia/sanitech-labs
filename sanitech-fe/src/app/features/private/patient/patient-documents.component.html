@@ -162,6 +162,9 @@
                   <button class="btn btn-outline-secondary" (click)="downloadDocument(doc)" title="Scarica">
                     <i class="bi bi-download"></i>
                   </button>
+                  <button class="btn btn-outline-danger" (click)="confirmDeleteDocument(doc)" title="Elimina">
+                    <i class="bi bi-trash"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -307,6 +310,51 @@
                   [disabled]="!uploadForm.file || isLoading">
             <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
             {{ isLoading ? 'Caricamento...' : 'Carica documento' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal: Conferma Eliminazione -->
+<ng-container *ngIf="showDeleteModal && documentToDelete">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeDeleteModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="deleteModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="deleteModalTitle">
+            <i class="bi bi-exclamation-triangle me-2 text-danger"></i>
+            Conferma eliminazione
+          </h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDeleteModal()"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <p class="mb-3">
+            Sei sicuro di voler eliminare il documento
+            <strong>{{ documentToDelete.fileName }}</strong>?
+          </p>
+          <div class="alert alert-warning border-0 mb-0">
+            <div class="d-flex">
+              <i class="bi bi-exclamation-circle me-2"></i>
+              <small>Questa azione non puo' essere annullata. Il documento sara' rimosso permanentemente dalla tua cartella clinica.</small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeDeleteModal()">Annulla</button>
+          <button type="button" class="btn btn-danger" (click)="deleteDocument()" [disabled]="isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+            {{ isLoading ? 'Eliminazione...' : 'Elimina documento' }}
           </button>
         </div>
       </div>

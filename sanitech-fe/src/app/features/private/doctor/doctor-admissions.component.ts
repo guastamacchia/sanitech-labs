@@ -9,7 +9,9 @@ import {
   AdmissionDto,
   PatientDto,
   AdmissionStatus as ApiAdmissionStatus,
-  AdmissionType as ApiAdmissionType
+  AdmissionType as ApiAdmissionType,
+  DepartmentDto,
+  AdmissionCreateDto
 } from './doctor-api.service';
 
 type AdmissionStatus = 'ACTIVE' | 'DISCHARGED' | 'TRANSFERRED';
@@ -75,6 +77,21 @@ export class DoctorAdmissionsComponent implements OnInit {
     summary: '',
     followUp: '',
     medications: ''
+  };
+
+  // Modal proposta ricovero
+  showAdmissionProposalModal = false;
+  isSavingProposal = false;
+  proposalErrorMessage = '';
+  patientSearchQuery = '';
+  patientSearchResults: PatientDto[] = [];
+  isSearchingPatients = false;
+  selectedPatient: PatientDto | null = null;
+  departments: DepartmentDto[] = [];
+  admissionProposalForm = {
+    admissionType: '' as ApiAdmissionType | '',
+    departmentCode: '',
+    notes: ''
   };
 
   constructor(private doctorApi: DoctorApiService) {}
@@ -368,5 +385,127 @@ export class DoctorAdmissionsComponent implements OnInit {
   isNewAdmission(admission: Admission): boolean {
     const today = new Date().toDateString();
     return new Date(admission.admittedAt).toDateString() === today;
+  }
+
+  // --- Proposta Ricovero ---
+
+  openAdmissionProposalModal(): void {
+    this.showAdmissionProposalModal = true;
+    this.proposalErrorMessage = '';
+    this.patientSearchQuery = '';
+    this.patientSearchResults = [];
+    this.selectedPatient = null;
+    this.admissionProposalForm = {
+      admissionType: '',
+      departmentCode: '',
+      notes: ''
+    };
+    this.loadDepartments();
+  }
+
+  closeAdmissionProposalModal(): void {
+    this.showAdmissionProposalModal = false;
+  }
+
+  loadDepartments(): void {
+    this.doctorApi.listDepartments().subscribe({
+      next: (depts) => {
+        this.departments = depts;
+      },
+      error: () => {
+        this.departments = [];
+      }
+    });
+  }
+
+  searchPatients(): void {
+    if (!this.patientSearchQuery.trim()) return;
+
+    this.isSearchingPatients = true;
+
+    // Prima ottieni i pazienti che hanno dato consenso per prescrizioni o documenti
+    forkJoin([
+      this.doctorApi.getPatientsWithConsent('PRESCRIPTIONS'),
+      this.doctorApi.getPatientsWithConsent('DOCS')
+    ]).pipe(
+      map(([prescriptionPatients, documentPatients]) => {
+        // Unisci i due array rimuovendo duplicati
+        return [...new Set([...prescriptionPatients, ...documentPatients])];
+      })
+    ).subscribe({
+      next: (consentedPatientIds) => {
+        // Poi cerca i pazienti e filtra solo quelli con consenso
+        this.doctorApi.searchPatients({ q: this.patientSearchQuery, size: 50 }).subscribe({
+          next: (page) => {
+            const allPatients = page.content || [];
+            // Filtra solo i pazienti che hanno dato consenso
+            this.patientSearchResults = allPatients.filter(p =>
+              p.id && consentedPatientIds.includes(p.id)
+            ).slice(0, 10);
+            this.isSearchingPatients = false;
+          },
+          error: () => {
+            this.patientSearchResults = [];
+            this.isSearchingPatients = false;
+          }
+        });
+      },
+      error: () => {
+        this.patientSearchResults = [];
+        this.isSearchingPatients = false;
+      }
+    });
+  }
+
+  selectPatient(patient: PatientDto): void {
+    this.selectedPatient = patient;
+    this.patientSearchResults = [];
+    this.patientSearchQuery = '';
+  }
+
+  clearSelectedPatient(): void {
+    this.selectedPatient = null;
+  }
+
+  submitAdmissionProposal(): void {
+    this.proposalErrorMessage = '';
+
+    if (!this.selectedPatient) {
+      this.proposalErrorMessage = 'Seleziona un paziente.';
+      return;
+    }
+
+    if (!this.admissionProposalForm.admissionType) {
+      this.proposalErrorMessage = 'Seleziona il tipo di ricovero.';
+      return;
+    }
+
+    if (!this.admissionProposalForm.departmentCode) {
+      this.proposalErrorMessage = 'Seleziona il reparto.';
+      return;
+    }
+
+    this.isSavingProposal = true;
+
+    const dto: AdmissionCreateDto = {
+      patientId: this.selectedPatient.id!,
+      departmentCode: this.admissionProposalForm.departmentCode,
+      admissionType: this.admissionProposalForm.admissionType as ApiAdmissionType,
+      notes: this.admissionProposalForm.notes || undefined
+    };
+
+    this.doctorApi.createAdmission(dto).subscribe({
+      next: () => {
+        this.isSavingProposal = false;
+        this.closeAdmissionProposalModal();
+        this.loadAdmissions();
+        this.successMessage = `Ricovero proposto per ${this.selectedPatient!.lastName} ${this.selectedPatient!.firstName}.`;
+        setTimeout(() => this.successMessage = '', 5000);
+      },
+      error: () => {
+        this.isSavingProposal = false;
+        this.proposalErrorMessage = 'Errore nella creazione della proposta di ricovero.';
+      }
+    });
   }
 }

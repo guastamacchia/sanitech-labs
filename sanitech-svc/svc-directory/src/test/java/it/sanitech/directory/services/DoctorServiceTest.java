@@ -103,6 +103,7 @@ class DoctorServiceTest {
         assertThat(syncEvent.enabled()).isFalse();  // Utente disabilitato fino ad attivazione admin
         assertThat(syncEvent.roleToAssign()).isEqualTo("ROLE_DOCTOR");
         assertThat(syncEvent.previousEmail()).isNull();
+        assertThat(syncEvent.departmentCode()).isEqualTo("CARD");
     }
 
     @Test
@@ -155,17 +156,20 @@ class DoctorServiceTest {
         assertThat(syncEvent.enabled()).isTrue();
         assertThat(syncEvent.roleToAssign()).isNull();
         assertThat(syncEvent.previousEmail()).isEqualTo("vecchia@email.it");
+        assertThat(syncEvent.departmentCode()).isEqualTo("CARD");
     }
 
     @Test
     void shouldDeleteDoctor() {
+        Department department = TestDataFactory.cardiologyDepartment();
         Doctor existing = TestDataFactory.doctorEntity(4L, "Paola", "Neri", "paola.neri@email.it");
+        existing.setDepartment(department);
 
         when(doctorRepository.findById(4L)).thenReturn(Optional.of(existing));
 
         doctorService.delete(4L, null);
 
-        verify(keycloakAdminClient).disableUser("paola.neri@email.it", "Paola", "Neri", null, "DOCTOR", 4L);
+        verify(keycloakAdminClient).disableUser("paola.neri@email.it", "Paola", "Neri", null, "DOCTOR", 4L, "CARD");
         verify(doctorRepository).delete(existing);
     }
 

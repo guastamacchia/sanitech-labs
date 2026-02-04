@@ -38,4 +38,9 @@ export class ApiService {
     const url = `${environment.gatewayUrl}${path}`;
     return this.http.delete<T>(url);
   }
+
+  patch<T>(path: string, body?: unknown): Observable<T> {
+    const url = `${environment.gatewayUrl}${path}`;
+    return this.http.patch<T>(url, body);
+  }
 }

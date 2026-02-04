@@ -42,4 +42,12 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long>, JpaSpecif
     List<Object[]> countByDepartmentIds(@Param("departmentIds") List<Long> departmentIds);
 
     java.util.Optional<Doctor> findByFirstNameIgnoreCaseAndLastNameIgnoreCase(String firstName, String lastName);
+
+    /**
+     * Trova un medico per email, ignorando maiuscole/minuscole.
+     *
+     * @param email email del medico
+     * @return Optional contenente il medico se trovato
+     */
+    java.util.Optional<Doctor> findByEmailIgnoreCase(String email);
 }

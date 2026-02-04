@@ -52,6 +52,15 @@ export interface PatientPhoneUpdateDto {
   phone: string;
 }
 
+export interface NotificationPreferenceDto {
+  emailReminders: boolean;
+  smsReminders: boolean;
+  emailDocuments: boolean;
+  smsDocuments: boolean;
+  emailPayments: boolean;
+  smsPayments: boolean;
+}
+
 export interface PrescriptionItemDto {
   id: number;
   medicationCode: string;
@@ -216,6 +225,22 @@ export class PatientService {
    */
   updateMyPhone(dto: PatientPhoneUpdateDto): Observable<PatientDto> {
     return this.http.patch<PatientDto>(`${this.gatewayUrl}/api/patient/me`, dto);
+  }
+
+  // ============ NOTIFICATION PREFERENCES ============
+
+  /**
+   * Recupera le preferenze di notifica del paziente autenticato
+   */
+  getNotificationPreferences(): Observable<NotificationPreferenceDto> {
+    return this.http.get<NotificationPreferenceDto>(`${this.gatewayUrl}/api/patient/me/preferences`);
+  }
+
+  /**
+   * Aggiorna le preferenze di notifica del paziente autenticato
+   */
+  updateNotificationPreferences(dto: NotificationPreferenceDto): Observable<NotificationPreferenceDto> {
+    return this.http.put<NotificationPreferenceDto>(`${this.gatewayUrl}/api/patient/me/preferences`, dto);
   }
 
   // ============ PRESCRIPTIONS ============
@@ -439,6 +464,13 @@ export class PatientService {
     return this.http.get(`${this.gatewayUrl}/api/docs/${documentId}/download`, {
       responseType: 'blob'
     });
+  }
+
+  /**
+   * Elimina un documento
+   */
+  deleteDocument(documentId: string): Observable<void> {
+    return this.http.delete<void>(`${this.gatewayUrl}/api/docs/${documentId}`);
   }
 
   // ============ CONSENTS ============
