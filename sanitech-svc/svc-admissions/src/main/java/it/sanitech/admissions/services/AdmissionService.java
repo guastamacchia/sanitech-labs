@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -106,16 +107,21 @@ public class AdmissionService {
 
         Admission saved = admissions.save(admission);
 
+        Map<String, Object> eventPayload = new HashMap<>();
+        eventPayload.put("admissionId", saved.getId());
+        eventPayload.put("patientId", saved.getPatientId());
+        eventPayload.put("departmentCode", saved.getDepartmentCode());
+        eventPayload.put("admittedAt", saved.getAdmittedAt().toString());
+        eventPayload.put("dischargedAt", saved.getDischargedAt().toString());
+        if (saved.getAttendingDoctorId() != null) {
+            eventPayload.put("attendingDoctorId", saved.getAttendingDoctorId());
+        }
+
         domainEvents.publish(
                 AGGREGATE_TYPE,
                 String.valueOf(saved.getId()),
                 EVT_DISCHARGED,
-                Map.of(
-                        "admissionId", saved.getId(),
-                        "patientId", saved.getPatientId(),
-                        "departmentCode", saved.getDepartmentCode(),
-                        "dischargedAt", saved.getDischargedAt().toString()
-                ),
+                eventPayload,
                 Outbox.TOPIC_AUDITS_EVENTS,
                 auth
         );

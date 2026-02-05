@@ -4,6 +4,7 @@ import it.sanitech.payments.repositories.entities.ServicePerformedStatus;
 import it.sanitech.payments.services.ServicePerformedService;
 import it.sanitech.payments.services.dto.ServicePerformedDto;
 import it.sanitech.payments.services.dto.ServicePerformedStatsDto;
+import it.sanitech.payments.services.dto.create.ServicePerformedCreateDto;
 import it.sanitech.payments.services.dto.update.ServicePerformedUpdateDto;
 import it.sanitech.payments.utilities.AppConstants;
 import jakarta.validation.Valid;
@@ -63,6 +64,17 @@ public class ServicesAdminController {
             @RequestParam(required = false) ServicePerformedStatus status,
             @PageableDefault(sort = "performedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return service.list(status, pageable);
+    }
+
+    /**
+     * Crea una nuova prestazione manuale.
+     */
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ServicePerformedDto create(
+            @Valid @RequestBody ServicePerformedCreateDto dto,
+            Authentication auth) {
+        return service.create(dto, auth);
     }
 
     /**

@@ -19,6 +19,7 @@ public interface ServicePerformedMapper {
     )
     @Mapping(target = "amountCents", source = "amountCents")
     @Mapping(target = "status", source = "status")
+    @Mapping(target = "paymentType", source = "paymentType")
     @Mapping(target = "notes", source = "notes")
     @Mapping(target = "patientName", source = "patientName")
     @Mapping(target = "patientEmail", source = "patientEmail")

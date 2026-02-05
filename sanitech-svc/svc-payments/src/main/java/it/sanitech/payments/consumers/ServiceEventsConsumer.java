@@ -101,9 +101,10 @@ public class ServiceEventsConsumer {
 
         String department = getTextOrNull(payload, "department");
         String patientSubject = getTextOrNull(payload, "patientSubject");
+        String doctorSubject = getTextOrNull(payload, "doctorSubject");
         String roomName = getTextOrNull(payload, "roomName");
 
-        // L'evento non contiene patientId numerico, lo lasciamo null
+        // L'evento non contiene patientId/doctorId numerici, li lasciamo null
         // Il frontend dovrà fare un lookup se necessario
 
         ServicePerformed service = ServicePerformed.builder()
@@ -112,6 +113,7 @@ public class ServiceEventsConsumer {
                 .sourceId(sourceId)
                 .patientId(0L) // Non disponibile direttamente, serve lookup
                 .patientSubject(patientSubject)
+                .doctorName(doctorSubject) // Salviamo il subject, il frontend risolverà il nome
                 .departmentCode(department)
                 .description("Visita medica - Televisita #" + sourceId + (roomName != null ? " (" + roomName + ")" : ""))
                 .amountCents(serviceDefaults.getMedicalVisitAmountCents())
@@ -145,6 +147,7 @@ public class ServiceEventsConsumer {
         }
 
         Long patientId = payload.path("patientId").asLong(0);
+        Long attendingDoctorId = payload.has("attendingDoctorId") ? payload.path("attendingDoctorId").asLong() : null;
         String department = getTextOrNull(payload, "departmentCode");
         String dischargedAtStr = getTextOrNull(payload, "dischargedAt");
         String admittedAtStr = getTextOrNull(payload, "admittedAt");
@@ -180,6 +183,7 @@ public class ServiceEventsConsumer {
                 .sourceType(ServiceSourceType.ADMISSION)
                 .sourceId(sourceId)
                 .patientId(patientId)
+                .doctorId(attendingDoctorId)
                 .departmentCode(department)
                 .description("Ricovero ospedaliero - " + daysCount + " giorni" + (department != null ? " (" + department + ")" : ""))
                 .amountCents(amountCents)

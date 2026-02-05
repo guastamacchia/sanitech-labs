@@ -155,6 +155,9 @@ public class TelevisitService {
         events.publish(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.ENDED, Map.of(
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
+                "department", s.getDepartment(),
+                "doctorSubject", s.getDoctorSubject(),
+                "patientSubject", s.getPatientSubject(),
                 "status", s.getStatus().name()
         ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
 

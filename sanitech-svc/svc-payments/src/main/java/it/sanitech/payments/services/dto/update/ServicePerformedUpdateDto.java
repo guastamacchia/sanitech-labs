@@ -1,5 +1,6 @@
 package it.sanitech.payments.services.dto.update;
 
+import it.sanitech.payments.repositories.entities.PaymentType;
 import it.sanitech.payments.repositories.entities.ServicePerformedStatus;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -12,6 +13,8 @@ public record ServicePerformedUpdateDto(
         Long amountCents,
 
         ServicePerformedStatus status,
+
+        PaymentType paymentType,
 
         @Size(max = 500)
         String notes,

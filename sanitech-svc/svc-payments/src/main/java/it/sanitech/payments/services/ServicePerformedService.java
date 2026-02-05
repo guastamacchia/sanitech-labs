@@ -6,8 +6,11 @@ import it.sanitech.outbox.core.DomainEventPublisher;
 import it.sanitech.payments.repositories.ServicePerformedRepository;
 import it.sanitech.payments.repositories.entities.ServicePerformed;
 import it.sanitech.payments.repositories.entities.ServicePerformedStatus;
+import it.sanitech.payments.repositories.entities.ServiceSourceType;
+import it.sanitech.payments.repositories.entities.ServiceType;
 import it.sanitech.payments.services.dto.ServicePerformedDto;
 import it.sanitech.payments.services.dto.ServicePerformedStatsDto;
+import it.sanitech.payments.services.dto.create.ServicePerformedCreateDto;
 import it.sanitech.payments.services.dto.update.ServicePerformedUpdateDto;
 import it.sanitech.payments.services.mapper.ServicePerformedMapper;
 import it.sanitech.payments.utilities.AppConstants;
@@ -35,6 +38,50 @@ public class ServicePerformedService {
     private final ServicePerformedRepository repository;
     private final ServicePerformedMapper mapper;
     private final DomainEventPublisher domainEventPublisher;
+
+    /**
+     * Crea una nuova prestazione manuale (admin).
+     */
+    @Transactional
+    public ServicePerformedDto create(ServicePerformedCreateDto dto, Authentication auth) {
+        String actor = auth != null ? auth.getName() : "system";
+
+        ServicePerformed service = ServicePerformed.builder()
+                .serviceType(ServiceType.MEDICAL_VISIT)
+                .paymentType(dto.paymentType())
+                .sourceType(ServiceSourceType.ADMISSION)
+                .sourceId(0L)
+                .doctorId(dto.doctorId())
+                .patientId(dto.patientId())
+                .description(dto.description())
+                .amountCents(dto.amountCents())
+                .currency("EUR")
+                .status(ServicePerformedStatus.PENDING)
+                .performedAt(dto.performedAt())
+                .createdBy(actor)
+                .build();
+
+        ServicePerformed saved = repository.save(service);
+
+        // Pubblica evento di creazione
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("serviceId", saved.getId());
+        payload.put("paymentType", saved.getPaymentType().name());
+        payload.put("amountCents", saved.getAmountCents());
+        payload.put("patientId", saved.getPatientId());
+        payload.put("doctorId", saved.getDoctorId());
+
+        domainEventPublisher.publish(
+                AppConstants.Outbox.AGGREGATE_TYPE_SERVICE,
+                String.valueOf(saved.getId()),
+                AppConstants.Outbox.EVT_SERVICE_CREATED,
+                payload,
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
+        );
+
+        return mapper.toDto(saved);
+    }
 
     /**
      * Lista tutte le prestazioni con filtri opzionali.

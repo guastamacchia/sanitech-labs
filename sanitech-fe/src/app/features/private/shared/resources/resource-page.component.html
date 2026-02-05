@@ -3453,35 +3453,41 @@
           <div class="row g-4">
             <!-- Statistiche ricoveri -->
             <div class="col-12">
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-primary">{{ ricoveriAttivi }}</div>
-                    <div class="small text-muted">Ricoveri attivi</div>
+              <div class="row g-2">
+                <div class="col">
+                  <div class="card card-glass text-center py-3 px-2">
+                    <div class="fs-3 fw-bold text-primary">{{ ricoveriAttivi }}</div>
+                    <div class="small text-muted">Attivi</div>
                   </div>
                 </div>
-                <div class="col-md-3">
-                  <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-warning">{{ ricoveriPneumologia }}</div>
-                    <div class="small text-muted">Pneumologia</div>
+                <div class="col">
+                  <div class="card card-glass text-center py-3 px-2">
+                    <div class="fs-3 fw-bold text-success">{{ ricoveriOrdinari }}</div>
+                    <div class="small text-muted">Ordinari</div>
                   </div>
                 </div>
-                <div class="col-md-3">
-                  <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-success">{{ ricoveriConfermati }}</div>
-                    <div class="small text-muted">Confermati</div>
+                <div class="col">
+                  <div class="card card-glass text-center py-3 px-2">
+                    <div class="fs-3 fw-bold text-warning">{{ ricoveriDayHospital }}</div>
+                    <div class="small text-muted">Day Hospital</div>
                   </div>
                 </div>
-                <div class="col-md-3">
-                  <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-secondary">{{ dimessiQuestoMese }}</div>
-                    <div class="small text-muted">Dimessi questo mese</div>
+                <div class="col">
+                  <div class="card card-glass text-center py-3 px-2">
+                    <div class="fs-3 fw-bold text-info">{{ ricoveriOsservazione }}</div>
+                    <div class="small text-muted">Osservazione</div>
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="card card-glass text-center py-3 px-2">
+                    <div class="fs-3 fw-bold text-secondary">{{ dimessiQuestoMese }}</div>
+                    <div class="small text-muted">Dimessi mese</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Tabella ricoveri con focus su Pneumologia -->
+            <!-- Tabella ricoveri -->
             <div class="col-12">
               <div class="card card-glass">
                 <div class="card-body">
@@ -3575,8 +3581,15 @@
                             </div>
                           </td>
                         </tr>
-                        <tr *ngIf="!admissions.length">
+                        <tr *ngIf="!admissions.length && !paymentsError">
                           <td colspan="9" class="text-center text-muted">Nessun ricovero registrato.</td>
+                        </tr>
+                        <tr *ngIf="!admissions.length && paymentsError">
+                          <td colspan="9" class="text-center">
+                            <div class="alert alert-danger mb-0 py-2">
+                              <i class="bi bi-exclamation-triangle me-2"></i>{{ paymentsError }}
+                            </div>
+                          </td>
                         </tr>
                       </tbody>
                     </table>
@@ -4100,7 +4113,7 @@
                   <div class="d-flex align-items-center justify-content-between mb-3">
                     <h5 class="fw-semibold mb-0">Pagamenti</h5>
                     <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminPaymentModal()">
-                      Registra pagamento
+                      <i class="bi bi-plus-lg me-1"></i>Nuova prestazione
                     </button>
                   </div>
 
@@ -4152,11 +4165,12 @@
                           </th>
                           <th>ID</th>
                           <th>Paziente</th>
+                          <th>Medico</th>
                           <th>Prestazione</th>
+                          <th>Tipo pagamento</th>
                           <th>Importo</th>
-                          <th>Data visita</th>
-                          <th>Giorni</th>
-                          <th>Solleciti</th>
+                          <th>Data prestazione</th>
+                          <th>Giorni trascorsi</th>
                           <th>Stato</th>
                           <th>Azioni</th>
                         </tr>
@@ -4180,8 +4194,14 @@
                             <small class="text-muted" *ngIf="service.patientEmail">{{ service.patientEmail }}</small>
                           </td>
                           <td>
+                            <div>{{ service.doctorName || getDoctorLabel(service.doctorId) }}</div>
+                          </td>
+                          <td>
                             <div>{{ getServiceTypeLabel(service.serviceType) }}</div>
                             <small class="text-muted" *ngIf="service.daysCount">{{ service.daysCount }} giorni</small>
+                          </td>
+                          <td>
+                            <span class="badge bg-light text-dark">{{ getPaymentTypeLabel(service.paymentType) }}</span>
                           </td>
                           <td>
                             <strong>{{ service.amount | number:'1.2-2' }} {{ service.currency }}</strong>
@@ -4197,22 +4217,15 @@
                           </td>
                           <td>
                             <span class="badge"
-                                  [class.bg-secondary]="service.reminderCount === 0"
-                                  [class.bg-info]="service.reminderCount > 0">
-                              {{ service.reminderCount }}
-                            </span>
-                            <small class="d-block text-muted" *ngIf="service.lastReminderAt">
-                              Ultimo: {{ formatDate(service.lastReminderAt) }}
-                            </small>
-                          </td>
-                          <td>
-                            <span class="badge"
                                   [class.bg-warning]="service.status === 'PENDING'"
                                   [class.bg-success]="service.status === 'PAID'"
                                   [class.bg-info]="service.status === 'FREE'"
                                   [class.bg-secondary]="service.status === 'CANCELLED'">
                               {{ getServiceStatusLabel(service.status) }}
                             </span>
+                            <small class="d-block text-muted" *ngIf="service.reminderCount > 0">
+                              {{ service.reminderCount }} sollecit{{ service.reminderCount === 1 ? 'o' : 'i' }}
+                            </small>
                           </td>
                           <td>
                             <div class="d-flex gap-1 flex-wrap">
@@ -4258,7 +4271,7 @@
                           </td>
                         </tr>
                         <tr *ngIf="!filteredServices.length">
-                          <td colspan="10" class="text-center text-muted">Nessun pagamento trovato con i filtri selezionati.</td>
+                          <td colspan="11" class="text-center text-muted">Nessun pagamento trovato con i filtri selezionati.</td>
                         </tr>
                       </tbody>
                     </table>
@@ -4357,7 +4370,7 @@
             </div>
           </ng-container>
 
-          <!-- Modal Registra Pagamento -->
+          <!-- Modal Registra Prestazione Custom -->
           <ng-container *ngIf="showAdminPaymentModal">
             <div
               class="modal-backdrop fade show"
@@ -4374,36 +4387,72 @@
                   <div class="modal-header border-0 pb-0">
                     <div>
                       <h5 class="modal-title fw-bold" id="adminPaymentModalTitle">
-                        <i class="bi bi-credit-card me-2 text-primary"></i>
-                        Registra pagamento
+                        <i class="bi bi-plus-circle me-2 text-primary"></i>
+                        Nuova prestazione
                       </h5>
-                      <p class="text-muted small mb-0 mt-1">Registra un pagamento ricevuto per un paziente</p>
+                      <p class="text-muted small mb-0 mt-1">Registra una prestazione sanitaria manuale</p>
                     </div>
                     <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminPaymentModal()"></button>
                   </div>
                   <div class="modal-body pt-4">
-                    <form (ngSubmit)="submitPayment()" #adminPaymentFormRef="ngForm">
+                    <form #adminPaymentFormRef="ngForm">
+                      <!-- Medico -->
                       <div class="mb-3">
-                        <label class="form-label fw-semibold small text-muted">Pagamento</label>
-                        <select class="form-select" name="adminPaymentId" [(ngModel)]="paymentForm.paymentId" required>
-                          <option [ngValue]="null" disabled>Seleziona un pagamento</option>
-                          <option *ngFor="let payment of payments" [ngValue]="payment.id">
-                            #{{ payment.id }} · {{ getPatientLabel(payment.patientId) }} · {{ payment.service }}
+                        <label class="form-label fw-semibold small text-muted">Medico</label>
+                        <select class="form-select" name="adminPaymentDoctor" [(ngModel)]="paymentForm.doctorId" (ngModelChange)="onPaymentDoctorChange()" required>
+                          <option [ngValue]="null" disabled>Seleziona un medico</option>
+                          <option *ngFor="let doctor of doctors" [ngValue]="doctor.id">
+                            {{ doctor.firstName }} {{ doctor.lastName }}
                           </option>
                         </select>
                       </div>
+                      <!-- Paziente -->
                       <div class="mb-3">
-                        <label class="form-label fw-semibold small text-muted">Ricevuta</label>
-                        <input class="form-control" type="text" name="adminPaymentReceipt" [(ngModel)]="paymentForm.receiptName" placeholder="es. RIC-2025-001" required />
+                        <label class="form-label fw-semibold small text-muted">Paziente</label>
+                        <select class="form-select" name="adminPaymentPatient" [(ngModel)]="paymentForm.patientId" [disabled]="!paymentForm.doctorId" required>
+                          <option [ngValue]="null" disabled>{{ paymentForm.doctorId ? 'Seleziona un paziente' : 'Seleziona prima un medico' }}</option>
+                          <option *ngFor="let patient of filteredPatientsForPayment" [ngValue]="patient.id">
+                            {{ patient.firstName }} {{ patient.lastName }}
+                          </option>
+                        </select>
+                        <small class="text-muted" *ngIf="paymentForm.doctorId && filteredPatientsForPayment.length === 0">
+                          Nessun paziente con consenso attivo per questo medico.
+                        </small>
                       </div>
-                      <div class="mb-4">
-                        <label class="form-label fw-semibold small text-muted">Importo (€)</label>
-                        <div class="input-group">
-                          <span class="input-group-text bg-light border-end-0">
-                            <i class="bi bi-currency-euro text-muted"></i>
-                          </span>
-                          <input class="form-control border-start-0" type="number" name="adminPaymentAmount" [(ngModel)]="paymentForm.amount" min="1" step="0.01" placeholder="0.00" required />
+                      <!-- Tipo pagamento -->
+                      <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Tipo pagamento</label>
+                        <select class="form-select" name="adminPaymentType" [(ngModel)]="paymentForm.paymentType" required>
+                          <option value="VISITA">Visita</option>
+                          <option value="RICOVERO">Ricovero</option>
+                          <option value="ALTRO">Altro</option>
+                        </select>
+                      </div>
+                      <!-- Descrizione prestazione -->
+                      <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Descrizione prestazione</label>
+                        <input class="form-control" type="text" name="adminPaymentService" [(ngModel)]="paymentForm.service" placeholder="es. Visita specialistica, Esame diagnostico..." required />
+                      </div>
+                      <!-- Data prestazione e Importo su stessa riga -->
+                      <div class="row mb-3">
+                        <div class="col-6">
+                          <label class="form-label fw-semibold small text-muted">Data prestazione</label>
+                          <input class="form-control" type="date" name="adminPaymentDate" [(ngModel)]="paymentForm.performedAt" required />
                         </div>
+                        <div class="col-6">
+                          <label class="form-label fw-semibold small text-muted">Importo (EUR)</label>
+                          <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                              <i class="bi bi-currency-euro text-muted"></i>
+                            </span>
+                            <input class="form-control border-start-0" type="number" name="adminPaymentAmount" [(ngModel)]="paymentForm.amount" min="0.01" step="0.01" placeholder="0.00" required />
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Messaggi di successo/errore -->
+                      <div class="alert alert-success border-0 py-2" *ngIf="paymentsSuccess">
+                        <i class="bi bi-check-circle me-2"></i>
+                        {{ paymentsSuccess }}
                       </div>
                       <div class="alert alert-danger border-0 py-2" *ngIf="paymentsError">
                         <i class="bi bi-exclamation-circle me-2"></i>
@@ -4415,10 +4464,10 @@
                     <button class="btn btn-outline-secondary" type="button" (click)="closeAdminPaymentModal()">
                       Annulla
                     </button>
-                    <button class="btn btn-primary" type="button" (click)="submitPayment()" [disabled]="adminPaymentFormRef.invalid || isLoading">
+                    <button class="btn btn-primary" type="button" (click)="submitNewPayment()" [disabled]="isLoading">
                       <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
                       <i *ngIf="!isLoading" class="bi bi-check-circle me-1"></i>
-                      {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
+                      {{ isLoading ? 'Salvataggio...' : 'Registra prestazione' }}
                     </button>
                   </div>
                 </div>

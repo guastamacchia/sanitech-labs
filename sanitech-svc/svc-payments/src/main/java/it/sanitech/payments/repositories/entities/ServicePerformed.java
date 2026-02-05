@@ -50,6 +50,13 @@ public class ServicePerformed {
     private ServiceType serviceType;
 
     /**
+     * Tipo di pagamento (VISITA, RICOVERO, ALTRO).
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type", length = 32)
+    private PaymentType paymentType;
+
+    /**
      * Tipo di sorgente che ha generato la prestazione.
      */
     @Enumerated(EnumType.STRING)
@@ -85,6 +92,18 @@ public class ServicePerformed {
      */
     @Column(name = "patient_email", length = 255)
     private String patientEmail;
+
+    /**
+     * ID del medico che ha erogato la prestazione.
+     */
+    @Column(name = "doctor_id")
+    private Long doctorId;
+
+    /**
+     * Nome del medico (denormalizzato per UI).
+     */
+    @Column(name = "doctor_name", length = 255)
+    private String doctorName;
 
     /**
      * Codice reparto.

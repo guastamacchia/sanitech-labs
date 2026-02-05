@@ -85,15 +85,20 @@ interface PaymentPage {
 }
 
 // Allineato a ServicePerformedDto backend
+type PaymentTypeEnum = 'VISITA' | 'RICOVERO' | 'ALTRO';
+
 interface ServicePerformedItem {
   id: number;
   serviceType: 'MEDICAL_VISIT' | 'HOSPITALIZATION';
+  paymentType?: PaymentTypeEnum;
   sourceType: 'TELEVISIT' | 'ADMISSION';
   sourceId: number;
   patientId: number;
   patientSubject?: string;
   patientName?: string;
   patientEmail?: string;
+  doctorId?: number;
+  doctorName?: string;
   departmentCode?: string;
   description?: string;
   amountCents: number;
@@ -500,7 +505,8 @@ export class ResourcePageState {
     amount: 0,
     doctorId: null as number | null,
     patientId: null as number | null,
-    performedAt: ''
+    performedAt: '',
+    paymentType: 'VISITA' as PaymentTypeEnum
   };
   filteredPatientsForPayment: PatientItem[] = [];
   // ServicePerformed (prestazioni sanitarie)
@@ -2579,6 +2585,15 @@ export class ResourcePageState {
     }
   }
 
+  getPaymentTypeLabel(type: string | undefined): string {
+    switch (type) {
+      case 'VISITA': return 'Visita';
+      case 'RICOVERO': return 'Ricovero';
+      case 'ALTRO': return 'Altro';
+      default: return type || '-';
+    }
+  }
+
   getServiceStatusLabel(status: string): string {
     switch (status) {
       case 'PENDING': return 'In attesa';
@@ -2667,7 +2682,7 @@ export class ResourcePageState {
     const payload = {
       doctorId: this.paymentForm.doctorId,
       patientId: this.paymentForm.patientId,
-      serviceType: 'CUSTOM',
+      paymentType: this.paymentForm.paymentType,
       description: this.paymentForm.service,
       amountCents: Math.round(this.paymentForm.amount * 100),
       performedAt: new Date(this.paymentForm.performedAt).toISOString()
@@ -2684,6 +2699,7 @@ export class ResourcePageState {
         this.paymentForm.service = '';
         this.paymentForm.amount = 0;
         this.paymentForm.performedAt = '';
+        this.paymentForm.paymentType = 'VISITA';
         this.filteredPatientsForPayment = [];
         this.isLoading = false;
         setTimeout(() => {
@@ -2823,10 +2839,15 @@ export class ResourcePageState {
       },
       error: (err) => {
         // Gestione errore specifico per mancanza posti
-        if (err?.status === 409 || err?.error?.message?.includes('bed')) {
+        if (err?.status === 409 || err?.error?.detail?.toLowerCase().includes('bed') || err?.error?.detail?.toLowerCase().includes('posto')) {
           this.paymentsError = 'Nessun posto letto disponibile nel reparto selezionato.';
+        } else if (err?.status === 400 && err?.error?.extra?.length) {
+          // Errori di validazione con dettagli campi (RFC 7807) - backend usa 'campo' e 'messaggio' in italiano
+          const fieldErrors = err.error.extra.map((e: {campo: string, messaggio: string}) => `${e.campo}: ${e.messaggio}`).join('; ');
+          this.paymentsError = `Errore di validazione: ${fieldErrors}`;
         } else {
-          this.paymentsError = err?.error?.message || 'Impossibile registrare il ricovero.';
+          // Usa detail (RFC 7807) o title come fallback
+          this.paymentsError = err?.error?.detail || err?.error?.title || err?.error?.message || 'Impossibile registrare il ricovero.';
         }
         this.isLoading = false;
       }
@@ -3279,6 +3300,7 @@ export class ResourcePageState {
     this.paymentForm.service = '';
     this.paymentForm.amount = 0;
     this.paymentForm.performedAt = '';
+    this.paymentForm.paymentType = 'VISITA';
     this.filteredPatientsForPayment = [];
     this.showAdminPaymentModal = true;
   }
@@ -4747,14 +4769,19 @@ export class ResourcePageState {
     return this.admissions.filter(adm => adm.status === 'ACTIVE').length;
   }
 
-  /** Ricoveri in Pneumologia (reparto PNEUMO, status ACTIVE) */
-  get ricoveriPneumologia(): number {
-    return this.admissions.filter(adm => adm.departmentCode === 'PNEUMO' && adm.status === 'ACTIVE').length;
+  /** Ricoveri Day Hospital attivi */
+  get ricoveriDayHospital(): number {
+    return this.admissions.filter(adm => adm.admissionType === 'DAY_HOSPITAL' && adm.status === 'ACTIVE').length;
   }
 
-  /** Ricoveri confermati (INPATIENT attivi) */
-  get ricoveriConfermati(): number {
+  /** Ricoveri ordinari (INPATIENT) attivi */
+  get ricoveriOrdinari(): number {
     return this.admissions.filter(adm => adm.admissionType === 'INPATIENT' && adm.status === 'ACTIVE').length;
+  }
+
+  /** Ricoveri in osservazione attivi */
+  get ricoveriOsservazione(): number {
+    return this.admissions.filter(adm => adm.admissionType === 'OBSERVATION' && adm.status === 'ACTIVE').length;
   }
 
   /** Dimessi questo mese */
