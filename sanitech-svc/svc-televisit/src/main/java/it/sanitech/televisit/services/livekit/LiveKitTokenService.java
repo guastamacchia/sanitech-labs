@@ -27,6 +27,7 @@ public class LiveKitTokenService {
 
         String jwt = token.toJwt();
 
-        return new LiveKitTokenDto(roomName, props.getUrl(), jwt, props.getTokenTtlSeconds());
+        // Restituisce l'URL WebSocket per il frontend (connessione WebRTC)
+        return new LiveKitTokenDto(roomName, props.getWsUrl(), jwt, props.getTokenTtlSeconds());
     }
 }

@@ -162,10 +162,9 @@ services:
     image: sanitech-livekit-server:${SPRING_PROFILES_ACTIVE:-local}
     container_name: sanitech-livekit
     command: ["--config", "/etc/livekit/livekit.yaml"]
-    ports:
-      - "7880:7880"
-      - "7881:7881"
-      - "7882:7882/udp"
+    # Usa network_mode: host per risolvere problemi WebRTC in ambiente locale
+    # Le porte 7880, 7881, 7882 saranno esposte direttamente sull'host
+    network_mode: host
     restart: unless-stopped
 
   # =========================
@@ -897,6 +896,7 @@ services:
       SERVER_PORT: ${TELEVISIT_SERVER_PORT}
       DATABASE_NAME: ${TELEVISIT_DATABASE_NAME}
       LIVEKIT_URL: ${LIVEKIT_URL}
+      LIVEKIT_WS_URL: ${LIVEKIT_WS_URL}
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
       LIVEKIT_CONSOLE_URL: ${LIVEKIT_CONSOLE_URL}

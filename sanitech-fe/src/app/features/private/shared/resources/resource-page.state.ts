@@ -179,10 +179,17 @@ interface TelevisitItem {
   doctorSubject: string;
   patientSubject: string;
   scheduledAt: string;
-  status: 'CREATED' | 'ACTIVE' | 'ENDED' | 'CANCELED';
+  status: 'CREATED' | 'SCHEDULED' | 'ACTIVE' | 'ENDED' | 'CANCELED';
   // Campi legacy per compatibilità template (popolati da mapping)
   provider?: string;
   token?: string;
+}
+
+interface LiveKitTokenResponse {
+  roomName: string;
+  livekitUrl: string;
+  token: string;
+  expiresInSeconds: number;
 }
 
 interface DoctorItem {
@@ -1507,7 +1514,8 @@ export class ResourcePageState {
 
   getTelevisitStatusLabel(status: string): string {
     const labels: Record<string, string> = {
-      CREATED: 'Programmata',
+      CREATED: 'Creata',
+      SCHEDULED: 'Programmata',
       ACTIVE: 'In corso',
       ENDED: 'Conclusa',
       CANCELED: 'Annullata'
@@ -1592,6 +1600,162 @@ export class ResourcePageState {
   getTelevisitBookingStatusLabel(televisit: TelevisitItem): string {
     // Restituisce lo stato della televisita direttamente
     return this.getTelevisitStatusLabel(televisit.status);
+  }
+
+  copyTelevisitLink(televisit: TelevisitItem): void {
+    const link = `${window.location.origin}/televisit/room/${televisit.roomName}`;
+    navigator.clipboard.writeText(link).then(() => {
+      this.showToast('Link copiato negli appunti', 'success');
+    }).catch(() => {
+      this.showToast('Errore durante la copia del link', 'danger');
+    });
+  }
+
+  /**
+   * Avvia la sessione televisita e apre la room LiveKit.
+   * - Per sessioni CREATED/SCHEDULED: chiama start, poi token, poi naviga
+   * - Per sessioni ACTIVE: salta start, richiede solo token e naviga
+   */
+  startTelevisitSession(televisit: TelevisitItem): void {
+    // Blocca solo se già conclusa, annullata o in uno stato non valido
+    if (televisit.status === 'ENDED' || televisit.status === 'CANCELED') {
+      this.showToast('La televisita non può essere avviata in questo stato', 'warning');
+      return;
+    }
+
+    this.isLoading = true;
+    this.televisitError = '';
+
+    // Se già ACTIVE, salta lo step di start e vai direttamente al token
+    if (televisit.status === 'ACTIVE') {
+      this.fetchTokenAndNavigate(televisit);
+      return;
+    }
+
+    // Step 1: Avvia la sessione (cambia stato in ACTIVE)
+    this.api.request<TelevisitItem>('POST', `/api/televisits/${televisit.id}/start`).subscribe({
+      next: (updatedTelevisit) => {
+        // Aggiorna lo stato locale
+        this.televisits = this.televisits.map(tv =>
+          tv.id === televisit.id ? { ...tv, status: 'ACTIVE' as const } : tv
+        );
+
+        // Step 2: Ottieni il token LiveKit e naviga
+        this.fetchTokenAndNavigate(televisit);
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.televisitError = err?.error?.message || 'Errore nell\'avvio della televisita.';
+        this.showToast('Errore nell\'avvio della televisita', 'danger');
+      }
+    });
+  }
+
+  /**
+   * Richiede il token LiveKit e naviga al componente room.
+   */
+  private fetchTokenAndNavigate(televisit: TelevisitItem): void {
+    this.api.request<LiveKitTokenResponse>('POST', `/api/televisits/${televisit.id}/token/doctor`).subscribe({
+      next: (tokenResponse) => {
+        this.isLoading = false;
+        // Naviga al componente room con i parametri
+        this.router.navigate(['/televisit/room'], {
+          queryParams: {
+            id: televisit.id,
+            room: tokenResponse.roomName,
+            url: tokenResponse.livekitUrl,
+            token: tokenResponse.token
+          }
+        });
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.televisitError = 'Errore nel recupero del token LiveKit.';
+        this.showToast('Errore nel recupero del token LiveKit', 'danger');
+      }
+    });
+  }
+
+  /**
+   * Elimina definitivamente una televisita.
+   * Solo le sessioni in stato CREATED, SCHEDULED o CANCELED possono essere eliminate.
+   */
+  deleteTelevisit(televisit: TelevisitItem): void {
+    if (televisit.status === 'ACTIVE' || televisit.status === 'ENDED') {
+      this.showToast('La televisita non può essere eliminata in questo stato', 'warning');
+      return;
+    }
+
+    if (!confirm('Sei sicuro di voler eliminare questa televisita? L\'azione è irreversibile.')) {
+      return;
+    }
+
+    this.isLoading = true;
+    this.api.request<void>('DELETE', `/api/admin/televisits/${televisit.id}`).subscribe({
+      next: () => {
+        this.televisits = this.televisits.filter(tv => tv.id !== televisit.id);
+        this.isLoading = false;
+        this.showToast('Televisita eliminata con successo', 'success');
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.showToast(err?.error?.message || 'Errore nell\'eliminazione della televisita', 'danger');
+      }
+    });
+  }
+
+  /**
+   * Annulla una televisita (cambia stato in CANCELED).
+   */
+  cancelTelevisit(televisit: TelevisitItem): void {
+    if (televisit.status === 'ENDED' || televisit.status === 'CANCELED') {
+      this.showToast('La televisita non può essere annullata in questo stato', 'warning');
+      return;
+    }
+
+    if (!confirm('Sei sicuro di voler annullare questa televisita?')) {
+      return;
+    }
+
+    this.isLoading = true;
+    this.api.request<TelevisitItem>('POST', `/api/televisits/${televisit.id}/cancel`).subscribe({
+      next: (updatedTelevisit) => {
+        this.televisits = this.televisits.map(tv =>
+          tv.id === televisit.id ? { ...tv, status: 'CANCELED' as const } : tv
+        );
+        this.isLoading = false;
+        this.showToast('Televisita annullata', 'success');
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.showToast(err?.error?.message || 'Errore nell\'annullamento della televisita', 'danger');
+      }
+    });
+  }
+
+  private showToast(message: string, type: 'success' | 'danger' | 'warning' | 'info'): void {
+    // Crea un toast temporaneo per il feedback
+    const toastContainer = document.getElementById('toast-container') || this.createToastContainer();
+    const toast = document.createElement('div');
+    toast.className = `toast show align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    `;
+    toastContainer.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  private createToastContainer(): HTMLElement {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    container.style.zIndex = '1100';
+    document.body.appendChild(container);
+    return container;
   }
 
   getSlotDateTimeValue(slot?: SchedulingSlot): Date | null {

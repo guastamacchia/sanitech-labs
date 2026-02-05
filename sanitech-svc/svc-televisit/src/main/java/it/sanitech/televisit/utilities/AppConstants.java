@@ -46,6 +46,7 @@ public class AppConstants {
             public static final String STARTED = "STARTED";
             public static final String ENDED = "ENDED";
             public static final String CANCELED = "CANCELED";
+            public static final String DELETED = "DELETED";
         }
     }
 }

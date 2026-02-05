@@ -1,2 +1,2 @@
-FROM livekit/livekit-server:v1.7.2
+FROM livekit/livekit-server:latest
 COPY livekit.yaml /etc/livekit/livekit.yaml

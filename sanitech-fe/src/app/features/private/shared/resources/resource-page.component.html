@@ -3124,7 +3124,7 @@
                 <div class="col-md-3">
                   <div class="card card-glass text-center p-3">
                     <div class="fs-2 fw-bold text-primary">{{ televisits.length }}</div>
-                    <div class="small text-muted">Televisite attive</div>
+                    <div class="small text-muted">Televisite totali</div>
                   </div>
                 </div>
                 <div class="col-md-3">
@@ -3175,7 +3175,8 @@
                       <tbody>
                         <tr *ngFor="let televisit of televisits | slice:getPageSliceStart('adminTelevisits'):getPageSliceEnd('adminTelevisits')"
                             [class.table-success]="televisit.status === 'ENDED'"
-                            [class.table-info]="televisit.status === 'CREATED'">
+                            [class.table-info]="televisit.status === 'CREATED'"
+                            [class.table-primary]="televisit.status === 'SCHEDULED'">
                           <td>{{ televisit.id }}</td>
                           <td>{{ getTelevisitPatientLabel(televisit) }}</td>
                           <td>{{ televisit.doctorSubject }}</td>
@@ -3184,6 +3185,7 @@
                           <td>
                             <span class="badge"
                                   [class.bg-info]="televisit.status === 'CREATED'"
+                                  [class.bg-primary]="televisit.status === 'SCHEDULED'"
                                   [class.bg-success]="televisit.status === 'ENDED'"
                                   [class.bg-warning]="televisit.status === 'ACTIVE'"
                                   [class.bg-secondary]="televisit.status === 'CANCELED'">
@@ -3191,16 +3193,33 @@
                             </span>
                           </td>
                           <td>
-                            <code class="small">{{ televisit.roomName }}</code>
+                            <a [href]="'/televisit/room?id=' + televisit.id + '&room=' + televisit.roomName"
+                               class="small text-decoration-none"
+                               target="_blank"
+                               title="Apri link room">
+                              <code>{{ televisit.roomName | slice:0:20 }}...</code>
+                            </a>
                           </td>
                           <td>
                             <div class="d-flex flex-wrap gap-1">
-                              <button class="btn btn-outline-primary btn-sm" type="button" title="Copia link">
-                                📋
+                              <button class="btn btn-outline-primary btn-sm" type="button" title="Copia link"
+                                      (click)="copyTelevisitLink(televisit)">
+                                <i class="bi bi-clipboard"></i>
                               </button>
-                              <button class="btn btn-outline-success btn-sm" type="button" title="Avvia"
-                                      [disabled]="televisit.status !== 'CREATED'">
-                                ▶️
+                              <button class="btn btn-outline-success btn-sm" type="button" title="Avvia televisita"
+                                      (click)="startTelevisitSession(televisit)"
+                                      [disabled]="televisit.status === 'ENDED' || televisit.status === 'CANCELED'">
+                                <i class="bi bi-play-fill"></i>
+                              </button>
+                              <button class="btn btn-outline-warning btn-sm" type="button" title="Annulla televisita"
+                                      (click)="cancelTelevisit(televisit)"
+                                      [disabled]="televisit.status === 'ENDED' || televisit.status === 'CANCELED'">
+                                <i class="bi bi-x-circle"></i>
+                              </button>
+                              <button class="btn btn-outline-danger btn-sm" type="button" title="Elimina televisita"
+                                      (click)="deleteTelevisit(televisit)"
+                                      [disabled]="televisit.status === 'ACTIVE' || televisit.status === 'ENDED'">
+                                <i class="bi bi-trash"></i>
                               </button>
                             </div>
                           </td>

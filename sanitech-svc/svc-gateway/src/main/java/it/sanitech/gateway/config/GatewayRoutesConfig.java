@@ -61,7 +61,7 @@ public class GatewayRoutesConfig {
                 //       catturi /api/patient/televisits/**
                 // =========================
                 .route(AppConstants.Services.TELEVISIT, r -> r
-                        .path("/api/televisits/**", "/api/patient/televisits/**")
+                        .path("/api/televisits/**", "/api/patient/televisits/**", "/api/admin/televisits/**")
                         .filters(f -> standardFilters(f, AppConstants.Services.TELEVISIT))
                         .uri(services.getTelevisit())
                 )

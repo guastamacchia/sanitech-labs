@@ -16,10 +16,16 @@ import org.springframework.validation.annotation.Validated;
 public class LiveKitProperties {
 
     /**
-     * URL del LiveKit server (es. {@code http://localhost:7880}).
+     * URL HTTP del LiveKit server per chiamate API server-side (es. {@code http://localhost:7880}).
      */
     @NotBlank
     private String url = "http://localhost:7880";
+
+    /**
+     * URL WebSocket del LiveKit server per connessioni client WebRTC (es. {@code ws://localhost:7880}).
+     */
+    @NotBlank
+    private String wsUrl = "ws://localhost:7880";
 
     /**
      * API key LiveKit (obbligatoria in ambienti reali).

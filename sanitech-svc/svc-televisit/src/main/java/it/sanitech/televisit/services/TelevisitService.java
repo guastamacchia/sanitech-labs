@@ -181,6 +181,28 @@ public class TelevisitService {
         return mapper.toDto(s);
     }
 
+    /**
+     * Elimina definitivamente una sessione televisita.
+     * Solo sessioni in stato CREATED, SCHEDULED o CANCELED possono essere eliminate.
+     */
+    @Transactional
+    public void delete(Long sessionId, Authentication auth) {
+        TelevisitSession s = repo.findById(sessionId).orElseThrow(() -> NotFoundException.of("TelevisitSession", sessionId));
+        deptGuard.checkCanManage(s.getDepartment(), auth);
+
+        if (s.getStatus() == TelevisitStatus.ACTIVE || s.getStatus() == TelevisitStatus.ENDED) {
+            throw new IllegalArgumentException("La sessione in stato " + s.getStatus() + " non può essere eliminata.");
+        }
+
+        repo.delete(s);
+
+        events.publish(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(sessionId), AppConstants.Outbox.EventType.DELETED, Map.of(
+                "id", sessionId,
+                "roomName", s.getRoomName(),
+                "status", "DELETED"
+        ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
+    }
+
     private String generateRoomName() {
         // prefisso breve + UUID: evita collisioni e rende il nome non facilmente enumerabile.
         return "tv-" + UUID.randomUUID();

@@ -129,7 +129,10 @@ sanitech:
     version: "v1"
 
   livekit:
+    # URL HTTP per API server-side (RoomServiceClient)
     url: ${LIVEKIT_URL:http://localhost:7880}
+    # URL WebSocket per client-side (WebRTC)
+    ws-url: ${LIVEKIT_WS_URL:ws://localhost:7880}
     api-key: ${LIVEKIT_API_KEY:devkey}
     api-secret: ${LIVEKIT_API_SECRET:devsecret}
     token-ttl-seconds: ${LIVEKIT_TOKEN_TTL_SECONDS:900}
