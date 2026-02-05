@@ -36,6 +36,10 @@ export class DirectoryPageComponent implements OnInit {
   doctors: Doctor[] = [];
   patients: Patient[] = [];
 
+  // Full data for stats (unfiltered)
+  allDoctors: Doctor[] = [];
+  allPatients: Patient[] = [];
+
   // Pagination info
   facilitiesPage = { totalElements: 0, totalPages: 0, number: 0, size: 20 };
   departmentsPage = { totalElements: 0, totalPages: 0, number: 0, size: 20 };
@@ -63,6 +67,11 @@ export class DirectoryPageComponent implements OnInit {
   // Edit mode
   editMode = false;
   editId: number | null = null;
+
+  // Form touched states for validation feedback
+  facilityFormTouched = false;
+  departmentFormTouched = false;
+  doctorFormTouched = false;
 
   // Toast notifications
   toasts: { message: string; type: 'success' | 'error' | 'info' }[] = [];
@@ -92,8 +101,10 @@ export class DirectoryPageComponent implements OnInit {
         this.departments = data.departments.content;
         this.departmentsPage = data.departments;
         this.doctors = data.doctors.content;
+        this.allDoctors = [...data.doctors.content];
         this.doctorsPage = data.doctors;
         this.patients = data.patients.content;
+        this.allPatients = [...data.patients.content];
         this.patientsPage = data.patients;
       },
       error: (err) => {
@@ -137,6 +148,10 @@ export class DirectoryPageComponent implements OnInit {
         next: (page) => {
           this.doctors = page.content;
           this.doctorsPage = page;
+          // Update allDoctors only when loading without search filter
+          if (!this.searchQuery) {
+            this.allDoctors = [...page.content];
+          }
         },
         error: () => this.showToast('Errore nel caricamento dei medici', 'error')
       });
@@ -150,6 +165,10 @@ export class DirectoryPageComponent implements OnInit {
         next: (page) => {
           this.patients = page.content;
           this.patientsPage = page;
+          // Update allPatients only when loading without search filter
+          if (!this.searchQuery) {
+            this.allPatients = [...page.content];
+          }
         },
         error: () => this.showToast('Errore nel caricamento dei pazienti', 'error')
       });
@@ -194,10 +213,12 @@ export class DirectoryPageComponent implements OnInit {
 
   get filteredDoctors(): Doctor[] {
     if (!this.searchQuery) return this.doctors;
-    const q = this.searchQuery.toLowerCase();
+    const q = this.searchQuery.toLowerCase().trim();
+    const fullName = (d: Doctor) => `${d.firstName} ${d.lastName}`.toLowerCase();
     return this.doctors.filter(d =>
       d.firstName.toLowerCase().includes(q) ||
       d.lastName.toLowerCase().includes(q) ||
+      fullName(d).includes(q) ||
       d.email.toLowerCase().includes(q) ||
       d.departmentName?.toLowerCase().includes(q)
     );
@@ -214,10 +235,12 @@ export class DirectoryPageComponent implements OnInit {
 
   get filteredPatients(): Patient[] {
     if (!this.searchQuery) return this.patients;
-    const q = this.searchQuery.toLowerCase();
+    const q = this.searchQuery.toLowerCase().trim();
+    const fullName = (p: Patient) => `${p.firstName} ${p.lastName}`.toLowerCase();
     return this.patients.filter(p =>
       p.firstName.toLowerCase().includes(q) ||
       p.lastName.toLowerCase().includes(q) ||
+      fullName(p).includes(q) ||
       p.email.toLowerCase().includes(q) ||
       p.fiscalCode?.toLowerCase().includes(q)
     );
@@ -262,6 +285,7 @@ export class DirectoryPageComponent implements OnInit {
     this.facilityForm = {};
     this.editMode = false;
     this.editId = null;
+    this.facilityFormTouched = false;
   }
 
   deleteFacility(facility: Facility): void {
@@ -329,9 +353,16 @@ export class DirectoryPageComponent implements OnInit {
     this.departmentForm = {};
     this.editMode = false;
     this.editId = null;
+    this.departmentFormTouched = false;
   }
 
   deleteDepartment(dept: Department): void {
+    const doctorCount = dept.doctorCount || this.getDoctorCountForDepartment(dept.code);
+    if (doctorCount > 0) {
+      const doctorWord = doctorCount === 1 ? 'medico associato' : 'medici associati';
+      this.showToast(`Impossibile eliminare: il reparto ha ${doctorCount} ${doctorWord}.`, 'error');
+      return;
+    }
     this.confirmAction = {
       title: 'Elimina Reparto',
       message: `Sei sicuro di voler eliminare il reparto "${dept.name}"? Questa azione non può essere annullata.`,
@@ -674,17 +705,17 @@ export class DirectoryPageComponent implements OnInit {
     this.showConfirmModal = false;
   }
 
-  // Stats
+  // Stats - always use full unfiltered data
   get totalDoctors(): number {
-    return this.doctorsPage.totalElements || this.doctors.length;
+    return this.allDoctors.length || this.doctorsPage.totalElements || this.doctors.length;
   }
 
   get activeDoctors(): number {
-    return this.doctors.filter(d => d.status === 'ACTIVE').length;
+    return this.allDoctors.filter(d => d.status === 'ACTIVE').length;
   }
 
   get pendingDoctors(): number {
-    return this.doctors.filter(d => d.status === 'PENDING').length;
+    return this.allDoctors.filter(d => d.status === 'PENDING').length;
   }
 
   get totalDepartments(): number {
@@ -696,14 +727,14 @@ export class DirectoryPageComponent implements OnInit {
   }
 
   get totalPatients(): number {
-    return this.patientsPage.totalElements || this.patients.length;
+    return this.allPatients.length || this.patientsPage.totalElements || this.patients.length;
   }
 
   get activePatients(): number {
-    return this.patients.filter(p => p.status === 'ACTIVE').length;
+    return this.allPatients.filter(p => p.status === 'ACTIVE').length;
   }
 
   get pendingPatients(): number {
-    return this.patients.filter(p => p.status === 'PENDING').length;
+    return this.allPatients.filter(p => p.status === 'PENDING').length;
   }
 }

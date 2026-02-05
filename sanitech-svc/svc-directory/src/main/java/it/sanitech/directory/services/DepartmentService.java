@@ -90,6 +90,7 @@ public class DepartmentService {
                 .code(code)
                 .name(dto.name().trim())
                 .facility(facility)
+                .capacity(dto.capacity())
                 .build();
 
         return mapper.toDto(repository.save(entity));

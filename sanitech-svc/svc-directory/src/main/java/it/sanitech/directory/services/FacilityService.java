@@ -61,6 +61,8 @@ public class FacilityService {
         Facility entity = Facility.builder()
                 .code(code)
                 .name(dto.name().trim())
+                .address(dto.address())
+                .phone(dto.phone())
                 .build();
 
         return mapper.toDto(repository.save(entity));

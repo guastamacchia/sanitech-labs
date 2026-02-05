@@ -217,6 +217,7 @@
                 <th class="ps-4">Codice</th>
                 <th>Nome Reparto</th>
                 <th>Struttura</th>
+                <th>Capacità</th>
                 <th>Medici</th>
                 <th class="text-end pe-4">Azioni</th>
               </tr>
@@ -236,6 +237,10 @@
                 </td>
                 <td>{{ dept.facilityName }}</td>
                 <td>
+                  <span *ngIf="dept.capacity" class="badge bg-light text-dark">{{ dept.capacity }} posti</span>
+                  <span *ngIf="!dept.capacity" class="text-muted">-</span>
+                </td>
+                <td>
                   <span class="badge bg-primary rounded-pill">{{ dept.doctorCount || 0 }}</span>
                 </td>
                 <td class="text-end pe-4">
@@ -250,7 +255,7 @@
                 </td>
               </tr>
               <tr *ngIf="filteredDepartments.length === 0">
-                <td colspan="5" class="text-center py-5">
+                <td colspan="6" class="text-center py-5">
                   <div class="text-muted">
                     <i class="bi bi-hospital fs-1 d-block mb-3"></i>
                     <p class="mb-0">Nessun reparto trovato.</p>
@@ -521,12 +526,16 @@
         <div class="modal-body pt-4">
           <div class="mb-3">
             <label class="form-label fw-semibold">Codice Struttura <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" [(ngModel)]="facilityForm.code" placeholder="es. POLI_SUD" [readonly]="editMode">
+            <input type="text" class="form-control" [(ngModel)]="facilityForm.code" placeholder="es. POLI_SUD" [readonly]="editMode" required
+                   [class.is-invalid]="!facilityForm.code && facilityFormTouched">
             <div class="form-text">Codice univoco identificativo della struttura</div>
+            <div class="invalid-feedback" *ngIf="!facilityForm.code && facilityFormTouched">Il codice struttura è obbligatorio</div>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" [(ngModel)]="facilityForm.name" placeholder="es. Poliambulatorio Sud">
+            <input type="text" class="form-control" [(ngModel)]="facilityForm.name" placeholder="es. Poliambulatorio Sud" required
+                   [class.is-invalid]="!facilityForm.name && facilityFormTouched">
+            <div class="invalid-feedback" *ngIf="!facilityForm.name && facilityFormTouched">Il nome è obbligatorio</div>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Indirizzo</label>
@@ -539,7 +548,8 @@
         </div>
         <div class="modal-footer border-0 pt-0">
           <button type="button" class="btn btn-outline-secondary" (click)="closeFacilityModal()">Annulla</button>
-          <button type="button" class="btn btn-primary" (click)="saveFacility()" [disabled]="!facilityForm.code || !facilityForm.name">
+          <button type="button" class="btn btn-primary" (click)="saveFacility()" [disabled]="!facilityForm.code || !facilityForm.name"
+                  (mouseenter)="facilityFormTouched = true">
             {{ editMode ? 'Salva modifiche' : 'Crea Struttura' }}
           </button>
         </div>
@@ -573,12 +583,16 @@
         <div class="modal-body pt-4">
           <div class="mb-3">
             <label class="form-label fw-semibold">Codice Reparto <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" [(ngModel)]="departmentForm.code" placeholder="es. PHYSIO" [readonly]="editMode">
+            <input type="text" class="form-control" [(ngModel)]="departmentForm.code" placeholder="es. PHYSIO" [readonly]="editMode" required
+                   [class.is-invalid]="!departmentForm.code && departmentFormTouched">
             <div class="form-text">Codice univoco usato per le policy di accesso (es. DEPT_PHYSIO)</div>
+            <div class="invalid-feedback" *ngIf="!departmentForm.code && departmentFormTouched">Il codice reparto è obbligatorio</div>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" [(ngModel)]="departmentForm.name" placeholder="es. Fisioterapia e Riabilitazione">
+            <input type="text" class="form-control" [(ngModel)]="departmentForm.name" placeholder="es. Fisioterapia e Riabilitazione" required
+                   [class.is-invalid]="!departmentForm.name && departmentFormTouched">
+            <div class="invalid-feedback" *ngIf="!departmentForm.name && departmentFormTouched">Il nome è obbligatorio</div>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Struttura <span class="text-danger">*</span></label>
@@ -594,7 +608,8 @@
         </div>
         <div class="modal-footer border-0 pt-0">
           <button type="button" class="btn btn-outline-secondary" (click)="closeDepartmentModal()">Annulla</button>
-          <button type="button" class="btn btn-primary" (click)="saveDepartment()" [disabled]="!departmentForm.code || !departmentForm.name">
+          <button type="button" class="btn btn-primary" (click)="saveDepartment()" [disabled]="!departmentForm.code || !departmentForm.name"
+                  (mouseenter)="departmentFormTouched = true">
             {{ editMode ? 'Salva modifiche' : 'Crea Reparto' }}
           </button>
         </div>
