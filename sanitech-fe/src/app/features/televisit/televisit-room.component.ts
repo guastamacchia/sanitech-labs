@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Room, RoomEvent, VideoPresets, Track, RemoteTrack, RemoteTrackPublication, LocalTrack, RemoteParticipant } from 'livekit-client';
@@ -88,18 +88,26 @@ import { Room, RoomEvent, VideoPresets, Track, RemoteTrack, RemoteTrackPublicati
     </div>
   `,
   styles: [`
-    .modal-backdrop-custom {
+    :host {
+      display: block;
       position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1040;
+    }
+    .modal-backdrop-custom {
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(2px);
-      z-index: 1040;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
     }
     .modal-container {
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
@@ -107,14 +115,13 @@ import { Room, RoomEvent, VideoPresets, Track, RemoteTrack, RemoteTrackPublicati
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 1050;
-      padding: 5%;
+      padding: 20px;
     }
     .televisit-modal {
-      width: 85%;
-      height: 85%;
+      width: 90%;
+      height: 90%;
       max-width: 1400px;
-      max-height: 900px;
+      max-height: 850px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
       position: relative;
     }
@@ -213,6 +220,15 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
   @ViewChild('localVideoContainer', { static: true }) localVideoContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('remoteVideoContainer', { static: true }) remoteVideoContainer!: ElementRef<HTMLDivElement>;
 
+  // Input per modalità overlay (usati quando il componente è embedded)
+  @Input() inputId = '';
+  @Input() inputRoom = '';
+  @Input() inputUrl = '';
+  @Input() inputToken = '';
+
+  // Output per notificare la chiusura
+  @Output() closed = new EventEmitter<void>();
+
   roomName = '';
   televisitId = '';
   connectionState: 'disconnected' | 'connecting' | 'connected' | 'demo' = 'disconnected';
@@ -233,6 +249,7 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
   private isSimulatedMode = false;
   private pendingToken = '';
   private pendingUrl = '';
+  private isOverlayMode = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -249,11 +266,15 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Priorità: Input properties > route params
     const params = this.route.snapshot.queryParams;
-    this.televisitId = params['id'] || '';
-    const token = params['token'] || '';
-    const livekitUrl = params['url'] || '';
-    this.roomName = params['room'] || 'demo-room';
+    this.televisitId = this.inputId || params['id'] || '';
+    const token = this.inputToken || params['token'] || '';
+    const livekitUrl = this.inputUrl || params['url'] || '';
+    this.roomName = this.inputRoom || params['room'] || 'demo-room';
+
+    // Determina se siamo in modalità overlay (usando gli Input)
+    this.isOverlayMode = !!(this.inputId || this.inputRoom || this.inputUrl || this.inputToken);
 
     // Salva i parametri per dopo
     this.pendingToken = token;
@@ -389,7 +410,13 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
       this.room.on(RoomEvent.ParticipantConnected, this.handleParticipantConnected.bind(this));
       this.room.on(RoomEvent.ParticipantDisconnected, this.handleParticipantDisconnected.bind(this));
 
-      await this.room.connect(url, token);
+      // Timeout di 2 secondi per la connessione LiveKit
+      const connectPromise = this.room.connect(url, token);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timeout')), 2000)
+      );
+
+      await Promise.race([connectPromise, timeoutPromise]);
       this.connectionState = 'connected';
 
       await this.room.localParticipant.enableCameraAndMicrophone();
@@ -409,6 +436,11 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
 
     } catch (err) {
       console.warn('Connessione WebRTC non disponibile, avvio modalità simulata:', err);
+      // Disconnetti eventuali tentativi parziali
+      if (this.room) {
+        try { this.room.disconnect(); } catch {}
+        this.room = null;
+      }
       // Fallback alla modalità simulata
       await this.startSimulatedMode();
     } finally {
@@ -502,7 +534,13 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
   goBack(): void {
     this.disconnect();
     this.stopLocalStream();
-    this.router.navigate(['/portal/admin/televisit']);
+    if (this.isOverlayMode) {
+      // In modalità overlay, emetti l'evento di chiusura
+      this.closed.emit();
+    } else {
+      // In modalità standalone, naviga indietro
+      this.router.navigate(['/portal/admin/televisit']);
+    }
   }
 
   private disconnect(): void {

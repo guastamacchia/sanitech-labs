@@ -622,6 +622,14 @@ export class ResourcePageState {
   showDeleteTelevisitModal = false;
   showCancelTelevisitModal = false;
   selectedTelevisitForAction: TelevisitItem | null = null;
+  // Overlay televisit room
+  showTelevisitRoomOverlay = false;
+  televisitRoomConfig: {
+    id: string;
+    room: string;
+    url: string;
+    token: string;
+  } | null = null;
   showAdminAdmissionModal = false;
   // Modale cambia referente
   showChangeReferentModal = false;
@@ -1607,7 +1615,7 @@ export class ResourcePageState {
   }
 
   copyTelevisitLink(televisit: TelevisitItem): void {
-    const link = `${window.location.origin}/televisit/room/${televisit.roomName}`;
+    const link = `${window.location.origin}/televisit/room?id=${televisit.id}&room=${televisit.roomName}`;
     navigator.clipboard.writeText(link).then(() => {
       this.showToast('Link copiato negli appunti', 'success');
     }).catch(() => {
@@ -1656,21 +1664,20 @@ export class ResourcePageState {
   }
 
   /**
-   * Richiede il token LiveKit e naviga al componente room.
+   * Richiede il token LiveKit e mostra l'overlay della room.
    */
   private fetchTokenAndNavigate(televisit: TelevisitItem): void {
     this.api.request<LiveKitTokenResponse>('POST', `/api/televisits/${televisit.id}/token/doctor`).subscribe({
       next: (tokenResponse) => {
         this.isLoading = false;
-        // Naviga al componente room con i parametri
-        this.router.navigate(['/televisit/room'], {
-          queryParams: {
-            id: televisit.id,
-            room: tokenResponse.roomName,
-            url: tokenResponse.livekitUrl,
-            token: tokenResponse.token
-          }
-        });
+        // Mostra l'overlay della room invece di navigare
+        this.televisitRoomConfig = {
+          id: String(televisit.id),
+          room: tokenResponse.roomName,
+          url: tokenResponse.livekitUrl,
+          token: tokenResponse.token
+        };
+        this.showTelevisitRoomOverlay = true;
       },
       error: (err) => {
         this.isLoading = false;
@@ -1678,6 +1685,14 @@ export class ResourcePageState {
         this.showToast('Errore nel recupero del token LiveKit', 'danger');
       }
     });
+  }
+
+  /**
+   * Chiude l'overlay della room televisit.
+   */
+  closeTelevisitRoomOverlay(): void {
+    this.showTelevisitRoomOverlay = false;
+    this.televisitRoomConfig = null;
   }
 
   /**

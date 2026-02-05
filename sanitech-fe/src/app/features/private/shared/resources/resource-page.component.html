@@ -4504,3 +4504,13 @@
     </div>
   </ng-container>
 </section>
+
+<!-- Overlay Televisit Room -->
+<app-televisit-room
+  *ngIf="showTelevisitRoomOverlay && televisitRoomConfig"
+  [inputId]="televisitRoomConfig.id"
+  [inputRoom]="televisitRoomConfig.room"
+  [inputUrl]="televisitRoomConfig.url"
+  [inputToken]="televisitRoomConfig.token"
+  (closed)="closeTelevisitRoomOverlay()">
+</app-televisit-room>

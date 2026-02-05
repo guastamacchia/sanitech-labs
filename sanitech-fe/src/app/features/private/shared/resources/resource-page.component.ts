@@ -5,11 +5,12 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../../core/services/api.service';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { ResourcePageState } from './resource-page.state';
+import { TelevisitRoomComponent } from '../../../televisit/televisit-room.component';
 
 @Component({
   selector: 'app-resource-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TelevisitRoomComponent],
   templateUrl: './resource-page.component.html'
 })
 export class ResourcePageComponent extends ResourcePageState {
