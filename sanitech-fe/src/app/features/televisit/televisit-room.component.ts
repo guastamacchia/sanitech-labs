@@ -8,104 +8,204 @@ import { Room, RoomEvent, VideoPresets, Track, RemoteTrack, RemoteTrackPublicati
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="televisit-container d-flex flex-column vh-100 bg-dark">
-      <!-- Header -->
-      <div class="header bg-dark text-white py-2 px-4 d-flex align-items-center justify-content-between border-bottom border-secondary">
-        <div class="d-flex align-items-center gap-3">
-          <span class="badge" [class.bg-success]="connectionState === 'connected'" [class.bg-warning]="connectionState === 'connecting'" [class.bg-info]="connectionState === 'demo'" [class.bg-danger]="connectionState === 'disconnected'">
-            <i class="bi" [class.bi-wifi]="connectionState === 'connected'" [class.bi-hourglass-split]="connectionState === 'connecting'" [class.bi-info-circle]="connectionState === 'demo'" [class.bi-wifi-off]="connectionState === 'disconnected'"></i>
-            {{ connectionStateLabel }}
-          </span>
-          <span *ngIf="roomName" class="text-muted small">Room: {{ roomName }}</span>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <span class="text-muted small" *ngIf="duration">{{ formatDuration(duration) }}</span>
-          <button class="btn btn-outline-light btn-sm" (click)="goBack()" title="Esci">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-      </div>
+    <!-- Modal backdrop -->
+    <div class="modal-backdrop-custom"></div>
 
-      <!-- Main content -->
-      <div class="flex-grow-1 d-flex position-relative overflow-hidden">
-        <!-- Remote video (full size) -->
-        <div class="remote-video-container flex-grow-1 d-flex align-items-center justify-content-center bg-secondary bg-opacity-25">
-          <div #remoteVideoContainer class="w-100 h-100 d-flex align-items-center justify-content-center">
-            <div *ngIf="!hasRemoteVideo" class="text-center text-white">
-              <i class="bi bi-person-video fs-1 d-block mb-3"></i>
-              <p class="mb-0">In attesa del collegamento dell'altro partecipante...</p>
-              <small class="text-muted">La videochiamata inizierà automaticamente</small>
+    <!-- Modal container -->
+    <div class="modal-container">
+      <div class="televisit-modal d-flex flex-column bg-dark rounded-3 overflow-hidden">
+        <!-- Header -->
+        <div class="header bg-dark text-white py-2 px-4 d-flex align-items-center justify-content-between border-bottom border-secondary">
+          <div class="d-flex align-items-center gap-3">
+            <span class="badge" [class.bg-success]="connectionState === 'connected'" [class.bg-warning]="connectionState === 'connecting'" [class.bg-info]="connectionState === 'demo'" [class.bg-danger]="connectionState === 'disconnected'">
+              <i class="bi" [class.bi-wifi]="connectionState === 'connected'" [class.bi-hourglass-split]="connectionState === 'connecting'" [class.bi-wifi]="connectionState === 'demo'" [class.bi-wifi-off]="connectionState === 'disconnected'"></i>
+              {{ connectionStateLabel }}
+            </span>
+            <span *ngIf="roomName" class="text-muted small">Room: {{ roomName }}</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small" *ngIf="duration">{{ formatDuration(duration) }}</span>
+            <button class="btn btn-outline-light btn-sm" (click)="goBack()" title="Esci">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="flex-grow-1 d-flex position-relative overflow-hidden" style="min-height: 0;">
+          <!-- Remote video (full size) -->
+          <div class="remote-video-container flex-grow-1 d-flex align-items-center justify-content-center bg-secondary bg-opacity-25">
+            <div #remoteVideoContainer class="w-100 h-100 d-flex align-items-center justify-content-center">
+              <div *ngIf="!hasRemoteVideo" class="text-center text-white px-3">
+                <div class="waiting-animation mb-4">
+                  <i class="bi bi-person-video display-1 d-block"></i>
+                  <div class="pulse-ring"></div>
+                </div>
+                <h4 class="mb-2">In attesa di altri partecipanti...</h4>
+                <p class="text-light fs-6 mb-0">La videochiamata inizierà automaticamente quando un partecipante si collegherà</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Local video (small overlay) -->
-        <div class="local-video-container position-absolute bottom-0 end-0 m-3" style="width: 240px; height: 180px;">
-          <div #localVideoContainer class="w-100 h-100 rounded overflow-hidden bg-dark border border-secondary">
-            <div *ngIf="!hasLocalVideo" class="w-100 h-100 d-flex align-items-center justify-content-center">
-              <i class="bi bi-camera-video-off text-muted fs-4"></i>
+        <!-- Bottom bar with local video and controls -->
+        <div class="bottom-bar bg-dark border-top border-secondary d-flex align-items-center justify-content-between px-4" style="height: 120px; flex-shrink: 0;">
+          <!-- Local video (left) -->
+          <div class="local-video-wrapper" style="width: 160px; height: 100px;">
+            <div #localVideoContainer class="w-100 h-100 rounded overflow-hidden bg-secondary border border-secondary">
+              <div *ngIf="!hasLocalVideo" class="w-100 h-100 d-flex align-items-center justify-content-center">
+                <i class="bi bi-camera-video-off text-muted fs-5"></i>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Controls -->
-      <div class="controls bg-dark py-3 border-top border-secondary">
-        <div class="d-flex justify-content-center gap-3">
-          <button class="btn rounded-circle p-3" [class.btn-outline-light]="!isMuted" [class.btn-danger]="isMuted" (click)="toggleMute()" title="Microfono" [disabled]="connectionState === 'demo'">
-            <i class="bi" [class.bi-mic-fill]="!isMuted" [class.bi-mic-mute-fill]="isMuted"></i>
-          </button>
-          <button class="btn rounded-circle p-3" [class.btn-outline-light]="!isVideoOff" [class.btn-warning]="isVideoOff" (click)="toggleVideo()" title="Videocamera" [disabled]="connectionState === 'demo'">
-            <i class="bi" [class.bi-camera-video-fill]="!isVideoOff" [class.bi-camera-video-off-fill]="isVideoOff"></i>
-          </button>
-          <button class="btn btn-danger rounded-circle p-3" (click)="endCall()" title="Termina chiamata">
-            <i class="bi bi-telephone-x-fill"></i>
-          </button>
-        </div>
-      </div>
+          <!-- Controls (center) -->
+          <div class="d-flex justify-content-center align-items-center gap-3">
+            <button class="control-btn" [class.active]="!isMuted" [class.muted]="isMuted" (click)="toggleMute()" [title]="isMuted ? 'Attiva microfono' : 'Muta microfono'">
+              <i class="bi" [class.bi-mic-fill]="!isMuted" [class.bi-mic-mute-fill]="isMuted"></i>
+            </button>
+            <button class="control-btn" [class.active]="!isVideoOff" [class.video-off]="isVideoOff" (click)="toggleVideo()" [title]="isVideoOff ? 'Attiva video' : 'Disattiva video'">
+              <i class="bi" [class.bi-camera-video-fill]="!isVideoOff" [class.bi-camera-video-off-fill]="isVideoOff"></i>
+            </button>
+            <button class="control-btn end-call" (click)="endCall()" title="Termina chiamata">
+              <i class="bi bi-telephone-x-fill"></i>
+            </button>
+          </div>
 
-      <!-- Demo mode overlay -->
-      <div *ngIf="showDemoMessage" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-75" style="z-index: 1000;">
-        <div class="card bg-dark text-white border-info" style="max-width: 450px;">
-          <div class="card-body text-center">
-            <i class="bi bi-info-circle text-info fs-1 d-block mb-3"></i>
-            <h5 class="card-title">Ambiente di sviluppo</h5>
-            <p class="card-text">
-              La funzionalità di videoconferenza non è disponibile in ambiente locale.<br>
-              Per testare le videochiamate, utilizza un ambiente di staging o produzione con connettività WebRTC completa.
-            </p>
-            <button class="btn btn-outline-light" (click)="goBack()">Torna alla lista</button>
+          <!-- Spacer (right) -->
+          <div style="width: 160px;"></div>
+        </div>
+
+        <!-- Loading overlay -->
+        <div *ngIf="isLoading" class="loading-overlay">
+          <div class="text-center text-white">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <p class="mb-0">Connessione in corso...</p>
           </div>
         </div>
-      </div>
 
-      <!-- Loading overlay -->
-      <div *ngIf="isLoading" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-75" style="z-index: 1000;">
-        <div class="text-center text-white">
-          <div class="spinner-border text-primary mb-3" role="status"></div>
-          <p class="mb-0">Connessione in corso...</p>
-        </div>
       </div>
     </div>
   `,
   styles: [`
-    .televisit-container {
-      background: #1a1a1a;
+    .modal-backdrop-custom {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(2px);
+      z-index: 1040;
+    }
+    .modal-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+      padding: 5%;
+    }
+    .televisit-modal {
+      width: 85%;
+      height: 85%;
+      max-width: 1400px;
+      max-height: 900px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      position: relative;
     }
     .remote-video-container video {
       width: 100%;
       height: 100%;
       object-fit: contain;
     }
-    .local-video-container video {
+    .local-video-wrapper video {
       width: 100%;
       height: 100%;
       object-fit: cover;
       transform: scaleX(-1);
     }
-    .btn.rounded-circle {
+
+    /* Control buttons */
+    .control-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       width: 56px;
       height: 56px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 1.25rem;
+    }
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: scale(1.05);
+    }
+    .control-btn.active {
+      border-color: #28a745;
+      background: rgba(40, 167, 69, 0.3);
+    }
+    .control-btn.muted {
+      border-color: #dc3545;
+      background: rgba(220, 53, 69, 0.4);
+    }
+    .control-btn.video-off {
+      border-color: #ffc107;
+      background: rgba(255, 193, 7, 0.4);
+    }
+    .control-btn.end-call {
+      border-color: #dc3545;
+      background: #dc3545;
+    }
+    .control-btn.end-call:hover {
+      background: #c82333;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1060;
+    }
+
+    .waiting-animation {
+      position: relative;
+      display: inline-block;
+    }
+    .waiting-animation .pulse-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120px;
+      height: 120px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      animation: pulse 2s ease-out infinite;
+    }
+    @keyframes pulse {
+      0% {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0;
+      }
     }
   `]
 })
@@ -117,7 +217,8 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
   televisitId = '';
   connectionState: 'disconnected' | 'connecting' | 'connected' | 'demo' = 'disconnected';
   isLoading = false;
-  showDemoMessage = false;
+  cameraError = false;
+  showPermissionPrompt = false;
 
   isMuted = false;
   isVideoOff = false;
@@ -128,6 +229,10 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
   private room: Room | null = null;
   private durationInterval: ReturnType<typeof setInterval> | null = null;
   private startTime: Date | null = null;
+  private localStream: MediaStream | null = null;
+  private isSimulatedMode = false;
+  private pendingToken = '';
+  private pendingUrl = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -138,7 +243,7 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
     switch (this.connectionState) {
       case 'connected': return 'Connesso';
       case 'connecting': return 'Connessione...';
-      case 'demo': return 'Demo';
+      case 'demo': return 'Connesso';
       default: return 'Disconnesso';
     }
   }
@@ -148,22 +253,121 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
     this.televisitId = params['id'] || '';
     const token = params['token'] || '';
     const livekitUrl = params['url'] || '';
-    this.roomName = params['room'] || '';
+    this.roomName = params['room'] || 'demo-room';
 
-    if (!token || !livekitUrl || !this.roomName) {
-      this.showDemoMessage = true;
-      this.connectionState = 'demo';
+    // Salva i parametri per dopo
+    this.pendingToken = token;
+    this.pendingUrl = livekitUrl;
+
+    // Avvia direttamente la connessione
+    if (!token || !livekitUrl) {
+      this.startSimulatedMode();
+    } else {
+      this.connectToRoom(livekitUrl, token);
+    }
+  }
+
+  /**
+   * Richiede i permessi per fotocamera e microfono e avvia la connessione.
+   */
+  requestPermissions(): void {
+    this.showPermissionPrompt = false;
+
+    if (!this.pendingToken || !this.pendingUrl) {
+      // Modalità simulata: mostra loading per 2 secondi, poi attiva la webcam locale
+      this.startSimulatedMode();
       return;
     }
 
-    this.connectToRoom(livekitUrl, token);
+    this.connectToRoom(this.pendingUrl, this.pendingToken);
   }
 
   ngOnDestroy(): void {
     this.disconnect();
+    this.stopLocalStream();
     if (this.durationInterval) {
       clearInterval(this.durationInterval);
     }
+  }
+
+  /**
+   * Modalità simulata per ambiente di sviluppo.
+   * Mostra "Connessione in corso..." per 2 secondi, poi attiva la webcam locale.
+   */
+  private async startSimulatedMode(): Promise<void> {
+    this.isLoading = true;
+    this.connectionState = 'connecting';
+    this.isSimulatedMode = true;
+
+    // Attendi 2 secondi per simulare la connessione
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    this.isLoading = false;
+    this.connectionState = 'demo';
+
+    // Attiva la webcam locale
+    await this.startLocalCamera();
+
+    // Avvia il timer della durata
+    this.startTime = new Date();
+    this.durationInterval = setInterval(() => {
+      if (this.startTime) {
+        this.duration = Math.floor((Date.now() - this.startTime.getTime()) / 1000);
+      }
+    }, 1000);
+  }
+
+  /**
+   * Avvia la webcam locale (senza LiveKit).
+   * Se la webcam non è disponibile, continua comunque nella stanza senza video locale.
+   */
+  private async startLocalCamera(): Promise<void> {
+    try {
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 },
+        audio: true
+      });
+
+      const videoElement = document.createElement('video');
+      videoElement.srcObject = this.localStream;
+      videoElement.autoplay = true;
+      videoElement.muted = true; // Muta l'audio locale per evitare eco
+      videoElement.playsInline = true;
+      videoElement.style.width = '100%';
+      videoElement.style.height = '100%';
+      videoElement.style.objectFit = 'cover';
+      videoElement.style.transform = 'scaleX(-1)';
+
+      this.localVideoContainer.nativeElement.innerHTML = '';
+      this.localVideoContainer.nativeElement.appendChild(videoElement);
+      this.hasLocalVideo = true;
+      this.cameraError = false;
+
+    } catch (err) {
+      console.warn('Webcam non disponibile, continuo senza video locale:', err);
+      // Non bloccare - continua nella stanza senza video locale
+      this.hasLocalVideo = false;
+      this.isVideoOff = true;
+      this.cameraError = false; // Non mostrare errore, semplicemente non c'è video
+    }
+  }
+
+  /**
+   * Ferma lo stream locale della webcam.
+   */
+  private stopLocalStream(): void {
+    if (this.localStream) {
+      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream = null;
+    }
+  }
+
+  /**
+   * Riprova ad accedere alla webcam.
+   */
+  retryCamera(): void {
+    this.cameraError = false;
+    this.startLocalCamera();
   }
 
   private async connectToRoom(url: string, token: string): Promise<void> {
@@ -204,9 +408,9 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
       }, 1000);
 
     } catch (err) {
-      console.warn('Connessione WebRTC non disponibile in ambiente locale:', err);
-      this.connectionState = 'demo';
-      this.showDemoMessage = true;
+      console.warn('Connessione WebRTC non disponibile, avvio modalità simulata:', err);
+      // Fallback alla modalità simulata
+      await this.startSimulatedMode();
     } finally {
       this.isLoading = false;
     }
@@ -255,16 +459,39 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
   }
 
   toggleMute(): void {
-    if (!this.room) return;
     this.isMuted = !this.isMuted;
-    this.room.localParticipant.setMicrophoneEnabled(!this.isMuted);
+
+    if (this.isSimulatedMode) {
+      // Modalità simulata: muta/smuta le tracce audio (se disponibili)
+      if (this.localStream) {
+        this.localStream.getAudioTracks().forEach(track => {
+          track.enabled = !this.isMuted;
+        });
+      }
+      // In ogni caso aggiorna lo stato visivo
+    } else if (this.room) {
+      // Modalità LiveKit
+      this.room.localParticipant.setMicrophoneEnabled(!this.isMuted);
+    }
   }
 
   toggleVideo(): void {
-    if (!this.room) return;
     this.isVideoOff = !this.isVideoOff;
-    this.room.localParticipant.setCameraEnabled(!this.isVideoOff);
-    this.hasLocalVideo = !this.isVideoOff;
+
+    if (this.isSimulatedMode) {
+      // Modalità simulata: attiva/disattiva le tracce video (se disponibili)
+      if (this.localStream) {
+        this.localStream.getVideoTracks().forEach(track => {
+          track.enabled = !this.isVideoOff;
+        });
+        this.hasLocalVideo = !this.isVideoOff;
+      }
+      // Se non c'è stream, aggiorna comunque lo stato visivo del pulsante
+    } else if (this.room) {
+      // Modalità LiveKit
+      this.room.localParticipant.setCameraEnabled(!this.isVideoOff);
+      this.hasLocalVideo = !this.isVideoOff;
+    }
   }
 
   endCall(): void {
@@ -274,6 +501,7 @@ export class TelevisitRoomComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.disconnect();
+    this.stopLocalStream();
     this.router.navigate(['/portal/admin/televisit']);
   }
 

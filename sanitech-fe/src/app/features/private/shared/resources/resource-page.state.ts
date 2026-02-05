@@ -618,6 +618,10 @@ export class ResourcePageState {
   };
   televisitPatientsFiltered: PatientItem[] = [];
   showAdminTelevisitModal = false;
+  showEndTelevisitModal = false;
+  showDeleteTelevisitModal = false;
+  showCancelTelevisitModal = false;
+  selectedTelevisitForAction: TelevisitItem | null = null;
   showAdminAdmissionModal = false;
   // Modale cambia referente
   showChangeReferentModal = false;
@@ -1677,25 +1681,32 @@ export class ResourcePageState {
   }
 
   /**
-   * Elimina definitivamente una televisita.
-   * Solo le sessioni in stato CREATED, SCHEDULED o CANCELED possono essere eliminate.
+   * Apre il modale per eliminare una televisita.
    */
-  deleteTelevisit(televisit: TelevisitItem): void {
+  openDeleteTelevisitModal(televisit: TelevisitItem): void {
     if (televisit.status === 'ACTIVE' || televisit.status === 'ENDED') {
       this.showToast('La televisita non può essere eliminata in questo stato', 'warning');
       return;
     }
+    this.selectedTelevisitForAction = televisit;
+    this.showDeleteTelevisitModal = true;
+  }
 
-    if (!confirm('Sei sicuro di voler eliminare questa televisita? L\'azione è irreversibile.')) {
-      return;
-    }
+  closeDeleteTelevisitModal(): void {
+    this.showDeleteTelevisitModal = false;
+    this.selectedTelevisitForAction = null;
+  }
+
+  confirmDeleteTelevisit(): void {
+    if (!this.selectedTelevisitForAction) return;
 
     this.isLoading = true;
-    this.api.request<void>('DELETE', `/api/admin/televisits/${televisit.id}`).subscribe({
+    this.api.request<void>('DELETE', `/api/admin/televisits/${this.selectedTelevisitForAction.id}?force=true`).subscribe({
       next: () => {
-        this.televisits = this.televisits.filter(tv => tv.id !== televisit.id);
+        this.televisits = this.televisits.filter(tv => tv.id !== this.selectedTelevisitForAction!.id);
         this.isLoading = false;
         this.showToast('Televisita eliminata con successo', 'success');
+        this.closeDeleteTelevisitModal();
       },
       error: (err) => {
         this.isLoading = false;
@@ -1705,26 +1716,71 @@ export class ResourcePageState {
   }
 
   /**
-   * Annulla una televisita (cambia stato in CANCELED).
+   * Apre il modale per concludere una televisita.
    */
-  cancelTelevisit(televisit: TelevisitItem): void {
+  openEndTelevisitModal(televisit: TelevisitItem): void {
+    if (televisit.status !== 'ACTIVE') {
+      this.showToast('Solo le televisite attive possono essere concluse', 'warning');
+      return;
+    }
+    this.selectedTelevisitForAction = televisit;
+    this.showEndTelevisitModal = true;
+  }
+
+  closeEndTelevisitModal(): void {
+    this.showEndTelevisitModal = false;
+    this.selectedTelevisitForAction = null;
+  }
+
+  confirmEndTelevisit(): void {
+    if (!this.selectedTelevisitForAction) return;
+
+    this.isLoading = true;
+    this.api.request<TelevisitItem>('POST', `/api/televisits/${this.selectedTelevisitForAction.id}/end`).subscribe({
+      next: (updatedTelevisit) => {
+        this.televisits = this.televisits.map(tv =>
+          tv.id === this.selectedTelevisitForAction!.id ? { ...tv, status: 'ENDED' as const } : tv
+        );
+        this.isLoading = false;
+        this.showToast('Televisita conclusa', 'success');
+        this.closeEndTelevisitModal();
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.showToast(err?.error?.message || 'Errore nella conclusione della televisita', 'danger');
+      }
+    });
+  }
+
+  /**
+   * Apre il modale per annullare una televisita.
+   */
+  openCancelTelevisitModal(televisit: TelevisitItem): void {
     if (televisit.status === 'ENDED' || televisit.status === 'CANCELED') {
       this.showToast('La televisita non può essere annullata in questo stato', 'warning');
       return;
     }
+    this.selectedTelevisitForAction = televisit;
+    this.showCancelTelevisitModal = true;
+  }
 
-    if (!confirm('Sei sicuro di voler annullare questa televisita?')) {
-      return;
-    }
+  closeCancelTelevisitModal(): void {
+    this.showCancelTelevisitModal = false;
+    this.selectedTelevisitForAction = null;
+  }
+
+  confirmCancelTelevisit(): void {
+    if (!this.selectedTelevisitForAction) return;
 
     this.isLoading = true;
-    this.api.request<TelevisitItem>('POST', `/api/televisits/${televisit.id}/cancel`).subscribe({
+    this.api.request<TelevisitItem>('POST', `/api/televisits/${this.selectedTelevisitForAction.id}/cancel`).subscribe({
       next: (updatedTelevisit) => {
         this.televisits = this.televisits.map(tv =>
-          tv.id === televisit.id ? { ...tv, status: 'CANCELED' as const } : tv
+          tv.id === this.selectedTelevisitForAction!.id ? { ...tv, status: 'CANCELED' as const } : tv
         );
         this.isLoading = false;
         this.showToast('Televisita annullata', 'success');
+        this.closeCancelTelevisitModal();
       },
       error: (err) => {
         this.isLoading = false;

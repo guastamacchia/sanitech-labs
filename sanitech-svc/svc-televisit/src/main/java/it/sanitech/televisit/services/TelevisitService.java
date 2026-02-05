@@ -183,14 +183,15 @@ public class TelevisitService {
 
     /**
      * Elimina definitivamente una sessione televisita.
-     * Solo sessioni in stato CREATED, SCHEDULED o CANCELED possono essere eliminate.
+     * Con force=false, solo sessioni in stato CREATED, SCHEDULED o CANCELED possono essere eliminate.
+     * Con force=true, elimina la sessione indipendentemente dallo stato.
      */
     @Transactional
-    public void delete(Long sessionId, Authentication auth) {
+    public void delete(Long sessionId, Authentication auth, boolean force) {
         TelevisitSession s = repo.findById(sessionId).orElseThrow(() -> NotFoundException.of("TelevisitSession", sessionId));
         deptGuard.checkCanManage(s.getDepartment(), auth);
 
-        if (s.getStatus() == TelevisitStatus.ACTIVE || s.getStatus() == TelevisitStatus.ENDED) {
+        if (!force && (s.getStatus() == TelevisitStatus.ACTIVE || s.getStatus() == TelevisitStatus.ENDED)) {
             throw new IllegalArgumentException("La sessione in stato " + s.getStatus() + " non può essere eliminata.");
         }
 

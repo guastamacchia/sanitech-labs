@@ -38,7 +38,9 @@ public class TelevisitAdminController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Auditable(aggregateType = "TELEVISIT", eventType = "TELEVISIT_DELETED", aggregateIdParam = "id")
-    public void delete(@PathVariable Long id, Authentication auth) {
-        service.delete(id, auth);
+    public void delete(@PathVariable Long id,
+                       @RequestParam(defaultValue = "false") boolean force,
+                       Authentication auth) {
+        service.delete(id, auth, force);
     }
 }
