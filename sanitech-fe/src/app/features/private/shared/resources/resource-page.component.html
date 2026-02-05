@@ -1577,351 +1577,7 @@
                       </div>
                     </div>
                   </div>
-
-                  <!-- Card Statistiche Prestazioni - Ultimo mese -->
-                  <div class="card card-glass mb-4">
-                    <div class="card-body">
-                      <h5 class="fw-semibold mb-3">Statistiche pagamenti - Ultimo mese</h5>
-                      <div class="row g-3">
-                        <div class="col-md-3">
-                          <div class="border rounded p-3 text-center" style="background: rgba(25, 135, 84, 0.1);">
-                            <div class="fs-2 fw-bold text-success">{{ serviceStats.percentWithin7Days }}%</div>
-                            <div class="small text-muted">Pagati entro 7 giorni</div>
-                          </div>
-                        </div>
-                        <div class="col-md-3">
-                          <div class="border rounded p-3 text-center" style="background: rgba(255, 193, 7, 0.1);">
-                            <div class="fs-2 fw-bold text-warning">{{ serviceStats.percentWithReminder }}%</div>
-                            <div class="small text-muted">Con sollecito</div>
-                          </div>
-                        </div>
-                        <div class="col-md-3">
-                          <div class="border rounded p-3 text-center" style="background: rgba(220, 53, 69, 0.1);">
-                            <div class="fs-2 fw-bold text-danger">{{ serviceStats.percentPending }}%</div>
-                            <div class="small text-muted">Ancora in sospeso</div>
-                          </div>
-                        </div>
-                        <div class="col-md-3">
-                          <div class="border rounded p-3 text-center" style="background: rgba(13, 110, 253, 0.1);">
-                            <div class="fs-2 fw-bold text-primary">{{ filteredServices.length }}</div>
-                            <div class="small text-muted">Pagamenti filtrati</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Card Prestazioni con Filtri -->
-                  <div class="card card-glass">
-                    <div class="card-body">
-                      <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h5 class="fw-semibold mb-0">Pagamenti</h5>
-                        <div class="d-flex flex-wrap gap-2">
-                          <button class="btn btn-outline-secondary btn-sm" (click)="loadServicesPerformed()" [disabled]="isLoading">
-                            Aggiorna
-                          </button>
-                        </div>
-                      </div>
-
-                      <!-- Filtri -->
-                      <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                          <label class="form-label small">Stato pagamento</label>
-                          <select class="form-select form-select-sm" [(ngModel)]="serviceStatusFilter" name="serviceStatusFilter" (ngModelChange)="onServiceStatusFilterChange()">
-                            <option value="ALL">Tutti gli stati</option>
-                            <option value="PENDING">In attesa</option>
-                            <option value="PAID">Pagato</option>
-                            <option value="FREE">Gratuito</option>
-                            <option value="CANCELLED">Annullato</option>
-                          </select>
-                        </div>
-                        <div class="col-md-4">
-                          <label class="form-label small">Giorni dalla visita</label>
-                          <select class="form-select form-select-sm" [(ngModel)]="serviceDaysFilter" name="serviceDaysFilter" (ngModelChange)="onServiceDaysFilterChange()">
-                            <option [ngValue]="null">Tutti</option>
-                            <option [ngValue]="7">Oltre 7 giorni</option>
-                            <option [ngValue]="14">Oltre 14 giorni</option>
-                            <option [ngValue]="30">Oltre 30 giorni</option>
-                          </select>
-                        </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                          <button
-                            class="btn btn-warning btn-sm w-100"
-                            type="button"
-                            (click)="sendBulkServiceReminders()"
-                            [disabled]="selectedServiceIds.size === 0">
-                            Invia solleciti ({{ selectedServiceIds.size }} selezionati)
-                          </button>
-                        </div>
-                      </div>
-
-                      <div class="alert alert-success py-2" *ngIf="servicesSuccess">{{ servicesSuccess }}</div>
-                      <div class="alert alert-danger py-2" *ngIf="servicesError">{{ servicesError }}</div>
-
-                      <div class="table-responsive">
-                        <table class="table align-middle table-hover">
-                          <thead>
-                            <tr>
-                              <th style="width: 40px;">
-                                <input
-                                  type="checkbox"
-                                  class="form-check-input"
-                                  [checked]="selectedServiceIds.size > 0"
-                                  (change)="toggleAllServicesSelection()" />
-                              </th>
-                              <th>ID</th>
-                              <th>Paziente</th>
-                              <th>Prestazione</th>
-                              <th>Importo</th>
-                              <th>Data visita</th>
-                              <th>Giorni</th>
-                              <th>Solleciti</th>
-                              <th>Stato</th>
-                              <th>Azioni</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr *ngFor="let service of filteredServices | slice:getPageSliceStart('adminServices'):getPageSliceEnd('adminServices')"
-                                [class.table-warning]="service.status === 'PENDING' && getServiceDaysOverdue(service) > 14"
-                                [class.table-success]="service.status === 'PAID'"
-                                [class.table-info]="service.status === 'FREE'">
-                              <td>
-                                <input
-                                  type="checkbox"
-                                  class="form-check-input"
-                                  [checked]="isServiceSelected(service.id)"
-                                  (change)="toggleServiceSelection(service.id)"
-                                  [disabled]="service.status !== 'PENDING'" />
-                              </td>
-                              <td>{{ service.id }}</td>
-                              <td>
-                                <div>{{ service.patientName || getPatientLabel(service.patientId) }}</div>
-                                <small class="text-muted" *ngIf="service.patientEmail">{{ service.patientEmail }}</small>
-                              </td>
-                              <td>
-                                <div>{{ getServiceTypeLabel(service.serviceType) }}</div>
-                                <small class="text-muted" *ngIf="service.daysCount">{{ service.daysCount }} giorni</small>
-                              </td>
-                              <td>
-                                <strong>{{ service.amount | number:'1.2-2' }} {{ service.currency }}</strong>
-                              </td>
-                              <td>{{ formatDate(service.performedAt) }}</td>
-                              <td>
-                                <span
-                                      [class.text-warning]="getServiceDaysOverdue(service) > 7 && getServiceDaysOverdue(service) <= 14"
-                                      [class.text-danger]="getServiceDaysOverdue(service) > 14"
-                                      [class.fw-bold]="getServiceDaysOverdue(service) > 14">
-                                  {{ getServiceDaysOverdue(service) }}
-                                </span>
-                              </td>
-                              <td>
-                                <span class="badge"
-                                      [class.bg-secondary]="service.reminderCount === 0"
-                                      [class.bg-info]="service.reminderCount > 0">
-                                  {{ service.reminderCount }}
-                                </span>
-                                <small class="d-block text-muted" *ngIf="service.lastReminderAt">
-                                  Ultimo: {{ formatDate(service.lastReminderAt) }}
-                                </small>
-                              </td>
-                              <td>
-                                <span class="badge"
-                                      [class.bg-warning]="service.status === 'PENDING'"
-                                      [class.bg-success]="service.status === 'PAID'"
-                                      [class.bg-info]="service.status === 'FREE'"
-                                      [class.bg-secondary]="service.status === 'CANCELLED'">
-                                  {{ getServiceStatusLabel(service.status) }}
-                                </span>
-                              </td>
-                              <td>
-                                <div class="d-flex gap-1 flex-wrap">
-                                  <button
-                                    class="btn btn-outline-success btn-sm"
-                                    type="button"
-                                    title="Conferma pagamento ricevuto"
-                                    [disabled]="service.status !== 'PENDING'"
-                                    (click)="markServiceAsPaid(service)">
-                                    <i class="bi bi-check-circle"></i>
-                                  </button>
-                                  <button
-                                    class="btn btn-outline-info btn-sm"
-                                    type="button"
-                                    title="Converti in gratuito"
-                                    [disabled]="service.status !== 'PENDING'"
-                                    (click)="openServiceFreeModal(service)">
-                                    <i class="bi bi-gift"></i>
-                                  </button>
-                                  <button
-                                    class="btn btn-outline-warning btn-sm"
-                                    type="button"
-                                    title="Invia sollecito al paziente"
-                                    [disabled]="service.status !== 'PENDING'"
-                                    (click)="sendServiceReminder(service)">
-                                    <i class="bi bi-bell"></i>
-                                  </button>
-                                  <button
-                                    class="btn btn-outline-secondary btn-sm"
-                                    type="button"
-                                    title="Modifica importo e dati"
-                                    (click)="openServiceEditModal(service)">
-                                    <i class="bi bi-pencil"></i>
-                                  </button>
-                                  <button
-                                    class="btn btn-outline-danger btn-sm"
-                                    type="button"
-                                    title="Elimina prestazione"
-                                    (click)="deleteService(service)">
-                                    <i class="bi bi-trash"></i>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                            <tr *ngIf="!filteredServices.length">
-                              <td colspan="10" class="text-center text-muted">Nessun pagamento trovato con i filtri selezionati.</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                        <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminServices', total: filteredServices.length }"></ng-container>
-                      </div>
-                    </div>
-                  </div>
                 </div>
-
-                <!-- Modal Converti in Gratuito -->
-                <ng-container *ngIf="showServiceFreeModal">
-                  <div
-                    class="modal-backdrop fade show"
-                    style="position: fixed; inset: 0; z-index: 1050;"
-                    (click)="closeServiceFreeModal()"></div>
-                  <div
-                    class="modal d-flex align-items-center justify-content-center"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="serviceFreeModalTitle"
-                    style="position: fixed; inset: 0; z-index: 1055;">
-                    <div class="modal-dialog modal-dialog-centered">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title" id="serviceFreeModalTitle">Converti in gratuito</h5>
-                          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeServiceFreeModal()"></button>
-                        </div>
-                        <div class="modal-body">
-                          <div class="alert alert-info py-2" *ngIf="selectedService">
-                            Stai per convertire la prestazione <strong>#{{ selectedService.id }}</strong>
-                            ({{ selectedService.amount | number:'1.2-2' }} {{ selectedService.currency }}) in gratuita.
-                          </div>
-                          <div class="mb-3">
-                            <label class="form-label">Motivo della gratuita' (opzionale)</label>
-                            <textarea class="form-control" rows="2" [(ngModel)]="serviceFreeReason" name="serviceFreeReason"
-                                      placeholder="Es. Esenzione, convenzione, errore di registrazione..."></textarea>
-                          </div>
-                          <div class="d-flex justify-content-end gap-2 mt-4">
-                            <button class="btn btn-outline-secondary" type="button" (click)="closeServiceFreeModal()">Annulla</button>
-                            <button class="btn btn-info" type="button" (click)="confirmMarkServiceAsFree()">
-                              Conferma gratuito
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </ng-container>
-
-                <!-- Modal Modifica Prestazione -->
-                <ng-container *ngIf="showServiceEditModal">
-                  <div
-                    class="modal-backdrop fade show"
-                    style="position: fixed; inset: 0; z-index: 1050;"
-                    (click)="closeServiceEditModal()"></div>
-                  <div
-                    class="modal d-flex align-items-center justify-content-center"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="serviceEditModalTitle"
-                    style="position: fixed; inset: 0; z-index: 1055;">
-                    <div class="modal-dialog modal-dialog-centered">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title" id="serviceEditModalTitle">Modifica prestazione</h5>
-                          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeServiceEditModal()"></button>
-                        </div>
-                        <div class="modal-body">
-                          <div class="mb-3">
-                            <label class="form-label">Importo (centesimi)</label>
-                            <input type="number" class="form-control" [(ngModel)]="serviceEditForm.amountCents" name="serviceEditAmountCents" min="0" />
-                            <small class="text-muted">{{ (serviceEditForm.amountCents / 100) | number:'1.2-2' }} EUR</small>
-                          </div>
-                          <div class="mb-3">
-                            <label class="form-label">Nome paziente</label>
-                            <input type="text" class="form-control" [(ngModel)]="serviceEditForm.patientName" name="serviceEditPatientName" />
-                          </div>
-                          <div class="mb-3">
-                            <label class="form-label">Email paziente</label>
-                            <input type="email" class="form-control" [(ngModel)]="serviceEditForm.patientEmail" name="serviceEditPatientEmail" />
-                          </div>
-                          <div class="mb-3">
-                            <label class="form-label">Note</label>
-                            <textarea class="form-control" rows="2" [(ngModel)]="serviceEditForm.notes" name="serviceEditNotes"></textarea>
-                          </div>
-                          <div class="d-flex justify-content-end gap-2 mt-4">
-                            <button class="btn btn-outline-secondary" type="button" (click)="closeServiceEditModal()">Annulla</button>
-                            <button class="btn btn-primary" type="button" (click)="saveServiceEdit()">
-                              Salva modifiche
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </ng-container>
-
-                <!-- Modal Sollecito Alternativo (per FAILED) -->
-                <ng-container *ngIf="showAlternativePaymentModal">
-                  <div
-                    class="modal-backdrop fade show"
-                    style="position: fixed; inset: 0; z-index: 1050;"
-                    (click)="closeAlternativePaymentModal()"></div>
-                  <div
-                    class="modal d-flex align-items-center justify-content-center"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="alternativePaymentModalTitle"
-                    style="position: fixed; inset: 0; z-index: 1055;">
-                    <div class="modal-dialog modal-dialog-centered">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title" id="alternativePaymentModalTitle">Sollecito con metodo alternativo</h5>
-                          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAlternativePaymentModal()"></button>
-                        </div>
-                        <div class="modal-body">
-                          <div class="alert alert-warning py-2" *ngIf="alternativePaymentTarget">
-                            Il pagamento di <strong>{{ alternativePaymentTarget.amount | number:'1.2-2' }} {{ alternativePaymentTarget.currency }}</strong>
-                            per <strong>{{ alternativePaymentTarget.patientName }}</strong> è fallito.
-                            <br><small>Motivo: {{ alternativePaymentTarget.failureReason }}</small>
-                          </div>
-                          <div class="mb-3">
-                            <label class="form-label">Metodo di pagamento alternativo</label>
-                            <select class="form-select" [(ngModel)]="alternativePaymentForm.method" name="alternativeMethod">
-                              <option value="BONIFICO">Bonifico bancario</option>
-                              <option value="SEDE">Pagamento in sede</option>
-                            </select>
-                          </div>
-                          <div class="mb-3">
-                            <label class="form-label">Note aggiuntive (opzionale)</label>
-                            <textarea class="form-control" rows="2" [(ngModel)]="alternativePaymentForm.notes" name="alternativeNotes"
-                                      placeholder="Es. Orari sportello, IBAN, riferimenti..."></textarea>
-                          </div>
-                          <div class="d-flex justify-content-end gap-2 mt-4">
-                            <button class="btn btn-outline-secondary" type="button" (click)="closeAlternativePaymentModal()">Annulla</button>
-                            <button class="btn btn-warning" type="button" (click)="sendAlternativePaymentNotification()">
-                              Invia sollecito
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </ng-container>
 
                 <ng-container *ngIf="showAdminNotificationModal">
                   <div
@@ -2083,73 +1739,6 @@
                   </div>
                 </ng-container>
 
-                <ng-container *ngIf="showAdminPaymentModal">
-                  <div
-                    class="modal-backdrop fade show"
-                    style="position: fixed; inset: 0; z-index: 1050;"
-                    (click)="closeAdminPaymentModal()"></div>
-                  <div
-                    class="modal d-flex align-items-center justify-content-center"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="adminPaymentModalTitle"
-                    style="position: fixed; inset: 0; z-index: 1055;">
-                    <div class="modal-dialog modal-dialog-centered">
-                      <div class="modal-content shadow-lg border-0">
-                        <div class="modal-header border-0 pb-0">
-                          <div>
-                            <h5 class="modal-title fw-bold" id="adminPaymentModalTitle">
-                              <i class="bi bi-credit-card me-2 text-primary"></i>
-                              Registra pagamento
-                            </h5>
-                            <p class="text-muted small mb-0 mt-1">Registra un pagamento ricevuto per un paziente</p>
-                          </div>
-                          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminPaymentModal()"></button>
-                        </div>
-                        <div class="modal-body pt-4">
-                          <form (ngSubmit)="submitPayment()" #adminPaymentFormRef="ngForm">
-                            <div class="mb-3">
-                              <label class="form-label fw-semibold small text-muted">Pagamento</label>
-                              <select class="form-select" name="adminPaymentId" [(ngModel)]="paymentForm.paymentId" required>
-                                <option [ngValue]="null" disabled>Seleziona un pagamento</option>
-                                <option *ngFor="let payment of payments" [ngValue]="payment.id">
-                                  #{{ payment.id }} · {{ getPatientLabel(payment.patientId) }} · {{ payment.service }}
-                                </option>
-                              </select>
-                            </div>
-                            <div class="mb-3">
-                              <label class="form-label fw-semibold small text-muted">Ricevuta</label>
-                              <input class="form-control" type="text" name="adminPaymentReceipt" [(ngModel)]="paymentForm.receiptName" placeholder="es. RIC-2025-001" required />
-                            </div>
-                            <div class="mb-4">
-                              <label class="form-label fw-semibold small text-muted">Importo (€)</label>
-                              <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0">
-                                  <i class="bi bi-currency-euro text-muted"></i>
-                                </span>
-                                <input class="form-control border-start-0" type="number" name="adminPaymentAmount" [(ngModel)]="paymentForm.amount" min="1" step="0.01" placeholder="0.00" required />
-                              </div>
-                            </div>
-                            <div class="alert alert-danger border-0 py-2" *ngIf="paymentsError">
-                              <i class="bi bi-exclamation-circle me-2"></i>
-                              {{ paymentsError }}
-                            </div>
-                          </form>
-                        </div>
-                        <div class="modal-footer border-0 pt-0">
-                          <button class="btn btn-outline-secondary" type="button" (click)="closeAdminPaymentModal()">
-                            Annulla
-                          </button>
-                          <button class="btn btn-primary" type="button" (click)="submitPayment()" [disabled]="adminPaymentFormRef.invalid || isLoading">
-                            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
-                            <i *ngIf="!isLoading" class="bi bi-check-circle me-1"></i>
-                            {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </ng-container>
               </ng-container>
 
               <ng-template #doctorNotifications>
@@ -4310,138 +3899,376 @@
       <ng-template #adminPaymentsLayout>
         <ng-container *ngIf="mode === 'admin-payments'; else apiLayout">
           <div class="row g-4">
-            <!-- Statistiche pagamenti -->
             <div class="col-12">
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-primary">{{ payments.length }}</div>
-                    <div class="small text-muted">Totale pagamenti</div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-success">{{ paymentsCapturedCount }}</div>
-                    <div class="small text-muted">Completati</div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-warning">{{ paymentsPendingCount }}</div>
-                    <div class="small text-muted">In attesa</div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="card card-glass text-center p-3">
-                    <div class="fs-2 fw-bold text-danger">{{ paymentsFailedCount }}</div>
-                    <div class="small text-muted">Falliti</div>
+              <!-- Card Statistiche Prestazioni - Ultimo mese -->
+              <div class="card card-glass mb-4">
+                <div class="card-body">
+                  <h5 class="fw-semibold mb-3">Statistiche pagamenti - Ultimo mese</h5>
+                  <div class="row g-3">
+                    <div class="col-md-3">
+                      <div class="border rounded p-3 text-center" style="background: rgba(25, 135, 84, 0.1);">
+                        <div class="fs-2 fw-bold text-success">{{ serviceStats.percentWithin7Days }}%</div>
+                        <div class="small text-muted">Pagati entro 7 giorni</div>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="border rounded p-3 text-center" style="background: rgba(255, 193, 7, 0.1);">
+                        <div class="fs-2 fw-bold text-warning">{{ serviceStats.percentWithReminder }}%</div>
+                        <div class="small text-muted">Con sollecito</div>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="border rounded p-3 text-center" style="background: rgba(220, 53, 69, 0.1);">
+                        <div class="fs-2 fw-bold text-danger">{{ serviceStats.percentPending }}%</div>
+                        <div class="small text-muted">Ancora in sospeso</div>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="border rounded p-3 text-center" style="background: rgba(13, 110, 253, 0.1);">
+                        <div class="fs-2 fw-bold text-primary">{{ filteredServices.length }}</div>
+                        <div class="small text-muted">Pagamenti filtrati</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Tabella pagamenti -->
-            <div class="col-12">
+              <!-- Card Prestazioni con Filtri -->
               <div class="card card-glass">
                 <div class="card-body">
                   <div class="d-flex align-items-center justify-content-between mb-3">
-                    <div>
-                      <h5 class="fw-semibold mb-1">Elenco pagamenti</h5>
-                      <small class="text-muted">Gestione pagamenti e solleciti</small>
-                    </div>
+                    <h5 class="fw-semibold mb-0">Pagamenti</h5>
                     <div class="d-flex flex-wrap gap-2">
-                      <button class="btn btn-outline-warning btn-sm" type="button" (click)="sendBulkReminders()" [disabled]="!hasSelectedPayments || isLoading">
-                        Sollecita selezionati
+                      <button class="btn btn-outline-secondary btn-sm" (click)="loadServicesPerformed()" [disabled]="isLoading">
+                        Aggiorna
+                      </button>
+                      <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminPaymentModal()">
+                        Registra pagamento
                       </button>
                     </div>
                   </div>
-                  <div class="alert alert-success py-2" *ngIf="paymentsSuccess">{{ paymentsSuccess }}</div>
-                  <div class="alert alert-danger py-2" *ngIf="paymentsError">{{ paymentsError }}</div>
+
+                  <!-- Filtri -->
+                  <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                      <label class="form-label small">Stato pagamento</label>
+                      <select class="form-select form-select-sm" [(ngModel)]="serviceStatusFilter" name="serviceStatusFilter" (ngModelChange)="onServiceStatusFilterChange()">
+                        <option value="ALL">Tutti gli stati</option>
+                        <option value="PENDING">In attesa</option>
+                        <option value="PAID">Pagato</option>
+                        <option value="FREE">Gratuito</option>
+                        <option value="CANCELLED">Annullato</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label small">Giorni dalla visita</label>
+                      <select class="form-select form-select-sm" [(ngModel)]="serviceDaysFilter" name="serviceDaysFilter" (ngModelChange)="onServiceDaysFilterChange()">
+                        <option [ngValue]="null">Tutti</option>
+                        <option [ngValue]="7">Oltre 7 giorni</option>
+                        <option [ngValue]="14">Oltre 14 giorni</option>
+                        <option [ngValue]="30">Oltre 30 giorni</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                      <button
+                        class="btn btn-warning btn-sm w-100"
+                        type="button"
+                        (click)="sendBulkServiceReminders()"
+                        [disabled]="selectedServiceIds.size === 0">
+                        Invia solleciti ({{ selectedServiceIds.size }} selezionati)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="alert alert-success py-2" *ngIf="servicesSuccess">{{ servicesSuccess }}</div>
+                  <div class="alert alert-danger py-2" *ngIf="servicesError">{{ servicesError }}</div>
+
                   <div class="table-responsive">
                     <table class="table align-middle table-hover">
                       <thead>
                         <tr>
                           <th style="width: 40px;">
-                            <input type="checkbox" class="form-check-input" (change)="toggleAllPaymentsSelection()" [checked]="areAllPaymentsSelected" />
+                            <input
+                              type="checkbox"
+                              class="form-check-input"
+                              [checked]="selectedServiceIds.size > 0"
+                              (change)="toggleAllServicesSelection()" />
                           </th>
                           <th>ID</th>
                           <th>Paziente</th>
                           <th>Prestazione</th>
                           <th>Importo</th>
-                          <th>Metodo</th>
+                          <th>Data visita</th>
+                          <th>Giorni</th>
+                          <th>Solleciti</th>
                           <th>Stato</th>
-                          <th>Data</th>
                           <th>Azioni</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let payment of payments | slice:getPageSliceStart('adminPayments'):getPageSliceEnd('adminPayments')"
-                            [class.table-success]="payment.status === 'CAPTURED'"
-                            [class.table-warning]="payment.status === 'CREATED'"
-                            [class.table-danger]="payment.status === 'FAILED' || payment.status === 'CANCELLED'">
+                        <tr *ngFor="let service of filteredServices | slice:getPageSliceStart('adminServices'):getPageSliceEnd('adminServices')"
+                            [class.table-warning]="service.status === 'PENDING' && getServiceDaysOverdue(service) > 14"
+                            [class.table-success]="service.status === 'PAID'"
+                            [class.table-info]="service.status === 'FREE'">
                           <td>
-                            <input type="checkbox" class="form-check-input"
-                                   [checked]="isPaymentSelected(payment.id)"
-                                   (change)="togglePaymentSelection(payment.id)"
-                                   [disabled]="payment.status !== 'CREATED'" />
+                            <input
+                              type="checkbox"
+                              class="form-check-input"
+                              [checked]="isServiceSelected(service.id)"
+                              (change)="toggleServiceSelection(service.id)"
+                              [disabled]="service.status !== 'PENDING'" />
                           </td>
-                          <td>{{ payment.id }}</td>
-                          <td>{{ payment.patientName || getPatientLabel(payment.patientId) }}</td>
-                          <td>{{ payment.service || payment.description || '-' }}</td>
-                          <td>{{ (payment.amount || payment.amountCents / 100) | number:'1.2-2' }} {{ payment.currency }}</td>
+                          <td>{{ service.id }}</td>
                           <td>
-                            <span class="badge bg-light text-dark">{{ getPaymentMethodLabel(payment.method) }}</span>
+                            <div>{{ service.patientName || getPatientLabel(service.patientId) }}</div>
+                            <small class="text-muted" *ngIf="service.patientEmail">{{ service.patientEmail }}</small>
+                          </td>
+                          <td>
+                            <div>{{ getServiceTypeLabel(service.serviceType) }}</div>
+                            <small class="text-muted" *ngIf="service.daysCount">{{ service.daysCount }} giorni</small>
+                          </td>
+                          <td>
+                            <strong>{{ service.amount | number:'1.2-2' }} {{ service.currency }}</strong>
+                          </td>
+                          <td>{{ formatDate(service.performedAt) }}</td>
+                          <td>
+                            <span
+                                  [class.text-warning]="getServiceDaysOverdue(service) > 7 && getServiceDaysOverdue(service) <= 14"
+                                  [class.text-danger]="getServiceDaysOverdue(service) > 14"
+                                  [class.fw-bold]="getServiceDaysOverdue(service) > 14">
+                              {{ getServiceDaysOverdue(service) }}
+                            </span>
                           </td>
                           <td>
                             <span class="badge"
-                                  [class.bg-success]="payment.status === 'CAPTURED'"
-                                  [class.bg-warning]="payment.status === 'CREATED'"
-                                  [class.bg-danger]="payment.status === 'FAILED' || payment.status === 'CANCELLED'"
-                                  [class.bg-info]="payment.status === 'REFUNDED'">
-                              {{ getPaymentStatusLabel(payment) }}
+                                  [class.bg-secondary]="service.reminderCount === 0"
+                                  [class.bg-info]="service.reminderCount > 0">
+                              {{ service.reminderCount }}
+                            </span>
+                            <small class="d-block text-muted" *ngIf="service.lastReminderAt">
+                              Ultimo: {{ formatDate(service.lastReminderAt) }}
+                            </small>
+                          </td>
+                          <td>
+                            <span class="badge"
+                                  [class.bg-warning]="service.status === 'PENDING'"
+                                  [class.bg-success]="service.status === 'PAID'"
+                                  [class.bg-info]="service.status === 'FREE'"
+                                  [class.bg-secondary]="service.status === 'CANCELLED'">
+                              {{ getServiceStatusLabel(service.status) }}
                             </span>
                           </td>
-                          <td>{{ formatDateTime(payment.createdAt) }}</td>
                           <td>
-                            <div class="d-flex flex-wrap gap-1">
+                            <div class="d-flex gap-1 flex-wrap">
                               <button
                                 class="btn btn-outline-success btn-sm"
                                 type="button"
-                                title="Conferma pagamento"
-                                [disabled]="payment.status !== 'CREATED'"
-                                (click)="capturePayment(payment)">
-                                ✓
+                                title="Conferma pagamento ricevuto"
+                                [disabled]="service.status !== 'PENDING'"
+                                (click)="markServiceAsPaid(service)">
+                                <i class="bi bi-check-circle"></i>
+                              </button>
+                              <button
+                                class="btn btn-outline-info btn-sm"
+                                type="button"
+                                title="Converti in gratuito"
+                                [disabled]="service.status !== 'PENDING'"
+                                (click)="openServiceFreeModal(service)">
+                                <i class="bi bi-gift"></i>
                               </button>
                               <button
                                 class="btn btn-outline-warning btn-sm"
                                 type="button"
-                                title="Invia sollecito"
-                                [disabled]="payment.status !== 'CREATED'"
-                                (click)="sendPaymentReminder(payment)">
-                                📧
+                                title="Invia sollecito al paziente"
+                                [disabled]="service.status !== 'PENDING'"
+                                (click)="sendServiceReminder(service)">
+                                <i class="bi bi-bell"></i>
+                              </button>
+                              <button
+                                class="btn btn-outline-secondary btn-sm"
+                                type="button"
+                                title="Modifica importo e dati"
+                                (click)="openServiceEditModal(service)">
+                                <i class="bi bi-pencil"></i>
                               </button>
                               <button
                                 class="btn btn-outline-danger btn-sm"
                                 type="button"
-                                title="Annulla pagamento"
-                                [disabled]="payment.status !== 'CREATED'"
-                                (click)="cancelPayment(payment)">
-                                ✕
+                                title="Elimina prestazione"
+                                (click)="deleteService(service)">
+                                <i class="bi bi-trash"></i>
                               </button>
                             </div>
                           </td>
                         </tr>
-                        <tr *ngIf="!payments.length">
-                          <td colspan="9" class="text-center text-muted">Nessun pagamento registrato.</td>
+                        <tr *ngIf="!filteredServices.length">
+                          <td colspan="10" class="text-center text-muted">Nessun pagamento trovato con i filtri selezionati.</td>
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminPayments', total: payments.length }"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminServices', total: filteredServices.length }"></ng-container>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Modal Converti in Gratuito -->
+          <ng-container *ngIf="showServiceFreeModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeServiceFreeModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="serviceFreeModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="serviceFreeModalTitle">Converti in gratuito</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeServiceFreeModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="alert alert-info py-2" *ngIf="selectedService">
+                      Stai per convertire la prestazione <strong>#{{ selectedService.id }}</strong>
+                      ({{ selectedService.amount | number:'1.2-2' }} {{ selectedService.currency }}) in gratuita.
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Motivo della gratuita' (opzionale)</label>
+                      <textarea class="form-control" rows="2" [(ngModel)]="serviceFreeReason" name="serviceFreeReason"
+                                placeholder="Es. Esenzione, convenzione, errore di registrazione..."></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                      <button class="btn btn-outline-secondary" type="button" (click)="closeServiceFreeModal()">Annulla</button>
+                      <button class="btn btn-info" type="button" (click)="confirmMarkServiceAsFree()">
+                        Conferma gratuito
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Modal Modifica Prestazione -->
+          <ng-container *ngIf="showServiceEditModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeServiceEditModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="serviceEditModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="serviceEditModalTitle">Modifica prestazione</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeServiceEditModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="mb-3">
+                      <label class="form-label">Importo (centesimi)</label>
+                      <input type="number" class="form-control" [(ngModel)]="serviceEditForm.amountCents" name="serviceEditAmountCents" min="0" />
+                      <small class="text-muted">{{ (serviceEditForm.amountCents / 100) | number:'1.2-2' }} EUR</small>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Nome paziente</label>
+                      <input type="text" class="form-control" [(ngModel)]="serviceEditForm.patientName" name="serviceEditPatientName" />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Email paziente</label>
+                      <input type="email" class="form-control" [(ngModel)]="serviceEditForm.patientEmail" name="serviceEditPatientEmail" />
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Note</label>
+                      <textarea class="form-control" rows="2" [(ngModel)]="serviceEditForm.notes" name="serviceEditNotes"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                      <button class="btn btn-outline-secondary" type="button" (click)="closeServiceEditModal()">Annulla</button>
+                      <button class="btn btn-primary" type="button" (click)="saveServiceEdit()">
+                        Salva modifiche
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Modal Registra Pagamento -->
+          <ng-container *ngIf="showAdminPaymentModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeAdminPaymentModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="adminPaymentModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow-lg border-0">
+                  <div class="modal-header border-0 pb-0">
+                    <div>
+                      <h5 class="modal-title fw-bold" id="adminPaymentModalTitle">
+                        <i class="bi bi-credit-card me-2 text-primary"></i>
+                        Registra pagamento
+                      </h5>
+                      <p class="text-muted small mb-0 mt-1">Registra un pagamento ricevuto per un paziente</p>
+                    </div>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminPaymentModal()"></button>
+                  </div>
+                  <div class="modal-body pt-4">
+                    <form (ngSubmit)="submitPayment()" #adminPaymentFormRef="ngForm">
+                      <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Pagamento</label>
+                        <select class="form-select" name="adminPaymentId" [(ngModel)]="paymentForm.paymentId" required>
+                          <option [ngValue]="null" disabled>Seleziona un pagamento</option>
+                          <option *ngFor="let payment of payments" [ngValue]="payment.id">
+                            #{{ payment.id }} · {{ getPatientLabel(payment.patientId) }} · {{ payment.service }}
+                          </option>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Ricevuta</label>
+                        <input class="form-control" type="text" name="adminPaymentReceipt" [(ngModel)]="paymentForm.receiptName" placeholder="es. RIC-2025-001" required />
+                      </div>
+                      <div class="mb-4">
+                        <label class="form-label fw-semibold small text-muted">Importo (€)</label>
+                        <div class="input-group">
+                          <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-currency-euro text-muted"></i>
+                          </span>
+                          <input class="form-control border-start-0" type="number" name="adminPaymentAmount" [(ngModel)]="paymentForm.amount" min="1" step="0.01" placeholder="0.00" required />
+                        </div>
+                      </div>
+                      <div class="alert alert-danger border-0 py-2" *ngIf="paymentsError">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        {{ paymentsError }}
+                      </div>
+                    </form>
+                  </div>
+                  <div class="modal-footer border-0 pt-0">
+                    <button class="btn btn-outline-secondary" type="button" (click)="closeAdminPaymentModal()">
+                      Annulla
+                    </button>
+                    <button class="btn btn-primary" type="button" (click)="submitPayment()" [disabled]="adminPaymentFormRef.invalid || isLoading">
+                      <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+                      <i *ngIf="!isLoading" class="bi bi-check-circle me-1"></i>
+                      {{ isLoading ? 'Salvataggio...' : 'Registra pagamento' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </ng-container>
       </ng-template>
 
