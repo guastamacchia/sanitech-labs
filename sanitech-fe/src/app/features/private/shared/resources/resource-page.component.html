@@ -3722,7 +3722,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let notification of notifications | slice:getPageSliceStart('notifications'):getPageSliceEnd('notifications')">
+                        <tr *ngFor="let notification of notifications | slice:getPageSliceStart('adminNotifications'):getPageSliceEnd('adminNotifications')">
                           <td>{{ notification.id }}</td>
                           <td>
                             <span class="badge bg-light text-dark">{{ notification.recipientType }}</span>
@@ -3753,7 +3753,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'notificationsStaff', total: notifications.length }"></ng-container>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminNotifications', total: notifications.length }"></ng-container>
                   </div>
                 </div>
               </div>
@@ -3785,31 +3785,38 @@
                     <div class="modal-body pt-4">
                       <form (ngSubmit)="submitNotification()" #notificationFormRef="ngForm">
                         <div class="row g-3 mb-3">
-                          <div class="col-md-8">
+                          <div class="col-md-5">
                             <label class="form-label fw-semibold small text-muted">Destinatario</label>
                             <div class="input-group">
                               <span class="input-group-text bg-light border-end-0">
                                 <i class="bi bi-person text-muted"></i>
                               </span>
-                              <input class="form-control border-start-0" type="email" name="notificationRecipient" [(ngModel)]="notificationForm.recipient" placeholder="email@esempio.com" required />
+                              <input class="form-control border-start-0" type="email" name="notificationRecipient" [(ngModel)]="notificationForm.recipient" placeholder="email@esempio.com" required (input)="notificationsError = ''" />
                             </div>
                           </div>
                           <div class="col-md-4">
+                            <label class="form-label fw-semibold small text-muted">Tipo destinatario</label>
+                            <select class="form-select" name="notificationRecipientType" [(ngModel)]="notificationForm.recipientType" required>
+                              <option value="PATIENT">Paziente</option>
+                              <option value="DOCTOR">Medico</option>
+                              <option value="ADMIN">Amministratore</option>
+                            </select>
+                          </div>
+                          <div class="col-md-3">
                             <label class="form-label fw-semibold small text-muted">Canale</label>
                             <select class="form-select" name="notificationChannel" [(ngModel)]="notificationForm.channel" required>
                               <option value="EMAIL">📧 Email</option>
-                              <option value="SMS">📱 SMS</option>
-                              <option value="APP">📲 App</option>
+                              <option value="APP">📲 In-App</option>
                             </select>
                           </div>
                         </div>
                         <div class="mb-3">
                           <label class="form-label fw-semibold small text-muted">Oggetto</label>
-                          <input class="form-control" type="text" name="notificationSubject" [(ngModel)]="notificationForm.subject" placeholder="Oggetto della comunicazione" required />
+                          <input class="form-control" type="text" name="notificationSubject" [(ngModel)]="notificationForm.subject" placeholder="Oggetto della comunicazione" required (input)="notificationsError = ''" />
                         </div>
                         <div class="mb-3">
                           <label class="form-label fw-semibold small text-muted">Messaggio</label>
-                          <textarea class="form-control" rows="4" name="notificationMessage" [(ngModel)]="notificationForm.message" placeholder="Scrivi il contenuto del messaggio..." required></textarea>
+                          <textarea class="form-control" rows="4" name="notificationMessage" [(ngModel)]="notificationForm.message" placeholder="Scrivi il contenuto del messaggio..." required (input)="notificationsError = ''"></textarea>
                         </div>
                         <div class="mb-3">
                           <label class="form-label fw-semibold small text-muted">Note (opzionale)</label>
@@ -3839,9 +3846,9 @@
             </ng-container>
 
             <ng-container *ngIf="showNotificationDetailModal && selectedNotification">
-              <div class="modal-backdrop fade show" style="position: fixed; inset: 0; z-index: 1050;" (click)="closeNotificationDetailModal()"></div>
-              <div class="modal d-flex align-items-center justify-content-center" role="dialog" aria-modal="true" style="position: fixed; inset: 0; z-index: 1055;">
-                <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-backdrop fade show" style="position: fixed; inset: 0; z-index: 1050;"></div>
+              <div class="modal d-flex align-items-center justify-content-center" role="dialog" aria-modal="true" style="position: fixed; inset: 0; z-index: 1055;" (click)="closeNotificationDetailModal()">
+                <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
                   <div class="modal-content">
                     <div class="modal-header">
                       <h5 class="modal-title">Dettaglio Notifica</h5>

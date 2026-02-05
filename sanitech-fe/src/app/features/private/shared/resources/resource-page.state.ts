@@ -545,6 +545,7 @@ export class ResourcePageState {
   notificationForm = {
     recipient: '',
     channel: 'EMAIL',
+    recipientType: 'PATIENT' as 'PATIENT' | 'DOCTOR' | 'ADMIN',
     subject: '',
     message: '',
     notes: ''
@@ -2885,11 +2886,19 @@ export class ResourcePageState {
       this.notificationsError = 'Inserisci destinatario, oggetto e messaggio.';
       return;
     }
+    // Validazione formato email se canale EMAIL
+    if (this.notificationForm.channel === 'EMAIL') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(this.notificationForm.recipient.trim())) {
+        this.notificationsError = 'Inserisci un indirizzo email valido.';
+        return;
+      }
+    }
     this.isLoading = true;
     this.notificationsError = '';
     // Payload allineato a NotificationCreateDto backend
     const notifPayload = {
-      recipientType: 'PATIENT' as const,
+      recipientType: this.notificationForm.recipientType as 'PATIENT' | 'DOCTOR' | 'ADMIN',
       recipientId: this.notificationForm.recipient,
       channel: this.notificationForm.channel === 'EMAIL' ? 'EMAIL' : 'IN_APP',
       toAddress: this.notificationForm.channel === 'EMAIL' ? this.notificationForm.recipient : undefined,
@@ -2898,20 +2907,31 @@ export class ResourcePageState {
     };
     this.api.request<NotificationItem>('POST', '/api/admin/notifications', notifPayload).subscribe({
       next: (notification) => {
-        this.notifications = [...this.notifications, this.mapNotificationFromBackend(notification)];
-        this.notificationForm.subject = '';
-        this.notificationForm.message = '';
-        this.notificationForm.notes = '';
+        // Aggiungi in cima alla lista (ordine cronologico inverso)
+        this.notifications = [this.mapNotificationFromBackend(notification), ...this.notifications];
+        this.resetNotificationForm();
         if (this.showAdminNotificationModal) {
           this.closeAdminNotificationModal();
         }
         this.isLoading = false;
       },
-      error: () => {
-        this.notificationsError = 'Impossibile inviare la notifica.';
+      error: (err) => {
+        const errorMsg = err?.error?.message || err?.error?.error || 'Impossibile inviare la notifica.';
+        this.notificationsError = errorMsg;
         this.isLoading = false;
       }
     });
+  }
+
+  private resetNotificationForm(): void {
+    this.notificationForm = {
+      recipient: '',
+      channel: 'EMAIL',
+      recipientType: 'PATIENT',
+      subject: '',
+      message: '',
+      notes: ''
+    };
   }
 
   saveNotificationPreferences(): void {
@@ -2997,6 +3017,7 @@ export class ResourcePageState {
   openAdminNotificationModal(): void {
     this.notificationsError = '';
     this.notificationsSuccess = '';
+    this.resetNotificationForm();
     this.showAdminNotificationModal = true;
   }
 
