@@ -4321,19 +4321,21 @@ export class ResourcePageState {
   filterAuditByText(): void {
     if (!this.auditSearchText.trim()) {
       this.auditFilteredEvents = [...this.auditDetailedEvents];
-      return;
+    } else {
+      const searchLower = this.auditSearchText.toLowerCase();
+      this.auditFilteredEvents = this.auditDetailedEvents.filter(e =>
+        e.action.toLowerCase().includes(searchLower) ||
+        e.actorId.toLowerCase().includes(searchLower) ||
+        e.actorName.toLowerCase().includes(searchLower) ||
+        (e.actorType?.toLowerCase().includes(searchLower)) ||
+        (e.resourceType?.toLowerCase().includes(searchLower)) ||
+        (e.resourceId?.toLowerCase().includes(searchLower)) ||
+        e.outcome.toLowerCase().includes(searchLower) ||
+        (e.serviceName?.toLowerCase().includes(searchLower))
+      );
     }
-    const searchLower = this.auditSearchText.toLowerCase();
-    this.auditFilteredEvents = this.auditDetailedEvents.filter(e =>
-      e.action.toLowerCase().includes(searchLower) ||
-      e.actorId.toLowerCase().includes(searchLower) ||
-      e.actorName.toLowerCase().includes(searchLower) ||
-      (e.actorType?.toLowerCase().includes(searchLower)) ||
-      (e.resourceType?.toLowerCase().includes(searchLower)) ||
-      (e.resourceId?.toLowerCase().includes(searchLower)) ||
-      e.outcome.toLowerCase().includes(searchLower) ||
-      (e.serviceName?.toLowerCase().includes(searchLower))
-    );
+    // Reset pagination to page 1 when filter changes
+    this.setPage('auditFiltered', 1, this.auditFilteredEvents.length);
   }
 
   private mapAuditEventsToDetailSimple(events: AuditEventResponse[]): AuditEventDetail[] {
@@ -4382,7 +4384,14 @@ export class ResourcePageState {
     return 'DOCUMENT';
   }
 
-  selectAuditEvent(event: AuditEventDetail): void { this.auditSelectedEvent = event; }
+  selectAuditEvent(event: AuditEventDetail): void {
+    this.auditSelectedEvent = event;
+    // Focus the modal after it renders for ESC key support
+    setTimeout(() => {
+      const modal = document.querySelector('.modal[tabindex="-1"]') as HTMLElement;
+      if (modal) modal.focus();
+    }, 50);
+  }
   closeAuditEventDetail(): void { this.auditSelectedEvent = null; }
   getOutcomeLabel(outcome: string): string { return this.auditOutcomeOptions.find(o => o.value === outcome)?.label ?? outcome; }
   getOutcomeBadgeClass(outcome: string): string { switch (outcome) { case 'SUCCESS': return 'bg-success'; case 'DENIED': return 'bg-danger'; case 'FAILURE': return 'bg-warning text-dark'; default: return 'bg-secondary'; } }

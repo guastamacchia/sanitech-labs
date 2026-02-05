@@ -33,13 +33,19 @@
         <nav aria-label="Paginazione">
           <ul class="pagination pagination-sm mb-0">
             <li class="page-item" [class.disabled]="getPage(key) <= 1">
-              <button class="page-link" type="button" (click)="setPage(key, getPage(key) - 1, total)">«</button>
+              <button class="page-link" type="button"
+                      [disabled]="getPage(key) <= 1"
+                      (click)="setPage(key, getPage(key) - 1, total)"
+                      style="cursor: pointer;">«</button>
             </li>
             <li class="page-item active">
               <span class="page-link">{{ getPage(key) }} / {{ getTotalPages(total) }}</span>
             </li>
             <li class="page-item" [class.disabled]="getPage(key) >= getTotalPages(total)">
-              <button class="page-link" type="button" (click)="setPage(key, getPage(key) + 1, total)">»</button>
+              <button class="page-link" type="button"
+                      [disabled]="getPage(key) >= getTotalPages(total)"
+                      (click)="setPage(key, getPage(key) + 1, total)"
+                      style="cursor: pointer;">»</button>
             </li>
           </ul>
         </nav>
@@ -3441,9 +3447,13 @@
 
           <!-- Modal Dettaglio Evento -->
           <ng-container *ngIf="auditSelectedEvent">
-            <div class="modal-backdrop fade show" style="position: fixed; inset: 0; z-index: 1050;" (click)="closeAuditEventDetail()"></div>
-            <div class="modal d-flex align-items-center justify-content-center" role="dialog" aria-modal="true" style="position: fixed; inset: 0; z-index: 1055;">
-              <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-backdrop fade show" style="position: fixed; inset: 0; z-index: 1050;"></div>
+            <div class="modal d-flex align-items-center justify-content-center" role="dialog" aria-modal="true" tabindex="-1"
+                 style="position: fixed; inset: 0; z-index: 1055; cursor: pointer;"
+                 (click)="closeAuditEventDetail()"
+                 (keydown.escape)="closeAuditEventDetail()"
+                 #auditModal>
+              <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()" style="cursor: default;">
                 <div class="modal-content">
                   <div class="modal-header">
                     <h5 class="modal-title">Dettaglio Evento Audit</h5>
