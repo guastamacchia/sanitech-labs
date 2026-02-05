@@ -41,7 +41,7 @@ export const adminRoutes: Routes = [
       title: 'Notifiche',
       description: 'Monitoraggio e invio notifiche per tutta la piattaforma.',
       endpoints: notificationsEndpoints,
-      view: 'notifications'
+      view: 'admin-notifications'
     }
   },
   {
