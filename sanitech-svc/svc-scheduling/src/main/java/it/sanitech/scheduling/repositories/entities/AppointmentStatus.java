@@ -5,5 +5,6 @@ package it.sanitech.scheduling.repositories.entities;
  */
 public enum AppointmentStatus {
     BOOKED,
+    COMPLETED,
     CANCELLED
 }

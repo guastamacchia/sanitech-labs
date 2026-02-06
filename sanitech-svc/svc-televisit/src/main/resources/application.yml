@@ -114,6 +114,9 @@ sanitech:
       - /actuator/metrics/**
       - /actuator/prometheus
 
+  directory:
+    url: ${DIRECTORY_URL:http://localhost:8082}
+
   outbox:
     publisher:
       topic: ${OUTBOX_TOPIC:audits.events}

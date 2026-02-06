@@ -131,6 +131,9 @@ sanitech:
     title: Sanitech — Notifications API
     version: v1
 
+  directory:
+    url: ${DIRECTORY_URL:http://localhost:8082}
+
   outbox:
     publisher:
       topic: ${OUTBOX_TOPIC:notifications.events}
@@ -155,6 +158,10 @@ sanitech:
       enabled: ${ACCOUNT_STATUS_CONSUMER_ENABLED:true}
       topic: ${NOTIFICATIONS_EVENTS_TOPIC:notifications.events}
       group-id: ${ACCOUNT_STATUS_CONSUMER_GROUP_ID:svc-notifications-account-status}
+    service-completion-consumer:
+      enabled: ${SERVICE_COMPLETION_CONSUMER_ENABLED:true}
+      topic: ${NOTIFICATIONS_EVENTS_TOPIC:notifications.events}
+      group-id: ${SERVICE_COMPLETION_CONSUMER_GROUP_ID:svc-notifications-service-completion}
 
 # =========================
 # Management / Actuator

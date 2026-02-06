@@ -13,5 +13,10 @@ public enum ServiceSourceType {
     /**
      * Ricovero ospedaliero.
      */
-    ADMISSION
+    ADMISSION,
+
+    /**
+     * Visita in presenza (appuntamento completato).
+     */
+    APPOINTMENT
 }

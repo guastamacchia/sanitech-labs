@@ -23,7 +23,7 @@ public class DirectoryClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${sanitech.directory.url:http://localhost:8081}")
+    @Value("${sanitech.directory.url:http://localhost:8082}")
     private String directoryBaseUrl;
 
     /**

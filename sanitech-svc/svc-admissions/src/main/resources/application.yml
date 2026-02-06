@@ -127,6 +127,9 @@ sanitech:
     title: Sanitech — Admissions API
     version: v1
 
+  directory:
+    url: ${DIRECTORY_URL:http://localhost:8082}
+
   outbox:
     publisher:
       topic: ${OUTBOX_TOPIC:audits.events}

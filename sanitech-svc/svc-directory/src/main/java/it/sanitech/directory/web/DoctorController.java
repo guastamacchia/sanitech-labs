@@ -57,4 +57,17 @@ public class DoctorController {
     public DoctorDto findByName(@RequestParam String firstName, @RequestParam String lastName) {
         return doctorService.findByName(firstName, lastName).orElse(null);
     }
+
+    /**
+     * Lookup interno per email (case-insensitive).
+     * Utilizzato dai microservizi produttori per arricchire i payload degli eventi.
+     */
+    @GetMapping(value = "/internal/by-email", produces = MediaType.APPLICATION_JSON_VALUE)
+    public DoctorDto findByEmail(@RequestParam String email) {
+        try {
+            return doctorService.getByEmail(email);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

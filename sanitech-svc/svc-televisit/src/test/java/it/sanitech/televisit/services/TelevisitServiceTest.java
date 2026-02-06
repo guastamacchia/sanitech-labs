@@ -44,7 +44,9 @@ class TelevisitServiceTest {
         LiveKitRoomService roomService = Mockito.mock(LiveKitRoomService.class);
         LiveKitTokenService tokenService = Mockito.mock(LiveKitTokenService.class);
 
-        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService);
+        it.sanitech.televisit.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.televisit.clients.DirectoryClient.class);
+
+        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService, directoryClient);
 
         TelevisitCreateDto dto = new TelevisitCreateDto(
                 "doc-subject",
@@ -82,7 +84,9 @@ class TelevisitServiceTest {
         LiveKitRoomService roomService = Mockito.mock(LiveKitRoomService.class);
         LiveKitTokenService tokenService = Mockito.mock(LiveKitTokenService.class);
 
-        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService);
+        it.sanitech.televisit.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.televisit.clients.DirectoryClient.class);
+
+        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService, directoryClient);
 
         TelevisitSession entity = TelevisitSession.builder()
                 .id(12L)
@@ -112,7 +116,9 @@ class TelevisitServiceTest {
         LiveKitRoomService roomService = Mockito.mock(LiveKitRoomService.class);
         LiveKitTokenService tokenService = Mockito.mock(LiveKitTokenService.class);
 
-        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService);
+        it.sanitech.televisit.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.televisit.clients.DirectoryClient.class);
+
+        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService, directoryClient);
 
         TelevisitSession entity = TelevisitSession.builder()
                 .id(20L)
@@ -143,7 +149,9 @@ class TelevisitServiceTest {
         LiveKitRoomService roomService = Mockito.mock(LiveKitRoomService.class);
         LiveKitTokenService tokenService = Mockito.mock(LiveKitTokenService.class);
 
-        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService);
+        it.sanitech.televisit.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.televisit.clients.DirectoryClient.class);
+
+        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService, directoryClient);
 
         TelevisitSession entity = TelevisitSession.builder()
                 .id(30L)
@@ -173,7 +181,9 @@ class TelevisitServiceTest {
         LiveKitRoomService roomService = Mockito.mock(LiveKitRoomService.class);
         LiveKitTokenService tokenService = Mockito.mock(LiveKitTokenService.class);
 
-        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService);
+        it.sanitech.televisit.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.televisit.clients.DirectoryClient.class);
+
+        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService, directoryClient);
 
         TelevisitSession entity = TelevisitSession.builder()
                 .id(40L)
@@ -200,7 +210,9 @@ class TelevisitServiceTest {
         LiveKitRoomService roomService = Mockito.mock(LiveKitRoomService.class);
         LiveKitTokenService tokenService = Mockito.mock(LiveKitTokenService.class);
 
-        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService);
+        it.sanitech.televisit.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.televisit.clients.DirectoryClient.class);
+
+        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService, directoryClient);
 
         TelevisitSession entity = TelevisitSession.builder()
                 .id(50L)
@@ -230,7 +242,9 @@ class TelevisitServiceTest {
         LiveKitRoomService roomService = Mockito.mock(LiveKitRoomService.class);
         LiveKitTokenService tokenService = Mockito.mock(LiveKitTokenService.class);
 
-        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService);
+        it.sanitech.televisit.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.televisit.clients.DirectoryClient.class);
+
+        TelevisitService service = new TelevisitService(repo, mapper, events, deptGuard, roomService, tokenService, directoryClient);
 
         when(repo.findById(99L)).thenReturn(Optional.empty());
 

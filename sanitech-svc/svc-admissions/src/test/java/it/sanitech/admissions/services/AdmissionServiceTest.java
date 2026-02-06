@@ -43,7 +43,9 @@ class AdmissionServiceTest {
         DeptGuard deptGuard = Mockito.mock(DeptGuard.class);
         DomainEventPublisher domainEvents = Mockito.mock(DomainEventPublisher.class);
 
-        AdmissionService service = new AdmissionService(admissions, capacityRepository, mapper, deptGuard, domainEvents);
+        it.sanitech.admissions.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.admissions.clients.DirectoryClient.class);
+
+        AdmissionService service = new AdmissionService(admissions, capacityRepository, mapper, deptGuard, domainEvents, directoryClient);
 
         AdmissionCreateDto dto = new AdmissionCreateDto(10L, "cardio", AdmissionType.INPATIENT, "note", 22L);
         DepartmentCapacity capacity = new DepartmentCapacity("CARDIO", 2, Instant.parse("2024-01-01T00:00:00Z"));
@@ -110,7 +112,9 @@ class AdmissionServiceTest {
         DeptGuard deptGuard = Mockito.mock(DeptGuard.class);
         DomainEventPublisher domainEvents = Mockito.mock(DomainEventPublisher.class);
 
-        AdmissionService service = new AdmissionService(admissions, capacityRepository, mapper, deptGuard, domainEvents);
+        it.sanitech.admissions.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.admissions.clients.DirectoryClient.class);
+
+        AdmissionService service = new AdmissionService(admissions, capacityRepository, mapper, deptGuard, domainEvents, directoryClient);
 
         AdmissionCreateDto dto = new AdmissionCreateDto(10L, "cardio", AdmissionType.INPATIENT, null, null);
         DepartmentCapacity capacity = new DepartmentCapacity("CARDIO", 1, Instant.now());
@@ -133,7 +137,9 @@ class AdmissionServiceTest {
         DeptGuard deptGuard = Mockito.mock(DeptGuard.class);
         DomainEventPublisher domainEvents = Mockito.mock(DomainEventPublisher.class);
 
-        AdmissionService service = new AdmissionService(admissions, capacityRepository, mapper, deptGuard, domainEvents);
+        it.sanitech.admissions.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.admissions.clients.DirectoryClient.class);
+
+        AdmissionService service = new AdmissionService(admissions, capacityRepository, mapper, deptGuard, domainEvents, directoryClient);
 
         Admission existing = new Admission();
         existing.setId(5L);
@@ -190,7 +196,9 @@ class AdmissionServiceTest {
         DeptGuard deptGuard = Mockito.mock(DeptGuard.class);
         DomainEventPublisher domainEvents = Mockito.mock(DomainEventPublisher.class);
 
-        AdmissionService service = new AdmissionService(admissions, capacityRepository, mapper, deptGuard, domainEvents);
+        it.sanitech.admissions.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.admissions.clients.DirectoryClient.class);
+
+        AdmissionService service = new AdmissionService(admissions, capacityRepository, mapper, deptGuard, domainEvents, directoryClient);
 
         Admission admission = new Admission();
         admission.setId(9L);
@@ -231,7 +239,9 @@ class AdmissionServiceTest {
         DeptGuard deptGuard = Mockito.mock(DeptGuard.class);
         DomainEventPublisher domainEvents = Mockito.mock(DomainEventPublisher.class);
 
-        AdmissionService service = new AdmissionService(admissions, capacityRepository, mapper, deptGuard, domainEvents);
+        it.sanitech.admissions.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.admissions.clients.DirectoryClient.class);
+
+        AdmissionService service = new AdmissionService(admissions, capacityRepository, mapper, deptGuard, domainEvents, directoryClient);
 
         Admission existing = new Admission();
         existing.setId(5L);

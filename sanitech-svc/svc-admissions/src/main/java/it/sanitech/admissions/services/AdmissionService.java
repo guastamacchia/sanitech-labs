@@ -1,6 +1,7 @@
 package it.sanitech.admissions.services;
 
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import it.sanitech.admissions.clients.DirectoryClient;
 import it.sanitech.admissions.exception.NoBedAvailableException;
 import it.sanitech.admissions.repositories.AdmissionRepository;
 import it.sanitech.admissions.repositories.DepartmentCapacityRepository;
@@ -18,6 +19,7 @@ import it.sanitech.commons.utilities.AppConstants;
 import it.sanitech.admissions.utilities.AppConstants.Outbox;
 import it.sanitech.outbox.core.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -32,6 +34,7 @@ import java.util.Set;
 /**
  * Service applicativo per la gestione dei ricoveri.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdmissionService {
@@ -46,6 +49,7 @@ public class AdmissionService {
     private final AdmissionMapper mapper;
     private final DeptGuard deptGuard;
     private final DomainEventPublisher domainEvents;
+    private final DirectoryClient directoryClient;
 
     /**
      * Crea un nuovo ricovero verificando la disponibilità posti letto del reparto.
@@ -107,24 +111,61 @@ public class AdmissionService {
 
         Admission saved = admissions.save(admission);
 
-        Map<String, Object> eventPayload = new HashMap<>();
-        eventPayload.put("admissionId", saved.getId());
-        eventPayload.put("patientId", saved.getPatientId());
-        eventPayload.put("departmentCode", saved.getDepartmentCode());
-        eventPayload.put("admittedAt", saved.getAdmittedAt().toString());
-        eventPayload.put("dischargedAt", saved.getDischargedAt().toString());
+        // Arricchimento dati anagrafici da svc-directory
+        DirectoryClient.PersonInfo patientInfo = directoryClient.findPatientById(saved.getPatientId());
+        DirectoryClient.PersonInfo doctorInfo = directoryClient.findDoctorById(saved.getAttendingDoctorId());
+
+        String patientName = patientInfo != null ? patientInfo.fullName() : null;
+        String patientEmail = patientInfo != null ? patientInfo.email() : null;
+        String doctorName = doctorInfo != null ? doctorInfo.fullName() : null;
+        String doctorEmail = doctorInfo != null ? doctorInfo.email() : null;
+
+        // 1. Evento audit (payload minimale, invariato)
+        Map<String, Object> auditPayload = new HashMap<>();
+        auditPayload.put("admissionId", saved.getId());
+        auditPayload.put("patientId", saved.getPatientId());
+        auditPayload.put("departmentCode", saved.getDepartmentCode());
+        auditPayload.put("admittedAt", saved.getAdmittedAt().toString());
+        auditPayload.put("dischargedAt", saved.getDischargedAt().toString());
         if (saved.getAttendingDoctorId() != null) {
-            eventPayload.put("attendingDoctorId", saved.getAttendingDoctorId());
+            auditPayload.put("attendingDoctorId", saved.getAttendingDoctorId());
         }
 
-        domainEvents.publish(
-                AGGREGATE_TYPE,
-                String.valueOf(saved.getId()),
-                EVT_DISCHARGED,
-                eventPayload,
-                Outbox.TOPIC_AUDITS_EVENTS,
-                auth
-        );
+        domainEvents.publish(AGGREGATE_TYPE, String.valueOf(saved.getId()), EVT_DISCHARGED,
+                auditPayload, Outbox.TOPIC_AUDITS_EVENTS, auth);
+
+        // 2. Evento payments (payload arricchito per fatturazione)
+        Map<String, Object> paymentsPayload = new HashMap<>();
+        paymentsPayload.put("sourceId", saved.getId());
+        paymentsPayload.put("sourceType", "ADMISSION");
+        paymentsPayload.put("patientId", saved.getPatientId());
+        paymentsPayload.put("patientName", patientName);
+        paymentsPayload.put("patientEmail", patientEmail);
+        paymentsPayload.put("departmentCode", saved.getDepartmentCode());
+        paymentsPayload.put("admittedAt", saved.getAdmittedAt().toString());
+        paymentsPayload.put("dischargedAt", saved.getDischargedAt().toString());
+        if (saved.getAttendingDoctorId() != null) {
+            paymentsPayload.put("attendingDoctorId", saved.getAttendingDoctorId());
+            paymentsPayload.put("doctorName", doctorName);
+        }
+
+        domainEvents.publish(AGGREGATE_TYPE, String.valueOf(saved.getId()), EVT_DISCHARGED,
+                paymentsPayload, Outbox.TOPIC_PAYMENTS_EVENTS, auth);
+
+        // 3. Evento notifications (email a medico e paziente)
+        Map<String, Object> notificationsPayload = new HashMap<>();
+        notificationsPayload.put("notificationType", "ADMISSION_DISCHARGED");
+        notificationsPayload.put("sourceId", saved.getId());
+        notificationsPayload.put("departmentCode", saved.getDepartmentCode());
+        notificationsPayload.put("patientName", patientName);
+        notificationsPayload.put("patientEmail", patientEmail);
+        notificationsPayload.put("doctorName", doctorName);
+        notificationsPayload.put("doctorEmail", doctorEmail);
+        notificationsPayload.put("admittedAt", saved.getAdmittedAt().toString());
+        notificationsPayload.put("dischargedAt", saved.getDischargedAt().toString());
+
+        domainEvents.publish(AGGREGATE_TYPE, String.valueOf(saved.getId()), EVT_DISCHARGED,
+                notificationsPayload, Outbox.TOPIC_NOTIFICATIONS_EVENTS, auth);
 
         return mapper.toDto(saved);
     }

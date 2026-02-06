@@ -4,6 +4,7 @@ import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
 import it.sanitech.commons.security.SecurityUtils;
 import it.sanitech.outbox.core.DomainEventPublisher;
+import it.sanitech.televisit.clients.DirectoryClient;
 import it.sanitech.televisit.repositories.TelevisitSessionRepository;
 import it.sanitech.televisit.repositories.entities.TelevisitSession;
 import it.sanitech.televisit.repositories.entities.TelevisitStatus;
@@ -16,6 +17,7 @@ import it.sanitech.televisit.services.livekit.LiveKitTokenService;
 import it.sanitech.televisit.services.mapper.TelevisitMapper;
 import it.sanitech.televisit.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,12 +25,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 /**
  * Service applicativo per la gestione delle sessioni di video-visita.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TelevisitService {
@@ -39,6 +43,7 @@ public class TelevisitService {
     private final DeptGuard deptGuard;
     private final LiveKitRoomService roomService;
     private final LiveKitTokenService tokenService;
+    private final DirectoryClient directoryClient;
 
     @Transactional
     public TelevisitDto create(TelevisitCreateDto dto, Authentication auth) {
@@ -152,6 +157,18 @@ public class TelevisitService {
 
         s.markEnded();
 
+        // Arricchimento dati anagrafici da svc-directory
+        DirectoryClient.PersonInfo patientInfo = directoryClient.findPatientByEmail(s.getPatientSubject());
+        DirectoryClient.PersonInfo doctorInfo = directoryClient.findDoctorByEmail(s.getDoctorSubject());
+
+        Long patientId = patientInfo != null ? patientInfo.id() : 0L;
+        String patientName = patientInfo != null ? patientInfo.fullName() : s.getPatientSubject();
+        String patientEmail = patientInfo != null ? patientInfo.email() : s.getPatientSubject();
+        Long doctorId = doctorInfo != null ? doctorInfo.id() : null;
+        String doctorName = doctorInfo != null ? doctorInfo.fullName() : s.getDoctorSubject();
+        String doctorEmail = doctorInfo != null ? doctorInfo.email() : s.getDoctorSubject();
+
+        // 1. Evento audit (payload minimale, invariato)
         events.publish(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.ENDED, Map.of(
                 "id", s.getId(),
                 "roomName", s.getRoomName(),
@@ -160,6 +177,36 @@ public class TelevisitService {
                 "patientSubject", s.getPatientSubject(),
                 "status", s.getStatus().name()
         ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
+
+        // 2. Evento payments (payload arricchito per fatturazione)
+        Map<String, Object> paymentsPayload = new HashMap<>();
+        paymentsPayload.put("sourceId", s.getId());
+        paymentsPayload.put("sourceType", "TELEVISIT");
+        paymentsPayload.put("roomName", s.getRoomName());
+        paymentsPayload.put("department", s.getDepartment());
+        paymentsPayload.put("patientId", patientId);
+        paymentsPayload.put("patientSubject", s.getPatientSubject());
+        paymentsPayload.put("patientName", patientName);
+        paymentsPayload.put("patientEmail", patientEmail);
+        paymentsPayload.put("doctorId", doctorId);
+        paymentsPayload.put("doctorName", doctorName);
+
+        events.publish(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.ENDED,
+                paymentsPayload, AppConstants.Outbox.TOPIC_PAYMENTS_EVENTS, auth);
+
+        // 3. Evento notifications (email a medico e paziente)
+        Map<String, Object> notificationsPayload = new HashMap<>();
+        notificationsPayload.put("notificationType", "TELEVISIT_ENDED");
+        notificationsPayload.put("sourceId", s.getId());
+        notificationsPayload.put("roomName", s.getRoomName());
+        notificationsPayload.put("department", s.getDepartment());
+        notificationsPayload.put("patientName", patientName);
+        notificationsPayload.put("patientEmail", patientEmail);
+        notificationsPayload.put("doctorName", doctorName);
+        notificationsPayload.put("doctorEmail", doctorEmail);
+
+        events.publish(AppConstants.Outbox.AGGREGATE_TELEVISIT_SESSION, String.valueOf(s.getId()), AppConstants.Outbox.EventType.ENDED,
+                notificationsPayload, AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS, auth);
 
         return mapper.toDto(s);
     }

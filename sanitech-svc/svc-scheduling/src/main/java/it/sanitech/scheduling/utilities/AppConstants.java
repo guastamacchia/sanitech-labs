@@ -69,5 +69,9 @@ public class AppConstants {
     public static class Outbox {
         /** Topic per eventi di auditing */
         public static final String TOPIC_AUDITS_EVENTS = "audits.events";
+        /** Topic per eventi di fatturazione (svc-payments) */
+        public static final String TOPIC_PAYMENTS_EVENTS = "payments.events";
+        /** Topic per eventi di notifica (svc-notifications) */
+        public static final String TOPIC_NOTIFICATIONS_EVENTS = "notifications.events";
     }
 }

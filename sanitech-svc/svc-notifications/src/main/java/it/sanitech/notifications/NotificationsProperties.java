@@ -19,6 +19,7 @@ public class NotificationsProperties {
     private ConsumerConfig activationConsumer = new ConsumerConfig();
     private ConsumerConfig paymentReminderConsumer = new ConsumerConfig();
     private ConsumerConfig accountStatusConsumer = new ConsumerConfig();
+    private ConsumerConfig serviceCompletionConsumer = new ConsumerConfig();
 
     @Getter
     @Setter

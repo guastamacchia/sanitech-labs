@@ -96,7 +96,7 @@ sanitech:
   # Consumer per eventi prestazioni (televisite e ricoveri completati)
   service-events-consumer:
     enabled: ${SERVICE_EVENTS_CONSUMER_ENABLED:true}
-    topic: ${SERVICE_EVENTS_TOPIC:audits.events}
+    topic: ${SERVICE_EVENTS_TOPIC:payments.events}
     group-id: ${SERVICE_EVENTS_GROUP_ID:svc-payments-service-events}
 
   outbox:

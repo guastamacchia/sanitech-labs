@@ -43,7 +43,9 @@ class AppointmentServiceTest {
         AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
         DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
 
-        AppointmentService service = new AppointmentService(appointments, slots, mapper, events);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
 
         Slot slot = Slot.builder()
                 .id(11L)
@@ -84,7 +86,9 @@ class AppointmentServiceTest {
         AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
         DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
 
-        AppointmentService service = new AppointmentService(appointments, slots, mapper, events);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
 
         Slot slot = Slot.builder()
                 .id(11L)
@@ -106,7 +110,9 @@ class AppointmentServiceTest {
         AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
         DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
 
-        AppointmentService service = new AppointmentService(appointments, slots, mapper, events);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
 
         Appointment entity = Appointment.builder()
                 .id(50L)
@@ -137,7 +143,9 @@ class AppointmentServiceTest {
         AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
         DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
 
-        AppointmentService service = new AppointmentService(appointments, slots, mapper, events);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
 
         Appointment appointment = Appointment.builder()
                 .id(60L)
@@ -169,7 +177,9 @@ class AppointmentServiceTest {
         AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
         DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
 
-        AppointmentService service = new AppointmentService(appointments, slots, mapper, events);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
 
         when(appointments.findById(99L)).thenReturn(Optional.empty());
 

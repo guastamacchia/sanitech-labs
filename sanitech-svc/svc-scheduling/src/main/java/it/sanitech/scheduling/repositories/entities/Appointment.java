@@ -71,8 +71,16 @@ public class Appointment {
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
 
+    @Column(name = "completed_at")
+    private Instant completedAt;
+
     public void cancel(Instant when) {
         this.status = AppointmentStatus.CANCELLED;
         this.cancelledAt = when;
+    }
+
+    public void complete(Instant when) {
+        this.status = AppointmentStatus.COMPLETED;
+        this.completedAt = when;
     }
 }

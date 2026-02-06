@@ -590,6 +590,7 @@ services:
       OUTBOX_TOPIC: ${SCHEDULING_OUTBOX_TOPIC}
       SERVER_PORT: ${SCHEDULING_SERVER_PORT}
       DATABASE_NAME: ${SCHEDULING_DATABASE_NAME}
+      DIRECTORY_URL: ${SCHEDULING_DIRECTORY_URL}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8083'"]
@@ -637,6 +638,7 @@ services:
       OUTBOX_TOPIC: ${ADMISSIONS_OUTBOX_TOPIC}
       SERVER_PORT: ${ADMISSIONS_SERVER_PORT}
       DATABASE_NAME: ${ADMISSIONS_DATABASE_NAME}
+      DIRECTORY_URL: ${ADMISSIONS_DIRECTORY_URL}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8084'"]
@@ -797,6 +799,7 @@ services:
       MAILHOG_URL: ${NOTIFICATIONS_MAILHOG_URL}
       SMTP_HOST: ${NOTIFICATIONS_MAIL_HOST}
       SMTP_PORT: ${NOTIFICATIONS_MAIL_PORT}
+      DIRECTORY_URL: ${NOTIFICATIONS_DIRECTORY_URL}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8087'"]
@@ -901,6 +904,7 @@ services:
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
       LIVEKIT_CONSOLE_URL: ${LIVEKIT_CONSOLE_URL}
       LIVEKIT_TOKEN_TTL_SECONDS: ${LIVEKIT_TOKEN_TTL_SECONDS}
+      DIRECTORY_URL: ${TELEVISIT_DIRECTORY_URL}
     healthcheck:
       # Verifica che il microservizio sia in ascolto sulla porta applicativa
       test: ["CMD-SHELL", "sh -c 'exec 3<>/dev/tcp/127.0.0.1/8089'"]

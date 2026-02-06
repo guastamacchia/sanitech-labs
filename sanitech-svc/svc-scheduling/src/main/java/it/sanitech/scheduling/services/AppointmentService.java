@@ -5,6 +5,7 @@ import it.sanitech.commons.security.SecurityUtils;
 import it.sanitech.commons.utilities.PageableUtils;
 import it.sanitech.commons.utilities.SortUtils;
 import it.sanitech.outbox.core.DomainEventPublisher;
+import it.sanitech.scheduling.clients.DirectoryClient;
 import it.sanitech.scheduling.repositories.AppointmentRepository;
 import it.sanitech.scheduling.repositories.SlotRepository;
 import it.sanitech.scheduling.repositories.entities.*;
@@ -15,6 +16,7 @@ import it.sanitech.scheduling.services.mapper.AppointmentMapper;
 import it.sanitech.scheduling.utilities.AppConstants;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -24,11 +26,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Service di dominio per la gestione degli {@link Appointment}.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AppointmentService {
@@ -37,6 +41,7 @@ public class AppointmentService {
     private final SlotRepository slots;
     private final AppointmentMapper appointmentMapper;
     private final DomainEventPublisher events;
+    private final DirectoryClient directoryClient;
 
     /**
      * Prenota un appuntamento su uno slot disponibile.
@@ -176,6 +181,78 @@ public class AppointmentService {
                 AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
                 auth
         );
+    }
+
+    /**
+     * Segna un appuntamento come completato e pubblica eventi su 3 topic.
+     */
+    @Transactional
+    public AppointmentDto complete(Long appointmentId, Authentication auth) {
+        Appointment appt = appointments.findById(appointmentId)
+                .orElseThrow(() -> NotFoundException.of("Appointment", appointmentId));
+
+        if (appt.getStatus() != AppointmentStatus.BOOKED) {
+            throw new IllegalArgumentException("L'appuntamento può essere completato solo se in stato BOOKED.");
+        }
+
+        appt.complete(Instant.now());
+        Appointment saved = appointments.save(appt);
+
+        // Arricchimento dati anagrafici da svc-directory
+        DirectoryClient.PersonInfo patientInfo = directoryClient.findPatientById(saved.getPatientId());
+        DirectoryClient.PersonInfo doctorInfo = directoryClient.findDoctorById(saved.getDoctorId());
+
+        String patientName = patientInfo != null ? patientInfo.fullName() : null;
+        String patientEmail = patientInfo != null ? patientInfo.email() : null;
+        String doctorName = doctorInfo != null ? doctorInfo.fullName() : null;
+        String doctorEmail = doctorInfo != null ? doctorInfo.email() : null;
+
+        // 1. Evento audit
+        events.publish("APPOINTMENT", String.valueOf(saved.getId()), "APPOINTMENT_COMPLETED",
+                Map.of(
+                        "appointmentId", saved.getId(),
+                        "patientId", saved.getPatientId(),
+                        "doctorId", saved.getDoctorId(),
+                        "departmentCode", saved.getDepartmentCode(),
+                        "mode", saved.getMode().name(),
+                        "completedAt", saved.getCompletedAt().toString()
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
+
+        // 2. Evento payments (payload arricchito per fatturazione)
+        Map<String, Object> paymentsPayload = new HashMap<>();
+        paymentsPayload.put("sourceId", saved.getId());
+        paymentsPayload.put("sourceType", "APPOINTMENT");
+        paymentsPayload.put("patientId", saved.getPatientId());
+        paymentsPayload.put("patientName", patientName);
+        paymentsPayload.put("patientEmail", patientEmail);
+        paymentsPayload.put("doctorId", saved.getDoctorId());
+        paymentsPayload.put("doctorName", doctorName);
+        paymentsPayload.put("departmentCode", saved.getDepartmentCode());
+        paymentsPayload.put("mode", saved.getMode().name());
+        paymentsPayload.put("startAt", saved.getStartAt().toString());
+        paymentsPayload.put("endAt", saved.getEndAt().toString());
+        paymentsPayload.put("completedAt", saved.getCompletedAt().toString());
+
+        events.publish("APPOINTMENT", String.valueOf(saved.getId()), "APPOINTMENT_COMPLETED",
+                paymentsPayload, AppConstants.Outbox.TOPIC_PAYMENTS_EVENTS, auth);
+
+        // 3. Evento notifications (email a medico e paziente)
+        Map<String, Object> notificationsPayload = new HashMap<>();
+        notificationsPayload.put("notificationType", "APPOINTMENT_COMPLETED");
+        notificationsPayload.put("sourceId", saved.getId());
+        notificationsPayload.put("departmentCode", saved.getDepartmentCode());
+        notificationsPayload.put("mode", saved.getMode().name());
+        notificationsPayload.put("patientName", patientName);
+        notificationsPayload.put("patientEmail", patientEmail);
+        notificationsPayload.put("doctorName", doctorName);
+        notificationsPayload.put("doctorEmail", doctorEmail);
+        notificationsPayload.put("completedAt", saved.getCompletedAt().toString());
+
+        events.publish("APPOINTMENT", String.valueOf(saved.getId()), "APPOINTMENT_COMPLETED",
+                notificationsPayload, AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS, auth);
+
+        return appointmentMapper.toDto(saved);
     }
 
     private static Long resolvePatientId(Long patientIdFromBody, Authentication auth) {

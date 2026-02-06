@@ -44,6 +44,15 @@ public class AppointmentController {
         return appointmentService.search(patientId, doctorId, department, page, size, sort, auth);
     }
 
+    /**
+     * Segna un appuntamento come completato (visita conclusa).
+     */
+    @PostMapping("/{id}/complete")
+    @PreAuthorize("hasAnyRole('ADMIN','DOCTOR')")
+    public AppointmentDto complete(@PathVariable Long id, Authentication auth) {
+        return appointmentService.complete(id, auth);
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','PATIENT')")
     @Auditable(aggregateType = "APPOINTMENT", eventType = "APPOINTMENT_CANCELLED", aggregateIdParam = "id")
