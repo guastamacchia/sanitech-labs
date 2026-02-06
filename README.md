@@ -1,6 +1,10 @@
-# Sanitech Labs
+<img src="social-preview.png" alt="Sanitech Labs" width="600">
 
-![Sanitech Labs](social-preview.png)
+![CI](https://github.com/guastamacchia/sanitech-labs/actions/workflows/ci.yml/badge.svg)
+![Java](https://img.shields.io/badge/Java-21-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4-green)
+![Angular](https://img.shields.io/badge/Angular-17-red)
+![License](https://img.shields.io/badge/License-MIT-blue)
 
 Piattaforma di gestione sanitaria costruita con architettura a microservizi.
 
