@@ -1,5 +1,7 @@
 # Sanitech Labs
 
+![Sanitech Labs](social-preview.png)
+
 Piattaforma di gestione sanitaria costruita con architettura a microservizi.
 
 ## Indice
