@@ -1,0 +1,30 @@
+name: "\U0001F4DA Documentazione"
+description: Segnala documentazione mancante o da migliorare
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Aiutaci a migliorare la documentazione del progetto.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Cosa manca o va migliorato?
+      description: Descrivi cosa andrebbe documentato o corretto.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: section
+    attributes:
+      label: Sezione interessata
+      options:
+        - README
+        - RUNBOOK
+        - API (Swagger/OpenAPI)
+        - Setup e installazione
+        - Architettura
+        - Altro
+    validations:
+      required: true

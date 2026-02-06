@@ -1,0 +1,45 @@
+name: "\U0001F680 Feature Request"
+description: Proponi una nuova funzionalità o miglioramento
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hai un'idea per migliorare Sanitech Labs? Descrivila qui sotto.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrizione della funzionalità
+      description: Descrivi la funzionalità che vorresti aggiungere.
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivazione
+      description: Quale problema risolve? Perché è utile?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area interessata
+      options:
+        - Frontend (Angular SPA)
+        - Backend (Microservizi)
+        - Infrastruttura (Docker, Kafka, Keycloak, ecc.)
+        - Documentazione
+        - Altro
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposta di implementazione
+      description: Hai idee su come implementarla? (opzionale)
+    validations:
+      required: false
