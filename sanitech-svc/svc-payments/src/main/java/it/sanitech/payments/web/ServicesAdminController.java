@@ -18,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * API amministrative per gestione prestazioni sanitarie.
@@ -157,8 +158,7 @@ public class ServicesAdminController {
      * @param ids lista degli ID delle prestazioni
      */
     @PostMapping("/bulk-reminders")
-    @ResponseStatus(HttpStatus.ACCEPTED)
-    public void sendBulkReminders(@RequestBody List<Long> ids, Authentication auth) {
-        service.sendBulkReminders(ids, auth);
+    public Map<String, Integer> sendBulkReminders(@RequestBody List<Long> ids, Authentication auth) {
+        return service.sendBulkReminders(ids, auth);
     }
 }

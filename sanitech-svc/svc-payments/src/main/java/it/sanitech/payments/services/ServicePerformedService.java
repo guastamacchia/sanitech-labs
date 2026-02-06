@@ -46,8 +46,11 @@ public class ServicePerformedService {
     public ServicePerformedDto create(ServicePerformedCreateDto dto, Authentication auth) {
         String actor = auth != null ? auth.getName() : "system";
 
+        ServiceType resolvedServiceType = dto.paymentType() == it.sanitech.payments.repositories.entities.PaymentType.RICOVERO
+                ? ServiceType.HOSPITALIZATION : ServiceType.MEDICAL_VISIT;
+
         ServicePerformed service = ServicePerformed.builder()
-                .serviceType(ServiceType.MEDICAL_VISIT)
+                .serviceType(resolvedServiceType)
                 .paymentType(dto.paymentType())
                 .sourceType(ServiceSourceType.ADMISSION)
                 .sourceId(0L)
@@ -198,6 +201,10 @@ public class ServicePerformedService {
         ServicePerformed service = repository.findById(id)
                 .orElseThrow(() -> NotFoundException.of("ServicePerformed", id));
 
+        if (service.getStatus() == ServicePerformedStatus.PAID) {
+            throw new IllegalArgumentException("Impossibile eliminare: prestazione già pagata.");
+        }
+
         repository.delete(service);
 
         // Pubblica evento di eliminazione
@@ -257,8 +264,10 @@ public class ServicePerformedService {
      * Invia solleciti multipli.
      */
     @Transactional
-    public void sendBulkReminders(List<Long> ids, Authentication auth) {
+    public Map<String, Integer> sendBulkReminders(List<Long> ids, Authentication auth) {
         List<ServicePerformed> services = repository.findByIdIn(ids);
+        int sent = 0;
+        int skipped = 0;
 
         for (ServicePerformed service : services) {
             if (service.getStatus() == ServicePerformedStatus.PENDING
@@ -286,8 +295,16 @@ public class ServicePerformedService {
                         AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS,
                         auth
                 );
+                sent++;
+            } else {
+                skipped++;
             }
         }
+
+        Map<String, Integer> result = new HashMap<>();
+        result.put("sent", sent);
+        result.put("skipped", skipped);
+        return result;
     }
 
     /**

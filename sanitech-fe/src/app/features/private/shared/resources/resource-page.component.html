@@ -4208,12 +4208,13 @@
                           </td>
                           <td>{{ formatDate(service.performedAt) }}</td>
                           <td>
-                            <span
+                            <span *ngIf="getServiceDaysOverdue(service) >= 0"
                                   [class.text-warning]="getServiceDaysOverdue(service) > 7 && getServiceDaysOverdue(service) <= 14"
                                   [class.text-danger]="getServiceDaysOverdue(service) > 14"
                                   [class.fw-bold]="getServiceDaysOverdue(service) > 14">
                               {{ getServiceDaysOverdue(service) }}
                             </span>
+                            <span *ngIf="getServiceDaysOverdue(service) < 0" class="text-muted">-</span>
                           </td>
                           <td>
                             <span class="badge"
@@ -4264,6 +4265,7 @@
                                 class="btn btn-outline-danger btn-sm"
                                 type="button"
                                 title="Elimina prestazione"
+                                [disabled]="service.status === 'PAID'"
                                 (click)="deleteService(service)">
                                 <i class="bi bi-trash"></i>
                               </button>
@@ -4342,9 +4344,13 @@
                   </div>
                   <div class="modal-body">
                     <div class="mb-3">
-                      <label class="form-label">Importo (centesimi)</label>
-                      <input type="number" class="form-control" [(ngModel)]="serviceEditForm.amountCents" name="serviceEditAmountCents" min="0" />
-                      <small class="text-muted">{{ (serviceEditForm.amountCents / 100) | number:'1.2-2' }} EUR</small>
+                      <label class="form-label">Importo (EUR)</label>
+                      <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                          <i class="bi bi-currency-euro text-muted"></i>
+                        </span>
+                        <input type="number" class="form-control border-start-0" [(ngModel)]="serviceEditForm.amountEur" name="serviceEditAmountEur" min="0.01" step="0.01" placeholder="0.00" />
+                      </div>
                     </div>
                     <div class="mb-3">
                       <label class="form-label">Nome paziente</label>

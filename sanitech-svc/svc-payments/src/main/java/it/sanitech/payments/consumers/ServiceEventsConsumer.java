@@ -107,13 +107,20 @@ public class ServiceEventsConsumer {
         // L'evento non contiene patientId/doctorId numerici, li lasciamo null
         // Il frontend dovrà fare un lookup se necessario
 
+        String patientName = getTextOrNull(payload, "patientName");
+        String patientEmail = getTextOrNull(payload, "patientEmail");
+        String doctorName = getTextOrNull(payload, "doctorName");
+
         ServicePerformed service = ServicePerformed.builder()
                 .serviceType(ServiceType.MEDICAL_VISIT)
+                .paymentType(PaymentType.VISITA)
                 .sourceType(ServiceSourceType.TELEVISIT)
                 .sourceId(sourceId)
                 .patientId(0L) // Non disponibile direttamente, serve lookup
                 .patientSubject(patientSubject)
-                .doctorName(doctorSubject) // Salviamo il subject, il frontend risolverà il nome
+                .patientName(patientName)
+                .patientEmail(patientEmail)
+                .doctorName(doctorName != null ? doctorName : doctorSubject)
                 .departmentCode(department)
                 .description("Visita medica - Televisita #" + sourceId + (roomName != null ? " (" + roomName + ")" : ""))
                 .amountCents(serviceDefaults.getMedicalVisitAmountCents())
@@ -178,12 +185,20 @@ public class ServiceEventsConsumer {
         // Calcola importo: 20 EUR/giorno
         long amountCents = daysCount * serviceDefaults.getHospitalizationDailyAmountCents();
 
+        String patientName = getTextOrNull(payload, "patientName");
+        String patientEmail = getTextOrNull(payload, "patientEmail");
+        String doctorName = getTextOrNull(payload, "doctorName");
+
         ServicePerformed service = ServicePerformed.builder()
                 .serviceType(ServiceType.HOSPITALIZATION)
+                .paymentType(PaymentType.RICOVERO)
                 .sourceType(ServiceSourceType.ADMISSION)
                 .sourceId(sourceId)
                 .patientId(patientId)
+                .patientName(patientName)
+                .patientEmail(patientEmail)
                 .doctorId(attendingDoctorId)
+                .doctorName(doctorName)
                 .departmentCode(department)
                 .description("Ricovero ospedaliero - " + daysCount + " giorni" + (department != null ? " (" + department + ")" : ""))
                 .amountCents(amountCents)

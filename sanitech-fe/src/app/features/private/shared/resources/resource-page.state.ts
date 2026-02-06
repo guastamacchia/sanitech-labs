@@ -535,6 +535,7 @@ export class ResourcePageState {
   serviceFreeReason = '';
   serviceEditForm = {
     amountCents: 0,
+    amountEur: 0,
     patientName: '',
     patientEmail: '',
     notes: ''
@@ -816,6 +817,8 @@ export class ResourcePageState {
     if (this.mode === 'admin-payments') {
       this.loadPayments();
       this.loadPatients();
+      this.loadServicesPerformed();
+      this.loadDoctors();
     }
   }
 
@@ -867,6 +870,7 @@ export class ResourcePageState {
     }
     if (this.mode === 'admin-payments') {
       this.loadPayments();
+      this.loadServicesPerformed();
     }
   }
 
@@ -2322,9 +2326,9 @@ export class ResourcePageState {
       error: () => {}
     });
 
-    // Carica lista prestazioni
-    const statusParam = this.serviceStatusFilter !== 'ALL' ? `?status=${this.serviceStatusFilter}` : '';
-    this.api.request<{ content: ServicePerformedItem[] } | ServicePerformedItem[]>('GET', `/api/admin/services${statusParam}`).subscribe({
+    // Carica lista prestazioni (size=1000 per caricare tutti gli elementi e filtrare lato client)
+    const statusParam = this.serviceStatusFilter !== 'ALL' ? `?status=${this.serviceStatusFilter}&size=1000` : '?size=1000';
+    this.api.request<{ content: ServicePerformedItem[], totalElements?: number } | ServicePerformedItem[]>('GET', `/api/admin/services${statusParam}`).subscribe({
       next: (services) => {
         const rawServices = Array.isArray(services) ? services : (services?.content ?? []);
         this.servicesPerformed = rawServices.map((s) => this.mapServiceFromBackend(s));
@@ -2361,14 +2365,22 @@ export class ResourcePageState {
     }
 
     this.filteredServices = filtered;
-    this.serviceStats = { ...this.serviceStats, filteredCount: filtered.length };
+    // Usa filteredCount dal server se i giorni non sono filtrati, altrimenti usa il conteggio locale
+    if (this.serviceDaysFilter === null && this.serviceStatusFilter === 'ALL') {
+      // Nessun filtro locale: usa il conteggio totale dal server
+    } else if (this.serviceDaysFilter !== null) {
+      // Filtro giorni applicato localmente: aggiorna conteggio locale
+      this.serviceStats = { ...this.serviceStats, filteredCount: filtered.length };
+    }
   }
 
   onServiceStatusFilterChange(): void {
-    this.updateFilteredServices();
+    this.pageState['adminServices'] = 1;
+    this.loadServicesPerformed();
   }
 
   onServiceDaysFilterChange(): void {
+    this.pageState['adminServices'] = 1;
     this.updateFilteredServices();
   }
 
@@ -2385,11 +2397,15 @@ export class ResourcePageState {
   }
 
   toggleAllServicesSelection(): void {
-    const pendingServices = this.filteredServices.filter(s => s.status === 'PENDING');
-    if (this.selectedServiceIds.size === pendingServices.length) {
-      this.selectedServiceIds.clear();
+    const start = this.getPageSliceStart('adminServices');
+    const end = start + this.pageSize;
+    const visibleServices = this.filteredServices.slice(start, end);
+    const visiblePending = visibleServices.filter(s => s.status === 'PENDING');
+    const allVisibleSelected = visiblePending.every(s => this.selectedServiceIds.has(s.id));
+    if (allVisibleSelected && visiblePending.length > 0) {
+      visiblePending.forEach(s => this.selectedServiceIds.delete(s.id));
     } else {
-      pendingServices.forEach(s => this.selectedServiceIds.add(s.id));
+      visiblePending.forEach(s => this.selectedServiceIds.add(s.id));
     }
   }
 
@@ -2424,6 +2440,7 @@ export class ResourcePageState {
     this.showServiceFreeModal = false;
     this.selectedService = null;
     this.serviceFreeReason = '';
+    this.servicesError = '';
   }
 
   // Converti in gratuito
@@ -2453,16 +2470,19 @@ export class ResourcePageState {
     this.selectedService = service;
     this.serviceEditForm = {
       amountCents: service.amountCents,
+      amountEur: service.amountCents ? service.amountCents / 100 : 0,
       patientName: service.patientName || '',
       patientEmail: service.patientEmail || '',
       notes: service.notes || ''
     };
+    this.servicesError = '';
     this.showServiceEditModal = true;
   }
 
   closeServiceEditModal(): void {
     this.showServiceEditModal = false;
     this.selectedService = null;
+    this.servicesError = '';
   }
 
   openServiceDetailModal(service: ServicePerformedItem): void {
@@ -2496,7 +2516,7 @@ export class ResourcePageState {
     this.servicesError = '';
 
     const payload = {
-      amountCents: this.serviceEditForm.amountCents,
+      amountCents: Math.round(this.serviceEditForm.amountEur * 100),
       patientName: this.serviceEditForm.patientName || null,
       patientEmail: this.serviceEditForm.patientEmail || null,
       notes: this.serviceEditForm.notes || null
@@ -2519,6 +2539,10 @@ export class ResourcePageState {
 
   // Elimina prestazione
   deleteService(service: ServicePerformedItem): void {
+    if (service.status === 'PAID') {
+      this.servicesError = `Impossibile eliminare la prestazione #${service.id}: prestazione già pagata.`;
+      return;
+    }
     if (!confirm(`Sei sicuro di voler eliminare la prestazione #${service.id}?`)) return;
     this.isLoading = true;
     this.servicesError = '';
@@ -2563,9 +2587,17 @@ export class ResourcePageState {
     this.isLoading = true;
     this.servicesError = '';
     const ids = Array.from(this.selectedServiceIds);
-    this.api.request<void>('POST', '/api/admin/services/bulk-reminders', ids).subscribe({
-      next: () => {
-        this.servicesSuccess = `Solleciti inviati a ${ids.length} pazienti.`;
+    this.api.request<{ sent: number; skipped: number }>('POST', '/api/admin/services/bulk-reminders', ids).subscribe({
+      next: (result) => {
+        const sent = result?.sent ?? 0;
+        const skipped = result?.skipped ?? 0;
+        if (sent > 0 && skipped > 0) {
+          this.servicesSuccess = `Solleciti inviati: ${sent} inviati, ${skipped} saltati (stato non valido o email mancante).`;
+        } else if (sent > 0) {
+          this.servicesSuccess = `Solleciti inviati con successo a ${sent} pazienti.`;
+        } else {
+          this.servicesSuccess = `Nessun sollecito inviato: ${skipped} prestazioni saltate (stato non valido o email mancante).`;
+        }
         this.selectedServiceIds.clear();
         this.isLoading = false;
         this.loadServicesPerformed();
@@ -2606,6 +2638,7 @@ export class ResourcePageState {
 
   getServiceDaysOverdue(service: ServicePerformedItem): number {
     if (!service.performedAt) return 0;
+    if (service.status === 'PAID' || service.status === 'FREE' || service.status === 'CANCELLED') return -1;
     const performedDate = new Date(service.performedAt);
     const today = new Date();
     const diffTime = today.getTime() - performedDate.getTime();
@@ -2655,24 +2688,24 @@ export class ResourcePageState {
   }
 
   submitNewPayment(): void {
+    const errors: string[] = [];
     if (!this.paymentForm.doctorId) {
-      this.paymentsError = 'Seleziona un medico.';
-      return;
+      errors.push('Seleziona un medico.');
     }
     if (!this.paymentForm.patientId) {
-      this.paymentsError = 'Seleziona un paziente.';
-      return;
+      errors.push('Seleziona un paziente.');
     }
     if (!this.paymentForm.service.trim()) {
-      this.paymentsError = 'Inserisci la descrizione della prestazione.';
-      return;
+      errors.push('Inserisci la descrizione della prestazione.');
     }
     if (!this.paymentForm.amount || this.paymentForm.amount <= 0) {
-      this.paymentsError = "Inserisci l'importo del pagamento.";
-      return;
+      errors.push("Inserisci l'importo del pagamento.");
     }
     if (!this.paymentForm.performedAt) {
-      this.paymentsError = 'Inserisci la data della prestazione.';
+      errors.push('Inserisci la data della prestazione.');
+    }
+    if (errors.length > 0) {
+      this.paymentsError = errors.join(' ');
       return;
     }
     this.isLoading = true;
