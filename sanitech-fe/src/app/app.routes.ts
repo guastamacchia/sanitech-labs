@@ -1,15 +1,21 @@
 import { Routes } from '@angular/router';
-import { PublicPageComponent } from './features/public/public-page.component';
-import { privateRoutes } from './features/private/private.routes';
-import { televisitRoutes } from './features/televisit/televisit.routes';
 
 export const routes: Routes = [
   {
     path: '',
-    component: PublicPageComponent
+    loadChildren: () => import('./public-portal/routes/public.routes')
+      .then(m => m.publicRoutes)
   },
-  ...privateRoutes,
-  ...televisitRoutes,
+  {
+    path: 'portal',
+    loadChildren: () => import('./private-portal/private.routes')
+      .then(m => m.portalRoutes)
+  },
+  {
+    path: 'televisit',
+    loadChildren: () => import('./private-portal/televisit/televisit.routes')
+      .then(m => m.televisitRoutes)
+  },
   {
     path: '**',
     redirectTo: ''

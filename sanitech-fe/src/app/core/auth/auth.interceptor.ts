@@ -2,19 +2,19 @@ import { HttpInterceptorFn, HttpErrorResponse, HttpRequest, HttpHandlerFn, HttpE
 import { inject } from '@angular/core';
 import { catchError, switchMap, throwError, from, Observable } from 'rxjs';
 import { AuthService } from './auth.service';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env/environment';
 
 let isRefreshing = false;
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
 
-  // Skip non-gateway requests
+  // Ignora le richieste che non sono dirette al gateway
   if (!req.url.startsWith(environment.gatewayUrl)) {
     return next(req);
   }
 
-  // Add token if available
+  // Aggiunge il token se disponibile
   const request = addToken(req, auth.accessToken);
 
   return next(request).pipe(
@@ -49,11 +49,11 @@ function handleUnauthorized(
     switchMap((success) => {
       isRefreshing = false;
       if (success) {
-        // Retry request with new token
+        // Ritenta la richiesta con il nuovo token
         const retryReq = addToken(req, auth.accessToken);
         return next(retryReq);
       } else {
-        // Refresh failed, logout
+        // Refresh fallito, esegui logout
         auth.logout();
         return throwError(() => new HttpErrorResponse({ status: 401, statusText: 'Unauthorized' }));
       }

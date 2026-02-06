@@ -6,5 +6,5 @@ export const environment = {
   realm: 'sanitech',
   clientId: 'sanitech-spa',
   scope: 'openid profile email',
-  recaptchaSiteKey: '' // Configure your reCAPTCHA v3 site key here
+  recaptchaSiteKey: '' // Configura qui la site key reCAPTCHA v3
 };

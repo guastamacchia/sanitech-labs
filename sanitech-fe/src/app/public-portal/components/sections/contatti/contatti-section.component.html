@@ -1,0 +1,86 @@
+<section id="contatti" class="py-5">
+  <div class="container">
+    <p class="section-title">Contatti</p>
+    <div class="row g-4">
+      <div class="col-12">
+        <div class="card card-glass bg-body-tertiary p-4">
+          <h5 class="fw-semibold mb-3">Scrivici per informazioni</h5>
+          <form (ngSubmit)="submitContact()" #contactFormRef="ngForm">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <input
+                  class="form-control"
+                  type="text"
+                  name="contactFullName"
+                  [(ngModel)]="contactForm.fullName"
+                  placeholder="Nome e cognome"
+                  required />
+              </div>
+              <div class="col-md-6">
+                <input
+                  class="form-control"
+                  type="email"
+                  name="contactEmail"
+                  [(ngModel)]="contactForm.email"
+                  placeholder="Email"
+                  required />
+              </div>
+              <div class="col-12">
+                <input
+                  class="form-control"
+                  type="text"
+                  name="contactSubject"
+                  [(ngModel)]="contactForm.subject"
+                  placeholder="Oggetto"
+                  required />
+              </div>
+              <div class="col-12">
+                <textarea
+                  class="form-control"
+                  rows="4"
+                  name="contactMessage"
+                  [(ngModel)]="contactForm.message"
+                  placeholder="Messaggio"
+                  required></textarea>
+              </div>
+              <div class="col-12" *ngIf="contactSuccess">
+                <div class="alert alert-success mb-0">{{ contactSuccess }}</div>
+              </div>
+              <div class="col-12 text-end">
+                <button class="btn btn-primary" type="submit" [disabled]="contactFormRef.invalid">
+                  Invia richiesta
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mt-4">
+      <div class="col-12">
+        <h5 class="fw-semibold mb-3">Le strutture del network Sanitech Labs</h5>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass p-3 h-100">
+          <h6 class="fw-semibold mb-2">Ospedale Centrale</h6>
+          <p class="text-muted small mb-2">Via della Salute 24, Milano</p>
+          <p class="text-muted small mb-0">Reparti: Cardiologia, Neurologia, Medicina Interna</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass p-3 h-100">
+          <h6 class="fw-semibold mb-2">Ospedale Nord</h6>
+          <p class="text-muted small mb-2">Via Lombardia 15, Monza</p>
+          <p class="text-muted small mb-0">Reparti: Ortopedia, Riabilitazione, Diagnostica</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-glass p-3 h-100">
+          <h6 class="fw-semibold mb-2">Clinica Sud</h6>
+          <p class="text-muted small mb-2">Via Roma 8, Pavia</p>
+          <p class="text-muted small mb-0">Reparti: Oncologia, Day Hospital, Ambulatori</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

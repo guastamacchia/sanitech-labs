@@ -1,7 +1,7 @@
 import { Injectable, Optional } from '@angular/core';
 import { AuthConfig, OAuthService, OAuthErrorEvent } from 'angular-oauth2-oidc';
 import { filter } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
+import { environment } from '@env/environment';
 
 const redirectBase = window.location.origin;
 
@@ -76,8 +76,8 @@ export class AuthService {
   }
 
   /**
-   * Attempts to refresh the access token using the refresh token.
-   * @returns Promise<boolean> - true if refresh was successful, false otherwise
+   * Tenta di rinnovare l'access token usando il refresh token.
+   * @returns Promise<boolean> - true se il rinnovo è riuscito, false altrimenti
    */
   async refreshToken(): Promise<boolean> {
     try {
@@ -160,7 +160,7 @@ export class AuthService {
       );
       keysToRemove.forEach((key) => localStorage.removeItem(key));
     } catch {
-      // Ignore storage access errors
+      // Ignora errori di accesso allo storage
     }
   }
 
