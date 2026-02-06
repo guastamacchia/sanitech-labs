@@ -12,6 +12,8 @@ import it.sanitech.scheduling.repositories.entities.*;
 import it.sanitech.scheduling.security.JwtClaimUtils;
 import it.sanitech.scheduling.services.dto.AppointmentDto;
 import it.sanitech.scheduling.services.dto.create.AppointmentCreateDto;
+import it.sanitech.scheduling.services.dto.update.AppointmentReassignDto;
+import it.sanitech.scheduling.services.dto.update.AppointmentRescheduleDto;
 import it.sanitech.scheduling.services.mapper.AppointmentMapper;
 import it.sanitech.scheduling.utilities.AppConstants;
 import io.github.resilience4j.bulkhead.annotation.Bulkhead;
@@ -253,6 +255,152 @@ public class AppointmentService {
                 notificationsPayload, AppConstants.Outbox.TOPIC_NOTIFICATIONS_EVENTS, auth);
 
         return appointmentMapper.toDto(saved);
+    }
+
+    /**
+     * Ripianifica un appuntamento spostando su un nuovo slot dello stesso medico.
+     */
+    @Transactional
+    public AppointmentDto reschedule(Long appointmentId, AppointmentRescheduleDto dto, Authentication auth) {
+        Appointment appt = appointments.findById(appointmentId)
+                .orElseThrow(() -> NotFoundException.of("Appointment", appointmentId));
+
+        if (appt.getStatus() != AppointmentStatus.BOOKED) {
+            throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_APPOINTMENT_NOT_BOOKED);
+        }
+        if (appt.getSlotId().equals(dto.newSlotId())) {
+            throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_SAME_SLOT);
+        }
+
+        Slot oldSlot = slots.findByIdForUpdate(appt.getSlotId())
+                .orElseThrow(() -> NotFoundException.of("Slot", appt.getSlotId()));
+        oldSlot.markAvailable();
+        slots.save(oldSlot);
+
+        Slot newSlot = slots.findByIdForUpdate(dto.newSlotId())
+                .orElseThrow(() -> NotFoundException.of("Slot", dto.newSlotId()));
+        if (newSlot.getStatus() != SlotStatus.AVAILABLE) {
+            throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_SLOT_NOT_AVAILABLE);
+        }
+        if (!newSlot.getDoctorId().equals(appt.getDoctorId())) {
+            throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_SLOT_DOCTOR_MISMATCH);
+        }
+        if (newSlot.getMode() != appt.getMode()) {
+            throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_SLOT_MODE_MISMATCH);
+        }
+        newSlot.markBooked();
+        slots.save(newSlot);
+
+        // Rilascia il vincolo unique slot_id su appuntamenti non-BOOKED che occupano ancora lo slot
+        appointments.findBySlotId(newSlot.getId()).ifPresent(stale -> {
+            if (stale.getStatus() != AppointmentStatus.BOOKED) {
+                stale.setSlotId(null);
+                appointments.saveAndFlush(stale);
+            }
+        });
+
+        appt.setSlotId(newSlot.getId());
+        appt.setStartAt(newSlot.getStartAt());
+        appt.setEndAt(newSlot.getEndAt());
+        Appointment saved = appointments.save(appt);
+
+        events.publish("APPOINTMENT", String.valueOf(saved.getId()), "APPOINTMENT_RESCHEDULED",
+                Map.of(
+                        "appointmentId", saved.getId(),
+                        "oldSlotId", oldSlot.getId(),
+                        "newSlotId", newSlot.getId(),
+                        "doctorId", saved.getDoctorId(),
+                        "oldStartAt", oldSlot.getStartAt().toString(),
+                        "newStartAt", newSlot.getStartAt().toString()
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
+
+        return appointmentMapper.toDto(saved);
+    }
+
+    /**
+     * Riassegna un appuntamento a un nuovo medico con un nuovo slot.
+     */
+    @Transactional
+    public AppointmentDto reassign(Long appointmentId, AppointmentReassignDto dto, Authentication auth) {
+        Appointment appt = appointments.findById(appointmentId)
+                .orElseThrow(() -> NotFoundException.of("Appointment", appointmentId));
+
+        if (appt.getStatus() != AppointmentStatus.BOOKED) {
+            throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_APPOINTMENT_NOT_BOOKED);
+        }
+
+        Slot oldSlot = slots.findByIdForUpdate(appt.getSlotId())
+                .orElseThrow(() -> NotFoundException.of("Slot", appt.getSlotId()));
+        oldSlot.markAvailable();
+        slots.save(oldSlot);
+
+        Slot newSlot = slots.findByIdForUpdate(dto.newSlotId())
+                .orElseThrow(() -> NotFoundException.of("Slot", dto.newSlotId()));
+        if (newSlot.getStatus() != SlotStatus.AVAILABLE) {
+            throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_SLOT_NOT_AVAILABLE);
+        }
+        if (!newSlot.getDoctorId().equals(dto.newDoctorId())) {
+            throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_NEW_DOCTOR_SLOT_MISMATCH);
+        }
+        if (newSlot.getMode() != appt.getMode()) {
+            throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_SLOT_MODE_MISMATCH);
+        }
+        newSlot.markBooked();
+        slots.save(newSlot);
+
+        // Rilascia il vincolo unique slot_id su appuntamenti non-BOOKED che occupano ancora lo slot
+        appointments.findBySlotId(newSlot.getId()).ifPresent(stale -> {
+            if (stale.getStatus() != AppointmentStatus.BOOKED) {
+                stale.setSlotId(null);
+                appointments.saveAndFlush(stale);
+            }
+        });
+
+        appt.setSlotId(newSlot.getId());
+        appt.setDoctorId(newSlot.getDoctorId());
+        appt.setDepartmentCode(newSlot.getDepartmentCode());
+        appt.setStartAt(newSlot.getStartAt());
+        appt.setEndAt(newSlot.getEndAt());
+        Appointment saved = appointments.save(appt);
+
+        events.publish("APPOINTMENT", String.valueOf(saved.getId()), "APPOINTMENT_REASSIGNED",
+                Map.of(
+                        "appointmentId", saved.getId(),
+                        "oldDoctorId", oldSlot.getDoctorId(),
+                        "newDoctorId", saved.getDoctorId(),
+                        "oldSlotId", oldSlot.getId(),
+                        "newSlotId", newSlot.getId(),
+                        "oldDepartmentCode", oldSlot.getDepartmentCode(),
+                        "newDepartmentCode", saved.getDepartmentCode()
+                ),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
+
+        return appointmentMapper.toDto(saved);
+    }
+
+    /**
+     * Elimina definitivamente un appuntamento. Solo per ADMIN e solo se non BOOKED.
+     */
+    @Transactional
+    public void forceDelete(Long appointmentId, Authentication auth) {
+        Appointment appt = appointments.findById(appointmentId)
+                .orElseThrow(() -> NotFoundException.of("Appointment", appointmentId));
+
+        if (appt.getStatus() == AppointmentStatus.BOOKED) {
+            throw new IllegalArgumentException("Non è possibile eliminare un appuntamento in stato BOOKED. Annullarlo prima.");
+        }
+
+        appointments.delete(appt);
+
+        events.publish(
+                "APPOINTMENT",
+                String.valueOf(appt.getId()),
+                "APPOINTMENT_DELETED",
+                Map.of("appointmentId", appt.getId(), "occurredAt", Instant.now().toString()),
+                AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
+                auth
+        );
     }
 
     private static Long resolvePatientId(Long patientIdFromBody, Authentication auth) {

@@ -27,6 +27,9 @@
         <button *ngIf="mode === 'admin-admissions'" class="btn btn-outline-primary" (click)="loadAdminAdmissions()" [disabled]="isLoading">
           <i class="bi bi-arrow-clockwise me-1"></i>Aggiorna
         </button>
+        <button *ngIf="mode === 'admin-in-person-visits'" class="btn btn-outline-primary" (click)="loadAdminInPersonVisits()" [disabled]="isLoading">
+          <i class="bi bi-arrow-clockwise me-1"></i>Aggiorna
+        </button>
         <button class="btn btn-outline-secondary" type="button" (click)="goToPortalHome()">
           <i class="bi bi-arrow-left me-1"></i>
           Torna indietro
@@ -3850,7 +3853,7 @@
 
       <!-- LAYOUT ADMIN NOTIFICHE -->
       <ng-template #adminNotificationsLayout>
-        <ng-container *ngIf="mode === 'admin-notifications'; else adminPaymentsLayout">
+        <ng-container *ngIf="mode === 'admin-notifications'; else adminInPersonVisitsLayout">
           <div class="row g-4">
             <div class="col-12">
               <div class="card card-glass mb-4">
@@ -4066,6 +4069,471 @@
               </div>
             </ng-container>
           </div>
+        </ng-container>
+      </ng-template>
+
+      <!-- LAYOUT ADMIN VISITE IN PRESENZA -->
+      <ng-template #adminInPersonVisitsLayout>
+        <ng-container *ngIf="mode === 'admin-in-person-visits'; else adminPaymentsLayout">
+          <div class="row g-4">
+            <!-- Statistiche rapide -->
+            <div class="col-12">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-primary">{{ inPersonVisiteTotali }}</div>
+                    <div class="small text-muted">Visite totali</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-success">{{ inPersonVisitePrenotateOggi }}</div>
+                    <div class="small text-muted">Prenotate oggi</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-info">{{ inPersonVisiteCompletate }}</div>
+                    <div class="small text-muted">Completate</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card card-glass text-center p-3">
+                    <div class="fs-2 fw-bold text-secondary">{{ inPersonVisiteCancellate }}</div>
+                    <div class="small text-muted">Annullate</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabella visite in presenza -->
+            <div class="col-12">
+              <div class="card card-glass">
+                <div class="card-body">
+                  <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                      <h5 class="fw-semibold mb-1">Visite in presenza</h5>
+                      <small class="text-muted">Gestione appuntamenti e completamento prestazioni</small>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                      <select class="form-select form-select-sm" style="width: auto;"
+                              [(ngModel)]="inPersonVisitStatusFilter"
+                              (ngModelChange)="onInPersonVisitStatusFilterChange()">
+                        <option value="ALL">Tutti gli stati</option>
+                        <option value="BOOKED">Prenotate</option>
+                        <option value="COMPLETED">Completate</option>
+                        <option value="CANCELLED">Annullate</option>
+                      </select>
+                      <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminInPersonVisitModal()">
+                        Nuova visita
+                      </button>
+                    </div>
+                  </div>
+                  <div class="alert alert-success py-2 small" *ngIf="inPersonVisitsSuccess">
+                    {{ inPersonVisitsSuccess }}
+                    <button type="button" class="btn-close btn-close-sm float-end" (click)="inPersonVisitsSuccess = ''"></button>
+                  </div>
+                  <div class="alert alert-danger py-2 small" *ngIf="inPersonVisitsError">
+                    {{ inPersonVisitsError }}
+                    <button type="button" class="btn-close btn-close-sm float-end" (click)="inPersonVisitsError = ''"></button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table align-middle table-hover">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Paziente</th>
+                          <th>Medico</th>
+                          <th>Reparto</th>
+                          <th>Data e ora</th>
+                          <th>Stato</th>
+                          <th>Motivo</th>
+                          <th>Azioni</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let visit of filteredInPersonVisits | slice:getPageSliceStart('adminInPersonVisits'):getPageSliceEnd('adminInPersonVisits')"
+                            [class.table-success]="visit.status === 'COMPLETED'"
+                            [class.table-warning]="visit.status === 'BOOKED'"
+                            [class.table-secondary]="visit.status === 'CANCELLED'">
+                          <td>{{ visit.id }}</td>
+                          <td>{{ getInPersonVisitPatientName(visit) }}</td>
+                          <td>{{ getInPersonVisitDoctorName(visit) }}</td>
+                          <td>{{ getInPersonVisitDepartmentName(visit.departmentCode) }}</td>
+                          <td>{{ formatInPersonVisitDate(visit.startAt) }}</td>
+                          <td>
+                            <span class="badge"
+                                  [class.bg-warning]="visit.status === 'BOOKED'"
+                                  [class.bg-success]="visit.status === 'COMPLETED'"
+                                  [class.bg-secondary]="visit.status === 'CANCELLED'">
+                              {{ getInPersonVisitStatusLabel(visit.status) }}
+                            </span>
+                          </td>
+                          <td>
+                            <span class="small text-muted">{{ visit.reason || '-' }}</span>
+                          </td>
+                          <td>
+                            <div class="d-flex flex-wrap gap-1">
+                              <button class="btn btn-outline-primary btn-sm" type="button" title="Ripianifica visita"
+                                      (click)="openRescheduleInPersonVisitModal(visit)"
+                                      [disabled]="visit.status !== 'BOOKED'">
+                                <i class="bi bi-calendar2-range"></i>
+                              </button>
+                              <button class="btn btn-outline-info btn-sm" type="button" title="Cambio medico"
+                                      (click)="openReassignInPersonVisitModal(visit)"
+                                      [disabled]="visit.status !== 'BOOKED'">
+                                <i class="bi bi-person-lines-fill"></i>
+                              </button>
+                              <button class="btn btn-outline-success btn-sm" type="button" title="Completa visita (genera pagamento)"
+                                      (click)="openCompleteInPersonVisitModal(visit)"
+                                      [disabled]="visit.status !== 'BOOKED'">
+                                <i class="bi bi-check-circle"></i>
+                              </button>
+                              <button class="btn btn-outline-dark btn-sm" type="button" title="Annulla visita"
+                                      (click)="openCancelInPersonVisitModal(visit)"
+                                      [disabled]="visit.status !== 'BOOKED'">
+                                <i class="bi bi-x-circle"></i>
+                              </button>
+                              <button class="btn btn-outline-danger btn-sm" type="button" title="Elimina visita"
+                                      (click)="openDeleteInPersonVisitModal(visit)"
+                                      [disabled]="visit.status === 'BOOKED'">
+                                <i class="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr *ngIf="!filteredInPersonVisits.length">
+                          <td colspan="8" class="text-center text-muted">Nessuna visita in presenza trovata.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <ng-container *ngTemplateOutlet="paginationFooter; context: { key: 'adminInPersonVisits', total: filteredInPersonVisits.length }"></ng-container>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal Completa Visita -->
+          <ng-container *ngIf="showCompleteInPersonVisitModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeCompleteInPersonVisitModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="completeInPersonVisitModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="completeInPersonVisitModalTitle">Completa visita</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeCompleteInPersonVisitModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Sei sicuro di voler completare questa visita? Questa azione generera' automaticamente un evento di pagamento.</p>
+                    <div class="alert alert-info py-2" *ngIf="selectedInPersonVisit">
+                      <small>
+                        <strong>Paziente:</strong> {{ getInPersonVisitPatientName(selectedInPersonVisit) }}<br>
+                        <strong>Medico:</strong> {{ getInPersonVisitDoctorName(selectedInPersonVisit) }}<br>
+                        <strong>Reparto:</strong> {{ getInPersonVisitDepartmentName(selectedInPersonVisit.departmentCode) }}<br>
+                        <strong>Data:</strong> {{ formatInPersonVisitDate(selectedInPersonVisit.startAt) }}
+                      </small>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="inPersonVisitsError">{{ inPersonVisitsError }}</div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeCompleteInPersonVisitModal()">Annulla</button>
+                    <button type="button" class="btn btn-success" (click)="confirmCompleteInPersonVisit()" [disabled]="isLoading">
+                      {{ isLoading ? 'Completamento...' : 'Completa e genera pagamento' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Modal Annulla Visita -->
+          <ng-container *ngIf="showCancelInPersonVisitModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeCancelInPersonVisitModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cancelInPersonVisitModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="cancelInPersonVisitModalTitle">Annulla visita</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeCancelInPersonVisitModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Sei sicuro di voler annullare questa visita?</p>
+                    <div class="alert alert-secondary py-2" *ngIf="selectedInPersonVisit">
+                      <small>
+                        <strong>Paziente:</strong> {{ getInPersonVisitPatientName(selectedInPersonVisit) }}<br>
+                        <strong>Medico:</strong> {{ getInPersonVisitDoctorName(selectedInPersonVisit) }}<br>
+                        <strong>Reparto:</strong> {{ getInPersonVisitDepartmentName(selectedInPersonVisit.departmentCode) }}<br>
+                        <strong>Data:</strong> {{ formatInPersonVisitDate(selectedInPersonVisit.startAt) }}
+                      </small>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="inPersonVisitsError">{{ inPersonVisitsError }}</div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeCancelInPersonVisitModal()">Chiudi</button>
+                    <button type="button" class="btn btn-dark" (click)="confirmCancelInPersonVisit()" [disabled]="isLoading">
+                      {{ isLoading ? 'Annullamento...' : 'Annulla visita' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Modal Elimina Visita -->
+          <ng-container *ngIf="showDeleteInPersonVisitModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeDeleteInPersonVisitModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="deleteInPersonVisitModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="deleteInPersonVisitModalTitle">Elimina visita</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDeleteInPersonVisitModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Sei sicuro di voler eliminare questa visita? L'azione e' irreversibile.</p>
+                    <div class="alert alert-warning py-2" *ngIf="selectedInPersonVisit">
+                      <small>
+                        <strong>Paziente:</strong> {{ getInPersonVisitPatientName(selectedInPersonVisit) }}<br>
+                        <strong>Medico:</strong> {{ getInPersonVisitDoctorName(selectedInPersonVisit) }}<br>
+                        <strong>Reparto:</strong> {{ getInPersonVisitDepartmentName(selectedInPersonVisit.departmentCode) }}<br>
+                        <strong>Data:</strong> {{ formatInPersonVisitDate(selectedInPersonVisit.startAt) }}
+                      </small>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="inPersonVisitsError">{{ inPersonVisitsError }}</div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeDeleteInPersonVisitModal()">Annulla</button>
+                    <button type="button" class="btn btn-danger" (click)="confirmDeleteInPersonVisit()" [disabled]="isLoading">
+                      {{ isLoading ? 'Eliminazione...' : 'Elimina' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Modal Ripianifica Visita -->
+          <ng-container *ngIf="showRescheduleInPersonVisitModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeRescheduleInPersonVisitModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="rescheduleInPersonVisitModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="rescheduleInPersonVisitModalTitle">Ripianifica visita</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeRescheduleInPersonVisitModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="alert alert-info py-2" *ngIf="selectedInPersonVisit">
+                      <small>
+                        <strong>Paziente:</strong> {{ getInPersonVisitPatientName(selectedInPersonVisit) }}<br>
+                        <strong>Medico:</strong> {{ getInPersonVisitDoctorName(selectedInPersonVisit) }}<br>
+                        <strong>Reparto:</strong> {{ getInPersonVisitDepartmentName(selectedInPersonVisit.departmentCode) }}<br>
+                        <strong>Data attuale:</strong> {{ formatInPersonVisitDate(selectedInPersonVisit.startAt) }}
+                      </small>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Nuovo slot <span class="text-danger">*</span></label>
+                      <select class="form-select" [(ngModel)]="rescheduleSlotId">
+                        <option [ngValue]="null" disabled>-- Seleziona nuovo slot --</option>
+                        <option *ngFor="let slot of rescheduleSlotsFiltered" [ngValue]="slot.id">{{ formatSlotLabel(slot) }}</option>
+                      </select>
+                      <div class="form-text" *ngIf="!rescheduleSlotsFiltered.length">Nessuno slot disponibile per questo medico.</div>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="inPersonVisitsError">{{ inPersonVisitsError }}</div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeRescheduleInPersonVisitModal()">Annulla</button>
+                    <button type="button" class="btn btn-primary" (click)="confirmRescheduleInPersonVisit()" [disabled]="isLoading || !rescheduleSlotId">
+                      {{ isLoading ? 'Ripianificazione...' : 'Ripianifica' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Modal Cambio Medico -->
+          <ng-container *ngIf="showReassignInPersonVisitModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeReassignInPersonVisitModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="reassignInPersonVisitModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="reassignInPersonVisitModalTitle">Cambio medico</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeReassignInPersonVisitModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="alert alert-info py-2" *ngIf="selectedInPersonVisit">
+                      <small>
+                        <strong>Paziente:</strong> {{ getInPersonVisitPatientName(selectedInPersonVisit) }}<br>
+                        <strong>Medico attuale:</strong> {{ getInPersonVisitDoctorName(selectedInPersonVisit) }}<br>
+                        <strong>Reparto attuale:</strong> {{ getInPersonVisitDepartmentName(selectedInPersonVisit.departmentCode) }}<br>
+                        <strong>Data attuale:</strong> {{ formatInPersonVisitDate(selectedInPersonVisit.startAt) }}
+                      </small>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Nuovo medico <span class="text-danger">*</span></label>
+                      <select class="form-select" [(ngModel)]="reassignDoctorId" (ngModelChange)="onReassignDoctorChange()">
+                        <option [ngValue]="null" disabled>-- Seleziona medico --</option>
+                        <option *ngFor="let doc of doctors" [ngValue]="doc.id">{{ doc.firstName }} {{ doc.lastName }} - {{ doc.specialty }}</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Nuovo slot <span class="text-danger">*</span></label>
+                      <select class="form-select" [(ngModel)]="reassignSlotId" [disabled]="!reassignDoctorId">
+                        <option [ngValue]="null" disabled>-- Seleziona slot --</option>
+                        <option *ngFor="let slot of reassignSlotsFiltered" [ngValue]="slot.id">{{ formatSlotLabel(slot) }}</option>
+                      </select>
+                      <div class="form-text" *ngIf="reassignDoctorId && !reassignSlotsFiltered.length">Nessuno slot disponibile per questo medico.</div>
+                    </div>
+                    <div class="alert alert-danger py-2" *ngIf="inPersonVisitsError">{{ inPersonVisitsError }}</div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" (click)="closeReassignInPersonVisitModal()">Annulla</button>
+                    <button type="button" class="btn btn-info" (click)="confirmReassignInPersonVisit()" [disabled]="isLoading || !reassignDoctorId || !reassignSlotId">
+                      {{ isLoading ? 'Riassegnazione...' : 'Riassegna' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Modal Nuova Visita in Presenza -->
+          <ng-container *ngIf="showAdminInPersonVisitModal">
+            <div
+              class="modal-backdrop fade show"
+              style="position: fixed; inset: 0; z-index: 1050;"
+              (click)="closeAdminInPersonVisitModal()"></div>
+            <div
+              class="modal d-flex align-items-center justify-content-center"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="adminInPersonVisitModalTitle"
+              style="position: fixed; inset: 0; z-index: 1055;">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="adminInPersonVisitModalTitle">Pianifica visita in presenza</h5>
+                    <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminInPersonVisitModal()"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form (ngSubmit)="submitInPersonVisit()" #adminInPersonVisitFormRef="ngForm">
+                      <!-- Riga 1: Struttura e Reparto -->
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Struttura <span class="text-danger">*</span></label>
+                          <select class="form-select" name="inPersonVisitFacility" [(ngModel)]="inPersonVisitForm.facilityCode" (ngModelChange)="onInPersonVisitFacilityChange()" required>
+                            <option value="" disabled>Seleziona struttura</option>
+                            <option *ngFor="let facility of facilities" [value]="facility.code">{{ facility.name }}</option>
+                          </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Reparto <span class="text-danger">*</span></label>
+                          <select class="form-select" name="inPersonVisitDepartment" [(ngModel)]="inPersonVisitForm.department" (ngModelChange)="onInPersonVisitDepartmentChange()" required [disabled]="!inPersonVisitForm.facilityCode">
+                            <option value="" disabled>Seleziona reparto</option>
+                            <option *ngFor="let dept of inPersonVisitDepartmentsFiltered" [value]="dept.code">{{ dept.name }}</option>
+                          </select>
+                        </div>
+                      </div>
+                      <!-- Riga 2: Medico e Slot -->
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Medico <span class="text-danger">*</span></label>
+                          <select class="form-select" name="inPersonVisitDoctor" [(ngModel)]="inPersonVisitForm.doctorId" (ngModelChange)="onInPersonVisitDoctorChange()" required [disabled]="!inPersonVisitForm.department">
+                            <option [ngValue]="null" disabled>Seleziona medico</option>
+                            <option *ngFor="let doctor of inPersonVisitDoctorsFiltered" [ngValue]="doctor.id">
+                              {{ doctor.firstName }} {{ doctor.lastName }}
+                            </option>
+                          </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Slot disponibile <span class="text-danger">*</span></label>
+                          <select class="form-select" name="inPersonVisitSlot" [(ngModel)]="inPersonVisitForm.slotId" required [disabled]="!inPersonVisitForm.doctorId">
+                            <option [ngValue]="null" disabled>Seleziona slot</option>
+                            <option *ngFor="let slot of inPersonVisitSlotsFiltered" [ngValue]="slot.id">
+                              {{ formatSlotLabel(slot) }}
+                            </option>
+                          </select>
+                          <small class="text-muted" *ngIf="inPersonVisitForm.doctorId && inPersonVisitSlotsFiltered.length === 0">
+                            Nessuno slot disponibile per questo medico.
+                          </small>
+                        </div>
+                      </div>
+                      <!-- Riga 3: Paziente e Motivo -->
+                      <div class="row">
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Paziente <span class="text-danger">*</span></label>
+                          <select class="form-select" name="inPersonVisitPatient" [(ngModel)]="inPersonVisitForm.patientId" required [disabled]="!inPersonVisitForm.doctorId">
+                            <option [ngValue]="null" disabled>Seleziona paziente</option>
+                            <option *ngFor="let patient of inPersonVisitPatientsFiltered" [ngValue]="patient.id">
+                              {{ patient.firstName }} {{ patient.lastName }}
+                            </option>
+                          </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                          <label class="form-label">Motivo (opzionale)</label>
+                          <input class="form-control" type="text" name="inPersonVisitReason" [(ngModel)]="inPersonVisitForm.reason" maxlength="500" placeholder="Motivo della visita" />
+                        </div>
+                      </div>
+                      <div class="alert alert-info py-2">
+                        <small>Una volta completata la visita dal medico, verra' generato automaticamente un evento di pagamento.</small>
+                      </div>
+                      <div class="alert alert-danger py-2" *ngIf="inPersonVisitsError">{{ inPersonVisitsError }}</div>
+                      <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="closeAdminInPersonVisitModal()">Annulla</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="adminInPersonVisitFormRef.invalid || isLoading">
+                          {{ isLoading ? 'Prenotazione...' : 'Prenota visita' }}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
         </ng-container>
       </ng-template>
 

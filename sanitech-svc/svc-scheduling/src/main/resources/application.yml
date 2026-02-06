@@ -14,6 +14,13 @@ spring:
     active: "@spring.active.profile@"
 
   # =========================
+  # Web / MVC
+  # =========================
+  web:
+    resources:
+      add-mappings: false
+
+  # =========================
   # Database (PostgreSQL)
   # =========================
   datasource:

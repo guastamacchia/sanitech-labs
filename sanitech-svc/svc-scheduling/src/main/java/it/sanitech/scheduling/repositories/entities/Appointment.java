@@ -28,7 +28,7 @@ public class Appointment {
     private Long id;
 
     /** Slot prenotato (vincolo UNIQUE a livello DB: uno slot → al più un appuntamento). */
-    @Column(name = "slot_id", nullable = false, unique = true)
+    @Column(name = "slot_id", unique = true)
     private Long slotId;
 
     /** Identificativo paziente (reference ID, gestito da Directory). */

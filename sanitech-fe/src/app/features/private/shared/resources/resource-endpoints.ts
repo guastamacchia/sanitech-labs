@@ -177,6 +177,34 @@ export const directoryEndpoints = [
   }
 ];
 
+export const inPersonVisitsEndpoints = [
+  {
+    label: 'Lista appuntamenti',
+    method: 'GET',
+    path: '/api/appointments'
+  },
+  {
+    label: 'Prenota appuntamento',
+    method: 'POST',
+    path: '/api/appointments'
+  },
+  {
+    label: 'Completa appuntamento',
+    method: 'POST',
+    path: '/api/appointments/{id}/complete'
+  },
+  {
+    label: 'Ripianifica appuntamento',
+    method: 'PATCH',
+    path: '/api/appointments/{id}/reschedule'
+  },
+  {
+    label: 'Cambio medico appuntamento',
+    method: 'PATCH',
+    path: '/api/appointments/{id}/reassign'
+  }
+];
+
 export const auditEndpoints = [
   {
     label: 'Audit trail',

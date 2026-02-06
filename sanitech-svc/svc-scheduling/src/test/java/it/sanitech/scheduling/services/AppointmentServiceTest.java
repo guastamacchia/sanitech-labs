@@ -18,6 +18,8 @@ import it.sanitech.scheduling.repositories.entities.SlotStatus;
 import it.sanitech.scheduling.repositories.entities.VisitMode;
 import it.sanitech.scheduling.services.dto.AppointmentDto;
 import it.sanitech.scheduling.services.dto.create.AppointmentCreateDto;
+import it.sanitech.scheduling.services.dto.update.AppointmentReassignDto;
+import it.sanitech.scheduling.services.dto.update.AppointmentRescheduleDto;
 import it.sanitech.scheduling.services.mapper.AppointmentMapper;
 import it.sanitech.scheduling.utilities.AppConstants;
 import java.time.Instant;
@@ -187,6 +189,189 @@ class AppointmentServiceTest {
 
         assertThatThrownBy(() -> service.cancel(99L, auth))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    // ── Reschedule tests ──
+
+    @Test
+    void rescheduleMovesToNewSlotAndPublishesEvent() {
+        AppointmentRepository appointments = Mockito.mock(AppointmentRepository.class);
+        SlotRepository slots = Mockito.mock(SlotRepository.class);
+        AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
+        DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
+
+        Appointment appt = Appointment.builder()
+                .id(60L).slotId(11L).patientId(77L).doctorId(22L)
+                .departmentCode("CARDIO").mode(VisitMode.IN_PERSON)
+                .startAt(Instant.parse("2024-01-01T10:00:00Z")).endAt(Instant.parse("2024-01-01T10:30:00Z"))
+                .status(AppointmentStatus.BOOKED).build();
+        Slot oldSlot = Slot.builder().id(11L).doctorId(22L).departmentCode("CARDIO")
+                .mode(VisitMode.IN_PERSON).status(SlotStatus.BOOKED)
+                .startAt(Instant.parse("2024-01-01T10:00:00Z")).endAt(Instant.parse("2024-01-01T10:30:00Z")).build();
+        Slot newSlot = Slot.builder().id(12L).doctorId(22L).departmentCode("CARDIO")
+                .mode(VisitMode.IN_PERSON).status(SlotStatus.AVAILABLE)
+                .startAt(Instant.parse("2024-01-02T09:00:00Z")).endAt(Instant.parse("2024-01-02T09:30:00Z")).build();
+
+        when(appointments.findById(60L)).thenReturn(Optional.of(appt));
+        when(slots.findByIdForUpdate(11L)).thenReturn(Optional.of(oldSlot));
+        when(slots.findByIdForUpdate(12L)).thenReturn(Optional.of(newSlot));
+        when(slots.save(any(Slot.class))).thenAnswer(i -> i.getArgument(0));
+        when(appointments.save(any(Appointment.class))).thenAnswer(i -> i.getArgument(0));
+        when(mapper.toDto(any(Appointment.class))).thenAnswer(i -> toDto(i.getArgument(0)));
+
+        JwtAuthenticationToken auth = adminAuth();
+        AppointmentDto result = service.reschedule(60L, new AppointmentRescheduleDto(12L), auth);
+
+        assertThat(result.slotId()).isEqualTo(12L);
+        assertThat(result.startAt()).isEqualTo(Instant.parse("2024-01-02T09:00:00Z"));
+        assertThat(oldSlot.getStatus()).isEqualTo(SlotStatus.AVAILABLE);
+        assertThat(newSlot.getStatus()).isEqualTo(SlotStatus.BOOKED);
+        verify(events).publish(eq("APPOINTMENT"), eq("60"), eq("APPOINTMENT_RESCHEDULED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
+    }
+
+    @Test
+    void rescheduleRejectsNonBookedAppointment() {
+        AppointmentRepository appointments = Mockito.mock(AppointmentRepository.class);
+        SlotRepository slots = Mockito.mock(SlotRepository.class);
+        AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
+        DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
+
+        Appointment appt = Appointment.builder().id(60L).slotId(11L).status(AppointmentStatus.CANCELLED).build();
+        when(appointments.findById(60L)).thenReturn(Optional.of(appt));
+
+        assertThatThrownBy(() -> service.reschedule(60L, new AppointmentRescheduleDto(12L), adminAuth()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(AppConstants.ErrorMessage.MSG_APPOINTMENT_NOT_BOOKED);
+    }
+
+    @Test
+    void rescheduleRejectsSameSlot() {
+        AppointmentRepository appointments = Mockito.mock(AppointmentRepository.class);
+        SlotRepository slots = Mockito.mock(SlotRepository.class);
+        AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
+        DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
+
+        Appointment appt = Appointment.builder().id(60L).slotId(11L).status(AppointmentStatus.BOOKED).build();
+        when(appointments.findById(60L)).thenReturn(Optional.of(appt));
+
+        assertThatThrownBy(() -> service.reschedule(60L, new AppointmentRescheduleDto(11L), adminAuth()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(AppConstants.ErrorMessage.MSG_SAME_SLOT);
+    }
+
+    @Test
+    void rescheduleRejectsDifferentDoctor() {
+        AppointmentRepository appointments = Mockito.mock(AppointmentRepository.class);
+        SlotRepository slots = Mockito.mock(SlotRepository.class);
+        AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
+        DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
+
+        Appointment appt = Appointment.builder().id(60L).slotId(11L).doctorId(22L)
+                .mode(VisitMode.IN_PERSON).status(AppointmentStatus.BOOKED).build();
+        Slot oldSlot = Slot.builder().id(11L).doctorId(22L).status(SlotStatus.BOOKED).build();
+        Slot newSlot = Slot.builder().id(12L).doctorId(99L).mode(VisitMode.IN_PERSON)
+                .status(SlotStatus.AVAILABLE).build();
+
+        when(appointments.findById(60L)).thenReturn(Optional.of(appt));
+        when(slots.findByIdForUpdate(11L)).thenReturn(Optional.of(oldSlot));
+        when(slots.findByIdForUpdate(12L)).thenReturn(Optional.of(newSlot));
+        when(slots.save(any(Slot.class))).thenAnswer(i -> i.getArgument(0));
+
+        assertThatThrownBy(() -> service.reschedule(60L, new AppointmentRescheduleDto(12L), adminAuth()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(AppConstants.ErrorMessage.MSG_SLOT_DOCTOR_MISMATCH);
+    }
+
+    // ── Reassign tests ──
+
+    @Test
+    void reassignMovesToNewDoctorAndPublishesEvent() {
+        AppointmentRepository appointments = Mockito.mock(AppointmentRepository.class);
+        SlotRepository slots = Mockito.mock(SlotRepository.class);
+        AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
+        DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
+
+        Appointment appt = Appointment.builder()
+                .id(60L).slotId(11L).patientId(77L).doctorId(22L)
+                .departmentCode("CARDIO").mode(VisitMode.IN_PERSON)
+                .startAt(Instant.parse("2024-01-01T10:00:00Z")).endAt(Instant.parse("2024-01-01T10:30:00Z"))
+                .status(AppointmentStatus.BOOKED).build();
+        Slot oldSlot = Slot.builder().id(11L).doctorId(22L).departmentCode("CARDIO")
+                .mode(VisitMode.IN_PERSON).status(SlotStatus.BOOKED)
+                .startAt(Instant.parse("2024-01-01T10:00:00Z")).endAt(Instant.parse("2024-01-01T10:30:00Z")).build();
+        Slot newSlot = Slot.builder().id(20L).doctorId(33L).departmentCode("NEURO")
+                .mode(VisitMode.IN_PERSON).status(SlotStatus.AVAILABLE)
+                .startAt(Instant.parse("2024-01-03T14:00:00Z")).endAt(Instant.parse("2024-01-03T14:30:00Z")).build();
+
+        when(appointments.findById(60L)).thenReturn(Optional.of(appt));
+        when(slots.findByIdForUpdate(11L)).thenReturn(Optional.of(oldSlot));
+        when(slots.findByIdForUpdate(20L)).thenReturn(Optional.of(newSlot));
+        when(slots.save(any(Slot.class))).thenAnswer(i -> i.getArgument(0));
+        when(appointments.save(any(Appointment.class))).thenAnswer(i -> i.getArgument(0));
+        when(mapper.toDto(any(Appointment.class))).thenAnswer(i -> toDto(i.getArgument(0)));
+
+        JwtAuthenticationToken auth = adminAuth();
+        AppointmentDto result = service.reassign(60L, new AppointmentReassignDto(33L, 20L), auth);
+
+        assertThat(result.doctorId()).isEqualTo(33L);
+        assertThat(result.departmentCode()).isEqualTo("NEURO");
+        assertThat(result.slotId()).isEqualTo(20L);
+        assertThat(result.startAt()).isEqualTo(Instant.parse("2024-01-03T14:00:00Z"));
+        assertThat(oldSlot.getStatus()).isEqualTo(SlotStatus.AVAILABLE);
+        assertThat(newSlot.getStatus()).isEqualTo(SlotStatus.BOOKED);
+        verify(events).publish(eq("APPOINTMENT"), eq("60"), eq("APPOINTMENT_REASSIGNED"), any(), eq("audits.events"), (org.springframework.security.core.Authentication) any());
+    }
+
+    @Test
+    void reassignRejectsNonBookedAppointment() {
+        AppointmentRepository appointments = Mockito.mock(AppointmentRepository.class);
+        SlotRepository slots = Mockito.mock(SlotRepository.class);
+        AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
+        DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
+
+        Appointment appt = Appointment.builder().id(60L).slotId(11L).status(AppointmentStatus.COMPLETED).build();
+        when(appointments.findById(60L)).thenReturn(Optional.of(appt));
+
+        assertThatThrownBy(() -> service.reassign(60L, new AppointmentReassignDto(33L, 20L), adminAuth()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(AppConstants.ErrorMessage.MSG_APPOINTMENT_NOT_BOOKED);
+    }
+
+    @Test
+    void reassignRejectsDoctorSlotMismatch() {
+        AppointmentRepository appointments = Mockito.mock(AppointmentRepository.class);
+        SlotRepository slots = Mockito.mock(SlotRepository.class);
+        AppointmentMapper mapper = Mockito.mock(AppointmentMapper.class);
+        DomainEventPublisher events = Mockito.mock(DomainEventPublisher.class);
+        it.sanitech.scheduling.clients.DirectoryClient directoryClient = Mockito.mock(it.sanitech.scheduling.clients.DirectoryClient.class);
+        AppointmentService service = new AppointmentService(appointments, slots, mapper, events, directoryClient);
+
+        Appointment appt = Appointment.builder().id(60L).slotId(11L).doctorId(22L)
+                .mode(VisitMode.IN_PERSON).status(AppointmentStatus.BOOKED).build();
+        Slot oldSlot = Slot.builder().id(11L).doctorId(22L).status(SlotStatus.BOOKED).build();
+        Slot newSlot = Slot.builder().id(20L).doctorId(44L).mode(VisitMode.IN_PERSON)
+                .status(SlotStatus.AVAILABLE).build();
+
+        when(appointments.findById(60L)).thenReturn(Optional.of(appt));
+        when(slots.findByIdForUpdate(11L)).thenReturn(Optional.of(oldSlot));
+        when(slots.findByIdForUpdate(20L)).thenReturn(Optional.of(newSlot));
+        when(slots.save(any(Slot.class))).thenAnswer(i -> i.getArgument(0));
+
+        assertThatThrownBy(() -> service.reassign(60L, new AppointmentReassignDto(33L, 20L), adminAuth()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage(AppConstants.ErrorMessage.MSG_NEW_DOCTOR_SLOT_MISMATCH);
     }
 
     private static JwtAuthenticationToken patientAuth(Long patientId) {

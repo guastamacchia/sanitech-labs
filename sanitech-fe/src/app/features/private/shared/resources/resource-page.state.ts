@@ -28,6 +28,31 @@ interface SchedulingAppointment {
   status: string;
 }
 
+// Allineato a AppointmentDto backend (per admin visite in presenza)
+interface InPersonVisitItem {
+  id: number;
+  slotId: number;
+  patientId: number;
+  doctorId: number;
+  departmentCode: string;
+  mode: 'IN_PERSON' | 'TELEVISIT';
+  startAt: string;
+  endAt: string;
+  status: 'BOOKED' | 'COMPLETED' | 'CANCELLED';
+  reason?: string;
+}
+
+// Slot disponibile per prenotazione visita in presenza
+interface AvailableSlotItem {
+  id: number;
+  doctorId: number;
+  departmentCode: string;
+  mode: string;
+  startAt: string;
+  endAt: string;
+  status: string;
+}
+
 interface DocumentItem {
   id: number;
   patientId: number;
@@ -427,7 +452,8 @@ export class ResourcePageState {
     | 'admin-televisit'
     | 'admin-admissions'
     | 'admin-notifications'
-    | 'admin-payments' = 'api';
+    | 'admin-payments'
+    | 'admin-in-person-visits' = 'api';
   slots: SchedulingSlot[] = [];
   appointments: SchedulingAppointment[] = [];
   schedulingError = '';
@@ -637,6 +663,34 @@ export class ResourcePageState {
     url: string;
     token: string;
   } | null = null;
+  // Visite in presenza (admin)
+  inPersonVisits: InPersonVisitItem[] = [];
+  filteredInPersonVisits: InPersonVisitItem[] = [];
+  inPersonVisitsError = '';
+  inPersonVisitsSuccess = '';
+  inPersonVisitStatusFilter: 'ALL' | 'BOOKED' | 'COMPLETED' | 'CANCELLED' = 'ALL';
+  showAdminInPersonVisitModal = false;
+  showCompleteInPersonVisitModal = false;
+  showCancelInPersonVisitModal = false;
+  showDeleteInPersonVisitModal = false;
+  showRescheduleInPersonVisitModal = false;
+  showReassignInPersonVisitModal = false;
+  selectedInPersonVisit: InPersonVisitItem | null = null;
+  rescheduleSlotId: number | null = null;
+  rescheduleSlotsFiltered: AvailableSlotItem[] = [];
+  reassignDoctorId: number | null = null;
+  reassignSlotId: number | null = null;
+  reassignSlotsFiltered: AvailableSlotItem[] = [];
+  inPersonVisitForm = {
+    facilityCode: '',
+    department: '',
+    doctorId: null as number | null,
+    patientId: null as number | null,
+    slotId: null as number | null,
+    reason: ''
+  };
+  inPersonVisitPatientsFiltered: PatientItem[] = [];
+  inPersonVisitSlotsFiltered: AvailableSlotItem[] = [];
   showAdminAdmissionModal = false;
   // Modale cambia referente
   showChangeReferentModal = false;
@@ -761,7 +815,8 @@ export class ResourcePageState {
         | 'admin-televisit'
         | 'admin-admissions'
         | 'admin-notifications'
-        | 'admin-payments') ??
+        | 'admin-payments'
+        | 'admin-in-person-visits') ??
       'api';
     this.endpoints = (data['endpoints'] as ResourceEndpoint[]) ?? [];
     this.selectedEndpoint = this.endpoints[0];
@@ -820,6 +875,9 @@ export class ResourcePageState {
       this.loadServicesPerformed();
       this.loadDoctors();
     }
+    if (this.mode === 'admin-in-person-visits') {
+      this.loadAdminInPersonVisits();
+    }
   }
 
   selectEndpoint(endpoint: ResourceEndpoint): void {
@@ -871,6 +929,9 @@ export class ResourcePageState {
     if (this.mode === 'admin-payments') {
       this.loadPayments();
       this.loadServicesPerformed();
+    }
+    if (this.mode === 'admin-in-person-visits') {
+      this.loadAdminInPersonVisits();
     }
   }
 
@@ -4882,5 +4943,434 @@ export class ResourcePageState {
       return '/api/consents/me';
     }
     return null;
+  }
+
+  // ===== VISITE IN PRESENZA (ADMIN) =====
+
+  loadAdminInPersonVisits(): void {
+    this.inPersonVisitsError = '';
+    this.isLoading = true;
+    this.loadPatients();
+    this.loadDoctors();
+    this.loadFacilities();
+    this.loadDepartments();
+    this.api.request<SpringPage<InPersonVisitItem>>('GET', '/api/appointments?size=200').subscribe({
+      next: (response) => {
+        this.inPersonVisits = (response.content ?? []).filter(v => v.mode === 'IN_PERSON');
+        this.applyInPersonVisitFilter();
+        this.isLoading = false;
+      },
+      error: () => {
+        this.inPersonVisitsError = 'Impossibile caricare le visite in presenza.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  applyInPersonVisitFilter(): void {
+    if (this.inPersonVisitStatusFilter === 'ALL') {
+      this.filteredInPersonVisits = [...this.inPersonVisits];
+    } else {
+      this.filteredInPersonVisits = this.inPersonVisits.filter(v => v.status === this.inPersonVisitStatusFilter);
+    }
+  }
+
+  onInPersonVisitStatusFilterChange(): void {
+    this.applyInPersonVisitFilter();
+    this.setPage('adminInPersonVisits', 1, this.filteredInPersonVisits.length);
+  }
+
+  // ===== STATISTICHE VISITE IN PRESENZA =====
+
+  get inPersonVisiteTotali(): number {
+    return this.inPersonVisits.length;
+  }
+
+  get inPersonVisitePrenotateOggi(): number {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return this.inPersonVisits.filter(v => {
+      const d = new Date(v.startAt);
+      return d >= today && d < tomorrow && v.status === 'BOOKED';
+    }).length;
+  }
+
+  get inPersonVisiteCompletate(): number {
+    return this.inPersonVisits.filter(v => v.status === 'COMPLETED').length;
+  }
+
+  get inPersonVisiteCancellate(): number {
+    return this.inPersonVisits.filter(v => v.status === 'CANCELLED').length;
+  }
+
+  // ===== HELPER VISITE IN PRESENZA =====
+
+  getInPersonVisitPatientName(visit: InPersonVisitItem): string {
+    const p = this.patients.find(pt => pt.id === visit.patientId);
+    return p ? `${p.firstName} ${p.lastName}` : `Paziente #${visit.patientId}`;
+  }
+
+  getInPersonVisitDoctorName(visit: InPersonVisitItem): string {
+    const d = this.doctors.find(doc => doc.id === visit.doctorId);
+    return d ? `${d.firstName} ${d.lastName}` : `Medico #${visit.doctorId}`;
+  }
+
+  getInPersonVisitDepartmentName(code: string): string {
+    const dept = this.departments.find(d => d.code === code);
+    return dept ? dept.name : code;
+  }
+
+  getInPersonVisitStatusLabel(status: string): string {
+    switch (status) {
+      case 'BOOKED': return 'Prenotata';
+      case 'COMPLETED': return 'Completata';
+      case 'CANCELLED': return 'Annullata';
+      default: return status;
+    }
+  }
+
+  formatInPersonVisitDate(isoDate: string): string {
+    return new Date(isoDate).toLocaleDateString('it-IT', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  // ===== CASCATA FORM NUOVA VISITA IN PRESENZA =====
+
+  get inPersonVisitDepartmentsFiltered(): DepartmentItem[] {
+    if (!this.inPersonVisitForm.facilityCode) return [];
+    return this.departments.filter(d => d.facilityCode === this.inPersonVisitForm.facilityCode);
+  }
+
+  get inPersonVisitDoctorsFiltered(): DoctorItem[] {
+    if (!this.inPersonVisitForm.department) return [];
+    return this.doctors.filter(d => d.departmentCode === this.inPersonVisitForm.department);
+  }
+
+  onInPersonVisitFacilityChange(): void {
+    this.inPersonVisitForm.department = '';
+    this.inPersonVisitForm.doctorId = null;
+    this.inPersonVisitForm.patientId = null;
+    this.inPersonVisitForm.slotId = null;
+    this.inPersonVisitPatientsFiltered = [];
+    this.inPersonVisitSlotsFiltered = [];
+  }
+
+  onInPersonVisitDepartmentChange(): void {
+    this.inPersonVisitForm.doctorId = null;
+    this.inPersonVisitForm.patientId = null;
+    this.inPersonVisitForm.slotId = null;
+    this.inPersonVisitPatientsFiltered = [];
+    this.inPersonVisitSlotsFiltered = [];
+  }
+
+  onInPersonVisitDoctorChange(): void {
+    this.inPersonVisitForm.patientId = null;
+    this.inPersonVisitForm.slotId = null;
+    this.inPersonVisitPatientsFiltered = [];
+    this.inPersonVisitSlotsFiltered = [];
+
+    if (!this.inPersonVisitForm.doctorId) return;
+
+    // Carica slot disponibili per il medico selezionato
+    this.api.request<SpringPage<AvailableSlotItem>>('GET', `/api/slots?doctorId=${this.inPersonVisitForm.doctorId}&size=100`).subscribe({
+      next: (response) => {
+        this.inPersonVisitSlotsFiltered = (response.content ?? []).filter(s => s.status === 'AVAILABLE' && s.mode === 'IN_PERSON');
+      },
+      error: () => {
+        this.inPersonVisitSlotsFiltered = [];
+      }
+    });
+
+    // Carica tutti i pazienti (non servono consensi per visite in presenza)
+    this.inPersonVisitPatientsFiltered = [...this.patients];
+  }
+
+  formatSlotLabel(slot: AvailableSlotItem): string {
+    const start = new Date(slot.startAt);
+    const end = new Date(slot.endAt);
+    return start.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      + ' ' + start.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+      + ' - ' + end.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ===== MODALI VISITE IN PRESENZA =====
+
+  openAdminInPersonVisitModal(): void {
+    this.inPersonVisitsError = '';
+    this.showAdminInPersonVisitModal = true;
+  }
+
+  closeAdminInPersonVisitModal(): void {
+    this.showAdminInPersonVisitModal = false;
+    this.inPersonVisitsError = '';
+    this.inPersonVisitForm = {
+      facilityCode: '',
+      department: '',
+      doctorId: null,
+      patientId: null,
+      slotId: null,
+      reason: ''
+    };
+    this.inPersonVisitPatientsFiltered = [];
+    this.inPersonVisitSlotsFiltered = [];
+  }
+
+  submitInPersonVisit(): void {
+    this.isLoading = true;
+    this.inPersonVisitsError = '';
+
+    if (!this.inPersonVisitForm.slotId) {
+      this.inPersonVisitsError = 'Seleziona uno slot disponibile.';
+      this.isLoading = false;
+      return;
+    }
+    if (!this.inPersonVisitForm.patientId) {
+      this.inPersonVisitsError = 'Seleziona un paziente.';
+      this.isLoading = false;
+      return;
+    }
+
+    const payload = {
+      slotId: this.inPersonVisitForm.slotId,
+      patientId: this.inPersonVisitForm.patientId,
+      reason: this.inPersonVisitForm.reason?.trim() || null
+    };
+
+    this.api.request<InPersonVisitItem>('POST', '/api/appointments', payload).subscribe({
+      next: (visit) => {
+        this.inPersonVisits = [...this.inPersonVisits, visit];
+        this.applyInPersonVisitFilter();
+        this.closeAdminInPersonVisitModal();
+        this.inPersonVisitsSuccess = 'Visita prenotata con successo.';
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.inPersonVisitsError = err?.error?.message || 'Impossibile prenotare la visita.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  openCompleteInPersonVisitModal(visit: InPersonVisitItem): void {
+    this.selectedInPersonVisit = visit;
+    this.inPersonVisitsError = '';
+    this.showCompleteInPersonVisitModal = true;
+  }
+
+  closeCompleteInPersonVisitModal(): void {
+    this.showCompleteInPersonVisitModal = false;
+    this.selectedInPersonVisit = null;
+  }
+
+  confirmCompleteInPersonVisit(): void {
+    if (!this.selectedInPersonVisit) return;
+    this.isLoading = true;
+    this.inPersonVisitsError = '';
+
+    this.api.request<InPersonVisitItem>('POST', `/api/appointments/${this.selectedInPersonVisit.id}/complete`).subscribe({
+      next: () => {
+        const idx = this.inPersonVisits.findIndex(v => v.id === this.selectedInPersonVisit!.id);
+        if (idx !== -1) {
+          this.inPersonVisits[idx] = { ...this.inPersonVisits[idx], status: 'COMPLETED' };
+          this.inPersonVisits = [...this.inPersonVisits];
+        }
+        this.applyInPersonVisitFilter();
+        this.inPersonVisitsSuccess = 'Visita completata. Evento di pagamento generato.';
+        this.closeCompleteInPersonVisitModal();
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.inPersonVisitsError = err?.error?.message || 'Impossibile completare la visita.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  openCancelInPersonVisitModal(visit: InPersonVisitItem): void {
+    this.selectedInPersonVisit = visit;
+    this.inPersonVisitsError = '';
+    this.showCancelInPersonVisitModal = true;
+  }
+
+  closeCancelInPersonVisitModal(): void {
+    this.showCancelInPersonVisitModal = false;
+    this.selectedInPersonVisit = null;
+  }
+
+  confirmCancelInPersonVisit(): void {
+    if (!this.selectedInPersonVisit) return;
+    this.isLoading = true;
+    this.inPersonVisitsError = '';
+
+    this.api.request<void>('DELETE', `/api/appointments/${this.selectedInPersonVisit.id}`).subscribe({
+      next: () => {
+        const idx = this.inPersonVisits.findIndex(v => v.id === this.selectedInPersonVisit!.id);
+        if (idx !== -1) {
+          this.inPersonVisits[idx] = { ...this.inPersonVisits[idx], status: 'CANCELLED' };
+          this.inPersonVisits = [...this.inPersonVisits];
+        }
+        this.applyInPersonVisitFilter();
+        this.closeCancelInPersonVisitModal();
+        this.inPersonVisitsSuccess = 'Visita annullata con successo.';
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.inPersonVisitsError = err?.error?.message || 'Impossibile annullare la visita.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  openDeleteInPersonVisitModal(visit: InPersonVisitItem): void {
+    this.selectedInPersonVisit = visit;
+    this.inPersonVisitsError = '';
+    this.showDeleteInPersonVisitModal = true;
+  }
+
+  closeDeleteInPersonVisitModal(): void {
+    this.showDeleteInPersonVisitModal = false;
+    this.selectedInPersonVisit = null;
+  }
+
+  confirmDeleteInPersonVisit(): void {
+    if (!this.selectedInPersonVisit) return;
+    this.isLoading = true;
+    this.inPersonVisitsError = '';
+
+    this.api.request<void>('DELETE', `/api/appointments/${this.selectedInPersonVisit.id}/force`).subscribe({
+      next: () => {
+        this.inPersonVisits = this.inPersonVisits.filter(v => v.id !== this.selectedInPersonVisit!.id);
+        this.applyInPersonVisitFilter();
+        this.closeDeleteInPersonVisitModal();
+        this.inPersonVisitsSuccess = 'Visita eliminata definitivamente.';
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.inPersonVisitsError = err?.error?.message || 'Impossibile eliminare la visita.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // ===== RIPIANIFICA VISITA =====
+
+  openRescheduleInPersonVisitModal(visit: InPersonVisitItem): void {
+    this.selectedInPersonVisit = visit;
+    this.inPersonVisitsError = '';
+    this.rescheduleSlotId = null;
+    this.rescheduleSlotsFiltered = [];
+    this.showRescheduleInPersonVisitModal = true;
+
+    // Carica slot disponibili per lo stesso medico
+    this.api.request<SpringPage<AvailableSlotItem>>('GET', `/api/slots?doctorId=${visit.doctorId}&size=200`).subscribe({
+      next: (response) => {
+        this.rescheduleSlotsFiltered = (response.content ?? []).filter(
+          s => s.status === 'AVAILABLE' && s.mode === 'IN_PERSON'
+        );
+      },
+      error: () => {
+        this.rescheduleSlotsFiltered = [];
+      }
+    });
+  }
+
+  closeRescheduleInPersonVisitModal(): void {
+    this.showRescheduleInPersonVisitModal = false;
+    this.selectedInPersonVisit = null;
+    this.rescheduleSlotId = null;
+    this.rescheduleSlotsFiltered = [];
+  }
+
+  confirmRescheduleInPersonVisit(): void {
+    if (!this.selectedInPersonVisit || !this.rescheduleSlotId) return;
+    this.isLoading = true;
+    this.inPersonVisitsError = '';
+
+    this.api.request<InPersonVisitItem>('PATCH', `/api/appointments/${this.selectedInPersonVisit.id}/reschedule`, {
+      newSlotId: this.rescheduleSlotId
+    }).subscribe({
+      next: (updated) => {
+        const idx = this.inPersonVisits.findIndex(v => v.id === updated.id);
+        if (idx !== -1) {
+          this.inPersonVisits[idx] = updated;
+          this.inPersonVisits = [...this.inPersonVisits];
+        }
+        this.applyInPersonVisitFilter();
+        this.closeRescheduleInPersonVisitModal();
+        this.inPersonVisitsSuccess = 'Visita ripianificata con successo.';
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.inPersonVisitsError = err?.error?.message || 'Impossibile ripianificare la visita.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  // ===== CAMBIO MEDICO =====
+
+  openReassignInPersonVisitModal(visit: InPersonVisitItem): void {
+    this.selectedInPersonVisit = visit;
+    this.inPersonVisitsError = '';
+    this.reassignDoctorId = null;
+    this.reassignSlotId = null;
+    this.reassignSlotsFiltered = [];
+    this.showReassignInPersonVisitModal = true;
+  }
+
+  closeReassignInPersonVisitModal(): void {
+    this.showReassignInPersonVisitModal = false;
+    this.selectedInPersonVisit = null;
+    this.reassignDoctorId = null;
+    this.reassignSlotId = null;
+    this.reassignSlotsFiltered = [];
+  }
+
+  onReassignDoctorChange(): void {
+    this.reassignSlotId = null;
+    this.reassignSlotsFiltered = [];
+    if (!this.reassignDoctorId) return;
+
+    this.api.request<SpringPage<AvailableSlotItem>>('GET', `/api/slots?doctorId=${this.reassignDoctorId}&size=200`).subscribe({
+      next: (response) => {
+        this.reassignSlotsFiltered = (response.content ?? []).filter(
+          s => s.status === 'AVAILABLE' && s.mode === 'IN_PERSON'
+        );
+      },
+      error: () => {
+        this.reassignSlotsFiltered = [];
+      }
+    });
+  }
+
+  confirmReassignInPersonVisit(): void {
+    if (!this.selectedInPersonVisit || !this.reassignDoctorId || !this.reassignSlotId) return;
+    this.isLoading = true;
+    this.inPersonVisitsError = '';
+
+    this.api.request<InPersonVisitItem>('PATCH', `/api/appointments/${this.selectedInPersonVisit.id}/reassign`, {
+      newDoctorId: this.reassignDoctorId,
+      newSlotId: this.reassignSlotId
+    }).subscribe({
+      next: (updated) => {
+        const idx = this.inPersonVisits.findIndex(v => v.id === updated.id);
+        if (idx !== -1) {
+          this.inPersonVisits[idx] = updated;
+          this.inPersonVisits = [...this.inPersonVisits];
+        }
+        this.applyInPersonVisitFilter();
+        this.closeReassignInPersonVisitModal();
+        this.inPersonVisitsSuccess = 'Medico riassegnato con successo.';
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.inPersonVisitsError = err?.error?.message || 'Impossibile riassegnare il medico.';
+        this.isLoading = false;
+      }
+    });
   }
 }

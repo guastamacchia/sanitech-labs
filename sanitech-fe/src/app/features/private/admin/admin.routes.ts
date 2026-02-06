@@ -7,6 +7,7 @@ import {
   admissionsEndpoints,
   auditEndpoints,
   directoryEndpoints,
+  inPersonVisitsEndpoints,
   notificationsEndpoints,
   televisitEndpoints
 } from '../shared/resources/resource-endpoints';
@@ -75,6 +76,17 @@ export const adminRoutes: Routes = [
       description: 'Gestione ricoveri, posti letto e medici referenti.',
       endpoints: admissionsEndpoints,
       view: 'admin-admissions'
+    }
+  },
+  {
+    path: 'admin/in-person-visits',
+    component: ResourcePageComponent,
+    canActivate: [roleGuard('ROLE_ADMIN')],
+    data: {
+      title: 'Visite in presenza',
+      description: 'Gestione appuntamenti in presenza e completamento prestazioni.',
+      endpoints: inPersonVisitsEndpoints,
+      view: 'admin-in-person-visits'
     }
   }
 ];

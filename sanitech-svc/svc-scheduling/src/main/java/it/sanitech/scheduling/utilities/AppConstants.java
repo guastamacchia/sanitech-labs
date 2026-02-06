@@ -48,6 +48,11 @@ public class AppConstants {
         public static final String MSG_PATIENT_ID_MISMATCH = "patientId non coerente con l'utente autenticato.";
         public static final String MSG_BOOKING_ROLE_NOT_ALLOWED = "Solo ADMIN o PATIENT possono prenotare un appuntamento.";
         public static final String MSG_JWT_CLAIM_MISSING_OR_INVALID_PREFIX = "Claim JWT mancante o non valido: ";
+        public static final String MSG_APPOINTMENT_NOT_BOOKED = "L'appuntamento deve essere in stato BOOKED per questa operazione.";
+        public static final String MSG_SLOT_DOCTOR_MISMATCH = "Lo slot selezionato non appartiene al medico dell'appuntamento.";
+        public static final String MSG_SLOT_MODE_MISMATCH = "Lo slot selezionato non ha la stessa modalità dell'appuntamento.";
+        public static final String MSG_NEW_DOCTOR_SLOT_MISMATCH = "Lo slot selezionato non appartiene al medico indicato.";
+        public static final String MSG_SAME_SLOT = "Il nuovo slot è identico a quello attuale.";
     }
 
     /**
