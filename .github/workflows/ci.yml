@@ -27,10 +27,11 @@ jobs:
       - name: Make Maven wrapper executable
         run: chmod +x ./mvnw
 
+      - name: Clear jvm.config
+        run: echo "" > .mvn/jvm.config
+
       - name: Build with Maven
-        run: ./mvnw clean package -DskipTests -Dorg.apache.maven.user-settings=/dev/null
-        env:
-          MAVEN_OPTS: ""
+        run: ./mvnw clean package -DskipTests
 
   frontend:
     name: Build Frontend
