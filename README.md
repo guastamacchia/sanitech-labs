@@ -21,6 +21,7 @@ Piattaforma di gestione sanitaria costruita con architettura a microservizi.
 - [Applicazione frontend](#applicazione-frontend)
 - [Configurazione](#configurazione)
 - [Sviluppo](#sviluppo)
+- [CI/CD](#cicd)
 - [Documentazione](#documentazione)
 
 ## Panoramica
@@ -155,6 +156,10 @@ sanitech-labs/
 │   ├── keycloak/              # Configurazione ed export realm Keycloak
 │   ├── livekit/               # Configurazione server LiveKit
 │   └── prometheus/            # Configurazione scrape Prometheus
+├── .github/                   # GitHub workflows e templates
+│   ├── workflows/ci.yml       # Pipeline CI (build backend + frontend)
+│   ├── ISSUE_TEMPLATE/        # Template per bug report, feature request, docs
+│   └── pull_request_template.md # Template per pull request
 ├── .script/                   # Script operativi
 │   ├── backend/               # Gestione stack (up, down, logs, status, smoke)
 │   ├── frontend/              # Gestione stack frontend
@@ -317,6 +322,28 @@ bash .script/services/svc-gateway/rate-limit.sh
 # Test circuit breaker
 bash .script/services/svc-gateway/circuit-breaker.sh
 ```
+
+## CI/CD
+
+Il progetto utilizza **GitHub Actions** per la Continuous Integration. La pipeline viene eseguita automaticamente ad ogni push e pull request su `main`.
+
+| Job | Descrizione |
+|-----|-------------|
+| **Build Backend** | Compila tutti i microservizi con Maven (`mvnw clean package -DskipTests`) |
+| **Build Frontend** | Installa le dipendenze e compila la SPA Angular (`npm run build`) |
+
+La configurazione si trova in `.github/workflows/ci.yml`.
+
+## Contribuire
+
+Il progetto include template per facilitare le contribuzioni:
+
+| Template | Scopo |
+|----------|-------|
+| Bug Report | Segnalazione bug con area e ambiente interessati |
+| Feature Request | Proposta di nuove funzionalità |
+| Documentazione | Segnalazione documentazione mancante o da migliorare |
+| Pull Request | Checklist per tipo di modifica, test e breaking changes |
 
 ## Documentazione
 

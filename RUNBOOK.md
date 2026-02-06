@@ -11,6 +11,7 @@ Procedure operative, health check e guida al troubleshooting per la piattaforma 
 - [Runbook dei servizi](#runbook-dei-servizi)
 - [Operazioni database](#operazioni-database)
 - [Operazioni Kafka](#operazioni-kafka)
+- [CI/CD (GitHub Actions)](#cicd-github-actions)
 - [Problemi comuni](#problemi-comuni)
 
 ## Prerequisiti
@@ -504,6 +505,28 @@ docker exec -it sanitech-kafka kafka-consumer-groups --bootstrap-server kafka:90
 docker exec -it sanitech-kafka kafka-consumer-groups --bootstrap-server kafka:9092 \
   --describe --group audit-ingestion-group
 ```
+
+## CI/CD (GitHub Actions)
+
+La pipeline CI si trova in `.github/workflows/ci.yml` e si attiva su push e pull request verso `main`.
+
+### Build fallita - Backend
+
+**Problema**: Il job "Build Backend" fallisce.
+
+**Checklist**:
+1. Controllare i log nel tab Actions su GitHub
+2. Verificare che `.mvn/jvm.config` non contenga opzioni JVM non supportate dal runner (la CI lo svuota automaticamente)
+3. Verificare che il codice compili in locale: `cd sanitech-svc && ./mvnw clean package -DskipTests`
+
+### Build fallita - Frontend
+
+**Problema**: Il job "Build Frontend" fallisce.
+
+**Checklist**:
+1. Verificare che `npm install && npm run build` funzioni in locale dentro `sanitech-fe/`
+2. Controllare errori TypeScript o import mancanti nei log
+3. Nota: `package-lock.json` è in `.gitignore`, quindi la CI usa `npm install` invece di `npm ci`
 
 ## Problemi comuni
 
