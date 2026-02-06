@@ -8,6 +8,7 @@ Piattaforma di gestione sanitaria costruita con architettura a microservizi.
 - [Architettura](#architettura)
 - [Prerequisiti](#prerequisiti)
 - [Avvio rapido](#avvio-rapido)
+- [Accesso alla piattaforma](#accesso-alla-piattaforma)
 - [Struttura del progetto](#struttura-del-progetto)
 - [Servizi backend](#servizi-backend)
 - [Servizi infrastrutturali](#servizi-infrastrutturali)
@@ -106,6 +107,33 @@ make -C sanitech-svc compose-config   # Valida la configurazione
 ENV=staging make -C sanitech-svc compose-up-infra
 ENV=prod make -C sanitech-svc compose-up-infra
 ```
+
+## Accesso alla piattaforma
+
+### URL componenti
+
+| Componente | URL | Note |
+|------------|-----|------|
+| **Frontend (Angular SPA)** | http://localhost:4200 | Interfaccia utente |
+| **API Gateway** | http://localhost:8080 | Entry point API REST |
+| **Swagger UI** | http://localhost:8080/swagger-ui/index.html | Documentazione API interattiva |
+| **Keycloak (Admin Console)** | http://localhost:8081 | Identity provider |
+| **Grafana** | http://localhost:3000 | Dashboard e monitoraggio |
+| **Prometheus** | http://localhost:9090 | Metriche |
+| **MinIO Console** | http://localhost:9001 | Object storage (documenti) |
+| **Mailpit** | http://localhost:8025 | Casella email di test |
+
+### Utenze di test
+
+Tutte le utenze usano la password: `qwerty`
+
+| Profilo | Username | Email | Password |
+|---------|----------|-------|----------|
+| **Amministratore** | `admin` | admin@sanitech.example | `qwerty` |
+| **Medico** | `mario.rossi.dr` | mario.rossi.dr@sanitech.example | `qwerty` |
+| **Paziente** | `anna.conti` | anna.conti@email.example | `qwerty` |
+
+> Le utenze sono preconfigurate nel realm Keycloak (`.infra/keycloak/realm-export/sanitech-realm.json`). Per l'elenco completo di medici e pazienti disponibili, consultare il file di seed dati `sanitech-svc/svc-directory/src/main/resources/db/migration/V11__seed_demo_data.sql`.
 
 ## Struttura del progetto
 
