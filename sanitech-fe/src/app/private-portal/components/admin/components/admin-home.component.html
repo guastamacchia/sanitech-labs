@@ -1,120 +1,54 @@
 <div class="container-fluid py-4">
   <!-- Header -->
-  <div class="mb-4">
-    <h2 class="mb-1 fw-bold">Pannello di amministrazione</h2>
-    <p class="text-muted mb-0">Gestisci il sistema sanitario in modo completo e sicuro</p>
+  <div class="d-flex align-items-start justify-content-between mb-4">
+    <div>
+      <h2 class="mb-1 fw-bold">Pannello di amministrazione</h2>
+      <p class="text-muted mb-0">Gestisci il sistema sanitario in modo completo e sicuro</p>
+    </div>
+    <div class="d-flex gap-2">
+      <button *ngIf="isDragEnabled"
+        class="btn btn-outline-secondary lock-toggle"
+        type="button"
+        (click)="resetOrder()"
+        title="Ripristina ordine predefinito">
+        <i class="bi bi-arrow-counterclockwise"></i>
+      </button>
+      <button
+        class="btn lock-toggle"
+        [class.btn-outline-primary]="isDragEnabled"
+        [class.btn-outline-secondary]="!isDragEnabled"
+        type="button"
+        (click)="isDragEnabled = !isDragEnabled"
+        [title]="isDragEnabled ? 'Blocca posizioni' : 'Sblocca per riordinare'">
+        <i class="bi" [class.bi-unlock]="isDragEnabled" [class.bi-lock]="!isDragEnabled"></i>
+      </button>
+    </div>
   </div>
 
-  <!-- Quick actions grid -->
-  <div class="row g-4">
-    <!-- Directory -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card card-glass h-100 border-0 shadow-sm">
+  <!-- Dashboard grid con drag & drop -->
+  <div class="dashboard-grid"
+       cdkDropList
+       cdkDropListOrientation="mixed"
+       [cdkDropListDisabled]="!isDragEnabled"
+       (cdkDropListDropped)="onDrop($event)">
+    <div class="dashboard-card-wrapper" *ngFor="let card of cards" cdkDrag [cdkDragDisabled]="!isDragEnabled">
+      <div class="card card-glass h-100 shadow-sm"
+           [class.border-0]="!isDragEnabled"
+           [class.drag-enabled-card]="isDragEnabled">
         <div class="card-body">
           <div class="d-flex align-items-center mb-3">
-            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-              <i class="bi bi-people text-primary fs-4"></i>
+            <div class="rounded-circle p-3 me-3"
+                 [ngClass]="card.bgColor"
+                 [style]="card.bgStyle || null">
+              <i class="bi fs-4"
+                 [ngClass]="[card.icon, card.iconColor]"
+                 [style]="card.iconStyle || null"></i>
             </div>
-            <h5 class="fw-semibold mb-0">Anagrafiche</h5>
+            <h5 class="fw-semibold mb-0 flex-grow-1">{{ card.title }}</h5>
+            <i *ngIf="isDragEnabled" class="bi bi-grip-vertical drag-handle" cdkDragHandle></i>
           </div>
-          <p class="text-muted small mb-3">Gestione anagrafiche di medici, pazienti, strutture sanitarie e reparti. Attivazione account e trasferimenti.</p>
-          <a class="btn btn-outline-primary" routerLink="/portal/admin/directory">Gestisci anagrafiche</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Audit & compliance -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card card-glass h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex align-items-center mb-3">
-            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
-              <i class="bi bi-shield-check text-info fs-4"></i>
-            </div>
-            <h5 class="fw-semibold mb-0">Audit & Compliance</h5>
-          </div>
-          <p class="text-muted small mb-3">Traccia eventi di sistema, accessi ai dati clinici e verifiche GDPR. Report di conformita' e audit trail.</p>
-          <a class="btn btn-outline-primary" routerLink="/portal/admin/audit">Visualizza audit</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Notifiche -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card card-glass h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex align-items-center mb-3">
-            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
-              <i class="bi bi-bell text-warning fs-4"></i>
-            </div>
-            <h5 class="fw-semibold mb-0">Notifiche</h5>
-          </div>
-          <p class="text-muted small mb-3">Monitoraggio e invio notifiche email e SMS per tutta la piattaforma.</p>
-          <a class="btn btn-outline-primary" routerLink="/portal/admin/notifications">Gestisci notifiche</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Pagamenti -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card card-glass h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex align-items-center mb-3">
-            <div class="rounded-circle bg-purple bg-opacity-10 p-3 me-3" style="background: rgba(111, 66, 193, 0.1);">
-              <i class="bi bi-credit-card text-purple fs-4" style="color: #6f42c1;"></i>
-            </div>
-            <h5 class="fw-semibold mb-0">Pagamenti</h5>
-          </div>
-          <p class="text-muted small mb-3">Gestione pagamenti, solleciti e statistiche prestazioni sanitarie.</p>
-          <a class="btn btn-outline-primary" routerLink="/portal/admin/payments">Gestisci pagamenti</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Televisite -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card card-glass h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex align-items-center mb-3">
-            <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
-              <i class="bi bi-camera-video text-danger fs-4"></i>
-            </div>
-            <h5 class="fw-semibold mb-0">Televisite</h5>
-          </div>
-          <p class="text-muted small mb-3">Gestione sessioni di telemedicina, monitoraggio conversioni e statistiche di utilizzo del servizio.</p>
-          <a class="btn btn-outline-primary" routerLink="/portal/admin/televisit">Gestisci televisite</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Ricoveri -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card card-glass h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex align-items-center mb-3">
-            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
-              <i class="bi bi-hospital text-success fs-4"></i>
-            </div>
-            <h5 class="fw-semibold mb-0">Ricoveri</h5>
-          </div>
-          <p class="text-muted small mb-3">Gestione posti letto, assegnazione medici referenti e monitoraggio capacita' reparti.</p>
-          <a class="btn btn-outline-primary" routerLink="/portal/admin/admissions">Gestisci ricoveri</a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Visite in presenza -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card card-glass h-100 border-0 shadow-sm">
-        <div class="card-body">
-          <div class="d-flex align-items-center mb-3">
-            <div class="rounded-circle p-3 me-3" style="background: rgba(13, 148, 136, 0.1);">
-              <i class="bi bi-calendar-check fs-4" style="color: #0d9488;"></i>
-            </div>
-            <h5 class="fw-semibold mb-0">Visite in presenza</h5>
-          </div>
-          <p class="text-muted small mb-3">Gestione visite in presenza, completamento prestazioni e monitoraggio appuntamenti programmati.</p>
-          <a class="btn btn-outline-primary" routerLink="/portal/admin/in-person-visits">Gestisci visite</a>
+          <p class="text-muted small mb-3">{{ card.description }}</p>
+          <a class="btn btn-outline-primary" [routerLink]="card.route">{{ card.buttonLabel }}</a>
         </div>
       </div>
     </div>
