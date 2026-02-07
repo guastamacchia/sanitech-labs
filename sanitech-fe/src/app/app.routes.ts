@@ -8,12 +8,12 @@ export const routes: Routes = [
   },
   {
     path: 'portal',
-    loadChildren: () => import('./private-portal/private.routes')
+    loadChildren: () => import('./private-portal/routes/private.routes')
       .then(m => m.portalRoutes)
   },
   {
     path: 'televisit',
-    loadChildren: () => import('./private-portal/televisit/televisit.routes')
+    loadChildren: () => import('./private-portal/components/televisit/televisit.routes')
       .then(m => m.televisitRoutes)
   },
   {

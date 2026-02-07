@@ -1,0 +1,278 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a routerLink="/portal/admin">Area riservata</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Notifiche</li>
+        </ol>
+      </nav>
+      <h2 class="mb-1 fw-bold">Notifiche</h2>
+      <p class="text-muted mb-0">Gestione e invio notifiche a pazienti, medici e amministratori.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-primary" (click)="loadNotifications()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise me-1" [class.spin]="isLoading"></i>Aggiorna
+      </button>
+      <button class="btn btn-outline-secondary" type="button" routerLink="/portal/admin">
+        <i class="bi bi-arrow-left me-1"></i>
+        Torna indietro
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+  <div class="col-12">
+    <div class="card card-glass mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="fw-semibold mb-0">Notifiche inviate</h5>
+          <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminNotificationModal()">
+            Invia notifica
+          </button>
+        </div>
+
+        <div class="alert alert-danger py-2" *ngIf="notificationsError">
+          <i class="bi bi-exclamation-circle me-2"></i>{{ notificationsError }}
+        </div>
+        <div class="alert alert-success py-2" *ngIf="notificationsSuccess">
+          <i class="bi bi-check-circle me-2"></i>{{ notificationsSuccess }}
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tipo</th>
+                <th>Destinatario</th>
+                <th>Canale</th>
+                <th>Oggetto</th>
+                <th>Messaggio</th>
+                <th>Stato</th>
+                <th>Data</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="isLoading">
+                <td colspan="9" class="text-center py-4">
+                  <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                  Caricamento notifiche...
+                </td>
+              </tr>
+              <tr *ngFor="let notification of notifications | slice:sliceStart:sliceEnd">
+                <td>{{ notification.id }}</td>
+                <td>
+                  <span class="badge bg-light text-dark">{{ notification.recipientType }}</span>
+                </td>
+                <td>{{ notification.toAddress || notification.recipientId }}</td>
+                <td>
+                  <i class="bi" [ngClass]="notification.channel === 'EMAIL' ? 'bi-envelope' : 'bi-bell'" [title]="notification.channel"></i>
+                </td>
+                <td>{{ truncateText(notification.subject, 30) }}</td>
+                <td>{{ truncateText(notification.body, 40) }}</td>
+                <td>
+                  <span class="badge"
+                        [class.bg-warning]="notification.status === 'PENDING'"
+                        [class.bg-success]="notification.status === 'SENT'"
+                        [class.bg-danger]="notification.status === 'FAILED'">
+                    {{ getNotificationStatusLabel(notification.status) }}
+                  </span>
+                </td>
+                <td>{{ formatDateTime(notification.createdAt) }}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-secondary" type="button" title="Visualizza dettagli" (click)="openNotificationDetailModal(notification)">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!isLoading && !notifications.length">
+                <td colspan="9" class="text-center text-muted">Nessuna notifica presente.</td>
+              </tr>
+            </tbody>
+          </table>
+          <!-- Paginazione -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between mt-3" *ngIf="notifications.length > 0">
+            <div class="d-flex align-items-center gap-2">
+              <small class="text-muted">Elementi per pagina</small>
+              <select class="form-select form-select-sm w-auto" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
+                <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+              </select>
+            </div>
+            <nav aria-label="Paginazione">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="currentPage <= 1">
+                  <button class="page-link" type="button" [disabled]="currentPage <= 1" (click)="setPage(currentPage - 1)" style="cursor: pointer;">&laquo;</button>
+                </li>
+                <li class="page-item active">
+                  <span class="page-link">{{ currentPage }} / {{ totalPages }}</span>
+                </li>
+                <li class="page-item" [class.disabled]="currentPage >= totalPages">
+                  <button class="page-link" type="button" [disabled]="currentPage >= totalPages" (click)="setPage(currentPage + 1)" style="cursor: pointer;">&raquo;</button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Invio Notifica -->
+  <ng-container *ngIf="showAdminNotificationModal">
+    <div
+      class="modal-backdrop fade show"
+      style="position: fixed; inset: 0; z-index: 1050;"
+      (click)="closeAdminNotificationModal()"></div>
+    <div
+      class="modal d-flex align-items-center justify-content-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="adminNotificationModalTitle"
+      style="position: fixed; inset: 0; z-index: 1055;">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg border-0">
+          <div class="modal-header border-0 pb-0">
+            <div>
+              <h5 class="modal-title fw-bold" id="adminNotificationModalTitle">
+                <i class="bi bi-send me-2 text-primary"></i>
+                Invia notifica
+              </h5>
+              <p class="text-muted small mb-0 mt-1">Invia una comunicazione personalizzata</p>
+            </div>
+            <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminNotificationModal()"></button>
+          </div>
+          <div class="modal-body pt-4">
+            <form (ngSubmit)="submitNotification()" #notificationFormRef="ngForm">
+              <div class="row g-3 mb-3">
+                <div class="col-md-5">
+                  <label class="form-label fw-semibold small text-muted">Destinatario</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                      <i class="bi bi-person text-muted"></i>
+                    </span>
+                    <input class="form-control border-start-0" type="email" name="notificationRecipient" [(ngModel)]="notificationForm.recipient" placeholder="email@esempio.com" required (input)="notificationsError = ''" />
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold small text-muted">Tipo destinatario</label>
+                  <select class="form-select" name="notificationRecipientType" [(ngModel)]="notificationForm.recipientType" required>
+                    <option value="PATIENT">Paziente</option>
+                    <option value="DOCTOR">Medico</option>
+                    <option value="ADMIN">Amministratore</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold small text-muted">Canale</label>
+                  <select class="form-select" name="notificationChannel" [(ngModel)]="notificationForm.channel" required>
+                    <option value="EMAIL">Email</option>
+                    <option value="APP">In-App</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold small text-muted">Oggetto</label>
+                <input class="form-control" type="text" name="notificationSubject" [(ngModel)]="notificationForm.subject" placeholder="Oggetto della comunicazione" required (input)="notificationsError = ''" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold small text-muted">Messaggio</label>
+                <textarea class="form-control" rows="4" name="notificationMessage" [(ngModel)]="notificationForm.message" placeholder="Scrivi il contenuto del messaggio..." required (input)="notificationsError = ''"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold small text-muted">Note (opzionale)</label>
+                <textarea class="form-control" rows="2" name="notificationNotes" [(ngModel)]="notificationForm.notes" placeholder="Note aggiuntive..."></textarea>
+              </div>
+              <div class="alert alert-success border-0 py-2" *ngIf="notificationsSuccess">
+                <i class="bi bi-check-circle me-2"></i>
+                {{ notificationsSuccess }}
+              </div>
+              <div class="alert alert-danger border-0 py-2" *ngIf="notificationsError">
+                <i class="bi bi-exclamation-circle me-2"></i>
+                {{ notificationsError }}
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button class="btn btn-outline-secondary" type="button" (click)="closeAdminNotificationModal()">Annulla</button>
+            <button class="btn btn-primary" type="button" (click)="submitNotification()" [disabled]="isLoading">
+              <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
+              <i *ngIf="!isLoading" class="bi bi-send me-1"></i>
+              {{ isLoading ? 'Invio...' : 'Invia notifica' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Modale Dettaglio Notifica -->
+  <ng-container *ngIf="showNotificationDetailModal && selectedNotification">
+    <div class="modal-backdrop fade show" style="position: fixed; inset: 0; z-index: 1050;"></div>
+    <div class="modal d-flex align-items-center justify-content-center" role="dialog" aria-modal="true" style="position: fixed; inset: 0; z-index: 1055;" (click)="closeNotificationDetailModal()">
+      <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Dettaglio Notifica</h5>
+            <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeNotificationDetailModal()"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">ID</label>
+                <div>{{ selectedNotification.id }}</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Canale</label>
+                <div><span class="badge" [class.bg-primary]="selectedNotification.channel === 'EMAIL'" [class.bg-info]="selectedNotification.channel === 'IN_APP'">{{ selectedNotification.channel }}</span></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Destinatario</label>
+                <div>{{ selectedNotification.toAddress || selectedNotification.recipientId }}</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Stato</label>
+                <div>
+                  <span class="badge"
+                        [class.bg-success]="selectedNotification.status === 'SENT'"
+                        [class.bg-warning]="selectedNotification.status === 'PENDING'"
+                        [class.bg-danger]="selectedNotification.status === 'FAILED'">
+                    {{ getNotificationStatusLabel(selectedNotification.status) }}
+                  </span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Data creazione</label>
+                <div>{{ formatDateTime(selectedNotification.createdAt) }}</div>
+              </div>
+              <div class="col-md-6" *ngIf="selectedNotification.sentAt">
+                <label class="form-label small fw-semibold">Data invio</label>
+                <div>{{ formatDateTime(selectedNotification.sentAt) }}</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-semibold">Oggetto</label>
+                <div>{{ selectedNotification.subject }}</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-semibold">Messaggio</label>
+                <div class="bg-light rounded p-3">{{ selectedNotification.body }}</div>
+              </div>
+              <div class="col-12" *ngIf="selectedNotification.errorMessage">
+                <div class="alert alert-danger mb-0">
+                  <label class="form-label small fw-semibold">Errore</label>
+                  <div>{{ selectedNotification.errorMessage }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" (click)="closeNotificationDetailModal()">Chiudi</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+  </div>
+</div>

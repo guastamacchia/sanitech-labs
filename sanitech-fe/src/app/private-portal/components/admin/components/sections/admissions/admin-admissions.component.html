@@ -1,0 +1,463 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a routerLink="/portal/admin">Area riservata</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Ricoveri</li>
+        </ol>
+      </nav>
+      <h2 class="mb-1 fw-bold">Ricoveri</h2>
+      <p class="text-muted mb-0">Gestione ricoveri, posti letto e medici referenti.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-primary" (click)="loadAdminAdmissions()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise me-1" [class.spin]="isLoading"></i>Aggiorna
+      </button>
+      <button class="btn btn-outline-secondary" type="button" routerLink="/portal/admin">
+        <i class="bi bi-arrow-left me-1"></i>
+        Torna indietro
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-4">
+  <!-- Statistiche ricoveri -->
+  <div class="col-12">
+    <div class="row g-2">
+      <div class="col">
+        <div class="card card-glass text-center py-3 px-2">
+          <div class="fs-3 fw-bold text-primary">{{ ricoveriAttivi }}</div>
+          <div class="small text-muted">Attivi</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card card-glass text-center py-3 px-2">
+          <div class="fs-3 fw-bold text-success">{{ ricoveriOrdinari }}</div>
+          <div class="small text-muted">Ordinari</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card card-glass text-center py-3 px-2">
+          <div class="fs-3 fw-bold text-warning">{{ ricoveriDayHospital }}</div>
+          <div class="small text-muted">Day Hospital</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card card-glass text-center py-3 px-2">
+          <div class="fs-3 fw-bold text-info">{{ ricoveriOsservazione }}</div>
+          <div class="small text-muted">Osservazione</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card card-glass text-center py-3 px-2">
+          <div class="fs-3 fw-bold text-secondary">{{ dimessiQuestoMese }}</div>
+          <div class="small text-muted">Dimessi mese</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accordion capacita reparti -->
+  <div class="col-12" *ngIf="departmentCapacities.length">
+    <div class="card card-glass">
+      <div class="card-body p-0">
+        <button
+          class="btn w-100 d-flex align-items-center justify-content-between px-3 py-3 border-0"
+          type="button"
+          (click)="isCapacityCollapsed = !isCapacityCollapsed">
+          <h5 class="fw-semibold mb-0">Capacita reparti</h5>
+          <i class="bi fs-5"
+             [class.bi-chevron-down]="isCapacityCollapsed"
+             [class.bi-chevron-up]="!isCapacityCollapsed"></i>
+        </button>
+        <div *ngIf="!isCapacityCollapsed" class="px-3 pb-3">
+          <div class="table-responsive">
+            <table class="table align-middle table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Struttura</th>
+                  <th>Reparto</th>
+                  <th>Posti totali</th>
+                  <th>Occupati</th>
+                  <th>Disponibili</th>
+                  <th>Aggiornato</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let cap of departmentCapacities"
+                    [class.table-danger]="cap.availableBeds === 0"
+                    [class.table-warning]="cap.availableBeds > 0 && cap.availableBeds <= 3">
+                  <td><small>{{ getFacilityLabelByDepartment(cap.departmentCode) }}</small></td>
+                  <td>{{ getDepartmentLabel(cap.departmentCode) }}</td>
+                  <td>{{ cap.totalBeds }}</td>
+                  <td>{{ cap.occupiedBeds }}</td>
+                  <td>
+                    <span class="badge"
+                          [class.bg-danger]="cap.availableBeds === 0"
+                          [class.bg-warning]="cap.availableBeds > 0 && cap.availableBeds <= 3"
+                          [class.text-dark]="cap.availableBeds > 0 && cap.availableBeds <= 3"
+                          [class.bg-success]="cap.availableBeds > 3">
+                      {{ cap.availableBeds }}
+                    </span>
+                  </td>
+                  <td>{{ formatDate(cap.updatedAt) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabella ricoveri -->
+  <div class="col-12">
+    <div class="card card-glass">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <h5 class="fw-semibold mb-1">Ricoveri attivi</h5>
+            <small class="text-muted">Gestione posti letto e medici referenti</small>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="loadAdminAdmissions()" [disabled]="isLoading">
+              Aggiorna
+            </button>
+            <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminAdmissionModal()">
+              Nuovo ricovero
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle table-hover">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Paziente</th>
+                <th>Struttura</th>
+                <th>Reparto</th>
+                <th>Tipo</th>
+                <th>Medico referente</th>
+                <th>Data ammissione</th>
+                <th>Stato</th>
+                <th>Note</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let admission of admissions | slice:sliceStart:sliceEnd"
+                  [class.table-warning]="admission.departmentCode === 'PNEUMO' && admission.status === 'ACTIVE'"
+                  [class.table-secondary]="admission.status === 'DISCHARGED'"
+                  [class.table-danger]="admission.status === 'CANCELLED'">
+                <td>{{ admission.id }}</td>
+                <td>
+                  <strong>{{ getPatientLabel(admission.patientId) }}</strong>
+                </td>
+                <td>
+                  <small>{{ getFacilityLabelByDepartment(admission.departmentCode) }}</small>
+                </td>
+                <td>
+                  <span class="badge"
+                        [class.bg-warning]="admission.departmentCode === 'PNEUMO'"
+                        [class.bg-danger]="admission.departmentCode === 'CARD'"
+                        [class.bg-info]="admission.departmentCode === 'NEURO'"
+                        [class.bg-secondary]="!['PNEUMO','CARD','NEURO'].includes(admission.departmentCode)"
+                        [class.text-dark]="admission.departmentCode === 'PNEUMO'">
+                    {{ getDepartmentLabel(admission.departmentCode) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark">{{ getAdmissionTypeLabel(admission.admissionType) }}</span>
+                </td>
+                <td>
+                  {{ getDoctorLabel(admission.attendingDoctorId) }}
+                </td>
+                <td>{{ formatDate(admission.admittedAt) }}</td>
+                <td>
+                  <span class="badge"
+                        [class.bg-primary]="admission.status === 'ACTIVE'"
+                        [class.bg-secondary]="admission.status === 'DISCHARGED'"
+                        [class.bg-danger]="admission.status === 'CANCELLED'">
+                    {{ getAdmissionStatusLabel(admission.status) }}
+                  </span>
+                </td>
+                <td>
+                  <small class="text-muted" *ngIf="admission.notes">{{ admission.notes }}</small>
+                  <span *ngIf="!admission.notes">-</span>
+                </td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    <button
+                      class="btn btn-outline-primary btn-sm"
+                      type="button"
+                      title="Modifica referente"
+                      [disabled]="admission.status !== 'ACTIVE'"
+                      (click)="openChangeReferentModal(admission)">
+                      <i class="bi bi-person-gear"></i>
+                    </button>
+                    <button
+                      class="btn btn-outline-success btn-sm"
+                      type="button"
+                      title="Dimetti"
+                      [disabled]="admission.status !== 'ACTIVE'"
+                      (click)="openDischargeModal(admission)">
+                      <i class="bi bi-box-arrow-right"></i>
+                    </button>
+                    <button
+                      class="btn btn-outline-secondary btn-sm"
+                      type="button"
+                      title="Note"
+                      (click)="openAdmissionEditNoteModal(admission)">
+                      <i class="bi bi-journal-text"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="!admissions.length && !admissionsError">
+                <td colspan="10" class="text-center text-muted">Nessun ricovero registrato.</td>
+              </tr>
+              <tr *ngIf="!admissions.length && admissionsError">
+                <td colspan="10" class="text-center">
+                  <div class="alert alert-danger mb-0 py-2">
+                    <i class="bi bi-exclamation-triangle me-2"></i>{{ admissionsError }}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <!-- Paginazione inline -->
+          <div class="d-flex align-items-center justify-content-between mt-2" *ngIf="admissions.length > 0">
+            <div class="d-flex align-items-center gap-2">
+              <small class="text-muted">Righe per pagina:</small>
+              <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
+                <option *ngFor="let opt of pageSizeOptions" [ngValue]="opt">{{ opt }}</option>
+              </select>
+              <small class="text-muted">{{ sliceStart + 1 }}-{{ sliceEnd > admissions.length ? admissions.length : sliceEnd }} di {{ admissions.length }}</small>
+            </div>
+            <div class="d-flex gap-1">
+              <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage === 1" (click)="setPage(1)">&laquo;</button>
+              <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage === 1" (click)="setPage(currentPage - 1)">&lsaquo;</button>
+              <span class="btn btn-sm btn-light disabled">{{ currentPage }} / {{ totalPages }}</span>
+              <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage === totalPages" (click)="setPage(currentPage + 1)">&rsaquo;</button>
+              <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage === totalPages" (click)="setPage(totalPages)">&raquo;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- Modal Nuovo Ricovero -->
+<ng-container *ngIf="showAdminAdmissionModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeAdminAdmissionModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="adminAdmissionModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="adminAdmissionModalTitle">Registra nuovo ricovero</h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminAdmissionModal()"></button>
+        </div>
+        <div class="modal-body">
+          <form (ngSubmit)="submitAdmission()" #adminAdmissionFormRef="ngForm">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Struttura</label>
+                <select class="form-select" name="adminAdmissionFacility" [(ngModel)]="admissionForm.facilityCode" (ngModelChange)="onAdmissionFacilityChange()" required>
+                  <option value="" disabled>Seleziona struttura</option>
+                  <option *ngFor="let facility of facilities" [value]="facility.code">{{ facility.name }}</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Reparto</label>
+                <select class="form-select" name="adminAdmissionDepartment" [(ngModel)]="admissionForm.departmentCode" (ngModelChange)="onAdmissionDepartmentChange()" required [disabled]="!admissionForm.facilityCode">
+                  <option value="" disabled>Seleziona reparto</option>
+                  <option *ngFor="let dept of filteredDepartments" [value]="dept.code">{{ dept.name }}</option>
+                </select>
+                <small class="text-muted" *ngIf="selectedDepartmentAvailableBeds !== null">
+                  Posti disponibili: <strong>{{ selectedDepartmentAvailableBeds }}</strong>
+                </small>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Medico referente</label>
+                <select class="form-select" name="adminAdmissionDoctor" [(ngModel)]="admissionForm.attendingDoctorId" (ngModelChange)="onAdmissionDoctorChange()" required [disabled]="!admissionForm.departmentCode">
+                  <option [ngValue]="null" disabled>Seleziona medico</option>
+                  <option *ngFor="let doctor of filteredDoctors" [ngValue]="doctor.id">
+                    {{ doctor.firstName }} {{ doctor.lastName }}
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Paziente</label>
+                <select class="form-select" name="adminAdmissionPatientId" [(ngModel)]="admissionForm.patientId" required [disabled]="!admissionForm.attendingDoctorId">
+                  <option [ngValue]="null" disabled>Seleziona paziente</option>
+                  <option *ngFor="let patient of filteredAdmissionPatients" [ngValue]="patient.id">
+                    {{ patient.firstName }} {{ patient.lastName }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tipo ricovero</label>
+                <select class="form-select" name="adminAdmissionType" [(ngModel)]="admissionForm.admissionType" required>
+                  <option value="INPATIENT">Ricovero ordinario</option>
+                  <option value="DAY_HOSPITAL">Day Hospital</option>
+                  <option value="OBSERVATION">Osservazione</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Note</label>
+              <textarea class="form-control" rows="2" name="adminAdmissionNotes" [(ngModel)]="admissionForm.notes" placeholder="Note opzionali sul ricovero..."></textarea>
+            </div>
+            <div class="alert alert-danger py-2" *ngIf="admissionsError">{{ admissionsError }}</div>
+            <div class="d-flex justify-content-end gap-2">
+              <button class="btn btn-outline-secondary" type="button" (click)="closeAdminAdmissionModal()">Annulla</button>
+              <button class="btn btn-primary" type="submit" [disabled]="adminAdmissionFormRef.invalid || isLoading">
+                {{ isLoading ? 'Salvataggio...' : 'Registra ricovero' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal Cambia Referente -->
+<ng-container *ngIf="showChangeReferentModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeChangeReferentModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="changeReferentModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="changeReferentModalTitle">Cambia medico referente</h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeChangeReferentModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">Paziente: <strong>{{ getPatientLabel(changeReferentTarget?.patientId) }}</strong></p>
+          <p class="mb-3">Referente attuale: <strong>{{ getDoctorLabel(changeReferentTarget?.attendingDoctorId) }}</strong></p>
+          <form (ngSubmit)="submitChangeReferent()" #changeReferentFormRef="ngForm">
+            <div class="mb-3">
+              <label class="form-label">Nuovo medico referente</label>
+              <select class="form-select" name="changeReferentSelectedDoctorId" [(ngModel)]="changeReferentSelectedDoctorId" required>
+                <option [ngValue]="null" disabled>Seleziona medico...</option>
+                <option *ngFor="let doc of changeReferentDoctors" [ngValue]="doc.id">
+                  {{ doc.firstName }} {{ doc.lastName }}
+                </option>
+              </select>
+              <small class="text-muted">Solo medici con consenso del paziente</small>
+            </div>
+            <div class="alert alert-danger py-2" *ngIf="changeReferentError">{{ changeReferentError }}</div>
+            <div class="d-flex justify-content-end gap-2">
+              <button class="btn btn-outline-secondary" type="button" (click)="closeChangeReferentModal()">Annulla</button>
+              <button class="btn btn-primary" type="submit" [disabled]="changeReferentFormRef.invalid || isLoading">
+                {{ isLoading ? 'Salvataggio...' : 'Conferma cambio' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal Conferma Dimissione -->
+<ng-container *ngIf="showDischargeModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeDischargeModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="dischargeModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="dischargeModalTitle">Conferma dimissione</h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDischargeModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Stai per dimettere il paziente:</p>
+          <p><strong>{{ getPatientLabel(dischargeTarget?.patientId) }}</strong></p>
+          <p class="text-muted">Reparto: {{ getDepartmentLabel(dischargeTarget?.departmentCode) }}</p>
+          <p class="text-muted">Data ammissione: {{ formatDate(dischargeTarget?.admittedAt) }}</p>
+          <div class="alert alert-warning py-2">
+            <small>Questa azione cambiera lo stato del ricovero in "Dimesso".</small>
+          </div>
+          <div class="alert alert-danger py-2" *ngIf="dischargeError">{{ dischargeError }}</div>
+          <div class="d-flex justify-content-end gap-2">
+            <button class="btn btn-outline-secondary" type="button" (click)="closeDischargeModal()">Annulla</button>
+            <button class="btn btn-success" type="button" (click)="submitDischarge()" [disabled]="isLoading">
+              {{ isLoading ? 'Elaborazione...' : 'Conferma dimissione' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal Note Ricovero -->
+<ng-container *ngIf="showAdmissionEditNoteModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeAdmissionEditNoteModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="admissionEditNoteModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="admissionEditNoteModalTitle">Note ricovero</h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdmissionEditNoteModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">Paziente: <strong>{{ getPatientLabel(admissionEditNoteTarget?.patientId) }}</strong></p>
+          <form (ngSubmit)="submitAdmissionNote()" #admissionEditNoteFormRef="ngForm">
+            <div class="mb-3">
+              <label class="form-label">Note</label>
+              <textarea class="form-control" rows="4" name="admissionEditNoteText" [(ngModel)]="admissionEditNoteText" placeholder="Inserisci note sul ricovero..."></textarea>
+            </div>
+            <div class="alert alert-danger py-2" *ngIf="admissionEditNoteError">{{ admissionEditNoteError }}</div>
+            <div class="d-flex justify-content-end gap-2">
+              <button class="btn btn-outline-secondary" type="button" (click)="closeAdmissionEditNoteModal()">Annulla</button>
+              <button class="btn btn-primary" type="submit" [disabled]="isLoading">
+                {{ isLoading ? 'Salvataggio...' : 'Salva note' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>

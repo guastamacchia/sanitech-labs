@@ -22,9 +22,6 @@
     ],
     "paths": {
       "@core/*": ["src/app/core/*"],
-      "@ui/*": ["src/app/ui/*"],
-      "@types/*": ["src/app/types/*"],
-      "@utils/*": ["src/app/utils/*"],
       "@public-portal/*": ["src/app/public-portal/*"],
       "@private-portal/*": ["src/app/private-portal/*"],
       "@env/*": ["src/environments/*"]

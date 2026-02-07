@@ -1,6 +1,6 @@
 <section id="accesso" class="py-5 bg-white">
   <div class="container">
-    <div class="row align-items-start g-4">
+    <div class="row g-4" [class.align-items-start]="!auth.isAuthenticated" [class.align-items-stretch]="auth.isAuthenticated">
       <div class="col-lg-7 col-md-7">
         <span class="badge badge-soft rounded-pill mb-3 px-3 py-2">Un network, un unico accesso</span>
         <h1 class="display-5 fw-bold mb-3 mt-0">Sanitech: il network sanitario con un unico punto di accesso.</h1>
@@ -9,13 +9,52 @@
           in un'unica piattaforma sicura. Accedi ai servizi di qualsiasi clinica Sanitech senza tempi di attesa inutili,
           tieni sotto controllo i tuoi appuntamenti e ricevi aggiornamenti puntuali dai team clinici delle strutture che ti seguono.
         </p>
-        <div class="d-flex flex-wrap gap-3 mt-4">
-          <a routerLink="/portal" class="btn btn-primary btn-lg" *ngIf="auth.isAuthenticated">Area privata</a>
-          <a href="#servizi" class="btn btn-outline-secondary btn-lg">Scopri i servizi</a>
-          <a href="#testimonianze" class="btn btn-outline-secondary btn-lg">Dicono di noi</a>
-          <a href="#strutture" class="btn btn-outline-secondary btn-lg">Le strutture</a>
-          <a href="#chi-siamo" class="btn btn-outline-secondary btn-lg">Chi siamo</a>
-          <a href="#contatti" class="btn btn-outline-secondary btn-lg">Contatti</a>
+        <div class="row g-2 mt-3">
+          <div class="col">
+            <a href="#servizi" class="hero-nav-card text-decoration-none d-block text-center p-3 rounded-3">
+              <div class="hero-nav-circle mx-auto mb-2 bg-primary-subtle">
+                <i class="bi bi-grid text-primary"></i>
+              </div>
+              <span class="hero-nav-label d-block">Servizi</span>
+              <span class="hero-nav-desc">Telemedicina, visite e referti</span>
+            </a>
+          </div>
+          <div class="col">
+            <a href="#testimonianze" class="hero-nav-card text-decoration-none d-block text-center p-3 rounded-3">
+              <div class="hero-nav-circle mx-auto mb-2 bg-success-subtle">
+                <i class="bi bi-chat-quote text-success"></i>
+              </div>
+              <span class="hero-nav-label d-block">Recensioni</span>
+              <span class="hero-nav-desc">Cosa dicono i pazienti</span>
+            </a>
+          </div>
+          <div class="col">
+            <a href="#strutture" class="hero-nav-card text-decoration-none d-block text-center p-3 rounded-3">
+              <div class="hero-nav-circle mx-auto mb-2 bg-info-subtle">
+                <i class="bi bi-hospital text-info"></i>
+              </div>
+              <span class="hero-nav-label d-block">Strutture</span>
+              <span class="hero-nav-desc">Ospedali e cliniche del network</span>
+            </a>
+          </div>
+          <div class="col">
+            <a href="#chi-siamo" class="hero-nav-card text-decoration-none d-block text-center p-3 rounded-3">
+              <div class="hero-nav-circle mx-auto mb-2 bg-warning-subtle">
+                <i class="bi bi-people text-warning"></i>
+              </div>
+              <span class="hero-nav-label d-block">Chi siamo</span>
+              <span class="hero-nav-desc">La nostra missione e il team</span>
+            </a>
+          </div>
+          <div class="col">
+            <a href="#contatti" class="hero-nav-card text-decoration-none d-block text-center p-3 rounded-3">
+              <div class="hero-nav-circle mx-auto mb-2 bg-danger-subtle">
+                <i class="bi bi-telephone text-danger"></i>
+              </div>
+              <span class="hero-nav-label d-block">Contatti</span>
+              <span class="hero-nav-desc">Scrivici o chiamaci subito</span>
+            </a>
+          </div>
         </div>
       </div>
       <div class="col-lg-5 col-md-5" *ngIf="!auth.isAuthenticated">
@@ -74,11 +113,11 @@
           </div>
         </div>
       </div>
-      <div class="col-lg-5 col-md-5 d-flex align-items-center" *ngIf="auth.isAuthenticated">
+      <div class="col-lg-5 col-md-5 d-flex align-items-stretch" *ngIf="auth.isAuthenticated">
         <img
-          src="https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&w=900&q=80"
-          class="img-fluid rounded-4 shadow-sm w-100"
-          style="min-height: 320px; object-fit: cover;"
+          src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?auto=format&fit=crop&w=900&q=80"
+          class="rounded-4 shadow-sm w-100"
+          style="object-fit: cover; opacity: 0.85;"
           alt="Network Sanitech" />
       </div>
     </div>

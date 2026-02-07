@@ -1,0 +1,388 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-2">
+          <li class="breadcrumb-item"><a routerLink="/portal/admin">Area riservata</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Televisite</li>
+        </ol>
+      </nav>
+      <h2 class="mb-1 fw-bold">Televisite</h2>
+      <p class="text-muted mb-0">Gestione sessioni di telemedicina e conversione appuntamenti.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-primary" (click)="loadAdminTelevisit()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise me-1" [class.spin]="isLoading"></i>Aggiorna
+      </button>
+      <button class="btn btn-outline-secondary" type="button" routerLink="/portal/admin">
+        <i class="bi bi-arrow-left me-1"></i>
+        Torna indietro
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-4">
+  <!-- Statistiche rapide -->
+  <div class="col-12">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <div class="card card-glass text-center p-3">
+          <div class="fs-2 fw-bold text-primary">{{ televisits.length }}</div>
+          <div class="small text-muted">Televisite totali</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-glass text-center p-3">
+          <div class="fs-2 fw-bold text-success">{{ televisiteProgrammateOggi }}</div>
+          <div class="small text-muted">Programmate oggi</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-glass text-center p-3">
+          <div class="fs-2 fw-bold text-info">{{ televisiteConcluse }}</div>
+          <div class="small text-muted">Concluse</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-glass text-center p-3">
+          <div class="fs-2 fw-bold text-warning">{{ televisiteInAttesaPaziente }}</div>
+          <div class="small text-muted">In attesa paziente</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabella sessioni televisita -->
+  <div class="col-12">
+    <div class="card card-glass">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="fw-semibold mb-0">Sessioni di televisita attive</h5>
+          <button class="btn btn-outline-primary btn-sm" type="button" (click)="openAdminTelevisitModal()">
+            Nuova sessione
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table align-middle table-hover">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Paziente</th>
+                <th>Medico</th>
+                <th>Data e ora</th>
+                <th>Provider</th>
+                <th>Stato</th>
+                <th>Link</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let televisit of televisits | slice:sliceStart:sliceEnd"
+                  [class.table-success]="televisit.status === 'ENDED'"
+                  [class.table-info]="televisit.status === 'CREATED'"
+                  [class.table-primary]="televisit.status === 'SCHEDULED'">
+                <td>{{ televisit.id }}</td>
+                <td>{{ getTelevisitPatientLabel(televisit) }}</td>
+                <td>{{ televisit.doctorSubject }}</td>
+                <td>{{ getTelevisitDateTimeLabel(televisit) }}</td>
+                <td><span class="badge bg-secondary">{{ televisit.provider }}</span></td>
+                <td>
+                  <span class="badge"
+                        [class.bg-info]="televisit.status === 'CREATED'"
+                        [class.bg-primary]="televisit.status === 'SCHEDULED'"
+                        [class.bg-success]="televisit.status === 'ENDED'"
+                        [class.bg-warning]="televisit.status === 'ACTIVE'"
+                        [class.bg-secondary]="televisit.status === 'CANCELED'">
+                    {{ getTelevisitStatusLabel(televisit.status) }}
+                  </span>
+                </td>
+                <td>
+                  <a [href]="'/televisit/room?id=' + televisit.id + '&room=' + televisit.roomName"
+                     class="small text-decoration-none"
+                     target="_blank"
+                     title="Apri link room">
+                    <code>{{ televisit.roomName | slice:0:20 }}...</code>
+                  </a>
+                </td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    <button class="btn btn-outline-primary btn-sm" type="button" title="Copia link"
+                            (click)="copyTelevisitLink(televisit)"
+                            [disabled]="televisit.status === 'ENDED'">
+                      <i class="bi bi-clipboard"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" type="button" title="Avvia televisita"
+                            (click)="startTelevisitSession(televisit)"
+                            [disabled]="televisit.status === 'ENDED'">
+                      <i class="bi bi-play-fill"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" type="button" title="Concludi televisita"
+                            (click)="openEndTelevisitModal(televisit)"
+                            [disabled]="televisit.status !== 'ACTIVE'">
+                      <i class="bi bi-check-circle"></i>
+                    </button>
+                    <button class="btn btn-outline-dark btn-sm" type="button" title="Annulla televisita"
+                            (click)="openCancelTelevisitModal(televisit)"
+                            [disabled]="televisit.status === 'ENDED' || televisit.status === 'CANCELED'">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" type="button" title="Elimina televisita"
+                            (click)="openDeleteTelevisitModal(televisit)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="!televisits.length">
+                <td colspan="8" class="text-center text-muted">Nessuna sessione di televisita programmata.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Paginazione inline -->
+          <div class="d-flex align-items-center justify-content-between mt-2" *ngIf="televisits.length > 0">
+            <div class="d-flex align-items-center gap-2">
+              <small class="text-muted">Righe per pagina:</small>
+              <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
+                <option *ngFor="let opt of pageSizeOptions" [ngValue]="opt">{{ opt }}</option>
+              </select>
+              <small class="text-muted ms-2">
+                {{ sliceStart + 1 }}-{{ sliceEnd > televisits.length ? televisits.length : sliceEnd }} di {{ televisits.length }}
+              </small>
+            </div>
+            <div class="d-flex gap-1">
+              <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage <= 1" (click)="setPage(1)" title="Prima pagina">
+                <i class="bi bi-chevron-double-left"></i>
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage <= 1" (click)="setPage(currentPage - 1)" title="Pagina precedente">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <span class="btn btn-sm btn-light disabled">{{ currentPage }} / {{ totalPages }}</span>
+              <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage >= totalPages" (click)="setPage(currentPage + 1)" title="Pagina successiva">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" [disabled]="currentPage >= totalPages" (click)="setPage(totalPages)" title="Ultima pagina">
+                <i class="bi bi-chevron-double-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+<!-- Modal Avvia Televisita -->
+<ng-container *ngIf="showAdminTelevisitModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeAdminTelevisitModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="adminTelevisitModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="adminTelevisitModalTitle">Pianifica televisita</h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeAdminTelevisitModal()"></button>
+        </div>
+        <div class="modal-body">
+          <form (ngSubmit)="submitTelevisit()" #adminTelevisitFormRef="ngForm">
+            <!-- Riga 1: Struttura e Reparto -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Struttura</label>
+                <select class="form-select" name="adminTelevisitFacility" [(ngModel)]="televisitForm.facilityCode" (ngModelChange)="onTelevisitFacilityChange()" required>
+                  <option value="" disabled>Seleziona struttura</option>
+                  <option *ngFor="let facility of facilities" [value]="facility.code">{{ facility.name }}</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Reparto</label>
+                <select class="form-select" name="adminTelevisitDepartment" [(ngModel)]="televisitForm.department" (ngModelChange)="onTelevisitDepartmentChange()" required [disabled]="!televisitForm.facilityCode">
+                  <option value="" disabled>Seleziona reparto</option>
+                  <option *ngFor="let dept of televisitDepartmentsFiltered" [value]="dept.code">{{ dept.name }}</option>
+                </select>
+              </div>
+            </div>
+            <!-- Riga 2: Medico e Paziente -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Medico referente</label>
+                <select class="form-select" name="adminTelevisitDoctor" [(ngModel)]="televisitForm.doctorId" (ngModelChange)="onTelevisitDoctorChange()" required [disabled]="!televisitForm.department">
+                  <option [ngValue]="null" disabled>Seleziona medico</option>
+                  <option *ngFor="let doctor of televisitDoctorsFiltered" [ngValue]="doctor.id">
+                    {{ doctor.firstName }} {{ doctor.lastName }}
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Paziente</label>
+                <select class="form-select" name="adminTelevisitPatient" [(ngModel)]="televisitForm.patientId" required [disabled]="!televisitForm.doctorId">
+                  <option [ngValue]="null" disabled>Seleziona paziente</option>
+                  <option *ngFor="let patient of televisitPatientsFiltered" [ngValue]="patient.id">
+                    {{ patient.firstName }} {{ patient.lastName }}
+                  </option>
+                </select>
+                <small class="text-muted" *ngIf="televisitForm.doctorId && televisitPatientsFiltered.length === 0">
+                  Nessun paziente ha dato il consenso per le televisite a questo medico.
+                </small>
+              </div>
+            </div>
+            <!-- Riga 3: Data e ora -->
+            <div class="row">
+              <div class="col-12 mb-3">
+                <label class="form-label">Data e ora programmata</label>
+                <input class="form-control" type="datetime-local" name="adminTelevisitScheduledAt" [(ngModel)]="televisitForm.scheduledAt" required />
+              </div>
+            </div>
+            <div class="alert alert-info py-2">
+              <small>Il paziente e il medico riceveranno automaticamente una notifica email con il link per collegarsi.</small>
+            </div>
+            <div class="alert alert-danger py-2" *ngIf="televisitError">{{ televisitError }}</div>
+            <div class="d-flex justify-content-end gap-2">
+              <button class="btn btn-outline-secondary" type="button" (click)="closeAdminTelevisitModal()">Annulla</button>
+              <button class="btn btn-primary" type="submit" [disabled]="adminTelevisitFormRef.invalid || isLoading">
+                {{ isLoading ? 'Creazione...' : 'Crea televisita' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal Concludi Televisita -->
+<ng-container *ngIf="showEndTelevisitModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeEndTelevisitModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="endTelevisitModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="endTelevisitModalTitle">Concludi televisita</h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeEndTelevisitModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Sei sicuro di voler concludere questa televisita?</p>
+          <div class="alert alert-secondary py-2" *ngIf="selectedTelevisitForAction">
+            <small>
+              <strong>Paziente:</strong> {{ getTelevisitPatientLabel(selectedTelevisitForAction) }}<br>
+              <strong>Medico:</strong> {{ getTelevisitDoctorLabel(selectedTelevisitForAction) }}<br>
+              <strong>Room:</strong> {{ selectedTelevisitForAction.roomName }}
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeEndTelevisitModal()">Annulla</button>
+          <button type="button" class="btn btn-secondary" (click)="confirmEndTelevisit()" [disabled]="isLoading">
+            {{ isLoading ? 'Conclusione...' : 'Concludi' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal Elimina Televisita -->
+<ng-container *ngIf="showDeleteTelevisitModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeDeleteTelevisitModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="deleteTelevisitModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteTelevisitModalTitle">Elimina televisita</h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeDeleteTelevisitModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Sei sicuro di voler eliminare questa televisita? L'azione è irreversibile.</p>
+          <div class="alert alert-warning py-2" *ngIf="selectedTelevisitForAction">
+            <small>
+              <strong>Paziente:</strong> {{ getTelevisitPatientLabel(selectedTelevisitForAction) }}<br>
+              <strong>Medico:</strong> {{ getTelevisitDoctorLabel(selectedTelevisitForAction) }}<br>
+              <strong>Room:</strong> {{ selectedTelevisitForAction.roomName }}
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeDeleteTelevisitModal()">Annulla</button>
+          <button type="button" class="btn btn-danger" (click)="confirmDeleteTelevisit()" [disabled]="isLoading">
+            {{ isLoading ? 'Eliminazione...' : 'Elimina' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal Annulla Televisita -->
+<ng-container *ngIf="showCancelTelevisitModal">
+  <div
+    class="modal-backdrop fade show"
+    style="position: fixed; inset: 0; z-index: 1050;"
+    (click)="closeCancelTelevisitModal()"></div>
+  <div
+    class="modal d-flex align-items-center justify-content-center"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cancelTelevisitModalTitle"
+    style="position: fixed; inset: 0; z-index: 1055;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cancelTelevisitModalTitle">Annulla televisita</h5>
+          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeCancelTelevisitModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Sei sicuro di voler annullare questa televisita?</p>
+          <div class="alert alert-secondary py-2" *ngIf="selectedTelevisitForAction">
+            <small>
+              <strong>Paziente:</strong> {{ getTelevisitPatientLabel(selectedTelevisitForAction) }}<br>
+              <strong>Medico:</strong> {{ getTelevisitDoctorLabel(selectedTelevisitForAction) }}<br>
+              <strong>Room:</strong> {{ selectedTelevisitForAction.roomName }}
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeCancelTelevisitModal()">Chiudi</button>
+          <button type="button" class="btn btn-dark" (click)="confirmCancelTelevisit()" [disabled]="isLoading">
+            {{ isLoading ? 'Annullamento...' : 'Annulla televisita' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Overlay Televisit Room -->
+<app-televisit-room
+  *ngIf="showTelevisitRoomOverlay && televisitRoomConfig"
+  [inputId]="televisitRoomConfig.id"
+  [inputRoom]="televisitRoomConfig.room"
+  [inputUrl]="televisitRoomConfig.url"
+  [inputToken]="televisitRoomConfig.token"
+  (closed)="closeTelevisitRoomOverlay()">
+</app-televisit-room>

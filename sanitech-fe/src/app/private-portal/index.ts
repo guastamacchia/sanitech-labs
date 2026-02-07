@@ -1,2 +1,2 @@
 // Barrel export portale privato
-export { portalRoutes } from './private.routes';
+export { portalRoutes } from './routes/private.routes';
