@@ -10,7 +10,6 @@ export interface DoctorProfile {
   department: string;
   facility: string;
   specialization: string;
-  licenseNumber: string;
 }
 
 export interface Availability {

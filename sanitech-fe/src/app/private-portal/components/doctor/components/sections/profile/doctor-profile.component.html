@@ -11,10 +11,16 @@
       <h2 class="mb-1 fw-bold">Il mio profilo</h2>
       <p class="text-muted mb-0">Gestisci i tuoi dati professionali e la disponibilità</p>
     </div>
-    <button class="btn btn-outline-secondary" routerLink="/portal/doctor">
-      <i class="bi bi-arrow-left me-1"></i>
-      Torna indietro
-    </button>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary" (click)="refreshProfile()" [disabled]="isLoading">
+        <i class="bi bi-arrow-clockwise me-1"></i>
+        Aggiorna
+      </button>
+      <button class="btn btn-outline-secondary" routerLink="/portal/doctor">
+        <i class="bi bi-arrow-left me-1"></i>
+        Torna indietro
+      </button>
+    </div>
   </div>
 
   <!-- Alert messages -->
@@ -144,8 +150,11 @@
               </div>
             </div>
             <div class="col-md-6">
-              <label class="form-label small text-muted">Numero di iscrizione all'Albo</label>
-              <p class="mb-0 fw-medium">{{ profile.licenseNumber }}</p>
+              <label class="form-label small text-muted">Specializzazione</label>
+              <p class="mb-0 fw-medium">
+                {{ profile.specialization || 'Non specificata' }}
+                <i class="bi bi-lock-fill text-muted ms-1" title="Modificabile solo dall'amministratore"></i>
+              </p>
             </div>
             <div class="col-md-6">
               <label class="form-label small text-muted">Struttura</label>

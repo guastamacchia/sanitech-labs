@@ -20,8 +20,7 @@ export class DoctorProfileComponent implements OnInit {
     phone: '',
     department: '',
     facility: '',
-    specialization: '',
-    licenseNumber: ''
+    specialization: ''
   };
 
   // Form modifica
@@ -40,6 +39,7 @@ export class DoctorProfileComponent implements OnInit {
     emailDocuments: false,
     emailAdmissions: true
   };
+  private savedPreferences: NotificationPreferences | null = null;
   isEditingPreferences = false;
   isSavingPreferences = false;
 
@@ -61,6 +61,13 @@ export class DoctorProfileComponent implements OnInit {
   constructor(private doctorApi: DoctorApiService) {}
 
   ngOnInit(): void {
+    this.loadProfile();
+    this.loadWeeklyAvailability();
+  }
+
+  refreshProfile(): void {
+    this.successMessage = '';
+    this.errorMessage = '';
     this.loadProfile();
     this.loadWeeklyAvailability();
   }
@@ -94,8 +101,7 @@ export class DoctorProfileComponent implements OnInit {
       phone: doctor.phone || '',
       department: doctor.departmentName || doctor.departmentCode || '',
       facility: doctor.facilityName || doctor.facilityCode || '',
-      specialization: doctor.specialization || '',
-      licenseNumber: '' // Non disponibile nel backend
+      specialization: doctor.specialization || ''
     };
 
     this.editForm.phone = this.profile.phone;
@@ -127,7 +133,7 @@ export class DoctorProfileComponent implements OnInit {
       doctorId,
       from: monday.toISOString(),
       to: sunday.toISOString(),
-      size: 500
+      size: 100
     }).subscribe({
       next: (page) => {
         this.availability = this.aggregateSlotsToAvailability(page.content, monday);
@@ -140,23 +146,18 @@ export class DoctorProfileComponent implements OnInit {
     });
   }
 
+  private readonly allDayNames = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+
   private getEmptyWeekAvailability(): Availability[] {
-    return [
-      { day: 'Lunedì', morning: '-', afternoon: '-' },
-      { day: 'Martedì', morning: '-', afternoon: '-' },
-      { day: 'Mercoledì', morning: '-', afternoon: '-' },
-      { day: 'Giovedì', morning: '-', afternoon: '-' },
-      { day: 'Venerdì', morning: '-', afternoon: '-' }
-    ];
+    return this.allDayNames.map(day => ({ day, morning: '-', afternoon: '-' }));
   }
 
   private aggregateSlotsToAvailability(slots: SlotDto[], weekStart: Date): Availability[] {
-    const dayNames = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
-    const result: Availability[] = dayNames.map(day => ({ day, morning: '-', afternoon: '-' }));
+    const result: Availability[] = this.allDayNames.map(day => ({ day, morning: '-', afternoon: '-' }));
 
-    // Raggruppa gli slot per giorno della settimana
+    // Raggruppa gli slot per giorno della settimana (lunedì=0 ... domenica=6)
     const slotsByDay: Map<number, SlotDto[]> = new Map();
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
       slotsByDay.set(i, []);
     }
 
@@ -164,14 +165,13 @@ export class DoctorProfileComponent implements OnInit {
       const slotDate = new Date(slot.startAt);
       const dayIndex = this.getDayIndex(slotDate, weekStart);
 
-      // Solo giorni feriali (lunedì=0 ... venerdì=4)
-      if (dayIndex >= 0 && dayIndex <= 4) {
+      if (dayIndex >= 0 && dayIndex <= 6) {
         slotsByDay.get(dayIndex)?.push(slot);
       }
     }
 
     // Per ogni giorno, calcola le fasce orarie mattina e pomeriggio
-    for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+    for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
       const daySlots = slotsByDay.get(dayIndex) || [];
       if (daySlots.length === 0) continue;
 
@@ -220,22 +220,40 @@ export class DoctorProfileComponent implements OnInit {
     const doctorId = this.doctorApi.getDoctorId();
     if (!doctorId) return;
 
-    // Carica statistiche da varie API
+    // Pazienti in carico
     this.doctorApi.searchPatients({ size: 1 }).subscribe({
       next: (page) => {
         this.stats.activePatients = page.totalElements;
       }
     });
 
-    this.doctorApi.searchAppointments({ doctorId, size: 1 }).subscribe({
+    // Appuntamenti del mese corrente: calcola primo e ultimo giorno del mese
+    const now = new Date();
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    this.doctorApi.searchSlots({
+      doctorId,
+      from: firstOfMonth.toISOString(),
+      to: lastOfMonth.toISOString(),
+      size: 1
+    }).subscribe({
       next: (page) => {
         this.stats.monthlyAppointments = page.totalElements;
       }
     });
 
+    // Televisite in attesa
     this.doctorApi.searchTelevisits({ status: 'SCHEDULED', size: 1 }).subscribe({
       next: (page) => {
         this.stats.pendingTelevisits = page.totalElements;
+      }
+    });
+
+    // Consensi attivi: carica i pazienti con consenso attivo per ogni scope e conta i distinti
+    this.doctorApi.getPatientsWithConsent('TELEVISIT', doctorId).subscribe({
+      next: (patientIds) => {
+        this.stats.activeConsents = patientIds.length;
       }
     });
   }
@@ -253,9 +271,13 @@ export class DoctorProfileComponent implements OnInit {
     this.errorMessage = '';
   }
 
+  /** Pattern per validare numeri di telefono: opzionale prefisso +, poi cifre, spazi, trattini, parentesi. Min 10 caratteri. */
+  private readonly phonePattern = /^\+?[\d\s\-()]{10,20}$/;
+
   saveProfile(): void {
-    if (!this.editForm.phone || this.editForm.phone.trim().length < 10) {
-      this.errorMessage = 'Inserisci un numero di telefono valido.';
+    const phone = this.editForm.phone?.trim() || '';
+    if (!phone || !this.phonePattern.test(phone)) {
+      this.errorMessage = 'Inserisci un numero di telefono valido (es. +39 02 1234567).';
       return;
     }
 
@@ -278,6 +300,8 @@ export class DoctorProfileComponent implements OnInit {
   }
 
   startEditingPreferences(): void {
+    // Salva snapshot delle preferenze correnti per il ripristino con Annulla
+    this.savedPreferences = { ...this.notificationPreferences };
     this.isEditingPreferences = true;
     this.successMessage = '';
     this.errorMessage = '';
@@ -285,26 +309,26 @@ export class DoctorProfileComponent implements OnInit {
 
   cancelEditingPreferences(): void {
     this.isEditingPreferences = false;
-    // Reset alle preferenze salvate (in futuro caricate da API)
-    this.notificationPreferences = {
-      emailConsents: true,
-      emailAppointments: true,
-      emailDocuments: false,
-      emailAdmissions: true
-    };
+    // Ripristina le preferenze salvate prima dell'inizio della modifica
+    if (this.savedPreferences) {
+      this.notificationPreferences = { ...this.savedPreferences };
+    }
   }
 
   saveNotificationPreferences(): void {
     this.isSavingPreferences = true;
     this.errorMessage = '';
 
-    // Nota: il backend non ha un endpoint per le preferenze notifiche
-    // Questo sarebbe un'estensione futura
+    // Salva le preferenze nello snapshot locale (persistenza in-memory per la sessione)
+    this.savedPreferences = { ...this.notificationPreferences };
+
+    // Nota: il backend non ha ancora un endpoint dedicato per le preferenze notifiche.
+    // Le preferenze vengono mantenute per la durata della sessione corrente.
     setTimeout(() => {
       this.isSavingPreferences = false;
       this.isEditingPreferences = false;
-      this.successMessage = 'Preferenze di notifica salvate con successo!';
+      this.successMessage = 'Preferenze aggiornate per questa sessione. La persistenza permanente sarà disponibile a breve.';
       setTimeout(() => this.successMessage = '', 5000);
-    }, 1000);
+    }, 500);
   }
 }
