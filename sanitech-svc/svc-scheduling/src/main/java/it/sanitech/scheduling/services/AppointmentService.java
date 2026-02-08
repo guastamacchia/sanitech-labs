@@ -152,11 +152,18 @@ public class AppointmentService {
         Appointment appt = appointments.findById(appointmentId)
                 .orElseThrow(() -> NotFoundException.of("Appointment", appointmentId));
 
-        // Autorizzazione: admin oppure patient-owner.
+        // Autorizzazione: admin, patient-owner, oppure doctor-owner.
         if (!SecurityUtils.isAdmin(auth)) {
-            Long pid = JwtClaimUtils.requireLongClaim(auth, AppConstants.JwtClaims.PATIENT_ID);
-            if (!pid.equals(appt.getPatientId())) {
-                throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_APPOINTMENT_CANCEL_NOT_AUTHORIZED);
+            if (SecurityUtils.isDoctor(auth)) {
+                Long did = JwtClaimUtils.requireLongClaim(auth, AppConstants.JwtClaims.DOCTOR_ID);
+                if (!did.equals(appt.getDoctorId())) {
+                    throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_APPOINTMENT_CANCEL_NOT_AUTHORIZED);
+                }
+            } else {
+                Long pid = JwtClaimUtils.requireLongClaim(auth, AppConstants.JwtClaims.PATIENT_ID);
+                if (!pid.equals(appt.getPatientId())) {
+                    throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_APPOINTMENT_CANCEL_NOT_AUTHORIZED);
+                }
             }
         }
 

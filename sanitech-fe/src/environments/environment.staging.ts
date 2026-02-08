@@ -5,6 +5,6 @@ export const environment = {
   keycloakUrl: 'https://auth.staging.sanitech.it',
   realm: 'sanitech',
   clientId: 'sanitech-spa',
-  scope: 'openid profile email offline_access',
+  scope: 'openid profile email',
   recaptchaSiteKey: '' // Configura qui la site key reCAPTCHA v3
 };

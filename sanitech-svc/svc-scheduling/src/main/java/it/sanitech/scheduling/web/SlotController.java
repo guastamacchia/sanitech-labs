@@ -53,4 +53,13 @@ public class SlotController {
     ) {
         return slotService.searchAvailableSlots(doctorId, department, mode, from, to, page, size, sort);
     }
+
+    /**
+     * Cancella uno slot. Medici possono cancellare i propri slot non prenotati.
+     */
+    @DeleteMapping("/{id}")
+    @Auditable(aggregateType = "SLOT", eventType = "SLOT_CANCELLED", aggregateIdParam = "id")
+    public void cancel(@PathVariable Long id, Authentication auth) {
+        slotService.cancelSlot(id, auth);
+    }
 }

@@ -74,7 +74,7 @@ public class AppointmentController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','PATIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN','PATIENT','DOCTOR')")
     @Auditable(aggregateType = "APPOINTMENT", eventType = "APPOINTMENT_CANCELLED", aggregateIdParam = "id")
     public void cancel(@PathVariable Long id, Authentication auth) {
         appointmentService.cancel(id, auth);

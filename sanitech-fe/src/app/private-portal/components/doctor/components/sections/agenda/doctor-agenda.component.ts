@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import {
   DoctorApiService,
@@ -42,7 +42,7 @@ export class DoctorAgendaComponent implements OnInit {
     startTime: '08:00',
     endTime: '18:00',
     duration: 30,
-    modality: 'BOTH',
+    modality: 'IN_PERSON',
     repeatWeekly: false,
     repeatWeeks: 4
   };
@@ -57,9 +57,19 @@ export class DoctorAgendaComponent implements OnInit {
   selectedSlot: TimeSlot | null = null;
   selectedDate: string = '';
 
-  // Statistiche
+  // BUG-016: Chiusura modal con Escape
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showSlotDetailModal) {
+      this.closeSlotDetailModal();
+    } else if (this.showCreateSlotModal) {
+      this.closeCreateSlotModal();
+    }
+  }
+
+  // Statistiche - BUG-010: totalSlots include tutti gli slot caricati
   get totalSlots(): number {
-    return this.slots.filter(s => s.status === 'AVAILABLE' || s.status === 'BOOKED').length;
+    return this.slots.length;
   }
 
   get availableSlots(): number {
@@ -70,8 +80,8 @@ export class DoctorAgendaComponent implements OnInit {
     return this.slots.filter(s => s.status === 'BOOKED').length;
   }
 
-  get blockedSlots(): number {
-    return this.slots.filter(s => s.status === 'BLOCKED').length;
+  get cancelledSlots(): number {
+    return this.slots.filter(s => s.status === 'CANCELLED').length;
   }
 
   get upcomingAppointments(): TimeSlot[] {
@@ -124,18 +134,22 @@ export class DoctorAgendaComponent implements OnInit {
     }
   }
 
+  // BUG-004: Week navigation now reloads slots
   previousWeek(): void {
     this.currentWeekStart.setDate(this.currentWeekStart.getDate() - 7);
     this.generateWeekDays();
+    this.loadSlots();
   }
 
   nextWeek(): void {
     this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
     this.generateWeekDays();
+    this.loadSlots();
   }
 
   goToToday(): void {
     this.initializeWeek();
+    this.loadSlots();
   }
 
   loadSlots(): void {
@@ -149,13 +163,14 @@ export class DoctorAgendaComponent implements OnInit {
       return;
     }
 
-    // Calcola range settimana (da lunedì a domenica)
+    // BUG-008/009/017: Usa date locali per costruire ISO strings corrette
     const weekStart = new Date(this.currentWeekStart);
     weekStart.setHours(0, 0, 0, 0);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
     // Carica slot e appuntamenti in parallelo
+    // BUG-014: Aggiunto filtro date anche per appuntamenti
     forkJoin({
       slots: this.doctorApi.searchSlots({
         doctorId,
@@ -224,22 +239,22 @@ export class DoctorAgendaComponent implements OnInit {
       const end = new Date(slot.endAt);
       const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
 
-      // Mappa status
+      // BUG-015: Mappa status allineato al backend (AVAILABLE, BOOKED, CANCELLED)
       let status: SlotStatus = 'AVAILABLE';
-      if (slot.status === 'BLOCKED') {
-        status = 'BLOCKED';
+      if (slot.status === 'CANCELLED') {
+        status = 'CANCELLED';
       } else if (appointment) {
         status = 'BOOKED';
       }
 
-      // Mappa modality
-      let modality: SlotModality = 'BOTH';
-      if (slot.mode === 'IN_PERSON') modality = 'IN_PERSON';
-      else if (slot.mode === 'TELEVISIT') modality = 'TELEVISIT';
+      // Mappa modality - BUG-006: rimosso BOTH, mappiamo direttamente
+      let modality: SlotModality = 'IN_PERSON';
+      if (slot.mode === 'TELEVISIT') modality = 'TELEVISIT';
 
+      // BUG-008/009/017: Usa metodi locali per data e orario
       return {
         id: slot.id,
-        date: start.toISOString().split('T')[0],
+        date: this.toLocalDateString(start),
         time: `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`,
         duration: durationMinutes,
         modality,
@@ -252,14 +267,22 @@ export class DoctorAgendaComponent implements OnInit {
     });
   }
 
+  // BUG-008/009/017: Helper per convertire Date in stringa YYYY-MM-DD locale
+  private toLocalDateString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   getDateString(daysFromMonday: number): string {
     const date = new Date(this.currentWeekStart);
     date.setDate(date.getDate() + daysFromMonday);
-    return date.toISOString().split('T')[0];
+    return this.toLocalDateString(date);
   }
 
   getSlotsForDay(day: Date): TimeSlot[] {
-    const dateStr = day.toISOString().split('T')[0];
+    const dateStr = this.toLocalDateString(day);
     return this.slots
       .filter(s => s.date === dateStr)
       .sort((a, b) => a.time.localeCompare(b.time));
@@ -267,11 +290,11 @@ export class DoctorAgendaComponent implements OnInit {
 
   openCreateSlotModal(day?: Date): void {
     this.slotForm = {
-      date: day ? day.toISOString().split('T')[0] : '',
+      date: day ? this.toLocalDateString(day) : '',
       startTime: '08:00',
       endTime: '18:00',
       duration: 30,
-      modality: 'BOTH',
+      modality: 'IN_PERSON',
       repeatWeekly: false,
       repeatWeeks: 4
     };
@@ -308,49 +331,63 @@ export class DoctorAgendaComponent implements OnInit {
     const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
     const slotsCount = Math.floor((endMinutes - startMinutes) / this.slotForm.duration);
 
-    // Mappa modality frontend -> backend
-    let mode: VisitMode = 'IN_PERSON';
-    if (this.slotForm.modality === 'TELEVISIT') mode = 'TELEVISIT';
-    // BOTH non esiste nel backend, usiamo IN_PERSON come default
-
-    const slotCreations: { startAt: string; endAt: string }[] = [];
-    let currentTime = startMinutes;
-    for (let i = 0; i < slotsCount; i++) {
-      const hours = Math.floor(currentTime / 60);
-      const mins = currentTime % 60;
-
-      const startDate = new Date(this.slotForm.date);
-      startDate.setHours(hours, mins, 0, 0);
-
-      const endDate = new Date(startDate);
-      endDate.setMinutes(endDate.getMinutes() + this.slotForm.duration);
-
-      slotCreations.push({
-        startAt: startDate.toISOString(),
-        endAt: endDate.toISOString()
-      });
-
-      currentTime += this.slotForm.duration;
+    // BUG-006: Determina le modalità da creare
+    const modes: VisitMode[] = [];
+    if (this.slotForm.modality === 'BOTH') {
+      modes.push('IN_PERSON', 'TELEVISIT');
+    } else {
+      modes.push(this.slotForm.modality as VisitMode);
     }
 
-    // Crea slot in parallelo
-    const createCalls = slotCreations.map(slot =>
-      this.doctorApi.createSlot({
-        doctorId,
-        departmentCode,
-        mode,
-        startAt: slot.startAt,
-        endAt: slot.endAt
-      }).pipe(catchError(() => of(null)))
-    );
+    // BUG-007: Calcola settimane da ripetere
+    const weeksToCreate = this.slotForm.repeatWeekly ? this.slotForm.repeatWeeks : 1;
 
-    forkJoin(createCalls).subscribe({
+    const allCreateCalls: Observable<SlotDto | null>[] = [];
+
+    for (let week = 0; week < weeksToCreate; week++) {
+      let currentTime = startMinutes;
+      for (let i = 0; i < slotsCount; i++) {
+        const hours = Math.floor(currentTime / 60);
+        const mins = currentTime % 60;
+
+        const startDate = new Date(this.slotForm.date);
+        startDate.setDate(startDate.getDate() + (week * 7));
+        startDate.setHours(hours, mins, 0, 0);
+
+        const endDate = new Date(startDate);
+        endDate.setMinutes(endDate.getMinutes() + this.slotForm.duration);
+
+        // BUG-006: Crea uno slot per ogni modalità selezionata
+        for (const mode of modes) {
+          allCreateCalls.push(
+            this.doctorApi.createSlot({
+              doctorId,
+              departmentCode,
+              mode,
+              startAt: startDate.toISOString(),
+              endAt: endDate.toISOString()
+            }).pipe(catchError(() => of(null)))
+          );
+        }
+
+        currentTime += this.slotForm.duration;
+      }
+    }
+
+    if (allCreateCalls.length === 0) {
+      this.isSaving = false;
+      this.errorMessage = 'Nessuno slot da creare con i parametri selezionati.';
+      return;
+    }
+
+    forkJoin(allCreateCalls).subscribe({
       next: (results) => {
         const created = results.filter(r => r !== null).length;
         this.isSaving = false;
         this.closeCreateSlotModal();
         this.loadSlots(); // Ricarica slots
-        this.successMessage = `${created} slot creati per il ${this.formatDate(this.slotForm.date)}.`;
+        const weekLabel = weeksToCreate > 1 ? ` per ${weeksToCreate} settimane` : '';
+        this.successMessage = `${created} slot creati${weekLabel}.`;
         setTimeout(() => this.successMessage = '', 5000);
       },
       error: () => {
@@ -370,18 +407,41 @@ export class DoctorAgendaComponent implements OnInit {
     this.selectedSlot = null;
   }
 
+  // BUG-003: Block slot ora usa l'API cancelSlot del backend
   blockSlot(slot: TimeSlot): void {
-    slot.status = 'BLOCKED';
-    this.closeSlotDetailModal();
-    this.successMessage = `Slot delle ${slot.time} bloccato.`;
-    setTimeout(() => this.successMessage = '', 3000);
+    this.doctorApi.cancelSlot(slot.id).subscribe({
+      next: () => {
+        this.closeSlotDetailModal();
+        this.loadSlots();
+        this.successMessage = `Slot delle ${slot.time} cancellato.`;
+        setTimeout(() => this.successMessage = '', 3000);
+      },
+      error: () => {
+        this.errorMessage = 'Errore nella cancellazione dello slot.';
+      }
+    });
   }
 
-  unblockSlot(slot: TimeSlot): void {
-    slot.status = 'AVAILABLE';
-    this.closeSlotDetailModal();
-    this.successMessage = `Slot delle ${slot.time} sbloccato.`;
-    setTimeout(() => this.successMessage = '', 3000);
+  // BUG-012: Completa appuntamento
+  completeAppointment(slot: TimeSlot): void {
+    if (!slot.appointmentId) {
+      this.errorMessage = 'Appuntamento non trovato.';
+      return;
+    }
+
+    if (confirm(`Vuoi completare la visita di ${slot.patientName}?`)) {
+      this.doctorApi.completeAppointment(slot.appointmentId).subscribe({
+        next: () => {
+          this.closeSlotDetailModal();
+          this.loadSlots();
+          this.successMessage = 'Visita completata con successo.';
+          setTimeout(() => this.successMessage = '', 5000);
+        },
+        error: () => {
+          this.errorMessage = 'Errore nel completamento della visita.';
+        }
+      });
+    }
   }
 
   cancelAppointment(slot: TimeSlot): void {
@@ -409,7 +469,7 @@ export class DoctorAgendaComponent implements OnInit {
     switch (slot.status) {
       case 'AVAILABLE': return 'bg-success bg-opacity-10 border-success';
       case 'BOOKED': return 'bg-primary bg-opacity-10 border-primary';
-      case 'BLOCKED': return 'bg-secondary bg-opacity-25 border-secondary';
+      case 'CANCELLED': return 'bg-secondary bg-opacity-25 border-secondary';
       default: return '';
     }
   }
@@ -464,5 +524,16 @@ export class DoctorAgendaComponent implements OnInit {
     const start = this.weekDays[0];
     const end = this.weekDays[6];
     return `${start.getDate()} ${start.toLocaleDateString('it-IT', { month: 'short' })} - ${end.getDate()} ${end.toLocaleDateString('it-IT', { month: 'short', year: 'numeric' })}`;
+  }
+
+  // BUG-016: Chiusura modal con click su backdrop
+  onBackdropClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal')) {
+      if (this.showSlotDetailModal) {
+        this.closeSlotDetailModal();
+      } else if (this.showCreateSlotModal) {
+        this.closeCreateSlotModal();
+      }
+    }
   }
 }

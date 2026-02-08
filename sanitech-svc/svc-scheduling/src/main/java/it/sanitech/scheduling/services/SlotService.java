@@ -110,7 +110,7 @@ public class SlotService {
         Sort safeSort = SortUtils.safeSort(sort, AppConstants.Sorting.ALLOWED_SLOT_SORT_FIELDS, "startAt");
         Pageable pageable = PageableUtils.pageRequest(page, size, AppConstants.MAX_PAGE_SIZE, safeSort);
 
-        Specification<Slot> spec = hasStatus(SlotStatus.AVAILABLE)
+        Specification<Slot> spec = hasStatusIn(SlotStatus.AVAILABLE, SlotStatus.BOOKED)
                 .and(optionalEq("doctorId", doctorId))
                 .and(optionalEqIgnoreCase("departmentCode", departmentCode))
                 .and(optionalEq("mode", mode))
@@ -122,11 +122,20 @@ public class SlotService {
 
     /**
      * Cancella uno slot (solo se non prenotato).
+     * Medici possono cancellare i propri slot, altrimenti serve autorizzazione reparto.
      */
     @Transactional
     public void cancelSlot(Long id, Authentication auth) {
         Slot slot = slots.findById(id).orElseThrow(() -> NotFoundException.of("Slot", id));
-        deptGuard.checkCanManage(slot.getDepartmentCode(), auth);
+
+        // Autorizzazione: medico proprietario dello slot, oppure chi gestisce il reparto
+        boolean isOwnSlot = SecurityUtils.isDoctor(auth)
+                && JwtClaimExtractor.doctorId(auth)
+                        .map(did -> did.equals(slot.getDoctorId()))
+                        .orElse(false);
+        if (!isOwnSlot) {
+            deptGuard.checkCanManage(slot.getDepartmentCode(), auth);
+        }
 
         if (slot.getStatus() == SlotStatus.BOOKED) {
             throw new IllegalArgumentException(AppConstants.ErrorMessage.MSG_SLOT_ALREADY_BOOKED);
@@ -148,6 +157,10 @@ public class SlotService {
 
     private static Specification<Slot> hasStatus(SlotStatus status) {
         return (root, query, cb) -> cb.equal(root.get("status"), status);
+    }
+
+    private static Specification<Slot> hasStatusIn(SlotStatus... statuses) {
+        return (root, query, cb) -> root.get("status").in((Object[]) statuses);
     }
 
     private static Specification<Slot> optionalEq(String field, Object value) {

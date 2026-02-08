@@ -2,7 +2,9 @@
 // DTOs locali per il componente Agenda
 // ============================================================================
 
-export type SlotStatus = 'AVAILABLE' | 'BOOKED' | 'BLOCKED';
+// BUG-015: Allineato con backend SlotStatus (AVAILABLE, BOOKED, CANCELLED)
+export type SlotStatus = 'AVAILABLE' | 'BOOKED' | 'CANCELLED';
+// Manteniamo BOTH nel frontend per la creazione (crea slot IN_PERSON + TELEVISIT)
 export type SlotModality = 'IN_PERSON' | 'TELEVISIT' | 'BOTH';
 
 export interface TimeSlot {

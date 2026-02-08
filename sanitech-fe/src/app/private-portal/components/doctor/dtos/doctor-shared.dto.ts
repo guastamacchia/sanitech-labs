@@ -13,9 +13,11 @@ export interface Page<T> {
 }
 
 // === Pianificazione (Slot e Appuntamenti) ===
-export type SlotStatus = 'AVAILABLE' | 'BOOKED' | 'BLOCKED';
+// BUG-015: Allineato con backend (AVAILABLE, BOOKED, CANCELLED)
+export type SlotStatus = 'AVAILABLE' | 'BOOKED' | 'CANCELLED';
 export type VisitMode = 'IN_PERSON' | 'TELEVISIT';
-export type AppointmentStatus = 'BOOKED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW';
+// BUG-015: Allineato con backend (BOOKED, COMPLETED, CANCELLED)
+export type AppointmentStatus = 'BOOKED' | 'CANCELLED' | 'COMPLETED';
 
 export interface SlotDto {
   id: number;

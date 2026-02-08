@@ -136,6 +136,11 @@ export class DoctorApiService {
     return this.api.post<SlotDto>('/api/slots', dto);
   }
 
+  // BUG-003: Aggiunto metodo per cancellare uno slot (medico proprietario)
+  cancelSlot(id: number): Observable<void> {
+    return this.api.delete<void>(`/api/slots/${id}`);
+  }
+
   // ---------------------------------------------------------------------------
   // APPUNTAMENTI
   // ---------------------------------------------------------------------------
@@ -158,6 +163,11 @@ export class DoctorApiService {
 
   cancelAppointment(id: number): Observable<void> {
     return this.api.delete<void>(`/api/appointments/${id}`);
+  }
+
+  // BUG-012: Aggiunto metodo per completare un appuntamento
+  completeAppointment(id: number): Observable<AppointmentDto> {
+    return this.api.post<AppointmentDto>(`/api/appointments/${id}/complete`, {});
   }
 
   // ---------------------------------------------------------------------------
