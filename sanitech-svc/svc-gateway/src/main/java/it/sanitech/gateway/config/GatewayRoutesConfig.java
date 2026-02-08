@@ -67,6 +67,18 @@ public class GatewayRoutesConfig {
                 )
 
                 // =========================
+                // Prescribing
+                // NOTA: deve precedere Directory per evitare che /api/doctor/**
+                //       catturi /api/doctor/prescriptions/**
+                // =========================
+                .route(AppConstants.Services.PRESCRIBING, r -> r
+                        .path("/api/prescriptions/**", "/api/prescribing/**",
+                              "/api/doctor/prescriptions/**", "/api/admin/prescriptions/**")
+                        .filters(f -> standardFilters(f, AppConstants.Services.PRESCRIBING))
+                        .uri(services.getPrescribing())
+                )
+
+                // =========================
                 // Directory (medici/pazienti)
                 // =========================
                 .route(AppConstants.Services.DIRECTORY, r -> r
@@ -141,15 +153,6 @@ public class GatewayRoutesConfig {
                         .path("/api/payments/**", "/api/admin/services/**")
                         .filters(f -> standardFilters(f, AppConstants.Services.PAYMENTS))
                         .uri(services.getPayments())
-                )
-
-                // =========================
-                // Prescribing
-                // =========================
-                .route(AppConstants.Services.PRESCRIBING, r -> r
-                        .path("/api/prescriptions/**", "/api/prescribing/**")
-                        .filters(f -> standardFilters(f, AppConstants.Services.PRESCRIBING))
-                        .uri(services.getPrescribing())
                 )
 
                 .build();

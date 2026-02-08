@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
 import {
   DoctorApiService,
   PrescriptionDto,
@@ -19,7 +19,10 @@ import { PrescriptionStatus, Medication, Prescription, PrescriptionForm, DrugSug
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './doctor-prescriptions.component.html'
 })
-export class DoctorPrescriptionsComponent implements OnInit {
+export class DoctorPrescriptionsComponent implements OnInit, OnDestroy {
+  // Lifecycle
+  private destroy$ = new Subject<void>();
+
   // Prescrizioni
   prescriptions: Prescription[] = [];
 
@@ -67,11 +70,14 @@ export class DoctorPrescriptionsComponent implements OnInit {
   // Stato UI
   isLoading = false;
   isSaving = false;
+  isCancelling = false;
   successMessage = '';
   errorMessage = '';
   showNewPrescriptionModal = false;
   showPreviewModal = false;
   selectedPrescription: Prescription | null = null;
+  showCancelConfirm = false;
+  cancelTarget: Prescription | null = null;
 
   // Statistiche
   get totalPrescriptions(): number {
@@ -82,7 +88,7 @@ export class DoctorPrescriptionsComponent implements OnInit {
     const now = new Date();
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     return this.prescriptions.filter(p =>
-      p.status === 'ISSUED' && new Date(p.issuedAt) >= firstOfMonth
+      p.status === 'ISSUED' && p.issuedAt && new Date(p.issuedAt) >= firstOfMonth
     ).length;
   }
 
@@ -98,18 +104,45 @@ export class DoctorPrescriptionsComponent implements OnInit {
     this.loadData();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /** Chiude i modali premendo ESC */
+  @HostListener('document:keydown.escape')
+  onEscapePress(): void {
+    if (this.showCancelConfirm) {
+      this.closeCancelConfirm();
+    } else if (this.showPreviewModal) {
+      this.closePreview();
+    } else if (this.showNewPrescriptionModal) {
+      this.closeNewPrescriptionModal();
+    } else if (this.selectedPrescription) {
+      this.closePrescriptionDetail();
+    }
+  }
+
   loadData(): void {
     this.isLoading = true;
-    this.errorMessage = '';
+    this.clearMessages();
 
-    // Carica direttamente i pazienti con consenso PRESCRIPTIONS attivo per il medico
+    // BUG-02 FIX: guard departmentCode null anche in loadData
+    const departmentCode = this.doctorApi.getDepartmentCode();
+    if (!departmentCode) {
+      this.errorMessage = 'Reparto non configurato. Contattare l\'amministratore di sistema.';
+      this.isLoading = false;
+      return;
+    }
+
+    // BUG-17 FIX: usa takeUntil per cancellare subscription su destroy
     this.doctorApi.getPatientsWithConsent('PRESCRIPTIONS').pipe(
+      takeUntil(this.destroy$),
       switchMap(patientIds => {
         if (patientIds.length === 0) {
           return of({ patientsWithConsent: [] as { id: number; name: string }[] });
         }
 
-        // Carica i dettagli dei pazienti
         const patientFetches = patientIds.map(id =>
           this.doctorApi.getPatient(id).pipe(
             map(patient => {
@@ -128,23 +161,19 @@ export class DoctorPrescriptionsComponent implements OnInit {
             patientsWithConsent: results.filter((p): p is { id: number; name: string } => p !== null)
           }))
         );
-      })
-    ).subscribe({
-      next: ({ patientsWithConsent }) => {
+      }),
+      // BUG-17 FIX: usa switchMap per il caricamento prescrizioni (annulla precedenti)
+      switchMap(({ patientsWithConsent }) => {
         this.patients = patientsWithConsent;
 
-        // Carica prescrizioni per ogni paziente con consenso
         if (patientsWithConsent.length === 0) {
-          this.prescriptions = [];
-          this.isLoading = false;
-          return;
+          return of([] as PrescriptionDto[]);
         }
 
-        const departmentCode = this.doctorApi.getDepartmentCode() || '';
         const prescriptionFetches = patientsWithConsent.map(patient =>
           this.doctorApi.listPrescriptions({
             patientId: patient.id,
-            departmentCode,
+            departmentCode: departmentCode,
             size: 50
           }).pipe(
             map(page => page.content || []),
@@ -152,17 +181,14 @@ export class DoctorPrescriptionsComponent implements OnInit {
           )
         );
 
-        forkJoin(prescriptionFetches).subscribe({
-          next: (prescriptionArrays) => {
-            const allPrescriptions = prescriptionArrays.flat();
-            this.prescriptions = allPrescriptions.map(p => this.mapPrescription(p));
-            this.isLoading = false;
-          },
-          error: () => {
-            this.errorMessage = 'Errore nel caricamento delle prescrizioni.';
-            this.isLoading = false;
-          }
-        });
+        return forkJoin(prescriptionFetches).pipe(
+          map(arrays => arrays.flat())
+        );
+      })
+    ).subscribe({
+      next: (allPrescriptions) => {
+        this.prescriptions = allPrescriptions.map(p => this.mapPrescription(p));
+        this.isLoading = false;
       },
       error: () => {
         this.errorMessage = 'Errore nel caricamento dei dati.';
@@ -174,11 +200,17 @@ export class DoctorPrescriptionsComponent implements OnInit {
   private mapPrescription(dto: PrescriptionDto): Prescription {
     const patient = this.patientsCache.get(dto.patientId);
 
-    // Calcola data scadenza (issuedAt + max duration)
-    const maxDuration = dto.items.reduce((max, item) => Math.max(max, item.durationDays || 30), 30);
+    // Calcola data scadenza (issuedAt + max duration dei farmaci)
+    const maxDuration = dto.items.reduce((max, item) => Math.max(max, item.durationDays ?? 30), 30);
     const issuedDate = dto.issuedAt ? new Date(dto.issuedAt) : new Date(dto.createdAt);
     const expiryDate = new Date(issuedDate);
     expiryDate.setDate(expiryDate.getDate() + maxDuration);
+
+    // BUG-15 FIX: validazione status con fallback
+    const validStatuses: PrescriptionStatus[] = ['DRAFT', 'ISSUED', 'CANCELLED'];
+    const mappedStatus: PrescriptionStatus = validStatuses.includes(dto.status as PrescriptionStatus)
+      ? (dto.status as PrescriptionStatus)
+      : 'DRAFT';
 
     return {
       id: dto.id,
@@ -188,15 +220,21 @@ export class DoctorPrescriptionsComponent implements OnInit {
         name: item.medicationName,
         dosage: item.dosage,
         posology: item.frequency,
-        duration: item.durationDays || 30,
+        duration: item.durationDays ?? 30,
         notes: item.instructions || ''
       })),
       issuedAt: dto.issuedAt || dto.createdAt,
       expiresAt: expiryDate.toISOString().split('T')[0],
-      status: dto.status as PrescriptionStatus,
-      notes: dto.notes || '',
-      pdfUrl: `/prescriptions/rx_${dto.id}.pdf`
+      status: mappedStatus,
+      notes: dto.notes || ''
     };
+  }
+
+  // --- Helper per ottenere il nome del paziente selezionato nel form ---
+  getSelectedPatientName(): string {
+    if (!this.prescriptionForm.patientId) return '';
+    const patient = this.patients.find(p => p.id === this.prescriptionForm.patientId);
+    return patient?.name || '';
   }
 
   get filteredPrescriptions(): Prescription[] {
@@ -230,6 +268,24 @@ export class DoctorPrescriptionsComponent implements OnInit {
     return Math.ceil(this.filteredPrescriptions.length / this.pageSize) || 1;
   }
 
+  // BUG-21 FIX: paginazione con finestra (max 7 bottoni)
+  get visiblePages(): number[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+    const maxVisible = 7;
+    if (total <= maxVisible) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const half = Math.floor(maxVisible / 2);
+    let start = Math.max(1, current - half);
+    let end = start + maxVisible - 1;
+    if (end > total) {
+      end = total;
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }
+
   openNewPrescriptionModal(): void {
     this.prescriptionForm = {
       patientId: null,
@@ -243,6 +299,7 @@ export class DoctorPrescriptionsComponent implements OnInit {
 
   closeNewPrescriptionModal(): void {
     this.showNewPrescriptionModal = false;
+    this.errorMessage = '';
   }
 
   addMedication(): void {
@@ -255,7 +312,9 @@ export class DoctorPrescriptionsComponent implements OnInit {
     });
   }
 
+  // BUG-22 FIX: guard minimo 1 farmaco
   removeMedication(index: number): void {
+    if (this.prescriptionForm.medications.length <= 1) return;
     this.prescriptionForm.medications.splice(index, 1);
   }
 
@@ -276,8 +335,16 @@ export class DoctorPrescriptionsComponent implements OnInit {
   selectDrug(drug: DrugSuggestion): void {
     if (this.currentMedicationIndex >= 0) {
       this.prescriptionForm.medications[this.currentMedicationIndex].name = drug.name;
+      this.prescriptionForm.medications[this.currentMedicationIndex].dosage = '';
     }
     this.showDrugSuggestions = false;
+  }
+
+  // BUG-12 FIX: chiudi suggerimenti con delay per permettere mousedown
+  hideDrugSuggestions(): void {
+    setTimeout(() => {
+      this.showDrugSuggestions = false;
+    }, 200);
   }
 
   getDosagesForMedication(index: number): string[] {
@@ -293,6 +360,13 @@ export class DoctorPrescriptionsComponent implements OnInit {
 
   closePreview(): void {
     this.showPreviewModal = false;
+  }
+
+  // BUG-08 FIX: clear error on change
+  onFormChange(): void {
+    if (this.errorMessage) {
+      this.errorMessage = '';
+    }
   }
 
   validateForm(): boolean {
@@ -324,7 +398,7 @@ export class DoctorPrescriptionsComponent implements OnInit {
     }
 
     this.isSaving = true;
-    this.errorMessage = '';
+    this.clearMessages();
 
     const patient = this.patients.find(p => p.id === this.prescriptionForm.patientId);
 
@@ -340,18 +414,53 @@ export class DoctorPrescriptionsComponent implements OnInit {
         instructions: med.notes,
         sortOrder: index
       }))
-    }).subscribe({
-      next: (created) => {
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
         this.isSaving = false;
         this.showPreviewModal = false;
         this.closeNewPrescriptionModal();
-        this.loadData(); // Ricarica tutto
+        this.loadData();
         this.successMessage = `Prescrizione emessa con successo. Il paziente ${patient?.name} riceverà una notifica.`;
         setTimeout(() => this.successMessage = '', 5000);
       },
       error: (err) => {
         this.isSaving = false;
         this.errorMessage = err.error?.detail || 'Errore nella creazione della prescrizione.';
+      }
+    });
+  }
+
+  // BUG-09 FIX: cancel prescription UI
+  openCancelConfirm(prescription: Prescription): void {
+    this.cancelTarget = prescription;
+    this.showCancelConfirm = true;
+  }
+
+  closeCancelConfirm(): void {
+    this.showCancelConfirm = false;
+    this.cancelTarget = null;
+  }
+
+  confirmCancelPrescription(): void {
+    if (!this.cancelTarget) return;
+    this.isCancelling = true;
+    this.clearMessages();
+
+    this.doctorApi.cancelPrescription(this.cancelTarget.id).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: () => {
+        const cancelledId = this.cancelTarget?.id;
+        this.isCancelling = false;
+        this.closeCancelConfirm();
+        this.closePrescriptionDetail();
+        this.loadData();
+        this.successMessage = `Prescrizione #${cancelledId} annullata con successo.`;
+        setTimeout(() => this.successMessage = '', 5000);
+      },
+      error: (err) => {
+        this.isCancelling = false;
+        this.errorMessage = err.error?.detail || 'Errore nell\'annullamento della prescrizione.';
       }
     });
   }
@@ -376,34 +485,90 @@ export class DoctorPrescriptionsComponent implements OnInit {
     this.selectedPrescription = null;
   }
 
+  // BUG-05 FIX: implementazione reale download PDF (placeholder che genera un blob testuale)
   downloadPdf(prescription: Prescription): void {
-    this.successMessage = `Download PDF prescrizione #${prescription.id} avviato.`;
+    // Genera un riepilogo testuale come PDF placeholder
+    const content = this.generatePrescriptionText(prescription);
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `prescrizione_${prescription.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    this.successMessage = `Download prescrizione #${prescription.id} avviato.`;
     setTimeout(() => this.successMessage = '', 3000);
   }
 
+  private generatePrescriptionText(prescription: Prescription): string {
+    const lines: string[] = [
+      '==================================================',
+      '            PRESCRIZIONE MEDICA',
+      '==================================================',
+      '',
+      `Prescrizione N.: ${prescription.id}`,
+      `Paziente: ${prescription.patientName}`,
+      `Data emissione: ${this.formatDateTime(prescription.issuedAt)}`,
+      `Scadenza: ${this.formatDate(prescription.expiresAt)}`,
+      `Stato: ${this.getStatusLabel(prescription.status)}`,
+      '',
+      '--- FARMACI PRESCRITTI ---',
+      ''
+    ];
+
+    prescription.medications.forEach((med, i) => {
+      lines.push(`${i + 1}. ${med.name} ${med.dosage}`);
+      lines.push(`   Posologia: ${med.posology}`);
+      lines.push(`   Durata: ${med.duration} giorni`);
+      if (med.notes) {
+        lines.push(`   Note: ${med.notes}`);
+      }
+      lines.push('');
+    });
+
+    if (prescription.notes) {
+      lines.push('--- NOTE ---');
+      lines.push(prescription.notes);
+      lines.push('');
+    }
+
+    lines.push('==================================================');
+    lines.push('Documento generato dal sistema Sanitech');
+    return lines.join('\n');
+  }
+
   getStatusLabel(status: PrescriptionStatus): string {
-    const labels: Record<PrescriptionStatus, string> = {
+    const labels: Record<string, string> = {
       DRAFT: 'Bozza',
       ISSUED: 'Emessa',
-      EXPIRED: 'Scaduta',
       CANCELLED: 'Annullata'
     };
-    return labels[status];
+    return labels[status] || status;
   }
 
   getStatusBadgeClass(status: PrescriptionStatus): string {
-    const classes: Record<PrescriptionStatus, string> = {
+    const classes: Record<string, string> = {
       DRAFT: 'bg-warning text-dark',
       ISSUED: 'bg-success',
-      EXPIRED: 'bg-secondary',
       CANCELLED: 'bg-danger'
     };
-    return classes[status];
+    return classes[status] || 'bg-secondary';
+  }
+
+  // BUG-23 FIX: clear entrambi i messaggi
+  private clearMessages(): void {
+    this.successMessage = '';
+    this.errorMessage = '';
   }
 
   formatDate(dateStr: string): string {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('it-IT', {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('it-IT', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -412,7 +577,9 @@ export class DoctorPrescriptionsComponent implements OnInit {
 
   formatDateTime(dateStr: string): string {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('it-IT', {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('it-IT', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

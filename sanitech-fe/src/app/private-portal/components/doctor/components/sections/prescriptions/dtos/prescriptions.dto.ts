@@ -1,8 +1,9 @@
 // ============================================================================
 // DTOs locali per il componente Prescriptions
+// Allineati al backend enum PrescriptionStatus { DRAFT, ISSUED, CANCELLED }
 // ============================================================================
 
-export type PrescriptionStatus = 'DRAFT' | 'ISSUED' | 'EXPIRED' | 'CANCELLED';
+export type PrescriptionStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
 
 export interface Medication {
   name: string;
@@ -21,7 +22,6 @@ export interface Prescription {
   expiresAt: string;
   status: PrescriptionStatus;
   notes: string;
-  pdfUrl: string;
 }
 
 export interface PrescriptionForm {

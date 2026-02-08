@@ -94,7 +94,9 @@ export class DoctorApiService {
 
   getDepartmentCode(): string | null {
     const claim = this.auth.getAccessTokenClaim('dept');
-    return typeof claim === 'string' ? claim : null;
+    if (typeof claim === 'string') return claim;
+    if (Array.isArray(claim) && claim.length > 0) return String(claim[0]);
+    return null;
   }
 
   /**
@@ -168,7 +170,7 @@ export class DoctorApiService {
     page?: number;
     size?: number;
   }): Observable<Page<PrescriptionDto>> {
-    return this.api.get<Page<PrescriptionDto>>('/api/doctor-prescriptions', {
+    return this.api.get<Page<PrescriptionDto>>('/api/doctor/prescriptions', {
       patientId: params.patientId,
       departmentCode: params.departmentCode,
       page: params.page ?? 0,
@@ -177,15 +179,15 @@ export class DoctorApiService {
   }
 
   getPrescription(id: number): Observable<PrescriptionDto> {
-    return this.api.get<PrescriptionDto>(`/api/doctor-prescriptions/${id}`);
+    return this.api.get<PrescriptionDto>(`/api/doctor/prescriptions/${id}`);
   }
 
   createPrescription(dto: PrescriptionCreateDto): Observable<PrescriptionDto> {
-    return this.api.post<PrescriptionDto>('/api/doctor-prescriptions', dto);
+    return this.api.post<PrescriptionDto>('/api/doctor/prescriptions', dto);
   }
 
   cancelPrescription(id: number): Observable<void> {
-    return this.api.post<void>(`/api/doctor-prescriptions/${id}/cancel`, {});
+    return this.api.post<void>(`/api/doctor/prescriptions/${id}/cancel`, {});
   }
 
   // ---------------------------------------------------------------------------

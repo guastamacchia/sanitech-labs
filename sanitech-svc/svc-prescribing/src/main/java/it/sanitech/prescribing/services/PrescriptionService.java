@@ -2,6 +2,8 @@ package it.sanitech.prescribing.services;
 
 import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import it.sanitech.outbox.core.DomainEventPublisher;
 import it.sanitech.prescribing.integrations.consents.ConsentClient;
 import it.sanitech.prescribing.repositories.PrescriptionRepository;
@@ -154,6 +156,7 @@ public class PrescriptionService {
         Prescription p = prescriptions.findDetailedById(prescriptionId)
                 .orElseThrow(() -> NotFoundException.of("Prescrizione", prescriptionId));
 
+        requireMutableStatus(p);
         deptGuard.checkCanManage(p.getDepartmentCode(), auth);
         consentClient.assertPrescriptionConsent(p.getPatientId(), doctorId, auth);
 
@@ -183,6 +186,7 @@ public class PrescriptionService {
         Prescription p = prescriptions.findDetailedById(prescriptionId)
                 .orElseThrow(() -> NotFoundException.of("Prescrizione", prescriptionId));
 
+        requireMutableStatus(p);
         deptGuard.checkCanManage(p.getDepartmentCode(), auth);
         consentClient.assertPrescriptionConsent(p.getPatientId(), doctorId, auth);
 
@@ -204,6 +208,8 @@ public class PrescriptionService {
 
     /**
      * Annulla una prescrizione.
+     *
+     * <p>Solo le prescrizioni in stato {@code DRAFT} o {@code ISSUED} possono essere annullate.</p>
      */
     @Transactional
     public void cancel(Long prescriptionId, Authentication auth) {
@@ -211,19 +217,47 @@ public class PrescriptionService {
         Prescription p = prescriptions.findDetailedById(prescriptionId)
                 .orElseThrow(() -> NotFoundException.of("Prescrizione", prescriptionId));
 
+        requireNotCancelled(p);
         deptGuard.checkCanManage(p.getDepartmentCode(), auth);
         consentClient.assertPrescriptionConsent(p.getPatientId(), doctorId, auth);
 
         p.markCancelled();
+        Prescription saved = prescriptions.save(p);
 
         events.publish(
                 AppConstants.Outbox.AGGREGATE_PRESCRIPTION,
-                String.valueOf(prescriptionId),
+                String.valueOf(saved.getId()),
                 AppConstants.Outbox.EVT_PRESCRIPTION_CANCELLED,
-                new PrescriptionEventPayload(p),
+                new PrescriptionEventPayload(saved),
                 AppConstants.Outbox.TOPIC_AUDITS_EVENTS,
                 auth
         );
+    }
+
+    // ---------------------------------------------------------------------------
+    // STATUS GUARDS
+    // ---------------------------------------------------------------------------
+
+    /**
+     * Verifica che la prescrizione sia in uno stato modificabile (DRAFT).
+     * Le prescrizioni ISSUED o CANCELLED non possono essere aggiornate.
+     */
+    private void requireMutableStatus(Prescription p) {
+        if (p.getStatus() != PrescriptionStatus.DRAFT) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "La prescrizione in stato " + p.getStatus() + " non può essere modificata. Solo le prescrizioni in bozza (DRAFT) sono aggiornabili.");
+        }
+    }
+
+    /**
+     * Verifica che la prescrizione non sia già annullata.
+     * Sia DRAFT che ISSUED possono essere annullate.
+     */
+    private void requireNotCancelled(Prescription p) {
+        if (p.getStatus() == PrescriptionStatus.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "La prescrizione è già stata annullata.");
+        }
     }
 
     /**

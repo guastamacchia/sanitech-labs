@@ -34,6 +34,13 @@
     <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
   </div>
 
+  <!-- Error message (lista) -->
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage && !showNewPrescriptionModal" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="errorMessage = ''"></button>
+  </div>
+
   <!-- Loading -->
   <div class="text-center py-5" *ngIf="isLoading && prescriptions.length === 0">
     <div class="spinner-border text-primary" role="status">
@@ -100,7 +107,6 @@
           <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti gli stati</option>
             <option value="ISSUED">Emesse</option>
-            <option value="EXPIRED">Scadute</option>
             <option value="DRAFT">Bozze</option>
             <option value="CANCELLED">Annullate</option>
           </select>
@@ -174,11 +180,15 @@
                   <button class="btn btn-outline-primary" (click)="viewPrescription(prescription)" title="Visualizza">
                     <i class="bi bi-eye"></i>
                   </button>
-                  <button class="btn btn-outline-secondary" (click)="downloadPdf(prescription)" title="Scarica PDF">
+                  <button class="btn btn-outline-secondary" (click)="downloadPdf(prescription)" title="Scarica riepilogo">
                     <i class="bi bi-download"></i>
                   </button>
                   <button class="btn btn-outline-info" (click)="duplicatePrescription(prescription)" title="Duplica per rinnovo">
                     <i class="bi bi-copy"></i>
+                  </button>
+                  <button class="btn btn-outline-danger" (click)="openCancelConfirm(prescription)" title="Annulla prescrizione"
+                          *ngIf="prescription.status === 'ISSUED'">
+                    <i class="bi bi-x-circle"></i>
                   </button>
                 </div>
               </td>
@@ -193,7 +203,7 @@
         </table>
       </div>
     </div>
-    <!-- Paginazione -->
+    <!-- Paginazione con finestra -->
     <div class="card-footer bg-transparent border-top" *ngIf="totalPages > 1">
       <div class="d-flex justify-content-between align-items-center">
         <small class="text-muted">
@@ -206,8 +216,8 @@
                 <i class="bi bi-chevron-left"></i>
               </button>
             </li>
-            <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1">
-              <button class="page-link" (click)="currentPage = i + 1">{{ i + 1 }}</button>
+            <li class="page-item" *ngFor="let page of visiblePages" [class.active]="currentPage === page">
+              <button class="page-link" (click)="currentPage = page">{{ page }}</button>
             </li>
             <li class="page-item" [class.disabled]="currentPage === totalPages">
               <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
@@ -223,16 +233,16 @@
 
 <!-- Modal nuova prescrizione -->
 <ng-container *ngIf="showNewPrescriptionModal">
-  <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show d-block" tabindex="-1">
+  <div class="modal-backdrop fade show" style="z-index: 1050;"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="newPrescriptionTitle" style="z-index: 1055;">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
+          <h5 class="modal-title" id="newPrescriptionTitle">
             <i class="bi bi-prescription2 me-2"></i>
             Nuova prescrizione
           </h5>
-          <button type="button" class="btn-close" (click)="closeNewPrescriptionModal()"></button>
+          <button type="button" class="btn-close" (click)="closeNewPrescriptionModal()" aria-label="Chiudi"></button>
         </div>
         <div class="modal-body">
           <div class="alert alert-danger" *ngIf="errorMessage">
@@ -243,7 +253,7 @@
           <!-- Paziente -->
           <div class="mb-4">
             <label class="form-label fw-semibold">Paziente *</label>
-            <select class="form-select" [(ngModel)]="prescriptionForm.patientId">
+            <select class="form-select" [(ngModel)]="prescriptionForm.patientId" (ngModelChange)="onFormChange()">
               <option [ngValue]="null">Seleziona paziente...</option>
               <option *ngFor="let patient of patients" [ngValue]="patient.id">{{ patient.name }}</option>
             </select>
@@ -272,7 +282,8 @@
                     <label class="form-label small">Nome farmaco *</label>
                     <input type="text" class="form-control" [(ngModel)]="med.name"
                            (input)="searchDrug(med.name, i)"
-                           (blur)="showDrugSuggestions = false"
+                           (blur)="hideDrugSuggestions()"
+                           (ngModelChange)="onFormChange()"
                            placeholder="Inizia a digitare...">
                     <div class="dropdown-menu show w-100" *ngIf="showDrugSuggestions && currentMedicationIndex === i">
                       <button class="dropdown-item" *ngFor="let drug of filteredDrugs"
@@ -283,15 +294,15 @@
                   </div>
                   <div class="col-md-6">
                     <label class="form-label small">Dosaggio *</label>
-                    <select class="form-select" [(ngModel)]="med.dosage" *ngIf="getDosagesForMedication(i).length > 0">
+                    <select class="form-select" [(ngModel)]="med.dosage" (ngModelChange)="onFormChange()" *ngIf="getDosagesForMedication(i).length > 0">
                       <option value="">Seleziona...</option>
                       <option *ngFor="let dose of getDosagesForMedication(i)" [value]="dose">{{ dose }}</option>
                     </select>
-                    <input type="text" class="form-control" [(ngModel)]="med.dosage" placeholder="Es. 5mg" *ngIf="getDosagesForMedication(i).length === 0">
+                    <input type="text" class="form-control" [(ngModel)]="med.dosage" (ngModelChange)="onFormChange()" placeholder="Es. 5mg" *ngIf="getDosagesForMedication(i).length === 0">
                   </div>
                   <div class="col-md-8">
                     <label class="form-label small">Posologia *</label>
-                    <input type="text" class="form-control" [(ngModel)]="med.posology" placeholder="Es. 1 compressa al mattino">
+                    <input type="text" class="form-control" [(ngModel)]="med.posology" (ngModelChange)="onFormChange()" placeholder="Es. 1 compressa al mattino">
                   </div>
                   <div class="col-md-4">
                     <label class="form-label small">Durata (giorni)</label>
@@ -327,19 +338,19 @@
 <!-- Modal anteprima e conferma -->
 <ng-container *ngIf="showPreviewModal">
   <div class="modal-backdrop fade show" style="z-index: 1060;"></div>
-  <div class="modal fade show d-block" tabindex="-1" style="z-index: 1065;">
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="previewTitle" style="z-index: 1065;">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header bg-light">
-          <h5 class="modal-title">
+          <h5 class="modal-title" id="previewTitle">
             <i class="bi bi-file-earmark-check me-2"></i>
             Anteprima prescrizione
           </h5>
-          <button type="button" class="btn-close" (click)="closePreview()"></button>
+          <button type="button" class="btn-close" (click)="closePreview()" aria-label="Chiudi"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <strong>Paziente:</strong> {{ patients | json }}
+            <strong>Paziente:</strong> {{ getSelectedPatientName() }}
           </div>
           <hr>
           <h6 class="fw-semibold mb-3">Farmaci prescritti</h6>
@@ -373,16 +384,16 @@
 
 <!-- Modal dettaglio prescrizione -->
 <ng-container *ngIf="selectedPrescription">
-  <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show d-block" tabindex="-1">
+  <div class="modal-backdrop fade show" style="z-index: 1050;"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="detailTitle" style="z-index: 1055;">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
+          <h5 class="modal-title" id="detailTitle">
             <i class="bi bi-prescription2 me-2"></i>
             Prescrizione #{{ selectedPrescription.id }}
           </h5>
-          <button type="button" class="btn-close" (click)="closePrescriptionDetail()"></button>
+          <button type="button" class="btn-close" (click)="closePrescriptionDetail()" aria-label="Chiudi"></button>
         </div>
         <div class="modal-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
@@ -414,11 +425,46 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" (click)="closePrescriptionDetail()">Chiudi</button>
+          <button type="button" class="btn btn-outline-danger"
+                  (click)="openCancelConfirm(selectedPrescription)"
+                  *ngIf="selectedPrescription.status === 'ISSUED'">
+            <i class="bi bi-x-circle me-1"></i>Annulla
+          </button>
           <button type="button" class="btn btn-outline-primary" (click)="downloadPdf(selectedPrescription)">
-            <i class="bi bi-download me-1"></i>Scarica PDF
+            <i class="bi bi-download me-1"></i>Scarica riepilogo
           </button>
           <button type="button" class="btn btn-primary" (click)="duplicatePrescription(selectedPrescription); closePrescriptionDetail()">
             <i class="bi bi-copy me-1"></i>Duplica
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Modal conferma annullamento -->
+<ng-container *ngIf="showCancelConfirm && cancelTarget">
+  <div class="modal-backdrop fade show" style="z-index: 1070;"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cancelTitle" style="z-index: 1075;">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="cancelTitle">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Conferma annullamento
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeCancelConfirm()" aria-label="Chiudi"></button>
+        </div>
+        <div class="modal-body">
+          <p>Sei sicuro di voler annullare la prescrizione <strong>#{{ cancelTarget.id }}</strong> per il paziente <strong>{{ cancelTarget.patientName }}</strong>?</p>
+          <p class="text-muted small mb-0">Questa operazione non può essere annullata.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeCancelConfirm()">No, torna indietro</button>
+          <button type="button" class="btn btn-danger" (click)="confirmCancelPrescription()" [disabled]="isCancelling">
+            <span class="spinner-border spinner-border-sm me-1" *ngIf="isCancelling"></span>
+            <i class="bi bi-x-circle me-1" *ngIf="!isCancelling"></i>
+            Sì, annulla
           </button>
         </div>
       </div>

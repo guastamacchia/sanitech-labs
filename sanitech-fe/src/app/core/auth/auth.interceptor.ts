@@ -19,7 +19,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(request).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && auth.isAuthenticated && !isRefreshing) {
+      if (error.status === 401 && auth.hasRefreshToken && !isRefreshing) {
         return handleUnauthorized(req, next, auth);
       }
       return throwError(() => error);

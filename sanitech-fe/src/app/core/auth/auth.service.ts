@@ -1,9 +1,11 @@
-import { Injectable, Optional } from '@angular/core';
+import { Injectable, Optional, OnDestroy } from '@angular/core';
 import { AuthConfig, OAuthService, OAuthErrorEvent } from 'angular-oauth2-oidc';
 import { filter } from 'rxjs/operators';
 import { environment } from '@env/environment';
 
 const redirectBase = window.location.origin;
+
+const SILENT_REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minuti
 
 const authConfig: AuthConfig = {
   issuer: `${environment.keycloakUrl}/realms/${environment.realm}`,
@@ -15,20 +17,26 @@ const authConfig: AuthConfig = {
   strictDiscoveryDocumentValidation: true,
   showDebugInformation: !environment.production,
   requireHttps: environment.production,
-  useSilentRefresh: true,
-  silentRefreshRedirectUri: `${redirectBase}/silent-refresh.html`
+  useSilentRefresh: false,
+  silentRefreshRedirectUri: `${redirectBase}/silent-refresh.html`,
+  timeoutFactor: 0.75
 };
 
 @Injectable({
   providedIn: 'root'
 })
-export class AuthService {
+export class AuthService implements OnDestroy {
   private authError: OAuthErrorEvent | null = null;
+  private silentRefreshTimerId: ReturnType<typeof setInterval> | null = null;
 
   constructor(@Optional() private oauthService?: OAuthService) {
     this.oauth.configure(authConfig);
     this.setupErrorHandling();
-    this.oauth.setupAutomaticSilentRefresh();
+    this.startSilentRefreshTimer();
+  }
+
+  ngOnDestroy(): void {
+    this.stopSilentRefreshTimer();
   }
 
   private setupErrorHandling(): void {
@@ -67,6 +75,7 @@ export class AuthService {
   }
 
   logout(): void {
+    this.stopSilentRefreshTimer();
     this.clearClientState();
     this.oauth.logOut();
   }
@@ -97,6 +106,28 @@ export class AuthService {
 
   get isAuthenticated(): boolean {
     return this.oauth.hasValidAccessToken();
+  }
+
+  /**
+   * Verifica se è disponibile un refresh token per rinnovare la sessione.
+   */
+  get hasRefreshToken(): boolean {
+    return !!this.oauth.getRefreshToken();
+  }
+
+  /**
+   * Tenta di rinnovare la sessione: prima prova il refresh token,
+   * poi verifica se il token è ancora valido.
+   * Usato dall'auth guard prima di redirigere al login.
+   */
+  async tryRefreshLogin(): Promise<boolean> {
+    if (this.oauth.hasValidAccessToken()) {
+      return true;
+    }
+    if (this.hasRefreshToken) {
+      return this.refreshToken();
+    }
+    return false;
   }
 
   get identityClaims(): Record<string, unknown> {
@@ -144,6 +175,31 @@ export class AuthService {
       throw new Error('OAuthService non configurato');
     }
     return this.oauthService;
+  }
+
+  /**
+   * Avvia un timer che rinnova silenziosamente il token ogni 5 minuti.
+   * In questo modo il token viene sempre rinnovato prima della scadenza,
+   * evitando che l'utente venga disconnesso.
+   */
+  private startSilentRefreshTimer(): void {
+    this.stopSilentRefreshTimer();
+    this.silentRefreshTimerId = setInterval(() => {
+      if (this.hasRefreshToken) {
+        this.refreshToken().then((success) => {
+          if (!environment.production) {
+            console.log(`[AuthService] Silent refresh ${success ? 'riuscito' : 'fallito'}`);
+          }
+        });
+      }
+    }, SILENT_REFRESH_INTERVAL_MS);
+  }
+
+  private stopSilentRefreshTimer(): void {
+    if (this.silentRefreshTimerId !== null) {
+      clearInterval(this.silentRefreshTimerId);
+      this.silentRefreshTimerId = null;
+    }
   }
 
   private clearClientState(): void {

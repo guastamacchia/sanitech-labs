@@ -49,7 +49,7 @@ export interface AppointmentDto {
 }
 
 // === Prescrizioni ===
-export type PrescriptionStatus = 'DRAFT' | 'ISSUED' | 'EXPIRED' | 'CANCELLED';
+export type PrescriptionStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
 
 export interface PrescriptionItemDto {
   id?: number;
@@ -57,7 +57,7 @@ export interface PrescriptionItemDto {
   medicationName: string;
   dosage: string;
   frequency: string;
-  durationDays: number;
+  durationDays?: number | null;
   instructions?: string;
   sortOrder?: number;
 }
