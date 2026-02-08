@@ -44,6 +44,11 @@ export class ApiService {
     return this.http.patch<T>(url, body);
   }
 
+  getBlob(path: string): Observable<Blob> {
+    const url = `${environment.gatewayUrl}${path}`;
+    return this.http.get(url, { responseType: 'blob' });
+  }
+
   postMultipart<T>(path: string, formData: FormData): Observable<T> {
     const url = `${environment.gatewayUrl}${path}`;
     return this.http.post<T>(url, formData);

@@ -414,16 +414,45 @@ export class DoctorClinicalDocsComponent implements OnInit, OnDestroy {
   }
 
   viewDocument(doc: ClinicalDocument): void {
-    const url = this.doctorApi.downloadDocumentUrl(doc.id);
-    window.open(url, '_blank');
+    this.doctorApi.downloadDocumentBlob(doc.id).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (blob) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+      },
+      error: (err) => {
+        if (err.status === 403) {
+          this.errorMessage = 'Non sei autorizzato a visualizzare questo documento.';
+        } else {
+          this.errorMessage = 'Errore durante l\'apertura del documento.';
+        }
+      }
+    });
   }
 
   downloadDocument(doc: ClinicalDocument): void {
-    const url = this.doctorApi.downloadDocumentUrl(doc.id);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = doc.title;
-    link.click();
+    this.doctorApi.downloadDocumentBlob(doc.id).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (blob) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = doc.description || doc.title;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      },
+      error: (err) => {
+        if (err.status === 403) {
+          this.errorMessage = 'Non sei autorizzato a scaricare questo documento.';
+        } else {
+          this.errorMessage = 'Errore durante il download del documento.';
+        }
+      }
+    });
   }
 
   deleteDocument(doc: ClinicalDocument): void {

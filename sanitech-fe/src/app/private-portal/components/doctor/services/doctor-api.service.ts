@@ -429,6 +429,10 @@ export class DoctorApiService {
     return `/api/docs/${documentId}/download`;
   }
 
+  downloadDocumentBlob(documentId: string): Observable<Blob> {
+    return this.api.getBlob(`/api/docs/${documentId}/download`);
+  }
+
   deleteDocument(documentId: string): Observable<void> {
     return this.api.delete<void>(`/api/docs/${documentId}`);
   }
