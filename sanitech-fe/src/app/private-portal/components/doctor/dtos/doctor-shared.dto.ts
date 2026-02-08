@@ -200,6 +200,7 @@ export interface NotificationDto {
 export interface DocumentDto {
   id: string;
   patientId: number;
+  uploadedBy: string;
   departmentCode: string;
   documentType: string;
   fileName: string;

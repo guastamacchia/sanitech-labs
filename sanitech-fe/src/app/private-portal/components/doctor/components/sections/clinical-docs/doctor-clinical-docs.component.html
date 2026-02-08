@@ -13,7 +13,8 @@
     </div>
     <div class="d-flex gap-2">
       <button class="btn btn-outline-secondary" (click)="loadData()" [disabled]="isLoading">
-        <i class="bi bi-arrow-clockwise me-1"></i>
+        <span class="spinner-border spinner-border-sm me-1" *ngIf="isLoading"></span>
+        <i class="bi bi-arrow-clockwise me-1" *ngIf="!isLoading"></i>
         Aggiorna
       </button>
       <button class="btn btn-primary" (click)="openUploadModal()">
@@ -31,7 +32,14 @@
   <div class="alert alert-success alert-dismissible fade show" *ngIf="successMessage" role="alert">
     <i class="bi bi-check-circle me-2"></i>
     {{ successMessage }}
-    <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="dismissSuccess()"></button>
+  </div>
+
+  <!-- BUG-018 fix: Alert errore nella pagina principale -->
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="dismissError()"></button>
   </div>
 
   <!-- Loading -->
@@ -91,13 +99,13 @@
     </div>
   </div>
 
-  <!-- Filtri -->
+  <!-- Filtri (BUG-012 fix: centralizzato onFilterChange) -->
   <div class="card card-glass border-0 shadow-sm mb-4" *ngIf="!isLoading || documents.length > 0">
     <div class="card-body">
       <div class="row g-3 align-items-end">
         <div class="col-md-3">
           <label class="form-label fw-semibold small text-muted">Tipo documento</label>
-          <select class="form-select" [(ngModel)]="typeFilter" (ngModelChange)="currentPage = 1">
+          <select class="form-select" [(ngModel)]="typeFilter" (ngModelChange)="onFilterChange()">
             <option value="ALL">Tutti i tipi</option>
             <option value="REFERTO_VISITA">Referto visita</option>
             <option value="REFERTO_ESAME">Referto esame</option>
@@ -108,7 +116,7 @@
         </div>
         <div class="col-md-3">
           <label class="form-label fw-semibold small text-muted">Paziente</label>
-          <select class="form-select" [(ngModel)]="patientFilter" (ngModelChange)="currentPage = 1">
+          <select class="form-select" [(ngModel)]="patientFilter" (ngModelChange)="onFilterChange()">
             <option [ngValue]="0">Tutti i pazienti</option>
             <option *ngFor="let patient of patients" [ngValue]="patient.id">{{ patient.name }}</option>
           </select>
@@ -117,7 +125,7 @@
           <label class="form-label fw-semibold small text-muted">Cerca</label>
           <div class="input-group">
             <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control" placeholder="Titolo, paziente o descrizione..." [(ngModel)]="searchQuery" (ngModelChange)="currentPage = 1">
+            <input type="text" class="form-control" placeholder="Titolo, paziente o descrizione..." [(ngModel)]="searchQuery" (ngModelChange)="onFilterChange()">
           </div>
         </div>
       </div>
@@ -159,7 +167,7 @@
                 </div>
                 <small class="text-muted text-nowrap ms-2">{{ formatDateTime(doc.uploadedAt) }}</small>
               </div>
-              <p class="text-muted small mb-2">{{ doc.description }}</p>
+              <p class="text-muted small mb-2" *ngIf="doc.description">{{ doc.description }}</p>
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="badge" [ngClass]="getTypeBadgeClass(doc.type)">
                   {{ getTypeLabel(doc.type) }}
@@ -200,18 +208,18 @@
         <small class="text-muted">
           Pagina {{ currentPage }} di {{ totalPages }} ({{ filteredDocuments.length }} documenti)
         </small>
-        <nav>
+        <nav aria-label="Paginazione documenti">
           <ul class="pagination pagination-sm mb-0">
             <li class="page-item" [class.disabled]="currentPage === 1">
-              <button class="page-link" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1">
+              <button class="page-link" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1" aria-label="Pagina precedente">
                 <i class="bi bi-chevron-left"></i>
               </button>
             </li>
-            <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1">
-              <button class="page-link" (click)="currentPage = i + 1">{{ i + 1 }}</button>
+            <li class="page-item" *ngFor="let page of pageNumbers" [class.active]="currentPage === page">
+              <button class="page-link" (click)="currentPage = page" [attr.aria-label]="'Pagina ' + page">{{ page }}</button>
             </li>
             <li class="page-item" [class.disabled]="currentPage === totalPages">
-              <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
+              <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages" aria-label="Pagina successiva">
                 <i class="bi bi-chevron-right"></i>
               </button>
             </li>
@@ -226,25 +234,25 @@
 <!-- Modal upload documento -->
 <ng-container *ngIf="showUploadModal">
   <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show d-block" tabindex="-1">
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="uploadModalTitle">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
+          <h5 class="modal-title" id="uploadModalTitle">
             <i class="bi bi-upload me-2"></i>
             Carica documento
           </h5>
-          <button type="button" class="btn-close" (click)="closeUploadModal()"></button>
+          <button type="button" class="btn-close" (click)="closeUploadModal()" aria-label="Chiudi"></button>
         </div>
         <div class="modal-body">
-          <div class="alert alert-danger" *ngIf="errorMessage">
+          <div class="alert alert-danger" *ngIf="uploadErrorMessage">
             <i class="bi bi-exclamation-triangle me-2"></i>
-            {{ errorMessage }}
+            {{ uploadErrorMessage }}
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Paziente *</label>
-            <select class="form-select" [(ngModel)]="uploadForm.patientId">
+            <label class="form-label" for="uploadPatient">Paziente *</label>
+            <select class="form-select" id="uploadPatient" [(ngModel)]="uploadForm.patientId">
               <option [ngValue]="null">Seleziona paziente...</option>
               <option *ngFor="let patient of patients" [ngValue]="patient.id">{{ patient.name }}</option>
             </select>
@@ -252,8 +260,8 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Tipo documento *</label>
-            <select class="form-select" [(ngModel)]="uploadForm.type">
+            <label class="form-label" for="uploadType">Tipo documento *</label>
+            <select class="form-select" id="uploadType" [(ngModel)]="uploadForm.type">
               <option value="REFERTO_VISITA">Referto visita</option>
               <option value="REFERTO_ESAME">Referto esame strumentale</option>
               <option value="LETTERA_DIMISSIONE">Lettera di dimissione</option>
@@ -263,18 +271,18 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Titolo *</label>
-            <input type="text" class="form-control" [(ngModel)]="uploadForm.title" placeholder="Es. ECG a riposo - controllo aritmia">
+            <label class="form-label" for="uploadTitle">Titolo *</label>
+            <input type="text" class="form-control" id="uploadTitle" [(ngModel)]="uploadForm.title" placeholder="Es. ECG a riposo - controllo aritmia">
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Descrizione</label>
-            <textarea class="form-control" rows="2" [(ngModel)]="uploadForm.description" placeholder="Descrizione breve del documento..."></textarea>
+            <label class="form-label" for="uploadDescription">Descrizione</label>
+            <textarea class="form-control" id="uploadDescription" rows="2" [(ngModel)]="uploadForm.description" placeholder="Descrizione breve del documento..."></textarea>
           </div>
 
           <div class="mb-3">
-            <label class="form-label">File *</label>
-            <input type="file" class="form-control" (change)="onFileSelected($event)" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+            <label class="form-label" for="uploadFile">File *</label>
+            <input type="file" class="form-control" id="uploadFile" (change)="onFileSelected($event)" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
             <small class="text-muted">Formati: PDF, JPG, PNG, DOC, DOCX (max 10MB)</small>
           </div>
 
@@ -300,15 +308,15 @@
 <!-- Modal conferma eliminazione -->
 <ng-container *ngIf="showDeleteModal && documentToDelete">
   <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show d-block" tabindex="-1">
+  <div class="modal fade show d-block" tabindex="-1" role="alertdialog" aria-modal="true" aria-labelledby="deleteModalTitle">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
+          <h5 class="modal-title" id="deleteModalTitle">
             <i class="bi bi-exclamation-triangle text-danger me-2"></i>
             Conferma eliminazione
           </h5>
-          <button type="button" class="btn-close" (click)="closeDeleteModal()"></button>
+          <button type="button" class="btn-close" (click)="closeDeleteModal()" aria-label="Chiudi"></button>
         </div>
         <div class="modal-body">
           <p>Sei sicuro di voler eliminare il documento:</p>

@@ -79,6 +79,7 @@ class DocumentServiceTest {
             return new DocumentDto(
                     saved.getId(),
                     saved.getPatientId(),
+                    saved.getUploadedBy(),
                     saved.getDepartmentCode(),
                     saved.getDocumentType(),
                     saved.getFileName(),
@@ -135,6 +136,7 @@ class DocumentServiceTest {
         when(mapper.toDto(doc)).thenReturn(new DocumentDto(
                 doc.getId(),
                 doc.getPatientId(),
+                doc.getUploadedBy(),
                 doc.getDepartmentCode(),
                 doc.getDocumentType(),
                 doc.getFileName(),

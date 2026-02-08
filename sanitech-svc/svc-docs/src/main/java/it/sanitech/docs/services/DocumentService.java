@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -39,6 +40,18 @@ public class DocumentService {
     private static final String AGG_DOCUMENT = "DOCUMENT";
     private static final String EVT_UPLOADED = "DOCUMENT_UPLOADED";
     private static final String EVT_DELETED = "DOCUMENT_DELETED";
+
+    /** Dimensione massima file: 10 MB. */
+    private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
+
+    /** Content type ammessi per upload documenti. */
+    private static final List<String> ALLOWED_CONTENT_TYPES = List.of(
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
 
     private final DocumentRepository documents;
     private final DocumentMapper mapper;
@@ -97,12 +110,23 @@ public class DocumentService {
             throw new IllegalArgumentException("file obbligatorio.");
         }
 
-        String normalizedDept = departmentCode.trim().toUpperCase();
-        String normalizedType = documentType.trim().toUpperCase();
+        // Validazione dimensione file
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException("Il file supera la dimensione massima consentita di 10 MB.");
+        }
 
+        // Validazione content type
         String contentType = (file.getContentType() == null || file.getContentType().isBlank())
                 ? "application/octet-stream"
                 : file.getContentType();
+
+        if (!ALLOWED_CONTENT_TYPES.contains(contentType)) {
+            throw new IllegalArgumentException(
+                    "Tipo file non consentito. Formati ammessi: PDF, JPG, PNG, DOC, DOCX.");
+        }
+
+        String normalizedDept = departmentCode.trim().toUpperCase();
+        String normalizedType = documentType.trim().toUpperCase();
 
         byte[] bytes;
         try {
@@ -129,7 +153,7 @@ public class DocumentService {
                     .uploadedBy(jwt.getName())
                     .departmentCode(normalizedDept)
                     .documentType(normalizedType)
-                    .fileName(file.getOriginalFilename() == null ? "documento" : file.getOriginalFilename())
+                    .fileName(sanitizeFileName(file.getOriginalFilename()))
                     .contentType(contentType)
                     .sizeBytes((long) bytes.length)
                     .checksumSha256(sha256)
@@ -268,6 +292,50 @@ public class DocumentService {
                 "departmentCode", doc.getDepartmentCode(),
                 "documentType", doc.getDocumentType()
         ), it.sanitech.docs.utilities.AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
+    }
+
+    /**
+     * Cancella un documento caricato dal medico stesso (ownership verificata via JWT sub).
+     *
+     * <p>
+     * A differenza di {@link #delete(UUID, Authentication)}, questo metodo è utilizzabile
+     * dal ruolo DOCTOR, ma solo per i documenti che ha caricato personalmente.
+     * </p>
+     */
+    @Transactional
+    public void deleteOwn(UUID id, Authentication auth) {
+        JwtAuthenticationToken jwt = AuthUtils.requireJwt(auth);
+        Document doc = documents.findById(id).orElseThrow(() -> NotFoundException.of("Documento", id));
+
+        if (!doc.getUploadedBy().equals(jwt.getName())) {
+            throw new AccessDeniedException("Non sei autorizzato a eliminare questo documento: non è stato caricato da te.");
+        }
+
+        storage.delete(doc.getS3Key());
+        documents.delete(doc);
+
+        events.publish(AGG_DOCUMENT, id.toString(), EVT_DELETED, Map.of(
+                "documentId", id,
+                "patientId", doc.getPatientId(),
+                "departmentCode", doc.getDepartmentCode(),
+                "documentType", doc.getDocumentType()
+        ), it.sanitech.docs.utilities.AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
+    }
+
+    /**
+     * Sanitizza il nome file rimuovendo caratteri di path traversal e caratteri non sicuri.
+     */
+    private String sanitizeFileName(String original) {
+        if (original == null || original.isBlank()) return "documento";
+        // Rimuove path separators
+        String sanitized = original.replaceAll("[/\\\\]", "");
+        // Rimuove caratteri non sicuri (mantiene alfanumerici, spazi, punti, trattini, underscore)
+        sanitized = sanitized.replaceAll("[^a-zA-Z0-9àèéìòù .\\-_]", "_");
+        // Tronca a 255 caratteri
+        if (sanitized.length() > 255) {
+            sanitized = sanitized.substring(0, 255);
+        }
+        return sanitized.isBlank() ? "documento" : sanitized;
     }
 
     private String sha256Hex(byte[] bytes) {

@@ -60,6 +60,7 @@ class DocumentControllerTest {
         DocumentDto dto = new DocumentDto(
                 UUID.randomUUID(),
                 10L,
+                "doctor-sub",
                 "CARDIO",
                 "REPORT",
                 "report.pdf",
@@ -89,6 +90,7 @@ class DocumentControllerTest {
         DocumentDto dto = new DocumentDto(
                 docId,
                 10L,
+                "doctor-sub",
                 "CARDIO",
                 "REPORT",
                 "report.pdf",
@@ -140,6 +142,7 @@ class DocumentControllerTest {
         DocumentDto dto = new DocumentDto(
                 docId,
                 10L,
+                "doctor-sub",
                 "CARDIO",
                 "REPORT",
                 "report.pdf",

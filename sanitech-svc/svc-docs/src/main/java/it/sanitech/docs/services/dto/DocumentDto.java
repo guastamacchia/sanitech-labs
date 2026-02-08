@@ -18,6 +18,9 @@ public record DocumentDto(
         /** Id paziente proprietario del documento. */
         Long patientId,
 
+        /** Soggetto (sub) dell'utente che ha caricato il documento. */
+        String uploadedBy,
+
         /** Reparto del documento (ABAC). */
         String departmentCode,
 

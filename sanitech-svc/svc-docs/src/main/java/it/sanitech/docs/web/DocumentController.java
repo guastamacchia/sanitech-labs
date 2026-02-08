@@ -95,6 +95,20 @@ public class DocumentController {
         return ResponseEntity.status(201).body(dto);
     }
 
+    /**
+     * Elimina un documento caricato dal medico/paziente stesso (ownership verificata).
+     */
+    @DeleteMapping(AppConstants.ApiPath.DOCS + "/{id}")
+    @PreAuthorize("hasAnyRole('DOCTOR','PATIENT')")
+    @Auditable(aggregateType = "DOCUMENT", eventType = "DOCUMENT_DELETED", aggregateIdParam = "id")
+    public ResponseEntity<Void> deleteOwn(@PathVariable UUID id, Authentication auth) {
+        service.deleteOwn(id, auth);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Elimina qualsiasi documento (admin-only).
+     */
     @DeleteMapping(AppConstants.ApiPath.ADMIN_DOCS + "/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Auditable(aggregateType = "DOCUMENT", eventType = "DOCUMENT_DELETED", aggregateIdParam = "id")

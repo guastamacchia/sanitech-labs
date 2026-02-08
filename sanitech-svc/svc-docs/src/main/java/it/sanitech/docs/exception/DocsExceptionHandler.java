@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -69,6 +70,30 @@ public class DocsExceptionHandler {
             // Non blocchiamo la risposta in caso di errore nell'audit
             log.warn("Impossibile registrare evento di accesso negato: {}", e.getMessage());
         }
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ProblemDetails> badRequest(IllegalArgumentException ex, HttpServletRequest request) {
+        log.warn("Validazione fallita: {}", ex.getMessage());
+        return build(
+                HttpStatus.BAD_REQUEST,
+                "https://sanitech.it/problems/validation-error",
+                "Errore di validazione",
+                ex.getMessage(),
+                request
+        );
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ProblemDetails> accessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        publishAccessDeniedEvent(request, ex.getMessage());
+        return build(
+                HttpStatus.FORBIDDEN,
+                "https://sanitech.it/problems/access-denied",
+                "Accesso negato",
+                ex.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(ExternalServiceException.class)

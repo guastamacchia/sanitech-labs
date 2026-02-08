@@ -97,6 +97,15 @@ export class DoctorApiService {
     return typeof claim === 'string' ? claim : null;
   }
 
+  /**
+   * Restituisce il preferred_username del JWT del dottore autenticato.
+   * Utilizzato per verificare l'ownership dei documenti (il backend salva jwt.getName() = preferred_username).
+   */
+  getDoctorSubject(): string | null {
+    const claim = this.auth.getAccessTokenClaim('preferred_username');
+    return typeof claim === 'string' ? claim : null;
+  }
+
   // ---------------------------------------------------------------------------
   // SLOTS
   // ---------------------------------------------------------------------------
@@ -394,6 +403,24 @@ export class DoctorApiService {
       size: params.size ?? 20,
       sort: 'createdAt,desc'
     });
+  }
+
+  uploadDocument(params: {
+    file: File;
+    patientId: number;
+    departmentCode: string;
+    documentType: string;
+    description?: string;
+  }): Observable<DocumentDto> {
+    const formData = new FormData();
+    formData.append('file', params.file, params.file.name);
+    formData.append('patientId', String(params.patientId));
+    formData.append('departmentCode', params.departmentCode);
+    formData.append('documentType', params.documentType);
+    if (params.description) {
+      formData.append('description', params.description);
+    }
+    return this.api.postMultipart<DocumentDto>('/api/docs/upload', formData);
   }
 
   downloadDocumentUrl(documentId: string): string {

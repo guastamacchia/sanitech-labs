@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, map, switchMap, takeUntil } from 'rxjs/operators';
 import {
   DoctorApiService,
   PatientDto,
@@ -12,13 +12,44 @@ import {
 } from '../../../services/doctor-api.service';
 import { DocumentType, DocumentStatus, ClinicalDocument, UploadForm } from './dtos/clinical-docs.dto';
 
+/** Dimensione massima file: 10 MB */
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+/** MIME type ammessi */
+const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
+
+/** Mappa esatta dei tipi documento */
+const DOCUMENT_TYPE_MAP: Record<string, DocumentType> = {
+  REFERTO_VISITA: 'REFERTO_VISITA',
+  REFERTO_ESAME: 'REFERTO_ESAME',
+  LETTERA_DIMISSIONE: 'LETTERA_DIMISSIONE',
+  CERTIFICATO: 'CERTIFICATO',
+  ALTRO: 'ALTRO',
+  // Mappatura tipi backend lato paziente
+  REPORT: 'REFERTO_ESAME',
+  DISCHARGE_LETTER: 'LETTERA_DIMISSIONE',
+  LAB_RESULTS: 'REFERTO_ESAME',
+  IMAGING: 'REFERTO_ESAME',
+  OTHER: 'ALTRO',
+  // Mappatura tipi backend effettivi (da svc-docs seed data)
+  REFERTO: 'REFERTO_VISITA',
+  ESAME: 'REFERTO_ESAME',
+  LETTERA_DIMISSIONI: 'LETTERA_DIMISSIONE'
+};
+
 @Component({
   selector: 'app-doctor-clinical-docs',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './doctor-clinical-docs.component.html'
 })
-export class DoctorClinicalDocsComponent implements OnInit {
+export class DoctorClinicalDocsComponent implements OnInit, OnDestroy {
   // Documenti
   documents: ClinicalDocument[] = [];
 
@@ -27,6 +58,12 @@ export class DoctorClinicalDocsComponent implements OnInit {
 
   // Cache pazienti
   private patientsCache = new Map<number, PatientDto>();
+
+  // Subject JWT (sub) del dottore corrente
+  private currentDoctorSub: string | null = null;
+
+  // Distruzione componente per unsubscribe
+  private destroy$ = new Subject<void>();
 
   // Form upload
   uploadForm: UploadForm = {
@@ -52,11 +89,15 @@ export class DoctorClinicalDocsComponent implements OnInit {
   isDeleting = false;
   successMessage = '';
   errorMessage = '';
+  uploadErrorMessage = '';
   showUploadModal = false;
   showDeleteModal = false;
   documentToDelete: ClinicalDocument | null = null;
 
-  constructor(private doctorApi: DoctorApiService, private route: ActivatedRoute) {}
+  constructor(
+    private doctorApi: DoctorApiService,
+    private route: ActivatedRoute
+  ) {}
 
   // Statistiche
   get totalDocuments(): number {
@@ -73,7 +114,14 @@ export class DoctorClinicalDocsComponent implements OnInit {
     return this.documents.filter(d => new Date(d.uploadedAt) > weekAgo).length;
   }
 
+  get pageNumbers(): number[] {
+    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+  }
+
   ngOnInit(): void {
+    // Recupera il subject del dottore corrente dal token JWT
+    this.currentDoctorSub = this.doctorApi.getDoctorSubject();
+
     const patientIdParam = this.route.snapshot.queryParamMap.get('patientId');
     if (patientIdParam) {
       this.patientFilter = +patientIdParam;
@@ -81,52 +129,53 @@ export class DoctorClinicalDocsComponent implements OnInit {
     this.loadData();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /** Gestione chiusura modale con ESC */
+  @HostListener('document:keydown.escape')
+  onEscKeydown(): void {
+    if (this.showUploadModal) {
+      this.closeUploadModal();
+    }
+    if (this.showDeleteModal) {
+      this.closeDeleteModal();
+    }
+  }
+
   loadData(): void {
     this.isLoading = true;
     this.errorMessage = '';
 
-    // Carica pazienti con consenso DOCS
-    this.doctorApi.searchPatients({ size: 100 }).pipe(
-      switchMap(patientsPage => {
+    // Clear cache per evitare dati obsoleti (BUG-010)
+    this.patientsCache.clear();
+
+    // Usa endpoint batch per consensi (BUG-008) + elimina nested subscribe (BUG-009)
+    forkJoin({
+      patientsPage: this.doctorApi.searchPatients({ size: 100 }),
+      consentedPatientIds: this.doctorApi.getPatientsWithConsent('DOCS')
+    }).pipe(
+      switchMap(({ patientsPage, consentedPatientIds }) => {
         const allPatients = patientsPage.content || [];
-        // Cache pazienti
+        const consentedSet = new Set(consentedPatientIds);
+
+        // Cache tutti i pazienti
         allPatients.forEach(p => this.patientsCache.set(p.id, p));
 
-        // Verifica consenso DOCS per ogni paziente
-        const consentChecks = allPatients.map(patient =>
-          this.doctorApi.checkConsent(patient.id, 'DOCS').pipe(
-            map(consent => ({ patient, allowed: consent.allowed })),
-            catchError(() => of({ patient, allowed: false }))
-          )
-        );
+        // Filtra i pazienti con consenso
+        const patientsWithConsent = allPatients
+          .filter(p => consentedSet.has(p.id))
+          .map(p => ({ id: p.id, name: `${p.lastName} ${p.firstName}` }));
 
-        if (consentChecks.length === 0) {
-          return of({ allPatients, patientsWithConsent: [] as { id: number; name: string }[] });
-        }
-
-        return forkJoin(consentChecks).pipe(
-          map(results => {
-            const patientsWithConsent = results
-              .filter(r => r.allowed)
-              .map(r => ({
-                id: r.patient.id,
-                name: `${r.patient.lastName} ${r.patient.firstName}`
-              }));
-            return { allPatients, patientsWithConsent };
-          })
-        );
-      })
-    ).subscribe({
-      next: ({ allPatients, patientsWithConsent }) => {
         this.patients = patientsWithConsent;
 
-        // Carica documenti per tutti i pazienti con consenso
         if (patientsWithConsent.length === 0) {
-          this.documents = [];
-          this.isLoading = false;
-          return;
+          return of([] as DocumentDto[]);
         }
 
+        // Carica documenti per tutti i pazienti con consenso
         const documentFetches = patientsWithConsent.map(patient =>
           this.doctorApi.listDocuments({
             patientId: patient.id,
@@ -137,17 +186,16 @@ export class DoctorClinicalDocsComponent implements OnInit {
           )
         );
 
-        forkJoin(documentFetches).subscribe({
-          next: (documentArrays) => {
-            const allDocuments = documentArrays.flat();
-            this.documents = allDocuments.map(d => this.mapDocument(d));
-            this.isLoading = false;
-          },
-          error: () => {
-            this.errorMessage = 'Errore nel caricamento dei documenti.';
-            this.isLoading = false;
-          }
-        });
+        return forkJoin(documentFetches).pipe(
+          map(arrays => arrays.flat())
+        );
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (allDocuments) => {
+        this.documents = allDocuments.map(d => this.mapDocument(d));
+        this.clampCurrentPage();
+        this.isLoading = false;
       },
       error: () => {
         this.errorMessage = 'Errore nel caricamento dei dati.';
@@ -159,27 +207,26 @@ export class DoctorClinicalDocsComponent implements OnInit {
   private mapDocument(dto: DocumentDto): ClinicalDocument {
     const patient = this.patientsCache.get(dto.patientId);
 
-    // Mappa documentType a tipo interno
-    let type: DocumentType = 'ALTRO';
-    const docType = (dto.documentType || '').toUpperCase();
-    if (docType.includes('REFERTO') && docType.includes('VISITA')) type = 'REFERTO_VISITA';
-    else if (docType.includes('REFERTO') || docType.includes('ESAME')) type = 'REFERTO_ESAME';
-    else if (docType.includes('DIMISSIONE')) type = 'LETTERA_DIMISSIONE';
-    else if (docType.includes('CERTIFICATO')) type = 'CERTIFICATO';
+    // Mappatura tipo con match esatto (BUG-006)
+    const normalizedType = (dto.documentType || '').toUpperCase().trim();
+    const type: DocumentType = DOCUMENT_TYPE_MAP[normalizedType] ?? 'ALTRO';
+
+    // Determina ownership reale (BUG-003)
+    const isOwnDocument = this.currentDoctorSub != null && dto.uploadedBy === this.currentDoctorSub;
 
     return {
       id: dto.id,
       patientId: dto.patientId,
       patientName: patient ? `${patient.lastName} ${patient.firstName}` : `Paziente ${dto.patientId}`,
       type,
-      title: dto.fileName,
-      description: dto.description || '',
+      title: dto.description?.trim() || dto.fileName, // BUG-005: preferisci description come titolo
+      description: dto.description?.trim() ? dto.fileName : '', // Mostra fileName come sotto-info se description usata come titolo
       department: dto.departmentCode,
-      uploadedBy: '-', // Non disponibile nel DTO
+      uploadedBy: dto.uploadedBy || '-', // BUG-004: usa il campo reale dal DTO
       uploadedAt: dto.createdAt,
       status: 'PUBLISHED',
       fileUrl: this.doctorApi.downloadDocumentUrl(dto.id),
-      isOwnDocument: true // Assumiamo che se il medico può vederlo, è accessibile
+      isOwnDocument
     };
   }
 
@@ -215,6 +262,18 @@ export class DoctorClinicalDocsComponent implements OnInit {
     return Math.ceil(this.filteredDocuments.length / this.pageSize) || 1;
   }
 
+  /** Resetta paginazione centralizzato (BUG-012) */
+  onFilterChange(): void {
+    this.currentPage = 1;
+  }
+
+  /** Corregge la pagina corrente se fuori range (BUG-011) */
+  private clampCurrentPage(): void {
+    if (this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+  }
+
   openUploadModal(): void {
     this.uploadForm = {
       patientId: null,
@@ -223,7 +282,7 @@ export class DoctorClinicalDocsComponent implements OnInit {
       description: '',
       file: null
     };
-    this.errorMessage = '';
+    this.uploadErrorMessage = '';
     this.showUploadModal = true;
   }
 
@@ -233,38 +292,81 @@ export class DoctorClinicalDocsComponent implements OnInit {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
+    this.uploadErrorMessage = '';
+
     if (input.files && input.files.length > 0) {
-      this.uploadForm.file = input.files[0];
+      const file = input.files[0];
+
+      // Validazione dimensione file (BUG-007)
+      if (file.size > MAX_FILE_SIZE) {
+        this.uploadErrorMessage = 'Il file supera la dimensione massima consentita di 10 MB.';
+        input.value = '';
+        this.uploadForm.file = null;
+        return;
+      }
+
+      // Validazione tipo file (BUG-007)
+      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        this.uploadErrorMessage = 'Tipo file non consentito. Formati ammessi: PDF, JPG, PNG, DOC, DOCX.';
+        input.value = '';
+        this.uploadForm.file = null;
+        return;
+      }
+
+      this.uploadForm.file = file;
     }
   }
 
   uploadDocument(): void {
+    this.uploadErrorMessage = '';
+
     if (!this.uploadForm.patientId) {
-      this.errorMessage = 'Seleziona un paziente.';
+      this.uploadErrorMessage = 'Seleziona un paziente.';
       return;
     }
     if (!this.uploadForm.title.trim()) {
-      this.errorMessage = 'Inserisci un titolo per il documento.';
+      this.uploadErrorMessage = 'Inserisci un titolo per il documento.';
       return;
     }
     if (!this.uploadForm.file) {
-      this.errorMessage = 'Seleziona un file da caricare.';
+      this.uploadErrorMessage = 'Seleziona un file da caricare.';
       return;
     }
 
     this.isUploading = true;
-    this.errorMessage = '';
 
-    // Nota: l'upload richiede multipart/form-data
-    // Per ora simuliamo l'upload - l'implementazione completa richiederebbe
-    // un metodo dedicato nel ApiService per l'upload multipart
-    setTimeout(() => {
-      this.isUploading = false;
-      this.closeUploadModal();
-      this.loadData(); // Ricarica documenti
-      this.successMessage = `Documento "${this.uploadForm.title}" caricato con successo. Il paziente riceverà una notifica.`;
-      setTimeout(() => this.successMessage = '', 5000);
-    }, 2000);
+    const departmentCode = this.doctorApi.getDepartmentCode() || 'DEFAULT';
+
+    // Chiamata reale all'API (BUG-001 fix)
+    this.doctorApi.uploadDocument({
+      file: this.uploadForm.file,
+      patientId: this.uploadForm.patientId,
+      departmentCode,
+      documentType: this.uploadForm.type,
+      description: this.uploadForm.title + (this.uploadForm.description ? ` - ${this.uploadForm.description}` : '')
+    }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: () => {
+        this.isUploading = false;
+        this.closeUploadModal();
+        this.successMessage = `Documento "${this.uploadForm.title}" caricato con successo. Il paziente riceverà una notifica.`;
+        this.loadData();
+      },
+      error: (err) => {
+        this.isUploading = false;
+        // Messaggi specifici in base al tipo di errore (BUG-014)
+        if (err.status === 400) {
+          this.uploadErrorMessage = err.error?.detail || 'Errore di validazione. Verifica i dati inseriti.';
+        } else if (err.status === 403) {
+          this.uploadErrorMessage = 'Non sei autorizzato a caricare documenti per questo paziente.';
+        } else if (err.status === 413) {
+          this.uploadErrorMessage = 'Il file è troppo grande. Dimensione massima: 10 MB.';
+        } else {
+          this.uploadErrorMessage = 'Errore durante il caricamento del documento. Riprova più tardi.';
+        }
+      }
+    });
   }
 
   getTypeLabel(type: DocumentType): string {
@@ -338,19 +440,36 @@ export class DoctorClinicalDocsComponent implements OnInit {
     if (!this.documentToDelete) return;
 
     this.isDeleting = true;
-    this.doctorApi.deleteDocument(this.documentToDelete.id).subscribe({
+    this.doctorApi.deleteDocument(this.documentToDelete.id).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: () => {
         this.successMessage = `Documento "${this.documentToDelete?.title}" eliminato con successo.`;
         this.closeDeleteModal();
+        this.isDeleting = false;
+        this.currentPage = 1; // BUG-011: reset paginazione
         this.loadData();
-        this.isDeleting = false;
-        setTimeout(() => this.successMessage = '', 3000);
       },
-      error: () => {
-        this.errorMessage = `Errore durante l'eliminazione del documento.`;
+      error: (err) => {
         this.isDeleting = false;
-        setTimeout(() => this.errorMessage = '', 5000);
+        // Messaggi specifici per errore eliminazione (BUG-014)
+        if (err.status === 403) {
+          this.errorMessage = 'Non sei autorizzato a eliminare questo documento.';
+        } else if (err.status === 404) {
+          this.errorMessage = 'Il documento non è stato trovato. Potrebbe essere già stato eliminato.';
+        } else {
+          this.errorMessage = 'Errore durante l\'eliminazione del documento. Riprova più tardi.';
+        }
+        this.closeDeleteModal();
       }
     });
+  }
+
+  dismissSuccess(): void {
+    this.successMessage = '';
+  }
+
+  dismissError(): void {
+    this.errorMessage = '';
   }
 }
