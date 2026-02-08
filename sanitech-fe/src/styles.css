@@ -60,3 +60,18 @@ body {
   background: #eef4ff !important;
   border: 1px solid rgba(13, 110, 253, 0.3) !important;
 }
+
+/* BUG-016 FIX: Body scroll lock quando un modale è aperto */
+body.overflow-hidden {
+  overflow: hidden;
+}
+
+/* BUG-013 FIX: Animazione spin globale per icone di loading */
+.spin {
+  animation: spin-global 1s linear infinite;
+}
+
+@keyframes spin-global {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

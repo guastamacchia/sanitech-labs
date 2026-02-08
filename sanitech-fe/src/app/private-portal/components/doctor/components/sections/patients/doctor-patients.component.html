@@ -12,23 +12,47 @@
       <p class="text-muted mb-0">Gestisci i pazienti con consenso attivo</p>
     </div>
     <div class="d-flex gap-2">
-      <button class="btn btn-outline-secondary" (click)="loadPatients()" [disabled]="isLoading">
-        <i class="bi bi-arrow-clockwise me-1" [class.spin]="isLoading"></i>
+      <button class="btn btn-outline-secondary"
+              (click)="loadPatients()"
+              [disabled]="isLoading"
+              aria-label="Aggiorna elenco pazienti">
+        <i class="bi bi-arrow-clockwise me-1" [class.spin]="isLoading" aria-hidden="true"></i>
         Aggiorna
       </button>
-      <button class="btn btn-outline-secondary" routerLink="/portal/doctor">
-        <i class="bi bi-arrow-left me-1"></i>
+      <button class="btn btn-outline-secondary"
+              routerLink="/portal/doctor"
+              aria-label="Torna alla dashboard medico">
+        <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
         Torna indietro
       </button>
     </div>
   </div>
 
-  <!-- Loading -->
-  <div class="text-center py-5" *ngIf="isLoading && patients.length === 0">
+  <!-- Loading iniziale -->
+  <div class="text-center py-5" *ngIf="isLoading && patients.length === 0" aria-live="polite">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Caricamento...</span>
     </div>
     <p class="text-muted mt-2">Caricamento pazienti...</p>
+  </div>
+
+  <!-- Errore caricamento -->
+  <div class="alert alert-danger border-0 mb-4" *ngIf="errorMessage" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-exclamation-octagon me-2" aria-hidden="true"></i>
+      <span>{{ errorMessage }}</span>
+      <button class="btn btn-sm btn-outline-danger ms-auto" (click)="loadPatients()">
+        <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i> Riprova
+      </button>
+    </div>
+  </div>
+
+  <!-- BUG-021 FIX: Warning consensi parziali -->
+  <div class="alert alert-warning border-0 mb-4" *ngIf="consentWarning && !errorMessage" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
+      <span>Attenzione: le informazioni sui consensi potrebbero essere incomplete a causa di un errore di comunicazione. Prova ad aggiornare.</span>
+    </div>
   </div>
 
   <!-- Stats Cards -->
@@ -38,7 +62,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center">
             <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-              <i class="bi bi-people text-primary fs-4"></i>
+              <i class="bi bi-people text-primary fs-4" aria-hidden="true"></i>
             </div>
             <div>
               <h3 class="mb-0 fw-bold">{{ totalWithConsent }}</h3>
@@ -53,7 +77,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center">
             <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
-              <i class="bi bi-file-earmark-medical text-success fs-4"></i>
+              <i class="bi bi-file-earmark-medical text-success fs-4" aria-hidden="true"></i>
             </div>
             <div>
               <h3 class="mb-0 fw-bold">{{ patientsWithDocs }}</h3>
@@ -68,7 +92,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center">
             <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
-              <i class="bi bi-prescription2 text-info fs-4"></i>
+              <i class="bi bi-prescription2 text-info fs-4" aria-hidden="true"></i>
             </div>
             <div>
               <h3 class="mb-0 fw-bold">{{ patientsWithPrescriptions }}</h3>
@@ -83,7 +107,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center">
             <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3">
-              <i class="bi bi-person-x text-secondary fs-4"></i>
+              <i class="bi bi-person-x text-secondary fs-4" aria-hidden="true"></i>
             </div>
             <div>
               <h3 class="mb-0 fw-bold">{{ totalPatients - totalWithConsent }}</h3>
@@ -100,32 +124,40 @@
     <div class="card-body">
       <div class="row g-3 align-items-end">
         <div class="col-md-4">
-          <label class="form-label fw-semibold small text-muted">Vista</label>
-          <div class="btn-group w-100" role="group">
+          <label class="form-label fw-semibold small text-muted" id="viewModeLabel">Vista</label>
+          <div class="btn-group w-100" role="group" aria-labelledby="viewModeLabel">
             <input type="radio" class="btn-check" name="viewMode" id="viewConsented" value="consented" [(ngModel)]="viewMode" (ngModelChange)="currentPage = 1">
             <label class="btn btn-outline-primary" for="viewConsented">
-              <i class="bi bi-shield-check me-1"></i>Con consenso
+              <i class="bi bi-shield-check me-1" aria-hidden="true"></i>Con consenso
             </label>
             <input type="radio" class="btn-check" name="viewMode" id="viewAll" value="all" [(ngModel)]="viewMode" (ngModelChange)="currentPage = 1">
             <label class="btn btn-outline-primary" for="viewAll">
-              <i class="bi bi-people me-1"></i>Tutti
+              <i class="bi bi-people me-1" aria-hidden="true"></i>Tutti
             </label>
           </div>
         </div>
+        <!-- BUG-026 FIX: Aggiunto id al select per associazione label -->
         <div class="col-md-3">
-          <label class="form-label fw-semibold small text-muted">Filtra per consenso</label>
-          <select class="form-select" [(ngModel)]="consentFilter" (ngModelChange)="currentPage = 1">
+          <label class="form-label fw-semibold small text-muted" for="consentFilterSelect">Filtra per consenso</label>
+          <select class="form-select" id="consentFilterSelect" [(ngModel)]="consentFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti i consensi</option>
             <option value="DOCS">Documenti</option>
             <option value="PRESCRIPTIONS">Prescrizioni</option>
             <option value="TELEVISIT">Televisite</option>
           </select>
         </div>
+        <!-- BUG-027 FIX: Aggiunto id e aria-label al campo di ricerca -->
         <div class="col-md-5">
-          <label class="form-label fw-semibold small text-muted">Cerca paziente</label>
+          <label class="form-label fw-semibold small text-muted" for="patientSearchInput">Cerca paziente</label>
           <div class="input-group">
-            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control" placeholder="Nome, cognome o codice fiscale..." [(ngModel)]="searchQuery" (ngModelChange)="currentPage = 1">
+            <span class="input-group-text bg-white"><i class="bi bi-search" aria-hidden="true"></i></span>
+            <input type="text"
+                   class="form-control"
+                   id="patientSearchInput"
+                   placeholder="Nome, cognome o codice fiscale..."
+                   [(ngModel)]="searchQuery"
+                   (ngModelChange)="currentPage = 1"
+                   aria-label="Cerca paziente per nome, cognome o codice fiscale">
           </div>
         </div>
       </div>
@@ -133,9 +165,9 @@
   </div>
 
   <!-- Info box per pazienti senza consenso -->
-  <div class="alert alert-warning border-0 mb-4" *ngIf="viewMode === 'all'">
+  <div class="alert alert-warning border-0 mb-4" *ngIf="viewMode === 'all'" role="alert">
     <div class="d-flex">
-      <i class="bi bi-exclamation-triangle me-3 mt-1"></i>
+      <i class="bi bi-exclamation-triangle me-3 mt-1" aria-hidden="true"></i>
       <div>
         <h6 class="alert-heading mb-1">Pazienti senza consenso</h6>
         <p class="mb-0 small">I pazienti evidenziati in grigio non ti hanno concesso l'accesso ai loro dati clinici. Puoi vedere solo nome e cognome. Per accedere alla cartella clinica, il paziente deve concederti esplicitamente il consenso dall'app.</p>
@@ -143,11 +175,20 @@
     </div>
   </div>
 
-  <!-- Lista pazienti -->
-  <div class="card card-glass border-0 shadow-sm" *ngIf="!isLoading || patients.length > 0">
+  <!-- BUG-023 FIX: Overlay di loading durante il refresh -->
+  <div class="card card-glass border-0 shadow-sm position-relative" *ngIf="!isLoading || patients.length > 0">
+    <!-- Overlay durante refresh -->
+    <div class="refresh-overlay" *ngIf="isRefreshing">
+      <div class="spinner-border spinner-border-sm text-primary" role="status">
+        <span class="visually-hidden">Aggiornamento...</span>
+      </div>
+      <small class="text-muted ms-2">Aggiornamento in corso...</small>
+    </div>
+
+    <!-- BUG-025 FIX: Aggiunto caption e scope alla tabella -->
     <div class="card-header bg-transparent border-bottom">
       <h5 class="mb-0 fw-semibold">
-        <i class="bi bi-list-ul me-2"></i>
+        <i class="bi bi-list-ul me-2" aria-hidden="true"></i>
         Elenco pazienti
         <span class="badge bg-secondary ms-2">{{ filteredPatients.length }}</span>
       </h5>
@@ -155,13 +196,14 @@
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
+          <caption class="visually-hidden">Elenco dei pazienti con informazioni sui consensi attivi</caption>
           <thead class="table-light">
             <tr>
-              <th class="ps-4">Paziente</th>
-              <th>Consensi attivi</th>
-              <th>Ultimo accesso</th>
-              <th>Prossimo appuntamento</th>
-              <th class="pe-4 text-end">Azioni</th>
+              <th scope="col" class="ps-4">Paziente</th>
+              <th scope="col">Consensi attivi</th>
+              <th scope="col">Ultimo accesso</th>
+              <th scope="col">Prossimo appuntamento</th>
+              <th scope="col" class="pe-4 text-end">Azioni</th>
             </tr>
           </thead>
           <tbody>
@@ -169,11 +211,12 @@
               <td class="ps-4">
                 <div class="d-flex align-items-center">
                   <div class="rounded-circle p-2 me-3" [ngClass]="patient.hasActiveConsent ? 'bg-primary bg-opacity-10' : 'bg-secondary bg-opacity-10'">
-                    <i class="bi" [ngClass]="patient.hasActiveConsent ? 'bi-person text-primary' : 'bi-lock text-secondary'"></i>
+                    <i class="bi" [ngClass]="patient.hasActiveConsent ? 'bi-person text-primary' : 'bi-lock text-secondary'" aria-hidden="true"></i>
                   </div>
                   <div>
                     <p class="mb-0 fw-medium">{{ patient.lastName }} {{ patient.firstName }}</p>
-                    <small class="text-muted">{{ patient.fiscalCode }}</small>
+                    <!-- BUG-011 FIX: Codice fiscale mascherato per pazienti senza consenso -->
+                    <small class="text-muted">{{ getMaskedFiscalCode(patient) }}</small>
                   </div>
                 </div>
               </td>
@@ -184,57 +227,122 @@
                   </span>
                 </div>
                 <span *ngIf="!patient.hasActiveConsent" class="badge bg-secondary bg-opacity-10 text-secondary">
-                  <i class="bi bi-lock me-1"></i>Nessun consenso
+                  <i class="bi bi-lock me-1" aria-hidden="true"></i>Nessun consenso
                 </span>
               </td>
               <td>
                 <span *ngIf="patient.lastAccess">{{ formatDateTime(patient.lastAccess) }}</span>
                 <span *ngIf="!patient.lastAccess" class="text-muted">-</span>
               </td>
+              <!-- BUG-004 FIX: Prossimo appuntamento ora popolato -->
               <td>
                 <span *ngIf="patient.nextAppointment" class="badge bg-success bg-opacity-10 text-success">
-                  <i class="bi bi-calendar-event me-1"></i>{{ formatDateTime(patient.nextAppointment) }}
+                  <i class="bi bi-calendar-event me-1" aria-hidden="true"></i>{{ formatDateTime(patient.nextAppointment) }}
                 </span>
                 <span *ngIf="!patient.nextAppointment" class="text-muted">-</span>
               </td>
               <td class="pe-4 text-end">
-                <button class="btn btn-sm btn-outline-primary" (click)="openPatientModal(patient)" *ngIf="patient.hasActiveConsent">
-                  <i class="bi bi-folder2-open me-1"></i>Apri cartella
-                </button>
-                <button class="btn btn-sm btn-outline-secondary" disabled *ngIf="!patient.hasActiveConsent" title="Consenso richiesto">
-                  <i class="bi bi-lock me-1"></i>Bloccato
-                </button>
+                <!-- Azioni con icone per pazienti CON consenso -->
+                <div class="d-flex gap-1 justify-content-end" *ngIf="patient.hasActiveConsent">
+                  <!-- Apri cartella (modale) -->
+                  <button class="btn btn-sm btn-outline-primary rounded-circle action-icon-btn"
+                          (click)="openPatientModal(patient)"
+                          title="Apri cartella"
+                          [attr.aria-label]="'Apri cartella di ' + patient.lastName + ' ' + patient.firstName">
+                    <i class="bi bi-folder2-open" aria-hidden="true"></i>
+                  </button>
+                  <!-- Documenti clinici (se consenso DOCS) -->
+                  <a *ngIf="patient.consents.includes('DOCS')"
+                     class="btn btn-sm btn-outline-success rounded-circle action-icon-btn"
+                     [routerLink]="['/portal/doctor/docs']"
+                     [queryParams]="{ patientId: patient.id }"
+                     title="Documenti"
+                     [attr.aria-label]="'Documenti di ' + patient.lastName + ' ' + patient.firstName">
+                    <i class="bi bi-file-earmark-medical" aria-hidden="true"></i>
+                  </a>
+                  <!-- Prescrizioni (se consenso PRESCRIPTIONS) -->
+                  <a *ngIf="patient.consents.includes('PRESCRIPTIONS')"
+                     class="btn btn-sm btn-outline-info rounded-circle action-icon-btn"
+                     [routerLink]="['/portal/doctor/prescriptions']"
+                     [queryParams]="{ patientId: patient.id }"
+                     title="Prescrizioni"
+                     [attr.aria-label]="'Prescrizioni di ' + patient.lastName + ' ' + patient.firstName">
+                    <i class="bi bi-prescription2" aria-hidden="true"></i>
+                  </a>
+                  <!-- Televisite (se consenso TELEVISIT) -->
+                  <a *ngIf="patient.consents.includes('TELEVISIT')"
+                     class="btn btn-sm btn-outline-warning rounded-circle action-icon-btn"
+                     [routerLink]="['/portal/doctor/televisits']"
+                     [queryParams]="{ patientId: patient.id }"
+                     title="Televisite"
+                     [attr.aria-label]="'Televisite di ' + patient.lastName + ' ' + patient.firstName">
+                    <i class="bi bi-camera-video" aria-hidden="true"></i>
+                  </a>
+                  <!-- Appuntamenti prenotati -->
+                  <a class="btn btn-sm btn-outline-secondary rounded-circle action-icon-btn"
+                     [routerLink]="['/portal/doctor/agenda']"
+                     [queryParams]="{ patientId: patient.id }"
+                     title="Appuntamenti"
+                     [attr.aria-label]="'Appuntamenti di ' + patient.lastName + ' ' + patient.firstName">
+                    <i class="bi bi-calendar-check" aria-hidden="true"></i>
+                  </a>
+                </div>
+                <!-- Icona bloccata per pazienti SENZA consenso -->
+                <div *ngIf="!patient.hasActiveConsent">
+                  <span class="btn btn-sm btn-outline-secondary rounded-circle action-icon-btn disabled"
+                        title="Consenso richiesto"
+                        [attr.aria-label]="'Accesso bloccato per ' + patient.lastName + ' ' + patient.firstName + ' - consenso richiesto'">
+                    <i class="bi bi-lock" aria-hidden="true"></i>
+                  </span>
+                </div>
               </td>
             </tr>
+            <!-- BUG-022 FIX: Messaggio empty state contestuale -->
             <tr *ngIf="filteredPatients.length === 0">
-              <td colspan="5" class="text-center py-4 text-muted">
-                <i class="bi bi-search fs-1 d-block mb-2"></i>
-                Nessun paziente trovato con i criteri di ricerca.
+              <td colspan="5" class="text-center py-4 text-muted" role="status" aria-live="polite">
+                <i class="bi fs-1 d-block mb-2" [ngClass]="emptyStateIcon" aria-hidden="true"></i>
+                {{ emptyStateMessage }}
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
-    <!-- Paginazione -->
+    <!-- BUG-018/020 FIX: Paginazione con ellissi, nascosta con 0 risultati -->
     <div class="card-footer bg-transparent border-top" *ngIf="totalPages > 1">
       <div class="d-flex justify-content-between align-items-center">
         <small class="text-muted">
           Pagina {{ currentPage }} di {{ totalPages }} ({{ filteredPatients.length }} pazienti)
         </small>
-        <nav>
+        <nav aria-label="Paginazione elenco pazienti">
           <ul class="pagination pagination-sm mb-0">
             <li class="page-item" [class.disabled]="currentPage === 1">
-              <button class="page-link" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1">
-                <i class="bi bi-chevron-left"></i>
+              <button class="page-link"
+                      (click)="currentPage = currentPage - 1"
+                      [disabled]="currentPage === 1"
+                      aria-label="Vai alla pagina precedente">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
               </button>
             </li>
-            <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1">
-              <button class="page-link" (click)="currentPage = i + 1">{{ i + 1 }}</button>
-            </li>
+            <ng-container *ngFor="let page of visiblePages">
+              <li class="page-item" *ngIf="page === '...'" class="page-item disabled">
+                <span class="page-link">...</span>
+              </li>
+              <li *ngIf="page !== '...'"
+                  class="page-item"
+                  [class.active]="currentPage === page"
+                  [attr.aria-current]="currentPage === page ? 'page' : null">
+                <button class="page-link"
+                        (click)="currentPage = +page"
+                        [attr.aria-label]="'Vai alla pagina ' + page">{{ page }}</button>
+              </li>
+            </ng-container>
             <li class="page-item" [class.disabled]="currentPage === totalPages">
-              <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
-                <i class="bi bi-chevron-right"></i>
+              <button class="page-link"
+                      (click)="currentPage = currentPage + 1"
+                      [disabled]="currentPage === totalPages"
+                      aria-label="Vai alla pagina successiva">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
               </button>
             </li>
           </ul>
@@ -244,18 +352,27 @@
   </div>
 </div>
 
-<!-- Modal dettaglio paziente -->
+<!-- BUG-017 FIX: Modale con role="dialog", aria-modal, aria-labelledby, focus trap -->
+<!-- BUG-015 FIX: Chiusura su click backdrop -->
 <ng-container *ngIf="showPatientModal && selectedPatient">
   <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show d-block" tabindex="-1">
+  <div class="modal fade show d-block"
+       tabindex="-1"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="patientModalTitle"
+       (click)="onBackdropClick($event)">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="bi bi-person-badge me-2"></i>
+          <h5 class="modal-title" id="patientModalTitle">
+            <i class="bi bi-person-badge me-2" aria-hidden="true"></i>
             Cartella paziente
           </h5>
-          <button type="button" class="btn-close" (click)="closePatientModal()"></button>
+          <button type="button"
+                  class="btn-close"
+                  (click)="closePatientModal()"
+                  aria-label="Chiudi finestra modale"></button>
         </div>
         <div class="modal-body">
           <!-- Dati paziente -->
@@ -263,7 +380,7 @@
             <div class="col-md-6">
               <div class="d-flex align-items-center">
                 <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                  <i class="bi bi-person text-primary fs-4"></i>
+                  <i class="bi bi-person text-primary fs-4" aria-hidden="true"></i>
                 </div>
                 <div>
                   <h5 class="mb-0 fw-bold">{{ selectedPatient.lastName }} {{ selectedPatient.firstName }}</h5>
@@ -271,9 +388,15 @@
                 </div>
               </div>
             </div>
+            <!-- BUG-007 FIX: Mostra "Non disponibile" se birthDate mancante -->
             <div class="col-md-6 text-md-end">
-              <p class="mb-0"><strong>Età:</strong> {{ calculateAge(selectedPatient.birthDate) }} anni</p>
-              <p class="mb-0 text-muted small">Nato il {{ formatDate(selectedPatient.birthDate) }}</p>
+              <ng-container *ngIf="calculateAge(selectedPatient.birthDate) !== null">
+                <p class="mb-0"><strong>Età:</strong> {{ calculateAge(selectedPatient.birthDate) }} anni</p>
+                <p class="mb-0 text-muted small">Nato il {{ formatDate(selectedPatient.birthDate) }}</p>
+              </ng-container>
+              <ng-container *ngIf="calculateAge(selectedPatient.birthDate) === null">
+                <p class="mb-0 text-muted"><strong>Età:</strong> Non disponibile</p>
+              </ng-container>
             </div>
           </div>
 
@@ -282,41 +405,52 @@
             <h6 class="fw-semibold mb-2">Consensi attivi</h6>
             <div class="d-flex gap-2 flex-wrap">
               <span *ngFor="let consent of selectedPatient.consents" class="badge fs-6" [ngClass]="getConsentBadgeClass(consent)">
-                <i class="bi bi-check-circle me-1"></i>{{ getConsentLabel(consent) }}
+                <i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ getConsentLabel(consent) }}
               </span>
             </div>
           </div>
 
-          <!-- Accesso rapido -->
+          <!-- BUG-001/002/003 FIX: Rotte corrette + patientId come queryParam -->
           <h6 class="fw-semibold mb-3">Accesso rapido</h6>
           <div class="row g-3">
             <div class="col-md-4" *ngIf="selectedPatient.consents.includes('DOCS')">
-              <a routerLink="/portal/doctor/docs" class="card card-glass border-0 shadow-sm h-100 text-decoration-none" (click)="closePatientModal()">
+              <a [routerLink]="['/portal/doctor/docs']"
+                 [queryParams]="{ patientId: selectedPatient.id }"
+                 class="card card-glass border-0 shadow-sm h-100 text-decoration-none"
+                 (click)="closePatientModal()">
                 <div class="card-body text-center">
-                  <div class="rounded-circle bg-primary bg-opacity-10 p-3 mx-auto mb-2" style="width: fit-content;">
-                    <i class="bi bi-file-earmark-medical text-primary fs-4"></i>
+                  <div class="rounded-circle bg-primary bg-opacity-10 p-3 mx-auto mb-2 quick-access-icon">
+                    <i class="bi bi-file-earmark-medical text-primary fs-4" aria-hidden="true"></i>
                   </div>
                   <h6 class="mb-0">Documenti</h6>
                   <small class="text-muted">Cartella clinica</small>
                 </div>
               </a>
             </div>
+            <!-- BUG-001 FIX: prescribing -> prescriptions -->
             <div class="col-md-4" *ngIf="selectedPatient.consents.includes('PRESCRIPTIONS')">
-              <a routerLink="/portal/doctor/prescribing" class="card card-glass border-0 shadow-sm h-100 text-decoration-none" (click)="closePatientModal()">
+              <a [routerLink]="['/portal/doctor/prescriptions']"
+                 [queryParams]="{ patientId: selectedPatient.id }"
+                 class="card card-glass border-0 shadow-sm h-100 text-decoration-none"
+                 (click)="closePatientModal()">
                 <div class="card-body text-center">
-                  <div class="rounded-circle bg-success bg-opacity-10 p-3 mx-auto mb-2" style="width: fit-content;">
-                    <i class="bi bi-prescription2 text-success fs-4"></i>
+                  <div class="rounded-circle bg-success bg-opacity-10 p-3 mx-auto mb-2 quick-access-icon">
+                    <i class="bi bi-prescription2 text-success fs-4" aria-hidden="true"></i>
                   </div>
                   <h6 class="mb-0">Prescrizioni</h6>
                   <small class="text-muted">Terapie attive</small>
                 </div>
               </a>
             </div>
+            <!-- BUG-002 FIX: televisit -> televisits -->
             <div class="col-md-4" *ngIf="selectedPatient.consents.includes('TELEVISIT')">
-              <a routerLink="/portal/doctor/televisit" class="card card-glass border-0 shadow-sm h-100 text-decoration-none" (click)="closePatientModal()">
+              <a [routerLink]="['/portal/doctor/televisits']"
+                 [queryParams]="{ patientId: selectedPatient.id }"
+                 class="card card-glass border-0 shadow-sm h-100 text-decoration-none"
+                 (click)="closePatientModal()">
                 <div class="card-body text-center">
-                  <div class="rounded-circle bg-info bg-opacity-10 p-3 mx-auto mb-2" style="width: fit-content;">
-                    <i class="bi bi-camera-video text-info fs-4"></i>
+                  <div class="rounded-circle bg-info bg-opacity-10 p-3 mx-auto mb-2 quick-access-icon">
+                    <i class="bi bi-camera-video text-info fs-4" aria-hidden="true"></i>
                   </div>
                   <h6 class="mb-0">Televisite</h6>
                   <small class="text-muted">Visite remote</small>
@@ -328,8 +462,16 @@
           <!-- Info ultimo accesso -->
           <div class="alert alert-light border mt-4 mb-0" *ngIf="selectedPatient.lastAccess">
             <div class="d-flex align-items-center">
-              <i class="bi bi-clock-history me-2"></i>
+              <i class="bi bi-clock-history me-2" aria-hidden="true"></i>
               <small>Ultimo accesso ai dati: <strong>{{ formatDateTime(selectedPatient.lastAccess) }}</strong></small>
+            </div>
+          </div>
+
+          <!-- Info prossimo appuntamento nel modale -->
+          <div class="alert alert-success border mt-3 mb-0" *ngIf="selectedPatient.nextAppointment">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-calendar-event me-2" aria-hidden="true"></i>
+              <small>Prossimo appuntamento: <strong>{{ formatDateTime(selectedPatient.nextAppointment) }}</strong></small>
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import {
   DoctorDocsService,
   PatientDto,
@@ -20,6 +20,7 @@ import {
 export class DoctorDocsComponent implements OnInit {
 
   private docsService = inject(DoctorDocsService);
+  private route = inject(ActivatedRoute);
 
   // Stato UI
   searchQuery = '';
@@ -54,6 +55,23 @@ export class DoctorDocsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadStats();
+    const patientIdParam = this.route.snapshot.queryParamMap.get('patientId');
+    if (patientIdParam) {
+      this.autoSelectPatient(+patientIdParam);
+    }
+  }
+
+  private autoSelectPatient(patientId: number): void {
+    this.isSearching = true;
+    this.docsService.getPatient(patientId).subscribe({
+      next: (patient) => {
+        this.isSearching = false;
+        this.selectPatient(patient);
+      },
+      error: () => {
+        this.isSearching = false;
+      }
+    });
   }
 
   private loadStats(): void {

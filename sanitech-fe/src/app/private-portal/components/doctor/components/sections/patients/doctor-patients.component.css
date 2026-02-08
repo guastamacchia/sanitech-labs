@@ -1,0 +1,62 @@
+/* ==========================================================================
+   BUG-030 FIX: Foglio stile specifico del componente
+   BUG-013 FIX: Animazione spin per pulsante Aggiorna
+   BUG-023 FIX: Overlay di refresh sulla tabella
+   ========================================================================== */
+
+/* Animazione spin per icona refresh */
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Overlay semi-trasparente durante refresh della tabella */
+.refresh-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: inherit;
+}
+
+/* Quick access icon container */
+.quick-access-icon {
+  width: fit-content;
+}
+
+/* Pulsanti azione icona circolari nella tabella */
+.action-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.action-icon-btn:hover:not(.disabled) {
+  transform: scale(1.1);
+}
+
+.action-icon-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Body overflow hidden quando il modale è aperto (BUG-016 FIX) */
+:host-context(body.overflow-hidden) {
+  overflow: hidden;
+}

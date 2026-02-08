@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import {
@@ -41,7 +41,7 @@ export class DoctorPrescriptionsComponent implements OnInit {
     { name: 'Furosemide', dosages: ['25mg', '50mg', '100mg'] }
   ];
 
-  constructor(private doctorApi: DoctorApiService) {}
+  constructor(private doctorApi: DoctorApiService, private route: ActivatedRoute) {}
 
   // Suggerimenti filtrati
   filteredDrugs: DrugSuggestion[] = [];
@@ -91,6 +91,10 @@ export class DoctorPrescriptionsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const patientIdParam = this.route.snapshot.queryParamMap.get('patientId');
+    if (patientIdParam) {
+      this.patientFilter = +patientIdParam;
+    }
     this.loadData();
   }
 

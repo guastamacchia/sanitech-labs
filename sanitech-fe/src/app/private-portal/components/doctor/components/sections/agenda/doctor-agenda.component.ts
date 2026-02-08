@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import {
@@ -31,7 +31,10 @@ export class DoctorAgendaComponent implements OnInit {
   currentWeekStart: Date = new Date();
   weekDays: Date[] = [];
 
-  constructor(private doctorApi: DoctorApiService) {}
+  // Filtro paziente da queryParam
+  patientIdFilter = 0;
+
+  constructor(private doctorApi: DoctorApiService, private route: ActivatedRoute) {}
 
   // Form creazione slot
   slotForm: SlotCreationForm = {
@@ -86,8 +89,20 @@ export class DoctorAgendaComponent implements OnInit {
   viewMode: 'calendar' | 'list' = 'calendar';
 
   ngOnInit(): void {
+    const patientIdParam = this.route.snapshot.queryParamMap.get('patientId');
+    if (patientIdParam) {
+      this.patientIdFilter = +patientIdParam;
+      this.viewMode = 'list';
+    }
     this.initializeWeek();
     this.loadSlots();
+  }
+
+  get filteredUpcomingAppointments(): TimeSlot[] {
+    if (this.patientIdFilter > 0) {
+      return this.upcomingAppointments.filter(s => s.patientId === this.patientIdFilter);
+    }
+    return this.upcomingAppointments;
   }
 
   initializeWeek(): void {

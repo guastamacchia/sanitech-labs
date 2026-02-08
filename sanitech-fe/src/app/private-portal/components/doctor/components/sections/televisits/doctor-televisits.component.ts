@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import {
@@ -25,7 +25,11 @@ export class DoctorTelevisitsComponent implements OnInit {
   // Cache pazienti (per subject)
   private patientsCache = new Map<string, string>();
 
-  constructor(private doctorApi: DoctorApiService) {}
+  // Filtro paziente da queryParam
+  patientIdFilter = 0;
+  patientNameFilter = '';
+
+  constructor(private doctorApi: DoctorApiService, private route: ActivatedRoute) {}
 
   // Filtri
   statusFilter: 'ALL' | TelevisitStatus = 'ALL';
@@ -78,6 +82,16 @@ export class DoctorTelevisitsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const patientIdParam = this.route.snapshot.queryParamMap.get('patientId');
+    if (patientIdParam) {
+      this.patientIdFilter = +patientIdParam;
+      // Recupera nome paziente per filtrare le televisite
+      this.doctorApi.getPatient(this.patientIdFilter).subscribe({
+        next: (patient) => {
+          this.patientNameFilter = `${patient.lastName} ${patient.firstName}`;
+        }
+      });
+    }
     this.loadTelevisits();
   }
 
@@ -137,6 +151,11 @@ export class DoctorTelevisitsComponent implements OnInit {
 
   get filteredTelevisits(): Televisit[] {
     let filtered = this.televisits;
+
+    // Filtro per paziente da queryParam
+    if (this.patientNameFilter) {
+      filtered = filtered.filter(t => t.patientName === this.patientNameFilter);
+    }
 
     if (this.statusFilter !== 'ALL') {
       filtered = filtered.filter(t => t.status === this.statusFilter);
