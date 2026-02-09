@@ -401,6 +401,18 @@ export class DoctorApiService {
     });
   }
 
+  markNotificationAsRead(id: number): Observable<NotificationDto> {
+    return this.api.patch<NotificationDto>(`/api/notifications/${id}/read`);
+  }
+
+  archiveNotification(id: number): Observable<NotificationDto> {
+    return this.api.patch<NotificationDto>(`/api/notifications/${id}/archive`);
+  }
+
+  markAllNotificationsAsRead(): Observable<{ updated: number }> {
+    return this.api.post<{ updated: number }>('/api/notifications/read-all');
+  }
+
   // ---------------------------------------------------------------------------
   // REPARTI
   // ---------------------------------------------------------------------------

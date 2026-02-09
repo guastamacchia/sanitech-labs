@@ -193,8 +193,8 @@ export interface ConsentCheckResponse {
 }
 
 // === Notifiche ===
-export type NotificationChannel = 'EMAIL' | 'SMS' | 'PUSH' | 'IN_APP';
-export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED' | 'READ';
+export type NotificationChannel = 'EMAIL' | 'IN_APP';
+export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED' | 'READ' | 'ARCHIVED';
 export type RecipientType = 'PATIENT' | 'DOCTOR' | 'ADMIN';
 
 export interface NotificationDto {

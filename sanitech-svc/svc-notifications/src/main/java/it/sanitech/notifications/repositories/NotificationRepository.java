@@ -43,4 +43,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * Trova tutte le notifiche con filtro opzionale per tipo destinatario.
      */
     Page<Notification> findByRecipientType(RecipientType recipientType, Pageable pageable);
+
+    /**
+     * Trova una notifica specifica del destinatario (per verificare ownership).
+     */
+    java.util.Optional<Notification> findByIdAndRecipientTypeAndRecipientId(Long id, RecipientType recipientType, String recipientId);
+
+    /**
+     * Trova tutte le notifiche SENT (non lette) di un destinatario.
+     */
+    List<Notification> findByRecipientTypeAndRecipientIdAndStatus(RecipientType recipientType, String recipientId, NotificationStatus status);
 }

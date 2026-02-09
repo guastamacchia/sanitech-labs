@@ -113,6 +113,46 @@ public class NotificationService {
         return repository.findAll(pageable).map(mapper::toDto);
     }
 
+    /**
+     * Marca una notifica come letta. Verifica ownership per recipientType+recipientId.
+     */
+    @Transactional
+    public NotificationDto markAsRead(Long id, RecipientType recipientType, String recipientId) {
+        Notification entity = repository.findByIdAndRecipientTypeAndRecipientId(id, recipientType, recipientId)
+                .orElseThrow(() -> NotFoundException.of("Notifica", id));
+        if (entity.getStatus() == NotificationStatus.SENT) {
+            entity.markRead();
+            entity = repository.save(entity);
+        }
+        return mapper.toDto(entity);
+    }
+
+    /**
+     * Archivia una notifica. Verifica ownership per recipientType+recipientId.
+     */
+    @Transactional
+    public NotificationDto archive(Long id, RecipientType recipientType, String recipientId) {
+        Notification entity = repository.findByIdAndRecipientTypeAndRecipientId(id, recipientType, recipientId)
+                .orElseThrow(() -> NotFoundException.of("Notifica", id));
+        entity.markArchived();
+        entity = repository.save(entity);
+        return mapper.toDto(entity);
+    }
+
+    /**
+     * Marca tutte le notifiche SENT del destinatario come lette.
+     *
+     * @return numero di notifiche aggiornate
+     */
+    @Transactional
+    public int markAllAsRead(RecipientType recipientType, String recipientId) {
+        List<Notification> unread = repository.findByRecipientTypeAndRecipientIdAndStatus(
+                recipientType, recipientId, NotificationStatus.SENT);
+        unread.forEach(Notification::markRead);
+        repository.saveAll(unread);
+        return unread.size();
+    }
+
     @Transactional
     public void delete(Long id) {
         Notification entity = repository.findById(id).orElseThrow(() -> NotFoundException.of("Notifica", id));

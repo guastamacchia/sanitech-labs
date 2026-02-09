@@ -96,4 +96,18 @@ public class Notification {
         this.status = NotificationStatus.FAILED;
         this.errorMessage = error;
     }
+
+    /**
+     * Marca la notifica come letta dall'utente.
+     */
+    public void markRead() {
+        this.status = NotificationStatus.READ;
+    }
+
+    /**
+     * Archivia la notifica.
+     */
+    public void markArchived() {
+        this.status = NotificationStatus.ARCHIVED;
+    }
 }

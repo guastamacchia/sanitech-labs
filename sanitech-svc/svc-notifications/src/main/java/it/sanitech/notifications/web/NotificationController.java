@@ -14,10 +14,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
- * API REST per consultare le notifiche dell'utente autenticato.
+ * API REST per consultare e gestire le notifiche dell'utente autenticato.
  */
 @RestController
 @RequestMapping("/api/notifications")
@@ -51,6 +52,31 @@ public class NotificationController {
         );
 
         return service.listForRecipient(recipientType, recipientId, pageable);
+    }
+
+    /**
+     * Marca una notifica come letta.
+     */
+    @PatchMapping("/{id}/read")
+    public NotificationDto markAsRead(Authentication auth, @PathVariable Long id) {
+        return service.markAsRead(id, resolveRecipientType(auth), auth.getName());
+    }
+
+    /**
+     * Archivia una notifica.
+     */
+    @PatchMapping("/{id}/archive")
+    public NotificationDto archive(Authentication auth, @PathVariable Long id) {
+        return service.archive(id, resolveRecipientType(auth), auth.getName());
+    }
+
+    /**
+     * Marca tutte le notifiche non lette come lette.
+     */
+    @PostMapping("/read-all")
+    public Map<String, Integer> markAllAsRead(Authentication auth) {
+        int count = service.markAllAsRead(resolveRecipientType(auth), auth.getName());
+        return Map.of("updated", count);
     }
 
     private RecipientType resolveRecipientType(Authentication auth) {
