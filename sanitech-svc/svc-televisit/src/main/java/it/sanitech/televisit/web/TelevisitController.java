@@ -7,6 +7,8 @@ import it.sanitech.televisit.repositories.entities.TelevisitStatus;
 import it.sanitech.televisit.services.TelevisitService;
 import it.sanitech.televisit.services.dto.LiveKitTokenDto;
 import it.sanitech.televisit.services.dto.TelevisitDto;
+import it.sanitech.televisit.services.dto.TelevisitNotesDto;
+import jakarta.validation.Valid;
 import it.sanitech.televisit.utilities.AppConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -37,11 +39,12 @@ public class TelevisitController {
             @RequestParam(required = false) String patientSubject,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String[] sort
+            @RequestParam(required = false) String[] sort,
+            Authentication auth
     ) {
         Sort safeSort = SortUtils.safeSort(sort, AppConstants.SortField.TELEVISIT_SESSION_ALLOWED, AppConstants.SortField.DEFAULT_FIELD);
         Pageable pageable = PageRequest.of(page, size, safeSort);
-        return service.search(department, status, doctorSubject, patientSubject, pageable);
+        return service.search(department, status, doctorSubject, patientSubject, pageable, auth);
     }
 
     @GetMapping("/{id}")
@@ -77,5 +80,12 @@ public class TelevisitController {
     @Auditable(aggregateType = "TELEVISIT", eventType = "TELEVISIT_CANCELLED", aggregateIdParam = "id")
     public TelevisitDto cancel(@PathVariable Long id, Authentication auth) {
         return service.cancel(id, auth);
+    }
+
+    @PatchMapping("/{id}/notes")
+    @PreAuthorize("hasAnyRole('DOCTOR','ADMIN')")
+    @Auditable(aggregateType = "TELEVISIT", eventType = "TELEVISIT_NOTES_UPDATED", aggregateIdParam = "id")
+    public TelevisitDto updateNotes(@PathVariable Long id, @Valid @RequestBody TelevisitNotesDto dto, Authentication auth) {
+        return service.updateNotes(id, dto.notes(), auth);
     }
 }

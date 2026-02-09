@@ -54,7 +54,7 @@ public class PatientTelevisitController {
         Sort safeSort = SortUtils.safeSort(sort, AppConstants.SortField.TELEVISIT_SESSION_ALLOWED, AppConstants.SortField.DEFAULT_FIELD);
         Pageable pageable = PageRequest.of(page, size, safeSort);
         // Filtra automaticamente per il paziente autenticato
-        return service.search(department, status, null, auth.getName(), pageable);
+        return service.search(department, status, null, auth.getName(), pageable, auth);
     }
 
     /**

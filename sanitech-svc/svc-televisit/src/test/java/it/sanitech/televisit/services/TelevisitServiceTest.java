@@ -101,7 +101,8 @@ class TelevisitServiceTest {
                 .thenReturn(new PageImpl<>(List.of(entity), PageRequest.of(0, 1), 1));
         when(mapper.toDto(any(TelevisitSession.class))).thenAnswer(invocation -> toDto(invocation.getArgument(0)));
 
-        Page<TelevisitDto> page = service.search("CARDIO", TelevisitStatus.CREATED, null, null, PageRequest.of(0, 1));
+        Authentication auth = new TestingAuthenticationToken("doc-subject", "pwd", "ROLE_DOCTOR");
+        Page<TelevisitDto> page = service.search("CARDIO", TelevisitStatus.CREATED, null, null, PageRequest.of(0, 1), auth);
 
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).id()).isEqualTo(12L);
@@ -260,7 +261,10 @@ class TelevisitServiceTest {
                 entity.getDoctorSubject(),
                 entity.getPatientSubject(),
                 entity.getScheduledAt(),
-                entity.getStatus()
+                entity.getStatus(),
+                entity.getNotes(),
+                null,
+                null
         );
     }
 }

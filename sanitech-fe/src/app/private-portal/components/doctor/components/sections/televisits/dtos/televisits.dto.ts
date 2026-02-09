@@ -2,7 +2,10 @@
 // DTOs locali per il componente Televisits
 // ============================================================================
 
-export type TelevisitStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+import { TelevisitStatus as ApiTelevisitStatus } from '../../../../dtos/doctor-shared.dto';
+
+/** Stati frontend usati nel componente UI */
+export type TelevisitStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 export interface Televisit {
   id: number;
@@ -16,4 +19,25 @@ export interface Televisit {
   roomUrl?: string;
   notes?: string;
   documents?: { id: number; name: string; type: string }[];
+}
+
+/**
+ * Converte lo stato backend (Java enum) nello stato frontend UI.
+ * Backend: CREATED, SCHEDULED, ACTIVE, ENDED, CANCELED
+ * Frontend: SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
+ */
+export function mapApiStatus(apiStatus: ApiTelevisitStatus): TelevisitStatus {
+  switch (apiStatus) {
+    case 'CREATED':
+    case 'SCHEDULED':
+      return 'SCHEDULED';
+    case 'ACTIVE':
+      return 'IN_PROGRESS';
+    case 'ENDED':
+      return 'COMPLETED';
+    case 'CANCELED':
+      return 'CANCELLED';
+    default:
+      return 'SCHEDULED';
+  }
 }

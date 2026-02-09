@@ -28,7 +28,16 @@ public record TelevisitDto(
         OffsetDateTime scheduledAt,
 
         /** Stato corrente. */
-        TelevisitStatus status
+        TelevisitStatus status,
+
+        /** Note cliniche del medico. */
+        String notes,
+
+        /** Nome completo del paziente (arricchito da svc-directory, può essere null). */
+        String patientName,
+
+        /** Nome completo del medico (arricchito da svc-directory, può essere null). */
+        String doctorName
 
 ) {
 }

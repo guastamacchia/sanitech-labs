@@ -49,7 +49,7 @@ class TelevisitControllerTest {
     @Test
     void searchReturnsPage() throws Exception {
         Page<TelevisitDto> page = new PageImpl<>(List.of(sampleDto(10L)), PageRequest.of(0, 1), 1);
-        when(service.search(eq("CARDIO"), eq(TelevisitStatus.CREATED), any(), any(), any(Pageable.class))).thenReturn(page);
+        when(service.search(eq("CARDIO"), eq(TelevisitStatus.CREATED), any(), any(), any(Pageable.class), any())).thenReturn(page);
 
         mockMvc.perform(get(AppConstants.ApiPath.TELEVISITS)
                         .param("department", "CARDIO")
@@ -60,7 +60,7 @@ class TelevisitControllerTest {
                 .andExpect(jsonPath("$.content[0].id").value(10));
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(service).search(eq("CARDIO"), eq(TelevisitStatus.CREATED), eq(null), eq(null), pageableCaptor.capture());
+        verify(service).search(eq("CARDIO"), eq(TelevisitStatus.CREATED), eq(null), eq(null), pageableCaptor.capture(), any());
     }
 
     @Test
@@ -125,7 +125,10 @@ class TelevisitControllerTest {
                 "doc-subject",
                 "patient-subject",
                 OffsetDateTime.parse("2024-01-01T10:00:00Z"),
-                TelevisitStatus.CREATED
+                TelevisitStatus.CREATED,
+                null,
+                null,
+                null
         );
     }
 }

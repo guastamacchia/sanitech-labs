@@ -3,6 +3,10 @@ package it.sanitech.televisit.clients;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -33,6 +37,13 @@ public class DirectoryClient {
      * @return informazioni del paziente o null se non trovato
      */
     public PersonInfo findPatientByEmail(String email) {
+        return findPatientByEmail(email, null);
+    }
+
+    /**
+     * Cerca un paziente per email, propagando il token JWT per autenticazione service-to-service.
+     */
+    public PersonInfo findPatientByEmail(String email, String bearerToken) {
         if (email == null || email.isBlank()) {
             return null;
         }
@@ -43,7 +54,7 @@ public class DirectoryClient {
                     .queryParam("email", email)
                     .toUriString();
 
-            DirectoryPersonDto response = restTemplate.getForObject(url, DirectoryPersonDto.class);
+            DirectoryPersonDto response = exchange(url, bearerToken);
             if (response == null) {
                 log.debug("Paziente non trovato per email: {}", email);
                 return null;
@@ -63,6 +74,13 @@ public class DirectoryClient {
      * @return informazioni del medico o null se non trovato
      */
     public PersonInfo findDoctorByEmail(String email) {
+        return findDoctorByEmail(email, null);
+    }
+
+    /**
+     * Cerca un medico per email, propagando il token JWT per autenticazione service-to-service.
+     */
+    public PersonInfo findDoctorByEmail(String email, String bearerToken) {
         if (email == null || email.isBlank()) {
             return null;
         }
@@ -73,7 +91,7 @@ public class DirectoryClient {
                     .queryParam("email", email)
                     .toUriString();
 
-            DirectoryPersonDto response = restTemplate.getForObject(url, DirectoryPersonDto.class);
+            DirectoryPersonDto response = exchange(url, bearerToken);
             if (response == null) {
                 log.debug("Medico non trovato per email: {}", email);
                 return null;
@@ -84,6 +102,20 @@ public class DirectoryClient {
             log.warn("Errore chiamata directory per medico email={}: {}", email, ex.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Esegue una GET con o senza Bearer token.
+     */
+    private DirectoryPersonDto exchange(String url, String bearerToken) {
+        if (bearerToken != null && !bearerToken.isBlank()) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(bearerToken);
+            ResponseEntity<DirectoryPersonDto> resp = restTemplate.exchange(
+                    url, HttpMethod.GET, new HttpEntity<>(headers), DirectoryPersonDto.class);
+            return resp.getBody();
+        }
+        return restTemplate.getForObject(url, DirectoryPersonDto.class);
     }
 
     /**

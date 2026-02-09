@@ -86,7 +86,8 @@ export interface PrescriptionCreateDto {
 }
 
 // === Televisite ===
-export type TelevisitStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+// Stati allineati al backend Java enum: CREATED, SCHEDULED, ACTIVE, ENDED, CANCELED
+export type TelevisitStatus = 'CREATED' | 'SCHEDULED' | 'ACTIVE' | 'ENDED' | 'CANCELED';
 
 export interface TelevisitDto {
   id: number;
@@ -96,6 +97,9 @@ export interface TelevisitDto {
   patientSubject: string;
   scheduledAt: string;
   status: TelevisitStatus;
+  notes?: string;
+  patientName?: string;
+  doctorName?: string;
 }
 
 export interface LiveKitTokenDto {

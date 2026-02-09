@@ -84,7 +84,10 @@ class TelevisitAdminControllerTest {
                 "doc-subject",
                 "patient-subject",
                 OffsetDateTime.parse("2024-01-01T10:00:00Z"),
-                TelevisitStatus.CREATED
+                TelevisitStatus.CREATED,
+                null,
+                null,
+                null
         );
     }
 }

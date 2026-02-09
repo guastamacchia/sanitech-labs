@@ -77,6 +77,12 @@ public class TelevisitSession {
     @Column(nullable = false, length = 16)
     private TelevisitStatus status;
 
+    /**
+     * Note cliniche del medico sulla visita.
+     */
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

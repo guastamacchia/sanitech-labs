@@ -2,6 +2,7 @@ package it.sanitech.televisit.services;
 
 import it.sanitech.commons.exception.NotFoundException;
 import it.sanitech.commons.security.DeptGuard;
+import it.sanitech.commons.security.JwtClaimExtractor;
 import it.sanitech.commons.security.SecurityUtils;
 import it.sanitech.outbox.core.DomainEventPublisher;
 import it.sanitech.televisit.clients.DirectoryClient;
@@ -25,9 +26,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service applicativo per la gestione delle sessioni di video-visita.
@@ -89,9 +89,57 @@ public class TelevisitService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TelevisitDto> search(String department, TelevisitStatus status, String doctorSubject, String patientSubject, Pageable pageable) {
-        return repo.findAll(TelevisitSpecifications.filter(department, status, doctorSubject, patientSubject), pageable)
-                .map(mapper::toDto);
+    public Page<TelevisitDto> search(String department, TelevisitStatus status, String doctorSubject, String patientSubject, Pageable pageable, Authentication auth) {
+        Page<TelevisitSession> page = repo.findAll(
+                TelevisitSpecifications.filter(department, status, doctorSubject, patientSubject), pageable);
+
+        // Estrai il bearer token per le chiamate service-to-service
+        String bearerToken = JwtClaimExtractor.bearerToken(auth).orElse(null);
+
+        // Raccogliamo i subject unici per batch lookup dei nomi
+        Set<String> patientSubjects = page.getContent().stream()
+                .map(TelevisitSession::getPatientSubject)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<String> doctorSubjects = page.getContent().stream()
+                .map(TelevisitSession::getDoctorSubject)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<String, String> patientNames = resolveNames(patientSubjects, true, bearerToken);
+        Map<String, String> doctorNames = resolveNames(doctorSubjects, false, bearerToken);
+
+        return page.map(entity -> {
+            TelevisitDto dto = mapper.toDto(entity);
+            return new TelevisitDto(
+                    dto.id(), dto.roomName(), dto.department(),
+                    dto.doctorSubject(), dto.patientSubject(),
+                    dto.scheduledAt(), dto.status(), dto.notes(),
+                    patientNames.get(entity.getPatientSubject()),
+                    doctorNames.get(entity.getDoctorSubject())
+            );
+        });
+    }
+
+    /**
+     * Risolve i nomi di persone (pazienti o medici) a partire dai subject Keycloak (email).
+     * Ritorna una mappa subject → "Cognome Nome".
+     */
+    private Map<String, String> resolveNames(Set<String> subjects, boolean isPatient, String bearerToken) {
+        Map<String, String> names = new HashMap<>();
+        for (String subject : subjects) {
+            try {
+                DirectoryClient.PersonInfo info = isPatient
+                        ? directoryClient.findPatientByEmail(subject, bearerToken)
+                        : directoryClient.findDoctorByEmail(subject, bearerToken);
+                if (info != null) {
+                    names.put(subject, info.lastName() + " " + info.firstName());
+                }
+            } catch (Exception e) {
+                log.debug("Impossibile risolvere nome per subject={}: {}", subject, e.getMessage());
+            }
+        }
+        return names;
     }
 
     /**
@@ -157,9 +205,10 @@ public class TelevisitService {
 
         s.markEnded();
 
-        // Arricchimento dati anagrafici da svc-directory
-        DirectoryClient.PersonInfo patientInfo = directoryClient.findPatientByEmail(s.getPatientSubject());
-        DirectoryClient.PersonInfo doctorInfo = directoryClient.findDoctorByEmail(s.getDoctorSubject());
+        // Arricchimento dati anagrafici da svc-directory (con token relay)
+        String bearerToken = JwtClaimExtractor.bearerToken(auth).orElse(null);
+        DirectoryClient.PersonInfo patientInfo = directoryClient.findPatientByEmail(s.getPatientSubject(), bearerToken);
+        DirectoryClient.PersonInfo doctorInfo = directoryClient.findDoctorByEmail(s.getDoctorSubject(), bearerToken);
 
         Long patientId = patientInfo != null ? patientInfo.id() : 0L;
         String patientName = patientInfo != null ? patientInfo.fullName() : s.getPatientSubject();
@@ -252,6 +301,21 @@ public class TelevisitService {
                 "roomName", s.getRoomName(),
                 "status", "DELETED"
         ), AppConstants.Outbox.TOPIC_AUDITS_EVENTS, auth);
+    }
+
+    /**
+     * Aggiorna le note cliniche di una televisita.
+     * Può essere chiamato durante o dopo la visita (ACTIVE o ENDED).
+     */
+    @Transactional
+    public TelevisitDto updateNotes(Long sessionId, String notes, Authentication auth) {
+        TelevisitSession s = repo.findById(sessionId)
+                .orElseThrow(() -> NotFoundException.of("TelevisitSession", sessionId));
+        deptGuard.checkCanManage(s.getDepartment(), auth);
+
+        s.setNotes(notes);
+
+        return mapper.toDto(s);
     }
 
     private String generateRoomName() {

@@ -1,16 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, takeUntil } from 'rxjs/operators';
 import {
   DoctorApiService,
   TelevisitDto,
-  TelevisitStatus as ApiTelevisitStatus,
   PatientDto
 } from '../../../services/doctor-api.service';
-import { TelevisitStatus, Televisit } from './dtos/televisits.dto';
+import { TelevisitStatus, Televisit, mapApiStatus } from './dtos/televisits.dto';
 
 @Component({
   selector: 'app-doctor-televisits',
@@ -18,11 +17,14 @@ import { TelevisitStatus, Televisit } from './dtos/televisits.dto';
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './doctor-televisits.component.html'
 })
-export class DoctorTelevisitsComponent implements OnInit {
+export class DoctorTelevisitsComponent implements OnInit, OnDestroy {
+  // Cleanup subscriptions
+  private destroy$ = new Subject<void>();
+
   // Televisite
   televisits: Televisit[] = [];
 
-  // Cache pazienti (per subject)
+  // Cache pazienti (per subject → nome completo)
   private patientsCache = new Map<string, string>();
 
   // Filtro paziente da queryParam
@@ -45,12 +47,17 @@ export class DoctorTelevisitsComponent implements OnInit {
   errorMessage = '';
   showPreparationModal = false;
   showVideoModal = false;
+  showEndConfirmModal = false;
   selectedTelevisit: Televisit | null = null;
 
   // Note durante visita
   visitNotes = '';
 
-  // Statistiche
+  // Media state (placeholder per futura integrazione LiveKit)
+  isMuted = false;
+  isCameraOff = false;
+
+  // Statistiche — FIX BUG-02, BUG-17: conteggi coerenti e corretti
   get todayVisits(): number {
     const today = new Date().toDateString();
     return this.televisits.filter(t =>
@@ -61,13 +68,14 @@ export class DoctorTelevisitsComponent implements OnInit {
 
   get weekVisits(): number {
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // FIX BUG-17: normalizzazione a mezzanotte
     const weekEnd = new Date(today);
     weekEnd.setDate(today.getDate() + 7);
-    return this.televisits.filter(t =>
-      new Date(t.scheduledAt) >= today &&
-      new Date(t.scheduledAt) <= weekEnd &&
-      t.status === 'SCHEDULED'
-    ).length;
+    return this.televisits.filter(t => {
+      const date = new Date(t.scheduledAt);
+      return date >= today && date <= weekEnd &&
+        (t.status === 'SCHEDULED' || t.status === 'IN_PROGRESS'); // FIX BUG-17: stessi stati di todayVisits
+    }).length;
   }
 
   get completedVisits(): number {
@@ -85,8 +93,9 @@ export class DoctorTelevisitsComponent implements OnInit {
     const patientIdParam = this.route.snapshot.queryParamMap.get('patientId');
     if (patientIdParam) {
       this.patientIdFilter = +patientIdParam;
-      // Recupera nome paziente per filtrare le televisite
-      this.doctorApi.getPatient(this.patientIdFilter).subscribe({
+      this.doctorApi.getPatient(this.patientIdFilter).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
         next: (patient) => {
           this.patientNameFilter = `${patient.lastName} ${patient.firstName}`;
         }
@@ -95,58 +104,115 @@ export class DoctorTelevisitsComponent implements OnInit {
     this.loadTelevisits();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // FIX BUG-20/G2: Gestione tasto Escape per chiudere modali
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showEndConfirmModal) {
+      this.showEndConfirmModal = false;
+    } else if (this.showVideoModal) {
+      this.showEndConfirmModal = true;
+    } else if (this.showPreparationModal) {
+      this.closePreparation();
+    }
+  }
+
   loadTelevisits(): void {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.doctorApi.searchTelevisits({ size: 100 }).subscribe({
+    this.doctorApi.searchTelevisits({ size: 100 }).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
       next: (page) => {
         const dtos = page.content || [];
+        // FIX BUG-07: Raccogliere i subject unici per risoluzione nomi
+        const uniqueSubjects = [...new Set(dtos.map(d => d.patientSubject))];
+        this.resolvePatientNames(uniqueSubjects, dtos);
+      },
+      error: () => {
+        this.errorMessage = 'Errore nel caricamento delle televisite. Premi Aggiorna per riprovare.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * FIX BUG-07: Risolvi i nomi dei pazienti dai subject Keycloak.
+   * Cerca i pazienti per email (subject) e popola la cache.
+   */
+  private resolvePatientNames(subjects: string[], dtos: TelevisitDto[]): void {
+    // Per ogni subject non ancora in cache, cerchiamo il paziente
+    const lookups = subjects
+      .filter(s => !this.patientsCache.has(s))
+      .map(subject =>
+        this.doctorApi.searchPatients({ q: subject, size: 1 }).pipe(
+          catchError(() => of({ content: [] as PatientDto[], totalElements: 0, totalPages: 0 }))
+        )
+      );
+
+    if (lookups.length === 0) {
+      this.televisits = dtos.map(dto => this.mapTelevisit(dto));
+      this.currentPage = 1; // FIX BUG-15: reset paginazione
+      this.isLoading = false;
+      return;
+    }
+
+    forkJoin(lookups).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (results) => {
+        const subjectsToResolve = subjects.filter(s => !this.patientsCache.has(s));
+        results.forEach((page, index) => {
+          const subject = subjectsToResolve[index];
+          if (page.content && page.content.length > 0) {
+            const p = page.content[0];
+            this.patientsCache.set(subject, `${p.lastName} ${p.firstName}`);
+          }
+        });
         this.televisits = dtos.map(dto => this.mapTelevisit(dto));
+        this.currentPage = 1; // FIX BUG-15: reset paginazione
         this.isLoading = false;
       },
       error: () => {
-        this.errorMessage = 'Errore nel caricamento delle televisite.';
+        // Fallback: usa i subject grezzi
+        this.televisits = dtos.map(dto => this.mapTelevisit(dto));
+        this.currentPage = 1;
         this.isLoading = false;
       }
     });
   }
 
   private mapTelevisit(dto: TelevisitDto): Televisit {
-    // Il backend usa subject Keycloak, non ID paziente
-    // Potremmo fare una lookup, ma per ora usiamo il subject come placeholder
-    const patientName = this.patientsCache.get(dto.patientSubject) || `Paziente (${dto.patientSubject.substring(0, 8)}...)`;
+    // FIX BUG-07: Priorità nomi: 1) backend patientName, 2) cache locale, 3) subject fallback
+    const patientName = dto.patientName
+      || this.patientsCache.get(dto.patientSubject)
+      || this.formatSubjectFallback(dto.patientSubject);
 
     return {
       id: dto.id,
       patientSubject: dto.patientSubject,
       patientName,
       scheduledAt: dto.scheduledAt,
-      duration: 30, // Default, il backend potrebbe non avere questo campo
-      reason: '-', // Il backend non ha un campo reason nel TelevisitDto
-      status: dto.status as TelevisitStatus,
-      roomUrl: dto.roomName ? `https://meet.sanitech.it/room/${dto.roomName}` : undefined
+      duration: 30,
+      reason: dto.department || '-',   // FIX BUG-19: mostra il dipartimento come informazione utile
+      status: mapApiStatus(dto.status), // FIX BUG-01: conversione stato corretta
+      roomUrl: dto.roomName ? `https://meet.sanitech.it/room/${dto.roomName}` : undefined,
+      notes: dto.notes
     };
   }
 
-  getTodayAt(hours: number, minutes: number): string {
-    const date = new Date();
-    date.setHours(hours, minutes, 0, 0);
-    return date.toISOString();
-  }
-
-  getTomorrowAt(hours: number, minutes: number): string {
-    const date = new Date();
-    date.setDate(date.getDate() + 1);
-    date.setHours(hours, minutes, 0, 0);
-    return date.toISOString();
-  }
-
-  getYesterdayAt(hours: number, minutes: number): string {
-    const date = new Date();
-    date.setDate(date.getDate() - 1);
-    date.setHours(hours, minutes, 0, 0);
-    return date.toISOString();
+  /**
+   * FIX BUG-07: Fallback sicuro per subject — gestisce null/undefined e lunghezze variabili
+   */
+  private formatSubjectFallback(subject: string | null | undefined): string {
+    if (!subject) return 'Paziente sconosciuto';
+    const display = subject.length > 20 ? subject.substring(0, 20) + '...' : subject;
+    return display;
   }
 
   get filteredTelevisits(): Televisit[] {
@@ -200,8 +266,11 @@ export class DoctorTelevisitsComponent implements OnInit {
   startTelevisit(): void {
     if (!this.selectedTelevisit) return;
 
-    this.doctorApi.startTelevisit(this.selectedTelevisit.id).subscribe({
-      next: (updated) => {
+    this.errorMessage = ''; // FIX BUG-F2: pulisci errore prima della chiamata
+    this.doctorApi.startTelevisit(this.selectedTelevisit.id).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: () => {
         if (this.selectedTelevisit) {
           this.selectedTelevisit.status = 'IN_PROGRESS';
         }
@@ -212,7 +281,8 @@ export class DoctorTelevisitsComponent implements OnInit {
         setTimeout(() => this.successMessage = '', 3000);
       },
       error: () => {
-        this.errorMessage = 'Errore nell\'avvio della televisita.';
+        this.errorMessage = 'Errore nell\'avvio della televisita. Riprova.';
+        setTimeout(() => this.errorMessage = '', 5000);
       }
     });
   }
@@ -220,40 +290,66 @@ export class DoctorTelevisitsComponent implements OnInit {
   endTelevisit(generateReport: boolean): void {
     if (!this.selectedTelevisit) return;
 
-    this.doctorApi.endTelevisit(this.selectedTelevisit.id).subscribe({
-      next: (updated) => {
-        if (this.selectedTelevisit) {
-          this.selectedTelevisit.status = 'COMPLETED';
-          this.selectedTelevisit.notes = this.visitNotes;
-        }
-        this.showVideoModal = false;
-        this.loadTelevisits(); // Ricarica lista
+    this.errorMessage = '';
+    const televisitId = this.selectedTelevisit.id;
 
-        if (generateReport) {
-          this.successMessage = 'Televisita conclusa. Referto di visita generato.';
-        } else {
-          this.successMessage = 'Televisita conclusa.';
+    // FIX BUG-09: Salva le note sul backend prima di concludere, se presenti
+    const saveNotes$ = (generateReport && this.visitNotes.trim())
+      ? this.doctorApi.updateTelevisitNotes(televisitId, this.visitNotes).pipe(
+          catchError(() => of(null)) // Non bloccare la chiusura se il salvataggio note fallisce
+        )
+      : of(null);
+
+    saveNotes$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.doctorApi.endTelevisit(televisitId).pipe(
+        takeUntil(this.destroy$)
+      ).subscribe({
+        next: () => {
+          if (this.selectedTelevisit) {
+            this.selectedTelevisit.status = 'COMPLETED';
+            this.selectedTelevisit.notes = this.visitNotes;
+          }
+          this.showVideoModal = false;
+          this.showEndConfirmModal = false;
+          this.loadTelevisits();
+
+          if (generateReport) {
+            this.successMessage = 'Televisita conclusa. Le note sono state salvate.';
+          } else {
+            this.successMessage = 'Televisita conclusa.';
+          }
+          setTimeout(() => this.successMessage = '', 5000);
+          this.selectedTelevisit = null;
+        },
+        error: () => {
+          this.errorMessage = 'Errore nella conclusione della televisita. Riprova.';
+          setTimeout(() => this.errorMessage = '', 5000);
         }
-        setTimeout(() => this.successMessage = '', 5000);
-        this.selectedTelevisit = null;
-      },
-      error: () => {
-        this.errorMessage = 'Errore nella conclusione della televisita.';
-      }
+      });
     });
   }
 
+  // FIX BUG-14: Sostituito confirm() con modale custom
   closeVideoModal(): void {
-    if (confirm('Vuoi concludere la televisita?')) {
-      this.endTelevisit(false);
-    }
+    this.showEndConfirmModal = true;
+  }
+
+  cancelEndConfirm(): void {
+    this.showEndConfirmModal = false;
+  }
+
+  confirmEndTelevisit(): void {
+    this.endTelevisit(false);
   }
 
   canStart(televisit: Televisit): boolean {
     const now = new Date();
     const scheduledTime = new Date(televisit.scheduledAt);
-    const fiveMinutesBefore = new Date(scheduledTime.getTime() - 5 * 60 * 1000);
-    return now >= fiveMinutesBefore && televisit.status === 'SCHEDULED';
+    const fifteenMinutesBefore = new Date(scheduledTime.getTime() - 15 * 60 * 1000);
+    // FIX BUG-04: accetta anche IN_PROGRESS per rientrare in una sessione
+    return now >= fifteenMinutesBefore && (televisit.status === 'SCHEDULED' || televisit.status === 'IN_PROGRESS');
   }
 
   getTimeUntil(scheduledAt: string): string {
@@ -261,7 +357,7 @@ export class DoctorTelevisitsComponent implements OnInit {
     const scheduled = new Date(scheduledAt);
     const diff = scheduled.getTime() - now.getTime();
 
-    if (diff < 0) return 'In corso';
+    if (diff < 0) return 'Ora di inizio superata';
 
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(minutes / 60);
@@ -277,10 +373,9 @@ export class DoctorTelevisitsComponent implements OnInit {
       SCHEDULED: 'Programmata',
       IN_PROGRESS: 'In corso',
       COMPLETED: 'Completata',
-      CANCELLED: 'Cancellata',
-      NO_SHOW: 'Paziente assente'
+      CANCELLED: 'Cancellata'
     };
-    return labels[status];
+    return labels[status] || status;
   }
 
   getStatusBadgeClass(status: TelevisitStatus): string {
@@ -288,10 +383,29 @@ export class DoctorTelevisitsComponent implements OnInit {
       SCHEDULED: 'bg-primary',
       IN_PROGRESS: 'bg-success',
       COMPLETED: 'bg-secondary',
-      CANCELLED: 'bg-danger',
-      NO_SHOW: 'bg-warning text-dark'
+      CANCELLED: 'bg-danger'
     };
-    return classes[status];
+    return classes[status] || 'bg-secondary';
+  }
+
+  // FIX BUG-20/G9: Icona differenziata per stato (non solo colore)
+  getStatusIcon(status: TelevisitStatus): string {
+    const icons: Record<TelevisitStatus, string> = {
+      SCHEDULED: 'bi-calendar-check',
+      IN_PROGRESS: 'bi-camera-video-fill',
+      COMPLETED: 'bi-check-circle-fill',
+      CANCELLED: 'bi-x-circle-fill'
+    };
+    return icons[status] || 'bi-camera-video';
+  }
+
+  // FIX BUG-16: Toggle mute/camera (placeholder)
+  toggleMute(): void {
+    this.isMuted = !this.isMuted;
+  }
+
+  toggleCamera(): void {
+    this.isCameraOff = !this.isCameraOff;
   }
 
   formatDate(dateStr: string): string {

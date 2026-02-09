@@ -242,6 +242,10 @@ export class DoctorApiService {
     return this.api.post<TelevisitDto>(`/api/televisits/${id}/cancel`, {});
   }
 
+  updateTelevisitNotes(id: number, notes: string): Observable<TelevisitDto> {
+    return this.api.patch<TelevisitDto>(`/api/televisits/${id}/notes`, { notes });
+  }
+
   // ---------------------------------------------------------------------------
   // RICOVERI
   // ---------------------------------------------------------------------------
