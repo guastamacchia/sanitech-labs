@@ -107,8 +107,9 @@ export interface LiveKitTokenDto {
 }
 
 // === Ricoveri ===
-export type AdmissionStatus = 'ACTIVE' | 'DISCHARGED' | 'TRANSFERRED';
-export type AdmissionType = 'EMERGENCY' | 'SCHEDULED' | 'TRANSFER';
+// BUG-001/007: Allineato con backend Java enums (AdmissionStatus, AdmissionType)
+export type AdmissionStatus = 'ACTIVE' | 'DISCHARGED' | 'CANCELLED';
+export type AdmissionType = 'INPATIENT' | 'DAY_HOSPITAL' | 'OBSERVATION';
 
 export interface AdmissionDto {
   id: number;
@@ -122,10 +123,18 @@ export interface AdmissionDto {
   attendingDoctorId?: number;
 }
 
+// BUG-015: Aggiunto attendingDoctorId per assegnare il medico referente alla creazione
 export interface AdmissionCreateDto {
   patientId: number;
   departmentCode: string;
   admissionType: AdmissionType;
+  notes?: string;
+  attendingDoctorId?: number;
+}
+
+// BUG-002/003: DTO per aggiornamento parziale ricovero (PATCH /api/admissions/{id})
+export interface AdmissionUpdateDto {
+  attendingDoctorId?: number;
   notes?: string;
 }
 

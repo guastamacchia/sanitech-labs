@@ -27,6 +27,7 @@ export {
   AdmissionType,
   AdmissionDto,
   AdmissionCreateDto,
+  AdmissionUpdateDto,
   UserStatus,
   DepartmentDto,
   PatientDto,
@@ -55,6 +56,7 @@ import type {
   AdmissionStatus,
   AdmissionDto,
   AdmissionCreateDto,
+  AdmissionUpdateDto,
   PatientDto,
   DoctorDto,
   ConsentScope,
@@ -270,6 +272,11 @@ export class DoctorApiService {
 
   dischargeAdmission(id: number): Observable<AdmissionDto> {
     return this.api.post<AdmissionDto>(`/api/admissions/${id}/discharge`, {});
+  }
+
+  // BUG-002/003: Aggiornamento parziale ricovero (attendingDoctorId, notes)
+  updateAdmission(id: number, dto: AdmissionUpdateDto): Observable<AdmissionDto> {
+    return this.api.patch<AdmissionDto>(`/api/admissions/${id}`, dto);
   }
 
   // ---------------------------------------------------------------------------

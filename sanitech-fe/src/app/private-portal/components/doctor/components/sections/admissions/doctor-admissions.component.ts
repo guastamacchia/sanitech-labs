@@ -1,17 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import {
   DoctorApiService,
   AdmissionDto,
   PatientDto,
+  DoctorDto,
   AdmissionStatus as ApiAdmissionStatus,
   AdmissionType as ApiAdmissionType,
   DepartmentDto,
-  AdmissionCreateDto
+  AdmissionCreateDto,
+  AdmissionUpdateDto
 } from '../../../services/doctor-api.service';
 import { AdmissionStatus, AdmissionType, DailyNote, Admission } from './dtos/admissions.dto';
 
@@ -28,8 +30,13 @@ export class DoctorAdmissionsComponent implements OnInit {
   // Cache pazienti
   private patientsCache = new Map<number, PatientDto>();
 
+  // Dati medico corrente (BUG-014: per autore nota)
+  currentDoctorName = '';
+  private currentDoctorId: number | null = null;
+
   // Filtri
-  statusFilter: 'ALL' | AdmissionStatus = 'ACTIVE';
+  // BUG-005/006: statusFilter ora agisce solo lato client, carichiamo TUTTI i ricoveri
+  statusFilter: 'ALL' | AdmissionStatus = 'ALL';
   typeFilter: 'ALL' | AdmissionType = 'ALL';
   myPatientsOnly = true;
 
@@ -73,7 +80,20 @@ export class DoctorAdmissionsComponent implements OnInit {
 
   constructor(private doctorApi: DoctorApiService) {}
 
+  // BUG-012: Chiudi modali con tasto Escape
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showDischargModal) {
+      this.closeDischargeModal();
+    } else if (this.showAdmissionProposalModal) {
+      this.closeAdmissionProposalModal();
+    } else if (this.showDetailModal) {
+      this.closeDetailModal();
+    }
+  }
+
   // Statistiche
+  // BUG-005: Le statistiche ora lavorano sull'intero dataset (non filtrato dal server)
   get activeAdmissions(): number {
     return this.admissions.filter(a => a.status === 'ACTIVE').length;
   }
@@ -100,6 +120,15 @@ export class DoctorAdmissionsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // BUG-014: Carica il nome del medico corrente
+    this.currentDoctorId = this.doctorApi.getDoctorId();
+    this.doctorApi.getCurrentDoctor().subscribe({
+      next: (doctor) => {
+        if (doctor) {
+          this.currentDoctorName = `Dr. ${doctor.lastName} ${doctor.firstName}`;
+        }
+      }
+    });
     this.loadAdmissions();
   }
 
@@ -108,10 +137,10 @@ export class DoctorAdmissionsComponent implements OnInit {
     this.errorMessage = '';
 
     const doctorId = this.doctorApi.getDoctorId();
-    const statusParam = this.statusFilter !== 'ALL' ? this.statusFilter as ApiAdmissionStatus : undefined;
 
+    // BUG-005/006: Carichiamo TUTTI i ricoveri senza filtrare per status lato server.
+    // Il filtro status viene applicato solo lato client nel getter filteredAdmissions.
     this.doctorApi.listAdmissions({
-      status: statusParam,
       size: 100
     }).subscribe({
       next: (page) => {
@@ -153,42 +182,47 @@ export class DoctorAdmissionsComponent implements OnInit {
     this.admissions = dtos.map(dto => {
       const patient = this.patientsCache.get(dto.patientId);
 
-      // Calcola età paziente
+      // BUG-008: Calcolo età migliorato con fallback
       let patientAge = 0;
       if (patient?.birthDate) {
         const birth = new Date(patient.birthDate);
-        const today = new Date();
-        patientAge = today.getFullYear() - birth.getFullYear();
-        const monthDiff = today.getMonth() - birth.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-          patientAge--;
+        if (!isNaN(birth.getTime())) {
+          const today = new Date();
+          patientAge = today.getFullYear() - birth.getFullYear();
+          const monthDiff = today.getMonth() - birth.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+            patientAge--;
+          }
         }
       }
+
+      // BUG-008: Nome paziente migliorato con fallback leggibile
+      const patientName = patient
+        ? `${patient.lastName} ${patient.firstName}`
+        : 'Paziente non disponibile';
 
       return {
         id: dto.id,
         patientId: dto.patientId,
-        patientName: patient ? `${patient.lastName} ${patient.firstName}` : `Paziente ${dto.patientId}`,
+        patientName,
         patientAge,
         admittedAt: dto.admittedAt,
         dischargedAt: dto.dischargedAt,
-        type: this.mapAdmissionType(dto.admissionType),
+        // BUG-001: I tipi del backend sono già allineati, mapping diretto
+        type: dto.admissionType as AdmissionType,
         diagnosis: dto.notes || '-',
-        bed: '-', // Il backend non ha questo campo
+        // BUG-007: Status backend è già allineato (ACTIVE/DISCHARGED/CANCELLED)
         status: dto.status as AdmissionStatus,
         isReferent: dto.attendingDoctorId === doctorId,
-        dailyNotes: dto.notes ? [{ date: dto.admittedAt, note: dto.notes, author: '-' }] : []
+        attendingDoctorId: dto.attendingDoctorId ?? undefined,
+        // BUG-014: Nota iniziale con autore corretto
+        dailyNotes: dto.notes ? [{
+          date: dto.admittedAt,
+          note: dto.notes,
+          author: dto.attendingDoctorId === doctorId ? (this.currentDoctorName || 'Medico referente') : 'Medico'
+        }] : []
       };
     });
-  }
-
-  private mapAdmissionType(apiType: ApiAdmissionType): AdmissionType {
-    const mapping: Record<string, AdmissionType> = {
-      EMERGENCY: 'EMERGENCY',
-      SCHEDULED: 'SCHEDULED',
-      TRANSFER: 'TRANSFER'
-    };
-    return mapping[apiType] || 'SCHEDULED';
   }
 
   getDaysAgo(days: number): string {
@@ -204,6 +238,7 @@ export class DoctorAdmissionsComponent implements OnInit {
       filtered = filtered.filter(a => a.isReferent);
     }
 
+    // BUG-005/006: Filtro status solo lato client (non più doppio filtro)
     if (this.statusFilter !== 'ALL') {
       filtered = filtered.filter(a => a.status === this.statusFilter);
     }
@@ -235,26 +270,92 @@ export class DoctorAdmissionsComponent implements OnInit {
     this.selectedAdmission = null;
   }
 
-  takeCharge(admission: Admission): void {
-    // Nota: il backend non ha un endpoint per questo, quindi aggiorniamo solo localmente
-    admission.isReferent = true;
-    this.successMessage = `Hai preso in carico il paziente ${admission.patientName}.`;
-    setTimeout(() => this.successMessage = '', 5000);
+  // BUG-012: Chiudi modal al click sul backdrop
+  onDetailBackdropClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal')) {
+      this.closeDetailModal();
+    }
   }
 
+  onProposalBackdropClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal')) {
+      this.closeAdmissionProposalModal();
+    }
+  }
+
+  onDischargeBackdropClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal')) {
+      this.closeDischargeModal();
+    }
+  }
+
+  // BUG-002: Prendi in carico - persiste con PATCH API
+  takeCharge(admission: Admission): void {
+    if (!this.currentDoctorId) {
+      this.errorMessage = 'Impossibile identificare il medico corrente.';
+      return;
+    }
+
+    this.isSaving = true;
+    const dto: AdmissionUpdateDto = { attendingDoctorId: this.currentDoctorId };
+
+    this.doctorApi.updateAdmission(admission.id, dto).subscribe({
+      next: () => {
+        admission.isReferent = true;
+        admission.attendingDoctorId = this.currentDoctorId!;
+        this.isSaving = false;
+        this.successMessage = `Hai preso in carico il paziente ${admission.patientName}.`;
+        setTimeout(() => this.successMessage = '', 5000);
+      },
+      error: () => {
+        this.isSaving = false;
+        this.errorMessage = 'Errore nella presa in carico del paziente.';
+        setTimeout(() => this.errorMessage = '', 5000);
+      }
+    });
+  }
+
+  // BUG-003: Note giornaliere - persiste con PATCH API (appende la nota alle notes esistenti)
   addDailyNote(): void {
     if (!this.selectedAdmission || !this.newNote.trim()) return;
 
-    // Nota: il backend non ha un endpoint per le note giornaliere, aggiorniamo localmente
-    this.selectedAdmission.dailyNotes.push({
-      date: new Date().toISOString(),
-      note: this.newNote,
-      author: 'Medico'
-    });
+    this.isSaving = true;
+    const admission = this.selectedAdmission;
 
-    this.newNote = '';
-    this.successMessage = 'Nota giornaliera aggiunta.';
-    setTimeout(() => this.successMessage = '', 3000);
+    // Costruisci le note concatenando le precedenti con la nuova
+    const timestamp = new Date().toLocaleString('it-IT');
+    const author = this.currentDoctorName || 'Medico';
+    const newNoteEntry = `[${timestamp} - ${author}] ${this.newNote.trim()}`;
+
+    // Recupera notes attuali dalla diagnosis (che mappa dto.notes)
+    const existingNotes = admission.diagnosis !== '-' ? admission.diagnosis : '';
+    const updatedNotes = existingNotes
+      ? `${existingNotes}\n---\n${newNoteEntry}`
+      : newNoteEntry;
+
+    const dto: AdmissionUpdateDto = { notes: updatedNotes };
+
+    this.doctorApi.updateAdmission(admission.id, dto).subscribe({
+      next: () => {
+        // BUG-014: Usa il nome reale del medico
+        admission.dailyNotes.push({
+          date: new Date().toISOString(),
+          note: this.newNote.trim(),
+          author: this.currentDoctorName || 'Medico'
+        });
+        admission.diagnosis = updatedNotes;
+
+        this.newNote = '';
+        this.isSaving = false;
+        this.successMessage = 'Nota giornaliera aggiunta e salvata.';
+        setTimeout(() => this.successMessage = '', 3000);
+      },
+      error: () => {
+        this.isSaving = false;
+        this.errorMessage = 'Errore nel salvataggio della nota.';
+        setTimeout(() => this.errorMessage = '', 5000);
+      }
+    });
   }
 
   openDischargeModal(): void {
@@ -263,6 +364,7 @@ export class DoctorAdmissionsComponent implements OnInit {
       followUp: '',
       medications: ''
     };
+    this.errorMessage = '';
     this.showDischargModal = true;
   }
 
@@ -270,6 +372,7 @@ export class DoctorAdmissionsComponent implements OnInit {
     this.showDischargModal = false;
   }
 
+  // BUG-004: Lettera dimissione - salva i dati come notes prima della dimissione
   confirmDischarge(): void {
     if (!this.selectedAdmission) return;
 
@@ -281,13 +384,30 @@ export class DoctorAdmissionsComponent implements OnInit {
     this.isSaving = true;
     this.errorMessage = '';
 
-    this.doctorApi.dischargeAdmission(this.selectedAdmission.id).subscribe({
-      next: (updated) => {
+    // Componi la lettera di dimissione come notes
+    const dischargeLetter = [
+      `=== LETTERA DI DIMISSIONE ===`,
+      `Riepilogo: ${this.dischargeForm.summary.trim()}`,
+      this.dischargeForm.followUp?.trim() ? `Follow-up: ${this.dischargeForm.followUp.trim()}` : '',
+      this.dischargeForm.medications?.trim() ? `Terapia domiciliare: ${this.dischargeForm.medications.trim()}` : '',
+      `Data: ${new Date().toLocaleString('it-IT')}`,
+      `Medico: ${this.currentDoctorName || 'Medico'}`
+    ].filter(Boolean).join('\n');
+
+    // Prima aggiorna le notes con la lettera di dimissione, poi scarica
+    const updateDto: AdmissionUpdateDto = { notes: dischargeLetter };
+    const admissionId = this.selectedAdmission.id;
+    const patientName = this.selectedAdmission.patientName;
+
+    this.doctorApi.updateAdmission(admissionId, updateDto).pipe(
+      switchMap(() => this.doctorApi.dischargeAdmission(admissionId))
+    ).subscribe({
+      next: () => {
         this.isSaving = false;
         this.closeDischargeModal();
         this.closeDetailModal();
-        this.loadAdmissions(); // Ricarica lista
-        this.successMessage = `Paziente ${this.selectedAdmission!.patientName} dimesso. Lettera di dimissione generata.`;
+        this.loadAdmissions();
+        this.successMessage = `Paziente ${patientName} dimesso. Lettera di dimissione salvata.`;
         setTimeout(() => this.successMessage = '', 5000);
       },
       error: () => {
@@ -297,40 +417,42 @@ export class DoctorAdmissionsComponent implements OnInit {
     });
   }
 
+  // BUG-001/007: Label allineati con i nuovi tipi backend
   getStatusLabel(status: AdmissionStatus): string {
     const labels: Record<AdmissionStatus, string> = {
       ACTIVE: 'Attivo',
       DISCHARGED: 'Dimesso',
-      TRANSFERRED: 'Trasferito'
+      CANCELLED: 'Annullato'
     };
-    return labels[status];
+    return labels[status] || status;
   }
 
   getStatusBadgeClass(status: AdmissionStatus): string {
     const classes: Record<AdmissionStatus, string> = {
       ACTIVE: 'bg-success',
       DISCHARGED: 'bg-secondary',
-      TRANSFERRED: 'bg-info'
+      CANCELLED: 'bg-danger'
     };
-    return classes[status];
+    return classes[status] || 'bg-secondary';
   }
 
+  // BUG-001: Tipi ricovero allineati con backend
   getTypeLabel(type: AdmissionType): string {
     const labels: Record<AdmissionType, string> = {
-      EMERGENCY: 'Urgente',
-      SCHEDULED: 'Programmato',
-      TRANSFER: 'Trasferimento'
+      INPATIENT: 'Degenza ordinaria',
+      DAY_HOSPITAL: 'Day Hospital',
+      OBSERVATION: 'Osservazione'
     };
-    return labels[type];
+    return labels[type] || type;
   }
 
   getTypeBadgeClass(type: AdmissionType): string {
     const classes: Record<AdmissionType, string> = {
-      EMERGENCY: 'bg-danger',
-      SCHEDULED: 'bg-primary',
-      TRANSFER: 'bg-warning text-dark'
+      INPATIENT: 'bg-primary',
+      DAY_HOSPITAL: 'bg-info',
+      OBSERVATION: 'bg-warning text-dark'
     };
-    return classes[type];
+    return classes[type] || 'bg-secondary';
   }
 
   formatDate(dateStr: string): string {
@@ -362,6 +484,11 @@ export class DoctorAdmissionsComponent implements OnInit {
   isNewAdmission(admission: Admission): boolean {
     const today = new Date().toDateString();
     return new Date(admission.admittedAt).toDateString() === today;
+  }
+
+  // BUG-008: Formatta l'età con gestione del caso "non disponibile"
+  getPatientAgeDisplay(age: number): string {
+    return age > 0 ? `${age} anni` : 'Età n.d.';
   }
 
   // --- Proposta Ricovero ---
@@ -434,41 +561,55 @@ export class DoctorAdmissionsComponent implements OnInit {
     });
   }
 
+  // BUG-010: Pulisci errore alla selezione paziente
   selectPatient(patient: PatientDto): void {
     this.selectedPatient = patient;
     this.patientSearchResults = [];
     this.patientSearchQuery = '';
+    this.proposalErrorMessage = '';
   }
 
   clearSelectedPatient(): void {
     this.selectedPatient = null;
   }
 
+  // BUG-010: Pulisci errore al cambio dei campi del form
+  onProposalFormChange(): void {
+    if (this.proposalErrorMessage) {
+      this.proposalErrorMessage = '';
+    }
+  }
+
+  // BUG-013: Validazione simultanea (mostra TUTTI gli errori insieme)
   submitAdmissionProposal(): void {
     this.proposalErrorMessage = '';
 
+    const errors: string[] = [];
+
     if (!this.selectedPatient) {
-      this.proposalErrorMessage = 'Seleziona un paziente.';
-      return;
+      errors.push('Seleziona un paziente');
     }
-
     if (!this.admissionProposalForm.admissionType) {
-      this.proposalErrorMessage = 'Seleziona il tipo di ricovero.';
-      return;
+      errors.push('Seleziona il tipo di ricovero');
+    }
+    if (!this.admissionProposalForm.departmentCode) {
+      errors.push('Seleziona il reparto');
     }
 
-    if (!this.admissionProposalForm.departmentCode) {
-      this.proposalErrorMessage = 'Seleziona il reparto.';
+    if (errors.length > 0) {
+      this.proposalErrorMessage = errors.join('. ') + '.';
       return;
     }
 
     this.isSavingProposal = true;
 
+    // BUG-015: Include attendingDoctorId nella proposta
     const dto: AdmissionCreateDto = {
-      patientId: this.selectedPatient.id!,
+      patientId: this.selectedPatient!.id!,
       departmentCode: this.admissionProposalForm.departmentCode,
       admissionType: this.admissionProposalForm.admissionType as ApiAdmissionType,
-      notes: this.admissionProposalForm.notes || undefined
+      notes: this.admissionProposalForm.notes || undefined,
+      attendingDoctorId: this.currentDoctorId ?? undefined
     };
 
     this.doctorApi.createAdmission(dto).subscribe({
@@ -479,9 +620,12 @@ export class DoctorAdmissionsComponent implements OnInit {
         this.successMessage = `Ricovero proposto per ${this.selectedPatient!.lastName} ${this.selectedPatient!.firstName}.`;
         setTimeout(() => this.successMessage = '', 5000);
       },
-      error: () => {
+      error: (err) => {
         this.isSavingProposal = false;
-        this.proposalErrorMessage = 'Errore nella creazione della proposta di ricovero.';
+        const detail = err?.error?.detail || err?.error?.message || '';
+        this.proposalErrorMessage = detail
+          ? `Errore nella creazione della proposta: ${detail}`
+          : 'Errore nella creazione della proposta di ricovero.';
       }
     });
   }

@@ -61,12 +61,11 @@
               <p class="mb-1"><strong>Diagnosi:</strong> {{ admission.diagnosis }}</p>
               <p class="text-muted mb-0">
                 <span class="badge" [ngClass]="getTypeBadgeClass(admission.type)">{{ getTypeLabel(admission.type) }}</span>
-                <span class="ms-2">{{ admission.bed }}</span>
               </p>
             </div>
           </div>
           <div class="col-md-4 text-md-end mt-3 mt-md-0">
-            <button class="btn btn-warning" (click)="takeCharge(admission)">
+            <button class="btn btn-warning" (click)="takeCharge(admission)" [disabled]="isSaving">
               <i class="bi bi-person-check me-1"></i>Prendi in carico
             </button>
           </div>
@@ -140,6 +139,7 @@
   </div>
 
   <!-- Filtri -->
+  <!-- BUG-005/006: Filtro stato ora è solo client-side, BUG-001: tipi allineati al backend -->
   <div class="card card-glass border-0 shadow-sm mb-4" *ngIf="!isLoading">
     <div class="card-body">
       <div class="row g-3 align-items-end">
@@ -151,20 +151,22 @@
         </div>
         <div class="col-md-3">
           <label class="form-label fw-semibold small text-muted">Stato</label>
+          <!-- BUG-006/007: Opzioni stato allineate con backend (CANCELLED al posto di TRANSFERRED) -->
           <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti</option>
             <option value="ACTIVE">Attivi</option>
             <option value="DISCHARGED">Dimessi</option>
-            <option value="TRANSFERRED">Trasferiti</option>
+            <option value="CANCELLED">Annullati</option>
           </select>
         </div>
         <div class="col-md-3">
           <label class="form-label fw-semibold small text-muted">Tipo</label>
+          <!-- BUG-001: Tipi allineati con backend (INPATIENT, DAY_HOSPITAL, OBSERVATION) -->
           <select class="form-select" [(ngModel)]="typeFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti</option>
-            <option value="EMERGENCY">Urgente</option>
-            <option value="SCHEDULED">Programmato</option>
-            <option value="TRANSFER">Trasferimento</option>
+            <option value="INPATIENT">Degenza ordinaria</option>
+            <option value="DAY_HOSPITAL">Day Hospital</option>
+            <option value="OBSERVATION">Osservazione</option>
           </select>
         </div>
       </div>
@@ -172,6 +174,7 @@
   </div>
 
   <!-- Lista ricoveri -->
+  <!-- BUG-011: Rimossa colonna "Letto" (non supportata dal backend) -->
   <div class="card card-glass border-0 shadow-sm" *ngIf="!isLoading">
     <div class="card-header bg-transparent border-bottom">
       <h5 class="mb-0 fw-semibold">
@@ -188,7 +191,6 @@
               <th class="ps-4">Paziente</th>
               <th>Diagnosi</th>
               <th>Tipo</th>
-              <th>Letto</th>
               <th>Giorni</th>
               <th>Stato</th>
               <th class="pe-4 text-end">Azioni</th>
@@ -203,7 +205,8 @@
                   </div>
                   <div>
                     <p class="mb-0 fw-medium">{{ admission.patientName }}</p>
-                    <small class="text-muted">{{ admission.patientAge }} anni</small>
+                    <!-- BUG-008: Usa getPatientAgeDisplay per gestire età 0/non disponibile -->
+                    <small class="text-muted">{{ getPatientAgeDisplay(admission.patientAge) }}</small>
                   </div>
                 </div>
               </td>
@@ -215,7 +218,6 @@
                   {{ getTypeLabel(admission.type) }}
                 </span>
               </td>
-              <td>{{ admission.bed }}</td>
               <td>
                 <span class="fw-medium">{{ getDaysInHospital(admission) }}</span>
                 <small class="text-muted"> gg</small>
@@ -230,14 +232,16 @@
                   <button class="btn btn-outline-primary" (click)="openDetailModal(admission)" title="Dettagli">
                     <i class="bi bi-eye"></i>
                   </button>
-                  <button class="btn btn-outline-warning" (click)="takeCharge(admission)" *ngIf="!admission.isReferent && admission.status === 'ACTIVE'" title="Prendi in carico">
+                  <button class="btn btn-outline-warning" (click)="takeCharge(admission)"
+                          *ngIf="!admission.isReferent && admission.status === 'ACTIVE'"
+                          title="Prendi in carico" [disabled]="isSaving">
                     <i class="bi bi-person-check"></i>
                   </button>
                 </div>
               </td>
             </tr>
             <tr *ngIf="filteredAdmissions.length === 0">
-              <td colspan="7" class="text-center py-4 text-muted">
+              <td colspan="6" class="text-center py-4 text-muted">
                 <i class="bi bi-hospital fs-1 d-block mb-2"></i>
                 Nessun ricovero trovato.
               </td>
@@ -275,9 +279,10 @@
 </div>
 
 <!-- Modal dettaglio ricovero -->
+<!-- BUG-012: Aggiunto (click) sul backdrop e gestione Escape via HostListener -->
 <ng-container *ngIf="showDetailModal && selectedAdmission">
   <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show d-block" tabindex="-1">
+  <div class="modal fade show d-block" tabindex="-1" (click)="onDetailBackdropClick($event)">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
@@ -295,7 +300,8 @@
             </div>
             <div class="flex-grow-1">
               <h5 class="mb-0 fw-bold">{{ selectedAdmission.patientName }}</h5>
-              <p class="text-muted mb-0">{{ selectedAdmission.patientAge }} anni</p>
+              <!-- BUG-008: Mostra età con fallback -->
+              <p class="text-muted mb-0">{{ getPatientAgeDisplay(selectedAdmission.patientAge) }}</p>
             </div>
             <span class="badge fs-6" [ngClass]="getStatusBadgeClass(selectedAdmission.status)">
               {{ getStatusLabel(selectedAdmission.status) }}
@@ -303,8 +309,9 @@
           </div>
 
           <!-- Dettagli ricovero -->
+          <!-- BUG-011: Rimossa card "Letto" -->
           <div class="row g-3 mb-4">
-            <div class="col-md-6">
+            <div class="col-md-8">
               <div class="card card-glass border h-100">
                 <div class="card-body">
                   <h6 class="text-muted small mb-2">DIAGNOSI</h6>
@@ -312,21 +319,13 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <div class="card card-glass border h-100">
                 <div class="card-body">
                   <h6 class="text-muted small mb-2">TIPO</h6>
                   <span class="badge" [ngClass]="getTypeBadgeClass(selectedAdmission.type)">
                     {{ getTypeLabel(selectedAdmission.type) }}
                   </span>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="card card-glass border h-100">
-                <div class="card-body">
-                  <h6 class="text-muted small mb-2">LETTO</h6>
-                  <p class="mb-0 fw-medium">{{ selectedAdmission.bed }}</p>
                 </div>
               </div>
             </div>
@@ -357,6 +356,7 @@
                   <div class="border-start ms-1" style="height: calc(100% + 10px);" *ngIf="!last"></div>
                 </div>
                 <div class="flex-grow-1">
+                  <!-- BUG-014: Autore nota con nome reale del medico -->
                   <p class="mb-0 small text-muted">{{ formatDateTime(note.date) }} - {{ note.author }}</p>
                   <p class="mb-0">{{ note.note }}</p>
                 </div>
@@ -366,9 +366,11 @@
             <!-- Aggiungi nota -->
             <div class="mt-3" *ngIf="selectedAdmission.status === 'ACTIVE' && selectedAdmission.isReferent">
               <div class="input-group">
-                <input type="text" class="form-control" placeholder="Aggiungi nota giornaliera..." [(ngModel)]="newNote">
-                <button class="btn btn-primary" (click)="addDailyNote()" [disabled]="!newNote.trim()">
-                  <i class="bi bi-plus-lg"></i>
+                <input type="text" class="form-control" placeholder="Aggiungi nota giornaliera..." [(ngModel)]="newNote"
+                       (keyup.enter)="addDailyNote()">
+                <button class="btn btn-primary" (click)="addDailyNote()" [disabled]="!newNote.trim() || isSaving">
+                  <span class="spinner-border spinner-border-sm" *ngIf="isSaving"></span>
+                  <i class="bi bi-plus-lg" *ngIf="!isSaving"></i>
                 </button>
               </div>
             </div>
@@ -384,8 +386,10 @@
               <a routerLink="/portal/doctor/prescriptions" class="btn btn-outline-success" (click)="closeDetailModal()">
                 <i class="bi bi-prescription2 me-1"></i>Prescrizioni
               </a>
-              <button class="btn btn-outline-info">
+              <!-- BUG-009: Pulsante disabilitato con tooltip esplicativo -->
+              <button class="btn btn-outline-info" disabled title="Funzionalità in fase di sviluppo">
                 <i class="bi bi-clipboard2-pulse me-1"></i>Richiedi esami
+                <small class="ms-1 text-muted">(prossimamente)</small>
               </button>
             </div>
           </div>
@@ -393,7 +397,8 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" (click)="closeDetailModal()">Chiudi</button>
           <button type="button" class="btn btn-warning" (click)="takeCharge(selectedAdmission)"
-                  *ngIf="!selectedAdmission.isReferent && selectedAdmission.status === 'ACTIVE'">
+                  *ngIf="!selectedAdmission.isReferent && selectedAdmission.status === 'ACTIVE'"
+                  [disabled]="isSaving">
             <i class="bi bi-person-check me-1"></i>Prendi in carico
           </button>
           <button type="button" class="btn btn-success" (click)="openDischargeModal()"
@@ -407,9 +412,10 @@
 </ng-container>
 
 <!-- Modal proposta ricovero -->
+<!-- BUG-012: Aggiunto click su backdrop -->
 <ng-container *ngIf="showAdmissionProposalModal">
   <div class="modal-backdrop fade show"></div>
-  <div class="modal fade show d-block" tabindex="-1">
+  <div class="modal fade show d-block" tabindex="-1" (click)="onProposalBackdropClick($event)">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header">
@@ -468,20 +474,24 @@
             </div>
 
             <!-- Tipo ricovero -->
+            <!-- BUG-001: Tipi allineati con backend -->
             <div class="col-md-6">
               <label class="form-label fw-semibold">Tipo ricovero *</label>
-              <select class="form-select" [(ngModel)]="admissionProposalForm.admissionType">
+              <select class="form-select" [(ngModel)]="admissionProposalForm.admissionType"
+                      (ngModelChange)="onProposalFormChange()">
                 <option value="">Seleziona...</option>
-                <option value="EMERGENCY">Urgente</option>
-                <option value="SCHEDULED">Programmato</option>
-                <option value="TRANSFER">Trasferimento</option>
+                <option value="INPATIENT">Degenza ordinaria</option>
+                <option value="DAY_HOSPITAL">Day Hospital</option>
+                <option value="OBSERVATION">Osservazione</option>
               </select>
             </div>
 
             <!-- Reparto -->
+            <!-- BUG-010: Aggiungo ngModelChange per pulire errore -->
             <div class="col-md-6">
               <label class="form-label fw-semibold">Reparto *</label>
-              <select class="form-select" [(ngModel)]="admissionProposalForm.departmentCode">
+              <select class="form-select" [(ngModel)]="admissionProposalForm.departmentCode"
+                      (ngModelChange)="onProposalFormChange()">
                 <option value="">Seleziona...</option>
                 <option *ngFor="let dept of departments" [value]="dept.code">{{ dept.name }}</option>
               </select>
@@ -509,9 +519,10 @@
 </ng-container>
 
 <!-- Modal dimissione -->
+<!-- BUG-012: Aggiunto click su backdrop -->
 <ng-container *ngIf="showDischargModal && selectedAdmission">
   <div class="modal-backdrop fade show" style="z-index: 1060;"></div>
-  <div class="modal fade show d-block" tabindex="-1" style="z-index: 1065;">
+  <div class="modal fade show d-block" tabindex="-1" style="z-index: 1065;" (click)="onDischargeBackdropClick($event)">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
