@@ -73,10 +73,10 @@ Directory Schedul. Admiss. Consents      Docs   Notif.  Audit  Payments
 
 ## Avvio rapido
 
-### Stack completo (Backend + Infrastruttura + Frontend)
+### Stack completo (Backend + Infrastruttura)
 
 ```bash
-# Avvia l'intero stack (backend, infrastruttura e frontend)
+# Avvia lo stack backend e infrastruttura
 bash .script/backend/up.sh
 
 # Visualizza i log
@@ -106,13 +106,13 @@ npm start
 
 ```bash
 # Dalla root del repository
-make -C sanitech-svc compose-up       # Avvia con build
-make -C sanitech-svc compose-down     # Ferma lo stack
-make -C sanitech-svc compose-config   # Valida la configurazione
+make compose-up       # Avvia con build
+make compose-down     # Ferma lo stack
+make compose-config   # Valida la configurazione
 
 # Selezione ambiente
-ENV=staging make -C sanitech-svc compose-up-infra
-ENV=prod make -C sanitech-svc compose-up-infra
+ENV=staging make compose-up-infra
+ENV=prod make compose-up-infra
 ```
 
 ## Accesso alla piattaforma
@@ -147,7 +147,7 @@ Tutte le utenze usano la password: `qwerty`
 ```
 sanitech-labs/
 ├── .infra/                    # Configurazione infrastruttura
-│   ├── docker-compose.yml     # File compose principale (backend + infra + frontend)
+│   ├── docker-compose.yml     # File compose principale (backend + infra)
 │   ├── env/                   # File di ambiente
 │   │   ├── env.local          # Sviluppo locale
 │   │   ├── env.staging        # Ambiente staging
@@ -180,7 +180,9 @@ sanitech-labs/
     ├── svc-televisit/         # Videoconsulti
     ├── svc-payments/          # Elaborazione pagamenti
     ├── svc-prescribing/       # Prescrizioni
-    ├── commons/               # Librerie condivise
+    ├── libs/                  # Librerie condivise
+    │   ├── commons-libraries/     # Utilità comuni (security, outbox, config)
+    │   └── outbox-event-management/ # Gestione outbox eventi
     └── pom.xml                # POM padre
 ```
 
@@ -210,7 +212,7 @@ sanitech-labs/
 | Grafana | 3000 | http://localhost:3000 | admin/admin |
 | MinIO API | 9000 | http://localhost:9000 | Vedi file env |
 | MinIO Console | 9001 | http://localhost:9001 | Vedi file env |
-| Mailpit (MailHog) | 8025 | http://localhost:8025 | N/A |
+| Mailpit | 8025 | http://localhost:8025 | N/A |
 | LiveKit | 7880, 7881 | http://localhost:7880 | Vedi file env |
 
 ## Applicazione frontend
@@ -310,18 +312,24 @@ I servizi comunicano in modo asincrono tramite Kafka usando il pattern Transacti
 
 ### Script di test per servizio
 
-Script di test per servizio disponibili in `.script/services/{nome-servizio}/`:
+Ogni servizio dispone di script di test in `.script/services/{nome-servizio}/`:
 
 ```bash
-# Smoke test
+# Smoke test (disponibile per tutti i servizi)
 bash .script/services/svc-gateway/smoke.sh
+bash .script/services/svc-directory/bash/smoke.sh
 
 # Test rate limiting
 bash .script/services/svc-gateway/rate-limit.sh
 
 # Test circuit breaker
 bash .script/services/svc-gateway/circuit-breaker.sh
+
+# Test bulkhead
+bash .script/services/svc-gateway/bulkhead.sh
 ```
+
+Script disponibili per servizio: `smoke.sh`, `rate-limit.sh`, `circuit-breaker.sh`, `bulkhead.sh`, `loop.sh`, `run-loop.sh`.
 
 ## CI/CD
 

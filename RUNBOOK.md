@@ -30,16 +30,16 @@ Procedure operative, health check e guida al troubleshooting per la piattaforma 
 ### Avvio dello stack
 
 ```bash
-# Avvia lo stack completo (backend + infrastruttura + frontend)
+# Avvia lo stack completo (backend + infrastruttura)
 bash .script/backend/up.sh
 
 # Avvia con ambiente specifico
 ENV=staging bash .script/backend/up.sh
 ENV=prod bash .script/backend/up.sh
 
-# Usando comandi Make
-make -C sanitech-svc compose-up              # Avvia con build
-COMPOSE_BUILD=0 make -C sanitech-svc compose-up  # Avvia senza rebuild
+# Usando comandi Make (dalla root del repository)
+make compose-up              # Avvia con build
+COMPOSE_BUILD=0 make compose-up  # Avvia senza rebuild
 ```
 
 ### Monitoraggio
@@ -65,7 +65,7 @@ bash .script/backend/down.sh
 REMOVE_VOLUMES=true bash .script/backend/down.sh
 
 # Usando Make
-make -C sanitech-svc compose-down
+make compose-down
 ```
 
 ### Sviluppo frontend
@@ -253,6 +253,39 @@ bash .script/services/svc-gateway/circuit-breaker.sh
 3. **Controllare rate limiter**
    ```bash
    curl -s http://localhost:8083/actuator/metrics/resilience4j.ratelimiter.available.permissions | jq
+   ```
+
+---
+
+### svc-admissions (Porta 8084)
+
+**Sintomi**
+- Health DOWN (DB/Flyway)
+- Outbox non pubblica su `admissions.events`
+- HTTP 429 su operazioni ricovero
+
+**Troubleshooting**
+
+1. **Verificare health servizio**
+   ```bash
+   curl -s http://localhost:8084/actuator/health | jq
+   ```
+
+2. **Verificare connettività database**
+   ```bash
+   docker exec -it sanitech-pg-admissions psql -U sanitech -d admissions -c "SELECT 1"
+   ```
+
+3. **Verificare migrazioni Flyway**
+   ```bash
+   docker exec -it sanitech-pg-admissions psql -U sanitech -d admissions \
+     -c "SELECT * FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 5"
+   ```
+
+4. **Controllare stato outbox**
+   ```sql
+   SELECT published, COUNT(*) FROM outbox_events GROUP BY published;
+   SELECT * FROM outbox_events WHERE published = false ORDER BY occurred_at LIMIT 10;
    ```
 
 ---
