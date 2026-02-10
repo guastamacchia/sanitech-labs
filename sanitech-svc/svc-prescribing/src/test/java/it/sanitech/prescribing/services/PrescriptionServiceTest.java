@@ -161,7 +161,7 @@ class PrescriptionServiceTest {
                 .patientId(77L)
                 .doctorId(55L)
                 .departmentCode("CARDIO")
-                .status(PrescriptionStatus.ISSUED)
+                .status(PrescriptionStatus.DRAFT)
                 .build();
         when(repository.findDetailedById(40L)).thenReturn(Optional.of(entity));
         when(repository.save(any(Prescription.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -191,7 +191,7 @@ class PrescriptionServiceTest {
                 .patientId(77L)
                 .doctorId(55L)
                 .departmentCode("CARDIO")
-                .status(PrescriptionStatus.ISSUED)
+                .status(PrescriptionStatus.DRAFT)
                 .build();
         when(repository.findDetailedById(50L)).thenReturn(Optional.of(entity));
         when(repository.save(any(Prescription.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -230,6 +230,7 @@ class PrescriptionServiceTest {
                 .status(PrescriptionStatus.ISSUED)
                 .build();
         when(repository.findDetailedById(60L)).thenReturn(Optional.of(entity));
+        when(repository.save(any(Prescription.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         JwtAuthenticationToken auth = doctorAuth(55L);
 
