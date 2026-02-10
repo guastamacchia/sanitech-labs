@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,6 +15,8 @@ import { DepartmentDto } from '../../../services/scheduling.service';
 export class PatientDocumentsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
+  private static readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
   // Dati documenti
   documents: DocumentDto[] = [];
   departments: DepartmentDto[] = [];
@@ -23,6 +25,7 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
   isLoading = false;
   successMessage = '';
   errorMessage = '';
+  uploadError = '';
   showUploadModal = false;
   showDeleteModal = false;
   documentToDelete: DocumentDto | null = null;
@@ -35,7 +38,7 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
   uploadForm = {
     file: null as File | null,
     fileName: '',
-    type: 'REPORT',
+    type: 'REFERTO',
     description: '',
     departmentCode: ''
   };
@@ -44,16 +47,25 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
   pageSize = 10;
   currentPage = 1;
 
-  // Tipi documento disponibili
+  // Tipi documento disponibili — codici allineati al backend
   documentTypes = [
-    { code: 'REPORT', label: 'Referto' },
-    { code: 'DISCHARGE_LETTER', label: 'Lettera di dimissione' },
-    { code: 'LAB_RESULTS', label: 'Esami di laboratorio' },
+    { code: 'REFERTO', label: 'Referto' },
+    { code: 'LETTERA_DIMISSIONI', label: 'Lettera di dimissione' },
+    { code: 'ESAME', label: 'Esami di laboratorio' },
     { code: 'IMAGING', label: 'Imaging' },
-    { code: 'OTHER', label: 'Altro' }
+    { code: 'ALTRO', label: 'Altro' }
   ];
 
   constructor(private patientService: PatientService) {}
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showUploadModal) {
+      this.closeUploadModal();
+    } else if (this.showDeleteModal) {
+      this.closeDeleteModal();
+    }
+  }
 
   ngOnInit(): void {
     this.loadDocuments();
@@ -126,11 +138,11 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
 
   getTypeIcon(type: string): string {
     const icons: Record<string, string> = {
-      REPORT: 'bi-file-earmark-text',
-      DISCHARGE_LETTER: 'bi-file-earmark-medical',
-      LAB_RESULTS: 'bi-droplet',
+      REFERTO: 'bi-file-earmark-text',
+      LETTERA_DIMISSIONI: 'bi-file-earmark-medical',
+      ESAME: 'bi-droplet',
       IMAGING: 'bi-image',
-      OTHER: 'bi-file-earmark'
+      ALTRO: 'bi-file-earmark'
     };
     return icons[type] || 'bi-file-earmark';
   }
@@ -170,11 +182,11 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
     this.uploadForm = {
       file: null,
       fileName: '',
-      type: 'LAB_RESULTS',
+      type: 'ESAME',
       description: '',
       departmentCode: this.departments[0]?.code || ''
     };
-    this.errorMessage = '';
+    this.uploadError = '';
     this.showUploadModal = true;
   }
 
@@ -185,24 +197,33 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      this.uploadForm.file = input.files[0];
-      this.uploadForm.fileName = input.files[0].name;
+      const file = input.files[0];
+      if (file.size > PatientDocumentsComponent.MAX_FILE_SIZE) {
+        this.uploadError = `Il file supera la dimensione massima consentita (10 MB). Dimensione: ${this.formatFileSize(file.size)}.`;
+        this.uploadForm.file = null;
+        this.uploadForm.fileName = '';
+        input.value = '';
+        return;
+      }
+      this.uploadError = '';
+      this.uploadForm.file = file;
+      this.uploadForm.fileName = file.name;
     }
   }
 
   submitUpload(): void {
     if (!this.uploadForm.file) {
-      this.errorMessage = 'Seleziona un file da caricare.';
+      this.uploadError = 'Seleziona un file da caricare.';
       return;
     }
 
     if (!this.uploadForm.departmentCode) {
-      this.errorMessage = 'Seleziona un reparto.';
+      this.uploadError = 'Seleziona un reparto.';
       return;
     }
 
     this.isLoading = true;
-    this.errorMessage = '';
+    this.uploadError = '';
 
     this.patientService.uploadDocument(this.uploadForm.file, {
       departmentCode: this.uploadForm.departmentCode,
@@ -220,7 +241,7 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Errore upload documento:', err);
-        this.errorMessage = 'Impossibile caricare il documento. Riprova.';
+        this.uploadError = this.getUploadErrorMessage(err);
         this.isLoading = false;
       }
     });
@@ -244,7 +265,7 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Errore download documento:', err);
-          this.errorMessage = 'Impossibile scaricare il documento. Riprova.';
+          this.errorMessage = this.getErrorMessage(err, 'scaricare');
         }
       });
   }
@@ -256,12 +277,13 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
         next: (blob) => {
           const url = window.URL.createObjectURL(blob);
           window.open(url, '_blank');
+          setTimeout(() => window.URL.revokeObjectURL(url), 5000);
           this.successMessage = `Apertura documento "${doc.fileName}"...`;
           setTimeout(() => this.successMessage = '', 3000);
         },
         error: (err) => {
           console.error('Errore apertura documento:', err);
-          this.errorMessage = 'Impossibile aprire il documento. Riprova.';
+          this.errorMessage = this.getErrorMessage(err, 'aprire');
         }
       });
   }
@@ -296,9 +318,26 @@ export class PatientDocumentsComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           console.error('Errore eliminazione documento:', err);
-          this.errorMessage = 'Impossibile eliminare il documento. Riprova.';
           this.isLoading = false;
+          this.closeDeleteModal();
+          this.errorMessage = this.getErrorMessage(err, 'eliminare');
         }
       });
+  }
+
+  private getErrorMessage(err: any, azione: string): string {
+    const status = err?.status;
+    if (status === 403) return `Non hai i permessi per ${azione} questo documento.`;
+    if (status === 404) return 'Documento non trovato. Potrebbe essere stato gia\' eliminato.';
+    if (status === 413) return 'Il file supera la dimensione massima consentita (10 MB).';
+    return `Impossibile ${azione} il documento. Riprova piu' tardi.`;
+  }
+
+  private getUploadErrorMessage(err: any): string {
+    const status = err?.status;
+    if (status === 403) return 'Non hai i permessi per caricare documenti.';
+    if (status === 413) return 'Il file supera la dimensione massima consentita (10 MB).';
+    if (status === 400) return 'Dati non validi. Verifica i campi e riprova.';
+    return 'Impossibile caricare il documento. Riprova piu\' tardi.';
   }
 }

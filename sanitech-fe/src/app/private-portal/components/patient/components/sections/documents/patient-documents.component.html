@@ -54,8 +54,8 @@
               <i class="bi bi-folder2-open text-primary fs-4"></i>
             </div>
             <div>
-              <h3 class="mb-0 fw-bold">{{ documents.length }}</h3>
-              <small class="text-muted">Documenti totali</small>
+              <h3 class="mb-0 fw-bold">{{ filteredDocuments.length }}</h3>
+              <small class="text-muted">{{ typeFilter !== 'ALL' || departmentFilter !== 'ALL' ? 'Documenti filtrati (su ' + documents.length + ' totali)' : 'Documenti totali' }}</small>
             </div>
           </div>
         </div>
@@ -212,14 +212,14 @@
 <ng-container *ngIf="showUploadModal">
   <div
     class="modal-backdrop fade show"
-    style="position: fixed; inset: 0; z-index: 1050;"
-    (click)="closeUploadModal()"></div>
+    style="position: fixed; inset: 0; z-index: 1050;"></div>
   <div
     class="modal d-flex align-items-center justify-content-center"
     role="dialog"
     aria-modal="true"
     aria-labelledby="uploadModalTitle"
-    style="position: fixed; inset: 0; z-index: 1055;">
+    style="position: fixed; inset: 0; z-index: 1055;"
+    (click)="$event.target === $event.currentTarget && closeUploadModal()">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
@@ -242,13 +242,13 @@
                 <span class="text-danger">*</span>
               </label>
               <div class="border border-dashed rounded p-4 text-center bg-light">
-                <input type="file" class="d-none" id="fileInput" accept=".pdf,.jpg,.jpeg,.png"
+                <input type="file" class="d-none" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                        (change)="onFileSelected($event)">
                 <label for="fileInput" class="cursor-pointer" style="cursor: pointer;">
                   <i class="bi bi-cloud-upload fs-1 text-primary d-block mb-2"></i>
                   <span *ngIf="!uploadForm.fileName" class="text-muted">
                     Clicca per selezionare un file o trascinalo qui<br>
-                    <small>PDF, JPG, PNG (max 10MB)</small>
+                    <small>PDF, JPG, PNG, DOC, DOCX (max 10 MB)</small>
                   </span>
                   <span *ngIf="uploadForm.fileName" class="text-success">
                     <i class="bi bi-file-earmark-check me-1"></i>
@@ -289,17 +289,27 @@
                 Descrizione (opzionale)
               </label>
               <textarea class="form-control" rows="2" [(ngModel)]="uploadForm.description" name="description"
+                        maxlength="500"
                         placeholder="Aggiungi una breve descrizione del documento..."></textarea>
+              <small class="text-muted float-end mt-1">{{ uploadForm.description.length }} / 500</small>
             </div>
 
             <!-- Info -->
-            <div class="alert alert-info border-0 mb-0">
+            <div class="alert alert-info border-0 mb-2">
               <div class="d-flex">
                 <i class="bi bi-info-circle me-2"></i>
                 <small>
                   Il documento sara' visibile ai medici a cui hai concesso il consenso per l'ambito "Documenti clinici".
                   Verifica i tuoi consensi prima di caricare documenti sensibili.
                 </small>
+              </div>
+            </div>
+
+            <!-- Errore upload -->
+            <div class="alert alert-danger border-0 mb-0" *ngIf="uploadError">
+              <div class="d-flex">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <small>{{ uploadError }}</small>
               </div>
             </div>
           </form>
@@ -321,14 +331,14 @@
 <ng-container *ngIf="showDeleteModal && documentToDelete">
   <div
     class="modal-backdrop fade show"
-    style="position: fixed; inset: 0; z-index: 1050;"
-    (click)="closeDeleteModal()"></div>
+    style="position: fixed; inset: 0; z-index: 1050;"></div>
   <div
     class="modal d-flex align-items-center justify-content-center"
     role="dialog"
     aria-modal="true"
     aria-labelledby="deleteModalTitle"
-    style="position: fixed; inset: 0; z-index: 1055;">
+    style="position: fixed; inset: 0; z-index: 1055;"
+    (click)="$event.target === $event.currentTarget && closeDeleteModal()">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
