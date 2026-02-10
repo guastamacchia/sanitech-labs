@@ -3,7 +3,7 @@
 // Estratti da consent-management.component.ts
 // ============================================================
 
-export type ConsentScope = 'DOCS' | 'PRESCRIPTIONS' | 'TELEVISIT';
+export type ConsentScope = 'DOCS' | 'PRESCRIPTIONS' | 'TELEVISIT' | 'RECORDS';
 export type ConsentStatus = 'GRANTED' | 'REVOKED';
 
 /** DTO dal backend: /api/consents/me/doctors */

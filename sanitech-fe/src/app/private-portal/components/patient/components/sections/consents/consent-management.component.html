@@ -101,8 +101,8 @@
         <h6 class="alert-heading mb-1">Come funziona il consenso?</h6>
         <p class="mb-0 small">
           Concedendo il consenso a un medico, gli permetti di accedere ai tuoi dati clinici in base all'ambito selezionato.
-          Puoi revocare il consenso in qualsiasi momento: da quel momento il medico non potra' piu' visualizzare i tuoi dati.
-          La revoca e' immediata e irreversibile per le sessioni attive.
+          Puoi revocare il consenso in qualsiasi momento: da quel momento il medico non potrà più visualizzare i tuoi dati.
+          La revoca è immediata e irreversibile per le sessioni attive.
         </p>
       </div>
     </div>
@@ -127,6 +127,7 @@
             <option value="DOCS">Documenti clinici</option>
             <option value="PRESCRIPTIONS">Prescrizioni</option>
             <option value="TELEVISIT">Televisite</option>
+            <option value="RECORDS">Ricoveri</option>
           </select>
         </div>
         <div class="col-md-4">
@@ -191,7 +192,7 @@
                 <small>{{ formatDate(consent.grantedAt) }}</small>
               </td>
               <td>
-                <small [class.text-danger]="consent.expiresAt && (consent.expiresAt | date) && consent.status === 'GRANTED'">
+                <small [class.text-danger]="consent.expiresAt && isExpired(consent.expiresAt) && consent.status === 'GRANTED'">
                   {{ formatExpiryDate(consent.expiresAt) }}
                 </small>
               </td>
@@ -323,9 +324,9 @@
                   </button>
                 </div>
               </div>
-              <small class="text-muted d-block mb-3">Puoi selezionare piu' ambiti contemporaneamente. Verra' creato un consenso separato per ogni ambito selezionato.</small>
+              <small class="text-muted d-block mb-3">Puoi selezionare più ambiti contemporaneamente. Verrà creato un consenso separato per ogni ambito selezionato.</small>
               <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <div class="card h-100 position-relative"
                        [class.border-primary]="isScopeSelected('DOCS')"
                        [class.bg-primary]="isScopeSelected('DOCS')"
@@ -342,7 +343,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <div class="card h-100 position-relative"
                        [class.border-primary]="isScopeSelected('PRESCRIPTIONS')"
                        [class.bg-primary]="isScopeSelected('PRESCRIPTIONS')"
@@ -359,7 +360,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <div class="card h-100 position-relative"
                        [class.border-primary]="isScopeSelected('TELEVISIT')"
                        [class.bg-primary]="isScopeSelected('TELEVISIT')"
@@ -373,6 +374,23 @@
                       <i class="bi bi-camera-video fs-1 mb-2" [class.text-primary]="isScopeSelected('TELEVISIT')"></i>
                       <h6 class="mb-1">Televisite</h6>
                       <small class="text-muted">Visite in videochiamata</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card h-100 position-relative"
+                       [class.border-primary]="isScopeSelected('RECORDS')"
+                       [class.bg-primary]="isScopeSelected('RECORDS')"
+                       [class.bg-opacity-10]="isScopeSelected('RECORDS')"
+                       (click)="toggleScope('RECORDS')"
+                       style="cursor: pointer;">
+                    <div class="position-absolute top-0 end-0 p-2" *ngIf="isScopeSelected('RECORDS')">
+                      <i class="bi bi-check-circle-fill text-primary"></i>
+                    </div>
+                    <div class="card-body text-center py-4">
+                      <i class="bi bi-hospital fs-1 mb-2" [class.text-primary]="isScopeSelected('RECORDS')"></i>
+                      <h6 class="mb-1">Ricoveri</h6>
+                      <small class="text-muted">Dati su ricoveri e degenze</small>
                     </div>
                   </div>
                 </div>
@@ -405,9 +423,9 @@
                   class="form-control mt-2"
                   name="expiryDate"
                   [(ngModel)]="grantForm.expiryDate"
-                  [min]="'2025-01-01'"
+                  [min]="minExpiryDate"
                   [required]="grantForm.hasExpiry">
-                <small class="text-muted">Il consenso scadra' automaticamente alla data selezionata</small>
+                <small class="text-muted">Il consenso scadrà automaticamente alla data selezionata</small>
               </div>
             </div>
 
@@ -434,7 +452,7 @@
             type="button"
             class="btn btn-primary"
             (click)="submitGrant()"
-            [disabled]="!grantForm.doctorId || grantForm.scopes.length === 0 || isLoading">
+            [disabled]="!grantForm.doctorId || grantForm.scopes.length === 0 || isLoading || (grantForm.hasExpiry && !grantForm.expiryDate)">
             <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
             {{ isLoading ? 'Salvataggio...' : (grantForm.scopes.length <= 1 ? 'Concedi consenso' : 'Concedi ' + grantForm.scopes.length + ' consensi') }}
           </button>
@@ -491,8 +509,8 @@
               Effetti della revoca
             </h6>
             <ul class="mb-0 small">
-              <li>Il medico non potra' piu' accedere ai tuoi {{ getScopeLabel(selectedConsentForRevoke.scope).toLowerCase() }}</li>
-              <li>La revoca e' immediata ed efficace da subito</li>
+              <li>Il medico non potrà più accedere ai tuoi {{ getScopeLabel(selectedConsentForRevoke.scope).toLowerCase() }}</li>
+              <li>La revoca è immediata ed efficace da subito</li>
               <li>Eventuali sessioni attive saranno terminate</li>
               <li>Potrai concedere nuovamente il consenso in futuro</li>
             </ul>
@@ -660,7 +678,7 @@
               <i [class]="getScopeIcon(selectedConsentForEdit.scope) + ' me-2 text-muted fs-5'"></i>
               <span class="fw-medium">{{ getScopeLabel(selectedConsentForEdit.scope) }}</span>
             </div>
-            <small class="text-muted">L'ambito non puo' essere modificato. Per cambiarlo, revoca questo consenso e creane uno nuovo.</small>
+            <small class="text-muted">L'ambito non può essere modificato. Per cambiarlo, revoca questo consenso e creane uno nuovo.</small>
           </div>
 
           <!-- Scadenza (modificabile) -->
@@ -682,10 +700,10 @@
                 class="form-control mt-2"
                 [(ngModel)]="editForm.expiryDate"
                 [min]="minExpiryDate">
-              <small class="text-muted">Il consenso scadra' automaticamente alla data selezionata</small>
+              <small class="text-muted">Il consenso scadrà automaticamente alla data selezionata</small>
             </div>
             <div *ngIf="!editForm.hasExpiry" class="mt-2">
-              <small class="text-muted">Senza scadenza, il consenso rimarra' attivo fino alla revoca manuale.</small>
+              <small class="text-muted">Senza scadenza, il consenso rimarrà attivo fino alla revoca manuale.</small>
             </div>
           </div>
 

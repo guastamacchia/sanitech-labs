@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { ConsentsService } from './consents.service';
 import {
   ConsentScope,
@@ -17,9 +19,19 @@ import {
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './consent-management.component.html'
 })
-export class ConsentManagementComponent implements OnInit {
+export class ConsentManagementComponent implements OnInit, OnDestroy {
+
+  private destroy$ = new Subject<void>();
 
   constructor(private consentsService: ConsentsService) {}
+
+  @HostListener('document:keydown.escape')
+  onEscapePress(): void {
+    if (this.showGrantModal) this.closeGrantModal();
+    else if (this.showRevokeModal) this.closeRevokeModal();
+    else if (this.showEditModal) this.closeEditModal();
+    else if (this.showViewModal) this.closeViewModal();
+  }
 
   // Dati
   availableDoctors: DoctorDto[] = [];
@@ -46,7 +58,7 @@ export class ConsentManagementComponent implements OnInit {
   };
 
   // Lista degli scope disponibili per selezione multipla
-  availableScopes: ConsentScope[] = ['DOCS', 'PRESCRIPTIONS', 'TELEVISIT'];
+  availableScopes: ConsentScope[] = ['DOCS', 'PRESCRIPTIONS', 'TELEVISIT', 'RECORDS'];
 
   // Consenso selezionato per revoca/visualizzazione/modifica
   selectedConsentForRevoke: DoctorConsent | null = null;
@@ -74,11 +86,16 @@ export class ConsentManagementComponent implements OnInit {
     this.loadData();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadData(): void {
     this.isLoading = true;
     this.loadError = '';
 
-    this.consentsService.loadData().subscribe({
+    this.consentsService.loadData().pipe(takeUntil(this.destroy$)).subscribe({
       next: ({ doctors, consents }) => {
         this.availableDoctors = doctors.content;
         this.doctorsMap.clear();
@@ -147,18 +164,20 @@ export class ConsentManagementComponent implements OnInit {
     const labels: Record<ConsentScope, string> = {
       DOCS: 'Documenti clinici',
       PRESCRIPTIONS: 'Prescrizioni',
-      TELEVISIT: 'Televisite'
+      TELEVISIT: 'Televisite',
+      RECORDS: 'Ricoveri'
     };
-    return labels[scope];
+    return labels[scope] || scope;
   }
 
   getScopeIcon(scope: ConsentScope): string {
     const icons: Record<ConsentScope, string> = {
       DOCS: 'bi-file-earmark-medical',
       PRESCRIPTIONS: 'bi-capsule',
-      TELEVISIT: 'bi-camera-video'
+      TELEVISIT: 'bi-camera-video',
+      RECORDS: 'bi-hospital'
     };
-    return icons[scope];
+    return icons[scope] || 'bi-shield';
   }
 
   getStatusBadgeClass(consent: DoctorConsent): string {
@@ -218,7 +237,7 @@ export class ConsentManagementComponent implements OnInit {
     }
   }
 
-  /** Verifica se uno scope e' selezionato */
+  /** Verifica se uno scope è selezionato */
   isScopeSelected(scope: ConsentScope): boolean {
     return this.grantForm.scopes.includes(scope);
   }
@@ -291,7 +310,7 @@ export class ConsentManagementComponent implements OnInit {
         : null
     };
 
-    this.consentsService.updateConsent(consent.doctorId, consent.scope, body).subscribe({
+    this.consentsService.updateConsent(consent.doctorId, consent.scope, body).pipe(takeUntil(this.destroy$)).subscribe({
       next: (updated) => {
         const idx = this.doctorConsents.findIndex(c => c.id === consent.id);
         if (idx !== -1) {
@@ -342,7 +361,7 @@ export class ConsentManagementComponent implements OnInit {
         : null
     };
 
-    this.consentsService.grantBulkConsents(body).subscribe({
+    this.consentsService.grantBulkConsents(body).pipe(takeUntil(this.destroy$)).subscribe({
       next: (consents) => {
         const enriched: DoctorConsent[] = consents.map(consent => ({
           id: consent.id,
@@ -354,7 +373,10 @@ export class ConsentManagementComponent implements OnInit {
           grantedAt: consent.grantedAt,
           expiresAt: consent.expiresAt
         }));
-        this.doctorConsents = [...enriched, ...this.doctorConsents];
+        // Rimuovi eventuali consensi esistenti per le stesse coppie medico/scope
+        const newKeys = new Set(enriched.map(e => `${e.doctorId}_${e.scope}`));
+        const filtered = this.doctorConsents.filter(c => !newKeys.has(`${c.doctorId}_${c.scope}`));
+        this.doctorConsents = [...enriched, ...filtered];
         this.isLoading = false;
         this.closeGrantModal();
         const scopeLabels = this.grantForm.scopes.map(s => this.getScopeLabel(s)).join(', ');
@@ -365,7 +387,7 @@ export class ConsentManagementComponent implements OnInit {
         console.error('Errore concessione consensi:', err);
         this.isLoading = false;
         if (err.status === 409 || err.error?.message?.includes('esiste')) {
-          this.errorMessage = 'Esiste gia\' un consenso attivo per questo medico e uno degli ambiti selezionati.';
+          this.errorMessage = 'Esiste già un consenso attivo per questo medico e uno degli ambiti selezionati.';
         } else {
           this.errorMessage = err.error?.message || 'Errore durante la concessione dei consensi.';
         }
@@ -379,7 +401,7 @@ export class ConsentManagementComponent implements OnInit {
     const consent = this.selectedConsentForRevoke;
     this.isLoading = true;
 
-    this.consentsService.revokeConsent(consent.doctorId, consent.scope).subscribe({
+    this.consentsService.revokeConsent(consent.doctorId, consent.scope).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         // Aggiorna localmente il consenso come revocato
         const idx = this.doctorConsents.findIndex(c => c.id === consent.id);
@@ -392,7 +414,7 @@ export class ConsentManagementComponent implements OnInit {
           this.doctorConsents = [...this.doctorConsents];
         }
         this.isLoading = false;
-        this.successMessage = `Consenso revocato con successo. Il medico non potra' piu' accedere ai tuoi dati.`;
+        this.successMessage = `Consenso revocato con successo. Il medico non potrà più accedere ai tuoi dati.`;
         this.closeRevokeModal();
         setTimeout(() => this.successMessage = '', 5000);
       },
