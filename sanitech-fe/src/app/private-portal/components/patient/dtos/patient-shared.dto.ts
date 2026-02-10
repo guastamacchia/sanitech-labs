@@ -7,8 +7,8 @@
 
 export type UserStatus = 'PENDING' | 'ACTIVE' | 'DISABLED';
 
-// Prescrizione
-export type PrescriptionStatus = 'ISSUED' | 'DISPENSED' | 'CANCELLED';
+// Prescrizione (allineato con backend: DRAFT, ISSUED, CANCELLED)
+export type PrescriptionStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
 
 // Ricovero
 export type AdmissionType = 'ORDINARY' | 'DAY_HOSPITAL' | 'EMERGENCY';

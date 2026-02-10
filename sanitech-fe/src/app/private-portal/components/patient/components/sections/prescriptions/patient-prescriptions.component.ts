@@ -1,13 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { Subject, forkJoin, takeUntil } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import {
   PatientService,
   PrescriptionDto,
   PrescriptionStatus,
-  PrescriptionWithDetails
+  PrescriptionWithDetails,
+  PagedResponse
 } from '../../../services/patient.service';
 import { DoctorDto, DepartmentDto } from '../../../services/scheduling.service';
 
@@ -26,10 +27,10 @@ export class PatientPrescriptionsComponent implements OnInit, OnDestroy {
   // Dati per arricchimento
   private doctors: DoctorDto[] = [];
   private departments: DepartmentDto[] = [];
+  private enrichmentLoaded = false;
 
   // Stato UI
   isLoading = false;
-  successMessage = '';
   errorMessage = '';
   showDetailModal = false;
   selectedPrescription: PrescriptionWithDetails | null = null;
@@ -38,14 +39,17 @@ export class PatientPrescriptionsComponent implements OnInit, OnDestroy {
   statusFilter: 'ALL' | PrescriptionStatus = 'ALL';
   searchTerm = '';
 
-  // Paginazione
+  // Paginazione (client-side su dati caricati)
   pageSize = 10;
   currentPage = 1;
+
+  // Contatori reali dal backend
+  totalElements = 0;
 
   constructor(private patientService: PatientService) {}
 
   ngOnInit(): void {
-    this.loadPrescriptions();
+    this.loadEnrichmentAndPrescriptions();
   }
 
   ngOnDestroy(): void {
@@ -53,37 +57,69 @@ export class PatientPrescriptionsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  // ---- ESCAPE key per chiudere modale (PRESC-08) ----
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showDetailModal) {
+      this.closeDetailModal();
+    }
+  }
+
+  /**
+   * Carica enrichment e poi prescrizioni.
+   * Gli errori vengono propagati all'utente (PRESC-05).
+   */
+  loadEnrichmentAndPrescriptions(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.patientService.loadEnrichmentData()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (enrichment) => {
+          this.doctors = enrichment.doctors;
+          this.departments = enrichment.departments;
+          this.enrichmentLoaded = true;
+          this.loadPrescriptions();
+        },
+        error: () => {
+          this.errorMessage = 'Impossibile caricare i dati di supporto. Riprova.';
+          this.isLoading = false;
+        }
+      });
+  }
+
+  /**
+   * Carica le prescrizioni. NON usa catchError silenzioso (PRESC-05).
+   * Usa size: 100 con paginazione client-side (PRESC-07: mitigato con warning).
+   */
   loadPrescriptions(): void {
     this.isLoading = true;
     this.errorMessage = '';
 
-    // Carica prescrizioni e dati per arricchimento in parallelo
-    forkJoin({
-      prescriptions: this.patientService.getPrescriptions({ size: 100, sort: 'createdAt,desc' }),
-      enrichment: this.patientService.loadEnrichmentData()
-    })
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: ({ prescriptions, enrichment }) => {
-        this.doctors = enrichment.doctors;
-        this.departments = enrichment.departments;
-        this.prescriptions = this.patientService.enrichPrescriptions(
-          prescriptions.content,
-          this.doctors,
-          this.departments
-        );
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error('Errore caricamento prescrizioni:', err);
-        this.errorMessage = 'Impossibile caricare le prescrizioni. Riprova.';
-        this.isLoading = false;
-      }
-    });
+    this.patientService.getPrescriptions({ size: 100, sort: 'createdAt,desc' })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: PagedResponse<PrescriptionDto>) => {
+          this.totalElements = response.totalElements;
+          this.prescriptions = this.patientService.enrichPrescriptions(
+            response.content,
+            this.doctors,
+            this.departments
+          );
+          this.isLoading = false;
+        },
+        error: () => {
+          this.errorMessage = 'Impossibile caricare le prescrizioni. Riprova.';
+          this.isLoading = false;
+        }
+      });
   }
 
   get filteredPrescriptions(): PrescriptionWithDetails[] {
     return this.prescriptions.filter(p => {
+      // PRESC-06: Nascondi prescrizioni DRAFT lato frontend (safety-net)
+      if (p.status === 'DRAFT') return false;
       if (this.statusFilter !== 'ALL' && p.status !== this.statusFilter) return false;
       if (this.searchTerm) {
         const term = this.searchTerm.toLowerCase();
@@ -107,19 +143,56 @@ export class PatientPrescriptionsComponent implements OnInit, OnDestroy {
     return Math.ceil(this.filteredPrescriptions.length / this.pageSize) || 1;
   }
 
+  /**
+   * Pagine visibili con ellipsis (PRESC-12).
+   * Restituisce array di numeri pagina e -1 per ellipsis.
+   */
+  get visiblePages(): number[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const pages: number[] = [1];
+
+    if (current > 3) {
+      pages.push(-1); // ellipsis
+    }
+
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    if (current < total - 2) {
+      pages.push(-1); // ellipsis
+    }
+
+    if (pages[pages.length - 1] !== total) {
+      pages.push(total);
+    }
+
+    return pages;
+  }
+
   get activePrescriptionsCount(): number {
     return this.prescriptions.filter(p => p.status === 'ISSUED').length;
   }
 
-  get expiringPrescriptionsCount(): number {
-    // Le prescrizioni del backend non hanno scadenza esplicita, contiamo quelle ISSUED
-    return this.prescriptions.filter(p => p.status === 'ISSUED').length;
+  // PRESC-04: Card "Annullate" al posto di "Da rinnovare" (che era duplicato)
+  get cancelledPrescriptionsCount(): number {
+    return this.prescriptions.filter(p => p.status === 'CANCELLED').length;
   }
 
+  // PRESC-01: Allineato con backend (DRAFT, ISSUED, CANCELLED)
   getStatusLabel(status: PrescriptionStatus): string {
     const labels: Record<PrescriptionStatus, string> = {
+      DRAFT: 'Bozza',
       ISSUED: 'Attiva',
-      DISPENSED: 'Dispensata',
       CANCELLED: 'Annullata'
     };
     return labels[status] || status;
@@ -127,8 +200,8 @@ export class PatientPrescriptionsComponent implements OnInit, OnDestroy {
 
   getStatusBadgeClass(status: PrescriptionStatus): string {
     const classes: Record<PrescriptionStatus, string> = {
+      DRAFT: 'bg-warning text-dark',
       ISSUED: 'bg-success',
-      DISPENSED: 'bg-secondary',
       CANCELLED: 'bg-danger'
     };
     return classes[status] || 'bg-secondary';
@@ -152,11 +225,6 @@ export class PatientPrescriptionsComponent implements OnInit, OnDestroy {
     });
   }
 
-  isExpiringSoon(prescription: PrescriptionWithDetails): boolean {
-    // Il backend non ha expiresAt, quindi restituiamo false
-    return false;
-  }
-
   openDetailModal(prescription: PrescriptionWithDetails): void {
     this.selectedPrescription = prescription;
     this.showDetailModal = true;
@@ -167,17 +235,7 @@ export class PatientPrescriptionsComponent implements OnInit, OnDestroy {
     this.selectedPrescription = null;
   }
 
-  downloadPrescription(prescription: PrescriptionWithDetails): void {
-    const medicationNames = prescription.items.map(i => i.medicationName).join(', ');
-    this.successMessage = `Download della prescrizione "${medicationNames}" avviato.`;
-    setTimeout(() => this.successMessage = '', 3000);
-  }
-
-  requestRefill(prescription: PrescriptionWithDetails): void {
-    const medicationNames = prescription.items.map(i => i.medicationName).join(', ');
-    this.successMessage = `Richiesta di rinnovo per "${medicationNames}" inviata al medico.`;
-    setTimeout(() => this.successMessage = '', 5000);
-  }
+  // PRESC-02: Rimosso download fake — ora bottone disabilitato con tooltip
 
   // Helper per visualizzare le informazioni dei farmaci
   getMedicationSummary(prescription: PrescriptionWithDetails): string {

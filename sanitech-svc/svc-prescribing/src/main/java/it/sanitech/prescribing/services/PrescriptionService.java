@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Service applicativo per la gestione delle prescrizioni.
@@ -95,15 +96,27 @@ public class PrescriptionService {
     }
 
     /**
+     * Stati visibili al paziente: le bozze (DRAFT) non devono essere esposte.
+     */
+    private static final Set<PrescriptionStatus> PATIENT_VISIBLE_STATUSES =
+            Set.of(PrescriptionStatus.ISSUED, PrescriptionStatus.CANCELLED);
+
+    /**
      * Lista prescrizioni del paziente autenticato.
+     * Le prescrizioni DRAFT non sono visibili (sono bozze del medico).
      */
     @Transactional(readOnly = true)
     @Bulkhead(name = "prescribingRead", type = Bulkhead.Type.SEMAPHORE)
     public Page<PrescriptionDto> listMine(PrescriptionStatus status, Pageable pageable, Authentication auth) {
         Long patientId = JwtClaimUtils.requirePatientId(auth);
-        Page<Prescription> page = (status == null)
-                ? prescriptions.findByPatientId(patientId, pageable)
-                : prescriptions.findByPatientIdAndStatus(patientId, status, pageable);
+        Page<Prescription> page;
+        if (status != null) {
+            page = PATIENT_VISIBLE_STATUSES.contains(status)
+                    ? prescriptions.findByPatientIdAndStatus(patientId, status, pageable)
+                    : Page.empty(pageable);
+        } else {
+            page = prescriptions.findByPatientIdAndStatusIn(patientId, PATIENT_VISIBLE_STATUSES, pageable);
+        }
 
         return page.map(mapper::toDto);
     }

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -26,6 +27,9 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Long
 
     @EntityGraph(attributePaths = "items")
     Page<Prescription> findByPatientId(Long patientId, Pageable pageable);
+
+    @EntityGraph(attributePaths = "items")
+    Page<Prescription> findByPatientIdAndStatusIn(Long patientId, Collection<PrescriptionStatus> statuses, Pageable pageable);
 
     @EntityGraph(attributePaths = "items")
     Page<Prescription> findByDoctorId(Long doctorId, Pageable pageable);

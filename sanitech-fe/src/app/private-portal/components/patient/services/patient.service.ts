@@ -135,8 +135,6 @@ export class PatientService {
     return this.http.get<PagedResponse<PrescriptionDto>>(
       `${this.gatewayUrl}/api/prescriptions`,
       { params: httpParams }
-    ).pipe(
-      catchError(() => of({ content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 }))
     );
   }
 
@@ -485,7 +483,7 @@ export class PatientService {
     departments: DepartmentDto[];
   }> {
     return forkJoin({
-      doctors: this.getDoctors({ size: 200 }).pipe(map(r => r.content)),
+      doctors: this.getDoctors({ size: 1000 }).pipe(map(r => r.content)),
       departments: this.getDepartments()
     });
   }
