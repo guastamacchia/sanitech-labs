@@ -24,6 +24,12 @@
     <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
   </div>
 
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage && !showBookingModal" role="alert">
+    <i class="bi bi-exclamation-circle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="errorMessage = ''"></button>
+  </div>
+
   <!-- Stats Cards -->
   <div class="row g-3 mb-4">
     <div class="col-md-3">
@@ -105,13 +111,13 @@
   <!-- Tabs -->
   <ul class="nav nav-tabs mb-4">
     <li class="nav-item">
-      <button class="nav-link" [class.active]="activeTab === 'book'" (click)="activeTab = 'book'">
+      <button class="nav-link" [class.active]="activeTab === 'book'" (click)="switchTab('book')">
         <i class="bi bi-plus-circle me-2"></i>
         Prenota una visita
       </button>
     </li>
     <li class="nav-item">
-      <button class="nav-link" [class.active]="activeTab === 'appointments'" (click)="activeTab = 'appointments'">
+      <button class="nav-link" [class.active]="activeTab === 'appointments'" (click)="switchTab('appointments')">
         <i class="bi bi-list-ul me-2"></i>
         I miei appuntamenti
         <span class="badge bg-primary ms-2" *ngIf="upcomingAppointmentsCount > 0">{{ upcomingAppointmentsCount }}</span>
@@ -253,7 +259,7 @@
               Seleziona data e ora
             </h5>
             <div class="d-flex align-items-center gap-2">
-              <button class="btn btn-outline-secondary btn-sm" (click)="previousWeek()">
+              <button class="btn btn-outline-secondary btn-sm" (click)="previousWeek()" [disabled]="!canGoToPreviousWeek">
                 <i class="bi bi-chevron-left"></i>
               </button>
               <span class="fw-semibold px-3">{{ getWeekRangeLabel() }}</span>
@@ -419,6 +425,13 @@
                     <i class="bi bi-x-circle me-1"></i>
                     Annulla
                   </button>
+                  <span
+                    *ngIf="(appointment.status === 'BOOKED' || appointment.status === 'CONFIRMED') && !canCancel(appointment)"
+                    class="text-muted small"
+                    [title]="getCancelDisabledReason(appointment)">
+                    <i class="bi bi-clock-history text-warning me-1"></i>
+                    Annullamento non disponibile
+                  </span>
                   <span *ngIf="appointment.status === 'COMPLETED'" class="text-muted small">
                     <i class="bi bi-check-circle text-success me-1"></i>
                     Completato
@@ -433,7 +446,7 @@
                   <div class="text-muted">
                     <i class="bi bi-calendar-x fs-1 d-block mb-3"></i>
                     <p class="mb-0">Nessun appuntamento trovato.</p>
-                    <button class="btn btn-primary mt-3" (click)="activeTab = 'book'">
+                    <button class="btn btn-primary mt-3" (click)="switchTab('book')">
                       <i class="bi bi-plus-circle me-1"></i>
                       Prenota una visita
                     </button>
@@ -477,14 +490,14 @@
 <ng-container *ngIf="showBookingModal && selectedSlot && selectedDoctor">
   <div
     class="modal-backdrop fade show"
-    style="position: fixed; inset: 0; z-index: 1050;"
-    (click)="closeBookingModal()"></div>
+    style="position: fixed; inset: 0; z-index: 1050;"></div>
   <div
     class="modal d-flex align-items-center justify-content-center"
     role="dialog"
     aria-modal="true"
     aria-labelledby="bookingModalTitle"
-    style="position: fixed; inset: 0; z-index: 1055;">
+    style="position: fixed; inset: 0; z-index: 1055;"
+    (click)="$event.target === $event.currentTarget && closeBookingModal()">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
@@ -563,7 +576,9 @@
               rows="3"
               [(ngModel)]="bookingReason"
               placeholder="Descrivi brevemente il motivo della visita..."
+              maxlength="500"
               required></textarea>
+            <small class="form-text text-muted d-block text-end">{{ bookingReason.length }} / 500</small>
           </div>
 
           <!-- Info box -->
@@ -611,7 +626,8 @@
     class="modal d-flex align-items-center justify-content-center"
     role="dialog"
     aria-modal="true"
-    style="position: fixed; inset: 0; z-index: 1055;">
+    style="position: fixed; inset: 0; z-index: 1055;"
+    (click)="$event.target === $event.currentTarget && closeConfirmationModal()">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content text-center">
         <div class="modal-body py-5">
@@ -637,14 +653,14 @@
 <ng-container *ngIf="showCancelModal && selectedAppointmentForCancel">
   <div
     class="modal-backdrop fade show"
-    style="position: fixed; inset: 0; z-index: 1050;"
-    (click)="closeCancelModal()"></div>
+    style="position: fixed; inset: 0; z-index: 1050;"></div>
   <div
     class="modal d-flex align-items-center justify-content-center"
     role="dialog"
     aria-modal="true"
     aria-labelledby="cancelModalTitle"
-    style="position: fixed; inset: 0; z-index: 1055;">
+    style="position: fixed; inset: 0; z-index: 1055;"
+    (click)="$event.target === $event.currentTarget && closeCancelModal()">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">

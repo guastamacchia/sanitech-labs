@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { forkJoin, Subject, takeUntil } from 'rxjs';
 import {
   SchedulingService,
   DepartmentDto,
@@ -21,7 +21,9 @@ import { TimeSlot, DisplayAppointment } from './dtos/booking.dto';
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './appointment-booking.component.html'
 })
-export class AppointmentBookingComponent implements OnInit {
+export class AppointmentBookingComponent implements OnInit, OnDestroy {
+
+  private readonly destroy$ = new Subject<void>();
 
   // Dati dal backend
   doctors: DoctorWithDetails[] = [];
@@ -63,11 +65,35 @@ export class AppointmentBookingComponent implements OnInit {
   // Settimana visualizzata nel calendario
   currentWeekStart: Date = new Date();
 
-  constructor(private schedulingService: SchedulingService) {}
+  constructor(
+    private schedulingService: SchedulingService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {}
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showBookingModal) {
+      this.closeBookingModal();
+    } else if (this.showCancelModal) {
+      this.closeCancelModal();
+    } else if (this.showConfirmationModal) {
+      this.closeConfirmationModal();
+    }
+  }
 
   ngOnInit(): void {
     this.initializeWeek();
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    if (tab === 'appointments') {
+      this.activeTab = 'appointments';
+    }
     this.loadData();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private initializeWeek(): void {
@@ -84,7 +110,7 @@ export class AppointmentBookingComponent implements OnInit {
     forkJoin({
       bookingData: this.schedulingService.loadBookingData(),
       appointments: this.schedulingService.getAppointments({ size: 100 })
-    }).subscribe({
+    }).pipe(takeUntil(this.destroy$)).subscribe({
       next: ({ bookingData, appointments }) => {
         this.departments = bookingData.departments;
         this.facilities = bookingData.facilities;
@@ -127,7 +153,7 @@ export class AppointmentBookingComponent implements OnInit {
         doctorName: a.doctorName || `Medico #${a.doctorId}`,
         departmentName: a.departmentName || a.departmentCode,
         facilityName: a.facilityName || '',
-        date: startDate.toISOString().split('T')[0],
+        date: this.toLocalDateStr(startDate),
         startTime: startDate.toTimeString().substring(0, 5),
         endTime: endDate.toTimeString().substring(0, 5),
         mode: a.mode,
@@ -147,7 +173,7 @@ export class AppointmentBookingComponent implements OnInit {
       from: from.toISOString(),
       to: to.toISOString(),
       size: 200
-    }).subscribe({
+    }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response) => {
         this.availableSlots = response.content.map(s => this.transformSlot(s));
       },
@@ -164,7 +190,7 @@ export class AppointmentBookingComponent implements OnInit {
     return {
       id: slot.id,
       doctorId: slot.doctorId,
-      date: startDate.toISOString().split('T')[0],
+      date: this.toLocalDateStr(startDate),
       startTime: startDate.toTimeString().substring(0, 5),
       endTime: endDate.toTimeString().substring(0, 5),
       mode: slot.mode,
@@ -172,18 +198,21 @@ export class AppointmentBookingComponent implements OnInit {
     };
   }
 
-  private addMinutes(time: string, minutes: number): string {
-    const [h, m] = time.split(':').map(Number);
-    const totalMinutes = h * 60 + m + minutes;
-    const newH = Math.floor(totalMinutes / 60);
-    const newM = totalMinutes % 60;
-    return `${newH.toString().padStart(2, '0')}:${newM.toString().padStart(2, '0')}`;
-  }
-
   // Proprietà calcolate
   get filteredDoctors(): DoctorWithDetails[] {
-    if (!this.selectedDepartment) return this.doctors;
-    return this.doctors.filter(d => d.departmentCode === this.selectedDepartment);
+    let result = this.doctors;
+    if (this.selectedDepartment) {
+      result = result.filter(d => d.departmentCode === this.selectedDepartment);
+    }
+    if (this.selectedMode && this.availableSlots.length > 0) {
+      const doctorIdsWithMode = new Set(
+        this.availableSlots
+          .filter(s => s.mode === this.selectedMode && s.status === 'AVAILABLE')
+          .map(s => s.doctorId)
+      );
+      result = result.filter(d => doctorIdsWithMode.has(d.id));
+    }
+    return result;
   }
 
   get filteredSlots(): TimeSlot[] {
@@ -216,7 +245,7 @@ export class AppointmentBookingComponent implements OnInit {
       const today = new Date();
       days.push({
         date,
-        dateStr: date.toISOString().split('T')[0],
+        dateStr: this.toLocalDateStr(date),
         dayName: date.toLocaleDateString('it-IT', { weekday: 'short' }),
         isToday: date.toDateString() === today.toDateString()
       });
@@ -235,13 +264,21 @@ export class AppointmentBookingComponent implements OnInit {
   }
 
   get filteredAppointments(): DisplayAppointment[] {
-    if (this.appointmentStatusFilter === 'ALL') {
-      return this.appointments;
+    let result = this.appointments;
+    if (this.appointmentStatusFilter !== 'ALL') {
+      result = result.filter(a => a.status === this.appointmentStatusFilter);
     }
-    return this.appointments.filter(a => a.status === this.appointmentStatusFilter);
+    return [...result].sort((a, b) => {
+      const dateCompare = b.date.localeCompare(a.date);
+      if (dateCompare !== 0) return dateCompare;
+      return b.startTime.localeCompare(a.startTime);
+    });
   }
 
   get paginatedAppointments(): DisplayAppointment[] {
+    if (this.currentPage > this.totalPages && this.totalPages > 0) {
+      this.currentPage = this.totalPages;
+    }
     const start = (this.currentPage - 1) * this.pageSize;
     return this.filteredAppointments.slice(start, start + this.pageSize);
   }
@@ -251,7 +288,7 @@ export class AppointmentBookingComponent implements OnInit {
   }
 
   get upcomingAppointmentsCount(): number {
-    const today = new Date().toISOString().split('T')[0];
+    const today = this.toLocalDateStr(new Date());
     return this.appointments.filter(a =>
       (a.status === 'BOOKED' || a.status === 'CONFIRMED') &&
       a.date >= today
@@ -267,7 +304,7 @@ export class AppointmentBookingComponent implements OnInit {
   }
 
   get nextAppointment(): DisplayAppointment | null {
-    const today = new Date().toISOString().split('T')[0];
+    const today = this.toLocalDateStr(new Date());
     const upcoming = this.appointments
       .filter(a => (a.status === 'BOOKED' || a.status === 'CONFIRMED') && a.date >= today)
       .sort((a, b) => {
@@ -327,7 +364,18 @@ export class AppointmentBookingComponent implements OnInit {
   }
 
   // Navigazione
+  get canGoToPreviousWeek(): boolean {
+    const prevWeekStart = new Date(this.currentWeekStart);
+    prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(prevWeekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    return weekEnd >= today;
+  }
+
   previousWeek(): void {
+    if (!this.canGoToPreviousWeek) return;
     const newStart = new Date(this.currentWeekStart);
     newStart.setDate(newStart.getDate() - 7);
     this.currentWeekStart = newStart;
@@ -388,7 +436,7 @@ export class AppointmentBookingComponent implements OnInit {
     this.schedulingService.bookAppointment({
       slotId: this.selectedSlot.id,
       reason: this.bookingReason.trim()
-    }).subscribe({
+    }).pipe(takeUntil(this.destroy$)).subscribe({
       next: (result) => {
         // Aggiungi l'appuntamento alla lista
         const newAppt: DisplayAppointment = {
@@ -418,12 +466,13 @@ export class AppointmentBookingComponent implements OnInit {
       },
       error: (err) => {
         this.isLoading = false;
-        if (err.status === 400 || err.status === 409) {
+        if (err.status === 409) {
           this.errorMessage = 'Lo slot non è più disponibile. Seleziona un altro orario.';
-          // Ricarica gli slot
           if (this.selectedDoctor) {
             this.loadSlotsForDoctor(this.selectedDoctor.id);
           }
+        } else if (err.status === 400) {
+          this.errorMessage = 'Dati non validi. Controlla il motivo della visita (max 500 caratteri).';
         } else {
           this.errorMessage = 'Errore durante la prenotazione. Riprova più tardi.';
         }
@@ -454,7 +503,7 @@ export class AppointmentBookingComponent implements OnInit {
     this.isLoading = true;
     const appointmentId = this.selectedAppointmentForCancel.id;
 
-    this.schedulingService.cancelAppointment(appointmentId).subscribe({
+    this.schedulingService.cancelAppointment(appointmentId).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.updateAppointmentAsCancelled(appointmentId);
       },
@@ -483,7 +532,26 @@ export class AppointmentBookingComponent implements OnInit {
   }
 
   canCancel(appointment: DisplayAppointment): boolean {
-    return appointment.status === 'BOOKED' || appointment.status === 'CONFIRMED';
+    if (appointment.status !== 'BOOKED' && appointment.status !== 'CONFIRMED') {
+      return false;
+    }
+    const appointmentDate = new Date(`${appointment.date}T${appointment.startTime}`);
+    const now = new Date();
+    const hoursUntilAppointment = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return hoursUntilAppointment >= 24;
+  }
+
+  getCancelDisabledReason(appointment: DisplayAppointment): string {
+    if (appointment.status !== 'BOOKED' && appointment.status !== 'CONFIRMED') {
+      return '';
+    }
+    const appointmentDate = new Date(`${appointment.date}T${appointment.startTime}`);
+    const now = new Date();
+    const hoursUntilAppointment = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    if (hoursUntilAppointment < 24) {
+      return 'Non è possibile annullare entro 24 ore dall\'appuntamento';
+    }
+    return '';
   }
 
   // Aggiornamento
@@ -496,7 +564,24 @@ export class AppointmentBookingComponent implements OnInit {
   }
 
   isPastDate(dateStr: string): boolean {
-    const today = new Date().toISOString().split('T')[0];
+    const today = this.toLocalDateStr(new Date());
     return dateStr < today;
+  }
+
+  switchTab(tab: 'book' | 'appointments'): void {
+    this.activeTab = tab;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: tab === 'appointments' ? { tab: 'appointments' } : {},
+      queryParamsHandling: tab === 'appointments' ? 'merge' : '',
+      replaceUrl: true
+    });
+  }
+
+  private toLocalDateStr(date: Date): string {
+    const y = date.getFullYear();
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const d = date.getDate().toString().padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 }
