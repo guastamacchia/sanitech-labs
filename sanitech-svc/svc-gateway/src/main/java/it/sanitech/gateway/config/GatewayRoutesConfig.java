@@ -150,7 +150,7 @@ public class GatewayRoutesConfig {
                 // Payments
                 // =========================
                 .route(AppConstants.Services.PAYMENTS, r -> r
-                        .path("/api/payments/**", "/api/admin/services/**")
+                        .path("/api/payments/**", "/api/admin/payments/**", "/api/admin/services/**")
                         .filters(f -> standardFilters(f, AppConstants.Services.PAYMENTS))
                         .uri(services.getPayments())
                 )

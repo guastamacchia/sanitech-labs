@@ -210,6 +210,22 @@ export class PatientService {
     return this.http.post<PaymentOrderDto>(`${this.gatewayUrl}/api/payments`, dto, { headers });
   }
 
+  /**
+   * Cattura (paga) un pagamento esistente
+   */
+  capturePayment(paymentId: number): Observable<PaymentOrderDto> {
+    return this.http.post<PaymentOrderDto>(`${this.gatewayUrl}/api/payments/${paymentId}/capture`, {});
+  }
+
+  /**
+   * Scarica la ricevuta di un pagamento in PDF
+   */
+  downloadReceipt(paymentId: number): Observable<Blob> {
+    return this.http.get(`${this.gatewayUrl}/api/payments/${paymentId}/receipt`, {
+      responseType: 'blob'
+    });
+  }
+
   // ============ NOTIFICHE ============
 
   /**

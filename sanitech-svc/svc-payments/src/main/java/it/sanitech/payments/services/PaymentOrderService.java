@@ -168,6 +168,16 @@ public class PaymentOrderService {
         return mapper.toDto(repository.save(order));
     }
 
+    /**
+     * Cattura un pagamento verificando che appartenga al paziente corrente.
+     */
+    @Transactional
+    public PaymentOrderDto captureForPatient(long id, Authentication auth) {
+        PaymentOrder order = repository.findById(id).orElseThrow(() -> NotFoundException.of("PaymentOrder", id));
+        accessGuard.checkCanAccess(order, auth);
+        return capture(id, auth);
+    }
+
     @Transactional
     public PaymentOrderDto capture(long id, Authentication auth) {
         PaymentOrder order = repository.findById(id).orElseThrow(() -> NotFoundException.of("PaymentOrder", id));

@@ -24,7 +24,8 @@
     <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
   </div>
 
-  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage" role="alert">
+  <!-- BUG-21 FIX: errorMessage solo fuori dal modal (non più duplicato) -->
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage && !showPaymentModal" role="alert">
     <i class="bi bi-exclamation-circle me-2"></i>
     {{ errorMessage }}
     <button type="button" class="btn-close" aria-label="Chiudi" (click)="errorMessage = ''"></button>
@@ -153,30 +154,30 @@
     </div>
   </div>
 
-  <!-- Filters -->
+  <!-- Filters — BUG-07/24 FIX: stati corretti + for/id associati -->
   <div class="card card-glass border-0 shadow-sm mb-4">
     <div class="card-body">
       <div class="row g-3 align-items-end">
         <div class="col-md-4">
-          <label class="form-label fw-semibold small text-muted">Filtra per anno</label>
-          <select class="form-select" [(ngModel)]="yearFilter" (ngModelChange)="currentPage = 1">
+          <label class="form-label fw-semibold small text-muted" for="filterYear">Filtra per anno</label>
+          <select class="form-select" id="filterYear" [(ngModel)]="yearFilter" (ngModelChange)="onFilterChange()">
             <option *ngFor="let year of availableYears" [ngValue]="year">{{ year }}</option>
           </select>
         </div>
         <div class="col-md-4">
-          <label class="form-label fw-semibold small text-muted">Filtra per stato</label>
-          <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
+          <label class="form-label fw-semibold small text-muted" for="filterStatus">Filtra per stato</label>
+          <select class="form-select" id="filterStatus" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
             <option value="ALL">Tutti gli stati</option>
-            <option value="PENDING">Da pagare</option>
-            <option value="AUTHORIZED">Autorizzati</option>
+            <option value="CREATED">Da pagare</option>
             <option value="CAPTURED">Pagati</option>
             <option value="FAILED">Falliti</option>
+            <option value="CANCELLED">Annullati</option>
             <option value="REFUNDED">Rimborsati</option>
           </select>
         </div>
         <div class="col-md-4">
-          <label class="form-label fw-semibold small text-muted">Risultati per pagina</label>
-          <select class="form-select" [(ngModel)]="pageSize" (ngModelChange)="currentPage = 1">
+          <label class="form-label fw-semibold small text-muted" for="filterPageSize">Risultati per pagina</label>
+          <select class="form-select" id="filterPageSize" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()">
             <option [ngValue]="5">5</option>
             <option [ngValue]="10">10</option>
             <option [ngValue]="20">20</option>
@@ -265,24 +266,24 @@
         </table>
       </div>
     </div>
-    <!-- Pagination -->
+    <!-- Pagination — BUG-25 FIX: aria-label sui pulsanti -->
     <div class="card-footer bg-transparent border-top" *ngIf="totalPages > 1">
       <div class="d-flex justify-content-between align-items-center">
         <small class="text-muted">
           Pagina {{ currentPage }} di {{ totalPages }} ({{ filteredPayments.length }} pagamenti)
         </small>
-        <nav>
+        <nav aria-label="Paginazione pagamenti">
           <ul class="pagination pagination-sm mb-0">
             <li class="page-item" [class.disabled]="currentPage === 1">
-              <button class="page-link" (click)="currentPage = currentPage - 1" [disabled]="currentPage === 1">
+              <button class="page-link" (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1" aria-label="Pagina precedente">
                 <i class="bi bi-chevron-left"></i>
               </button>
             </li>
             <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1">
-              <button class="page-link" (click)="currentPage = i + 1">{{ i + 1 }}</button>
+              <button class="page-link" (click)="onPageChange(i + 1)" [attr.aria-label]="'Pagina ' + (i + 1)" [attr.aria-current]="currentPage === i + 1 ? 'page' : null">{{ i + 1 }}</button>
             </li>
             <li class="page-item" [class.disabled]="currentPage === totalPages">
-              <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
+              <button class="page-link" (click)="onPageChange(currentPage + 1)" [disabled]="currentPage === totalPages" aria-label="Pagina successiva">
                 <i class="bi bi-chevron-right"></i>
               </button>
             </li>
@@ -293,19 +294,21 @@
   </div>
 </div>
 
-<!-- Modal: Pagamento -->
+<!-- Modal: Pagamento — BUG-09/10/17/18/21 FIX -->
 <ng-container *ngIf="showPaymentModal && selectedPayment">
+  <!-- BUG-10 FIX: click handler sul wrapper (z-index 1055) con $event.target === $event.currentTarget -->
   <div
     class="modal-backdrop fade show"
-    style="position: fixed; inset: 0; z-index: 1050;"
-    (click)="closePaymentModal()"></div>
+    style="position: fixed; inset: 0; z-index: 1050;"></div>
   <div
     class="modal d-flex align-items-center justify-content-center"
     role="dialog"
     aria-modal="true"
     aria-labelledby="paymentModalTitle"
-    style="position: fixed; inset: 0; z-index: 1055;">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    tabindex="-1"
+    style="position: fixed; inset: 0; z-index: 1055;"
+    (click)="onModalBackdropClick($event)">
+    <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
           <div>
@@ -342,10 +345,15 @@
           <div class="row g-3 mb-4">
             <div class="col-md-6">
               <div class="card h-100"
+                   role="radio"
+                   [attr.aria-checked]="paymentForm.method === 'CARD'"
                    [class.border-primary]="paymentForm.method === 'CARD'"
                    [class.bg-primary]="paymentForm.method === 'CARD'"
                    [class.bg-opacity-10]="paymentForm.method === 'CARD'"
                    (click)="paymentForm.method = 'CARD'"
+                   (keydown.enter)="paymentForm.method = 'CARD'"
+                   (keydown.space)="paymentForm.method = 'CARD'; $event.preventDefault()"
+                   tabindex="0"
                    style="cursor: pointer;">
                 <div class="card-body text-center py-4">
                   <i class="bi bi-credit-card fs-1 mb-2" [class.text-primary]="paymentForm.method === 'CARD'"></i>
@@ -356,10 +364,15 @@
             </div>
             <div class="col-md-6">
               <div class="card h-100"
+                   role="radio"
+                   [attr.aria-checked]="paymentForm.method === 'BANK_TRANSFER'"
                    [class.border-primary]="paymentForm.method === 'BANK_TRANSFER'"
                    [class.bg-primary]="paymentForm.method === 'BANK_TRANSFER'"
                    [class.bg-opacity-10]="paymentForm.method === 'BANK_TRANSFER'"
                    (click)="paymentForm.method = 'BANK_TRANSFER'"
+                   (keydown.enter)="paymentForm.method = 'BANK_TRANSFER'"
+                   (keydown.space)="paymentForm.method = 'BANK_TRANSFER'; $event.preventDefault()"
+                   tabindex="0"
                    style="cursor: pointer;">
                 <div class="card-body text-center py-4">
                   <i class="bi bi-bank fs-1 mb-2" [class.text-primary]="paymentForm.method === 'BANK_TRANSFER'"></i>
@@ -389,10 +402,10 @@
             </div>
           </div>
 
-          <!-- Error message -->
-          <div class="alert alert-danger border-0 mb-0 mt-3" *ngIf="errorMessage">
+          <!-- BUG-21 FIX: Errore solo nel modal (usa modalErrorMessage separato) -->
+          <div class="alert alert-danger border-0 mb-0 mt-3" *ngIf="modalErrorMessage">
             <i class="bi bi-exclamation-circle me-2"></i>
-            {{ errorMessage }}
+            {{ modalErrorMessage }}
           </div>
         </div>
         <div class="modal-footer border-0 pt-0">

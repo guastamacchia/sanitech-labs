@@ -74,4 +74,18 @@ public class PaymentsController {
                                   Authentication auth) {
         return service.createForCurrentPatient(dto, idempotencyKey, auth);
     }
+
+    /**
+     * Cattura (paga) un pagamento esistente del paziente corrente.
+     *
+     * <p>
+     * Verifica che il pagamento appartenga al paziente autenticato
+     * prima di procedere con il capture.
+     * </p>
+     */
+    @PostMapping("/{id}/capture")
+    @Auditable(aggregateType = "PAYMENT", eventType = "PAYMENT_CAPTURED", aggregateIdParam = "id")
+    public PaymentOrderDto capturePayment(@PathVariable long id, Authentication auth) {
+        return service.captureForPatient(id, auth);
+    }
 }

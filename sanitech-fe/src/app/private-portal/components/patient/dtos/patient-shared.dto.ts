@@ -14,9 +14,9 @@ export type PrescriptionStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
 export type AdmissionType = 'INPATIENT' | 'DAY_HOSPITAL' | 'OBSERVATION';
 export type AdmissionStatus = 'ACTIVE' | 'DISCHARGED' | 'CANCELLED';
 
-// Pagamento
-export type PaymentMethod = 'CARD' | 'BANK_TRANSFER' | 'MANUAL';
-export type PaymentStatus = 'PENDING' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'REFUNDED';
+// Pagamento (allineato con backend: CREATED, CAPTURED, FAILED, CANCELLED, REFUNDED / CARD, BANK_TRANSFER, CASH)
+export type PaymentMethod = 'CARD' | 'BANK_TRANSFER' | 'CASH';
+export type PaymentStatus = 'CREATED' | 'CAPTURED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 
 // Notifica
 export type RecipientType = 'PATIENT' | 'DOCTOR' | 'ADMIN';
