@@ -10,9 +10,9 @@ export type UserStatus = 'PENDING' | 'ACTIVE' | 'DISABLED';
 // Prescrizione (allineato con backend: DRAFT, ISSUED, CANCELLED)
 export type PrescriptionStatus = 'DRAFT' | 'ISSUED' | 'CANCELLED';
 
-// Ricovero
-export type AdmissionType = 'ORDINARY' | 'DAY_HOSPITAL' | 'EMERGENCY';
-export type AdmissionStatus = 'ADMITTED' | 'DISCHARGED' | 'CANCELLED';
+// Ricovero (allineato con backend: INPATIENT, DAY_HOSPITAL, OBSERVATION / ACTIVE, DISCHARGED, CANCELLED)
+export type AdmissionType = 'INPATIENT' | 'DAY_HOSPITAL' | 'OBSERVATION';
+export type AdmissionStatus = 'ACTIVE' | 'DISCHARGED' | 'CANCELLED';
 
 // Pagamento
 export type PaymentMethod = 'CARD' | 'BANK_TRANSFER' | 'MANUAL';

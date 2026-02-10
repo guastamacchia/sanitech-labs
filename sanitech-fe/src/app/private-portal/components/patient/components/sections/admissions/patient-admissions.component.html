@@ -24,8 +24,15 @@
     <button type="button" class="btn-close" aria-label="Chiudi" (click)="successMessage = ''"></button>
   </div>
 
-  <!-- Loading spinner -->
-  <div class="text-center py-5" *ngIf="isLoading && admissions.length === 0">
+  <!-- BUG-04: Alert errore visibile all'utente -->
+  <div class="alert alert-danger alert-dismissible fade show" *ngIf="errorMessage" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    {{ errorMessage }}
+    <button type="button" class="btn-close" aria-label="Chiudi" (click)="errorMessage = ''"></button>
+  </div>
+
+  <!-- BUG-07: Loading spinner visibile anche durante i refresh -->
+  <div class="text-center py-5" *ngIf="isLoading">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Caricamento...</span>
     </div>
@@ -85,7 +92,7 @@
   </div>
 
   <!-- Stats Cards -->
-  <div class="row g-3 mb-4">
+  <div class="row g-3 mb-4" *ngIf="!isLoading">
     <div class="col-md-4">
       <div class="card card-glass h-100 border-0 shadow-sm">
         <div class="card-body">
@@ -134,14 +141,14 @@
   </div>
 
   <!-- Filters -->
-  <div class="card card-glass border-0 shadow-sm mb-4">
+  <div class="card card-glass border-0 shadow-sm mb-4" *ngIf="!isLoading">
     <div class="card-body">
       <div class="row g-3 align-items-end">
         <div class="col-md-6">
           <label class="form-label fw-semibold small text-muted">Filtra per stato</label>
           <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti gli stati</option>
-            <option value="ADMITTED">In corso</option>
+            <option value="ACTIVE">In corso</option>
             <option value="DISCHARGED">Dimessi</option>
             <option value="CANCELLED">Annullati</option>
           </select>
@@ -159,7 +166,7 @@
   </div>
 
   <!-- Admissions List -->
-  <div class="card card-glass border-0 shadow-sm">
+  <div class="card card-glass border-0 shadow-sm" *ngIf="!isLoading">
     <div class="card-header bg-transparent border-bottom">
       <h5 class="mb-0 fw-semibold">
         <i class="bi bi-journal-medical me-2"></i>
@@ -183,14 +190,14 @@
           </thead>
           <tbody>
             <tr *ngFor="let admission of paginatedAdmissions"
-                [class.table-success]="admission.status === 'ADMITTED'"
+                [class.table-success]="admission.status === 'ACTIVE'"
                 [class.table-light]="admission.status === 'DISCHARGED'">
               <td class="ps-4">
                 <div class="d-flex align-items-center">
                   <div class="rounded-circle p-2 me-3"
-                       [ngClass]="admission.status === 'ADMITTED' ? 'bg-success bg-opacity-10' : 'bg-secondary bg-opacity-10'">
+                       [ngClass]="admission.status === 'ACTIVE' ? 'bg-success bg-opacity-10' : 'bg-secondary bg-opacity-10'">
                     <i class="bi bi-hospital"
-                       [ngClass]="admission.status === 'ADMITTED' ? 'text-success' : 'text-secondary'"></i>
+                       [ngClass]="admission.status === 'ACTIVE' ? 'text-success' : 'text-secondary'"></i>
                   </div>
                   <div>
                     <div class="fw-semibold">{{ admission.departmentName || admission.departmentCode }}</div>
@@ -211,7 +218,7 @@
                 <span class="badge" [ngClass]="getStatusBadgeClass(admission.status)">
                   {{ getStatusLabel(admission.status) }}
                 </span>
-                <div *ngIf="admission.status === 'ADMITTED'" class="mt-1">
+                <div *ngIf="admission.status === 'ACTIVE'" class="mt-1">
                   <small class="text-success">
                     <i class="bi bi-clock me-1"></i>
                     {{ getDaysInHospital(admission) }} giorni
@@ -266,17 +273,18 @@
 </div>
 
 <!-- Modal: Dettaglio Ricovero -->
+<!-- BUG-05: backdrop click corretto tramite handler su modal container con $event.target === $event.currentTarget -->
 <ng-container *ngIf="showDetailModal && selectedAdmission">
   <div
     class="modal-backdrop fade show"
-    style="position: fixed; inset: 0; z-index: 1050;"
-    (click)="closeDetailModal()"></div>
+    style="position: fixed; inset: 0; z-index: 1050;"></div>
   <div
     class="modal d-flex align-items-center justify-content-center"
     role="dialog"
     aria-modal="true"
     aria-labelledby="detailModalTitle"
-    style="position: fixed; inset: 0; z-index: 1055; overflow-y: auto;">
+    style="position: fixed; inset: 0; z-index: 1055; overflow-y: auto;"
+    (click)="onModalContainerClick($event)">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
@@ -341,9 +349,17 @@
                 <i class="bi bi-file-earmark-medical me-2"></i>
                 Documenti
               </h6>
-              <button class="btn btn-outline-primary" (click)="downloadDischargeLetter(selectedAdmission)">
-                <i class="bi bi-download me-1"></i>
-                Scarica lettera di dimissione
+              <button class="btn btn-outline-primary"
+                      (click)="downloadDischargeLetter(selectedAdmission)"
+                      [disabled]="isDownloading">
+                <span *ngIf="!isDownloading">
+                  <i class="bi bi-download me-1"></i>
+                  Scarica lettera di dimissione
+                </span>
+                <span *ngIf="isDownloading">
+                  <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                  Download in corso...
+                </span>
               </button>
             </div>
           </div>

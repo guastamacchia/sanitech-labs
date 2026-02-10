@@ -167,8 +167,6 @@ export class PatientService {
     return this.http.get<PagedResponse<AdmissionDto>>(
       `${this.gatewayUrl}/api/admissions/me`,
       { params: httpParams }
-    ).pipe(
-      catchError(() => of({ content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 }))
     );
   }
 
