@@ -14,6 +14,9 @@ package it.sanitech.directory.services.dto;
  */
 public record NotificationPreferenceDto(
 
+        /** ID del paziente proprietario (popolato solo in risposta, ignorato in ingresso). */
+        Long id,
+
         /** Ricevi promemoria appuntamenti via email. */
         boolean emailReminders,
 
@@ -39,6 +42,7 @@ public record NotificationPreferenceDto(
      */
     public static NotificationPreferenceDto defaults() {
         return new NotificationPreferenceDto(
+                null,   // id
                 true,   // emailReminders
                 false,  // smsReminders
                 true,   // emailDocuments

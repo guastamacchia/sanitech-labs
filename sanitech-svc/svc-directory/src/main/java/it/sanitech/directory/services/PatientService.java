@@ -493,6 +493,7 @@ public class PatientService {
 
     private NotificationPreferenceDto toDto(NotificationPreference entity) {
         return new NotificationPreferenceDto(
+                entity.getPatient().getId(),
                 entity.isEmailReminders(),
                 entity.isSmsReminders(),
                 entity.isEmailDocuments(),

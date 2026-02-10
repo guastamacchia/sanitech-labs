@@ -131,10 +131,11 @@ export interface PatientDto {
 }
 
 export interface PatientPhoneUpdateDto {
-  phone: string;
+  phone: string | null;
 }
 
 export interface NotificationPreferenceDto {
+  id?: number;
   emailReminders: boolean;
   smsReminders: boolean;
   emailDocuments: boolean;
