@@ -50,6 +50,7 @@
             <div>
               <h5 class="mb-1 fw-bold text-primary">Televisita in arrivo!</h5>
               <p class="mb-0">{{ upcomingTelevisit.departmentName || upcomingTelevisit.department }}</p>
+              <small class="text-muted" *ngIf="upcomingTelevisit.doctorName">Medico: {{ upcomingTelevisit.doctorName }}</small>
             </div>
           </div>
           <div class="d-flex align-items-center gap-4 mt-3">
@@ -150,10 +151,11 @@
           <label class="form-label fw-semibold small text-muted">Filtra per stato</label>
           <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti gli stati</option>
-            <option value="PENDING">Programmate</option>
+            <option value="CREATED">Create</option>
+            <option value="SCHEDULED">Programmate</option>
             <option value="ACTIVE">In corso</option>
-            <option value="COMPLETED">Completate</option>
-            <option value="CANCELLED">Annullate</option>
+            <option value="ENDED">Completate</option>
+            <option value="CANCELED">Annullate</option>
           </select>
         </div>
         <div class="col-md-6">
@@ -191,17 +193,18 @@
           <tbody>
             <tr *ngFor="let televisit of paginatedTelevisits"
                 [class.table-primary]="isUpcoming(televisit)"
-                [class.table-light]="televisit.status === 'COMPLETED' || televisit.status === 'CANCELLED'">
+                [class.table-light]="isFinished(televisit)">
               <td class="ps-4">
                 <div class="d-flex align-items-center">
                   <div class="rounded-circle p-2 me-3"
-                       [ngClass]="televisit.status === 'PENDING' || televisit.status === 'ACTIVE' ? 'bg-primary bg-opacity-10' : 'bg-secondary bg-opacity-10'">
+                       [ngClass]="isActive(televisit) ? 'bg-primary bg-opacity-10' : 'bg-secondary bg-opacity-10'">
                     <i class="bi bi-camera-video"
-                       [ngClass]="televisit.status === 'PENDING' || televisit.status === 'ACTIVE' ? 'text-primary' : 'text-secondary'"></i>
+                       [ngClass]="isActive(televisit) ? 'text-primary' : 'text-secondary'"></i>
                   </div>
                   <div>
                     <div class="fw-semibold">{{ televisit.departmentName || televisit.department }}</div>
-                    <small class="text-muted">Sala: {{ televisit.roomName }}</small>
+                    <small class="text-muted" *ngIf="televisit.doctorName">{{ televisit.doctorName }}</small>
+                    <small class="text-muted" *ngIf="!televisit.doctorName">Sala: {{ televisit.roomName }}</small>
                   </div>
                 </div>
               </td>
@@ -259,9 +262,14 @@
                 <i class="bi bi-chevron-left"></i>
               </button>
             </li>
-            <li class="page-item" *ngFor="let page of [].constructor(totalPages); let i = index" [class.active]="currentPage === i + 1">
-              <button class="page-link" (click)="currentPage = i + 1">{{ i + 1 }}</button>
-            </li>
+            <ng-container *ngFor="let page of paginationPages">
+              <li *ngIf="page === '...'" class="page-item disabled">
+                <span class="page-link">&hellip;</span>
+              </li>
+              <li *ngIf="page !== '...'" class="page-item" [class.active]="currentPage === page">
+                <button class="page-link" (click)="currentPage = +page">{{ page }}</button>
+              </li>
+            </ng-container>
             <li class="page-item" [class.disabled]="currentPage === totalPages">
               <button class="page-link" (click)="currentPage = currentPage + 1" [disabled]="currentPage === totalPages">
                 <i class="bi bi-chevron-right"></i>
@@ -278,14 +286,14 @@
 <ng-container *ngIf="showDeviceTestModal">
   <div
     class="modal-backdrop fade show"
-    style="position: fixed; inset: 0; z-index: 1050;"
-    (click)="closeDeviceTestModal()"></div>
+    style="position: fixed; inset: 0; z-index: 1050;"></div>
   <div
     class="modal d-flex align-items-center justify-content-center"
     role="dialog"
     aria-modal="true"
     aria-labelledby="deviceTestModalTitle"
-    style="position: fixed; inset: 0; z-index: 1055;">
+    style="position: fixed; inset: 0; z-index: 1055;"
+    (click)="$event.target === $event.currentTarget && closeDeviceTestModal()">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
@@ -334,9 +342,14 @@
           </div>
 
           <!-- Preview area -->
-          <div class="bg-dark rounded text-center p-5 mb-4">
-            <i class="bi bi-camera-video-off text-white-50 fs-1"></i>
-            <p class="text-white-50 mb-0 mt-2">Anteprima video</p>
+          <div class="bg-dark rounded text-center p-4 mb-4" style="min-height: 200px; position: relative;">
+            <video #videoPreview autoplay playsinline muted
+                   style="width: 100%; border-radius: 0.375rem; display: block;"
+                   *ngIf="deviceCheck.camera === 'ok'"></video>
+            <div *ngIf="deviceCheck.camera !== 'ok'" class="d-flex flex-column align-items-center justify-content-center" style="min-height: 200px;">
+              <i class="bi bi-camera-video-off text-white-50 fs-1"></i>
+              <p class="text-white-50 mb-0 mt-2">Anteprima video</p>
+            </div>
           </div>
 
           <!-- Info -->
@@ -365,14 +378,14 @@
 <ng-container *ngIf="showDetailModal && selectedTelevisit">
   <div
     class="modal-backdrop fade show"
-    style="position: fixed; inset: 0; z-index: 1050;"
-    (click)="closeDetailModal()"></div>
+    style="position: fixed; inset: 0; z-index: 1050;"></div>
   <div
     class="modal d-flex align-items-center justify-content-center"
     role="dialog"
     aria-modal="true"
     aria-labelledby="detailModalTitle"
-    style="position: fixed; inset: 0; z-index: 1055;">
+    style="position: fixed; inset: 0; z-index: 1055;"
+    (click)="$event.target === $event.currentTarget && closeDetailModal()">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
@@ -405,13 +418,17 @@
               <p class="mb-1 text-muted small"><strong>Sala virtuale</strong></p>
               <p class="mb-0">{{ selectedTelevisit.roomName }}</p>
             </div>
-            <div class="col-12" *ngIf="selectedTelevisit.patientSubject">
-              <p class="mb-1 text-muted small"><strong>Oggetto paziente</strong></p>
-              <p class="mb-0">{{ selectedTelevisit.patientSubject }}</p>
+            <div class="col-md-6" *ngIf="selectedTelevisit.doctorName">
+              <p class="mb-1 text-muted small"><strong>Medico</strong></p>
+              <p class="mb-0">{{ selectedTelevisit.doctorName }}</p>
             </div>
-            <div class="col-12" *ngIf="selectedTelevisit.doctorSubject">
-              <p class="mb-1 text-muted small"><strong>Oggetto medico</strong></p>
-              <p class="mb-0">{{ selectedTelevisit.doctorSubject }}</p>
+            <div class="col-md-6" *ngIf="selectedTelevisit.patientName">
+              <p class="mb-1 text-muted small"><strong>Paziente</strong></p>
+              <p class="mb-0">{{ selectedTelevisit.patientName }}</p>
+            </div>
+            <div class="col-12" *ngIf="selectedTelevisit.notes">
+              <p class="mb-1 text-muted small"><strong>Note cliniche</strong></p>
+              <p class="mb-0">{{ selectedTelevisit.notes }}</p>
             </div>
           </div>
         </div>
@@ -422,52 +439,6 @@
                   (click)="joinVisit(selectedTelevisit); closeDetailModal()">
             <i class="bi bi-box-arrow-in-right me-1"></i>
             Entra nella visita
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</ng-container>
-
-<!-- Modal: Upload Foto -->
-<ng-container *ngIf="showUploadPhotoModal">
-  <div
-    class="modal-backdrop fade show"
-    style="position: fixed; inset: 0; z-index: 1050;"
-    (click)="closeUploadPhotoModal()"></div>
-  <div
-    class="modal d-flex align-items-center justify-content-center"
-    role="dialog"
-    aria-modal="true"
-    style="position: fixed; inset: 0; z-index: 1055;">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title fw-bold">
-            <i class="bi bi-image me-2 text-primary"></i>
-            Carica foto
-          </h5>
-          <button type="button" class="btn-close" aria-label="Chiudi" (click)="closeUploadPhotoModal()"></button>
-        </div>
-        <div class="modal-body pt-4">
-          <div class="border border-dashed rounded p-4 text-center bg-light">
-            <i class="bi bi-cloud-upload fs-1 text-primary d-block mb-2"></i>
-            <p class="text-muted mb-0">
-              Clicca per selezionare una foto o trascinala qui<br>
-              <small>JPG, PNG (max 5MB)</small>
-            </p>
-          </div>
-          <div class="alert alert-info border-0 mt-3 mb-0">
-            <small>
-              <i class="bi bi-info-circle me-1"></i>
-              Le foto caricate saranno disponibili al medico durante la televisita.
-            </small>
-          </div>
-        </div>
-        <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-outline-secondary" (click)="closeUploadPhotoModal()">Annulla</button>
-          <button type="button" class="btn btn-primary" (click)="uploadPhoto(); closeUploadPhotoModal()">
-            Carica
           </button>
         </div>
       </div>

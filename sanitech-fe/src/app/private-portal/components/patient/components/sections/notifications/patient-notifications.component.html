@@ -9,12 +9,18 @@
         </ol>
       </nav>
       <h2 class="mb-1 fw-bold">Le mie notifiche</h2>
-      <p class="text-muted mb-0">Visualizza le comunicazioni inviate dal sistema</p>
+      <p class="text-muted mb-0">Visualizza e gestisci le comunicazioni inviate dal sistema</p>
     </div>
-    <button class="btn btn-outline-secondary" routerLink="/portal/patient">
-      <i class="bi bi-arrow-left me-1"></i>
-      Torna indietro
-    </button>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-primary" (click)="markAllAsRead()" [disabled]="unreadCount === 0">
+        <i class="bi bi-check-all me-1"></i>
+        Segna tutte come lette
+      </button>
+      <button class="btn btn-outline-secondary" routerLink="/portal/patient">
+        <i class="bi bi-arrow-left me-1"></i>
+        Torna indietro
+      </button>
+    </div>
   </div>
 
   <!-- Alert messages -->
@@ -44,12 +50,12 @@
       <div class="card card-glass h-100 border-0 shadow-sm">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
-              <i class="bi bi-hourglass-split text-warning fs-4"></i>
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+              <i class="bi bi-envelope-open text-primary fs-4"></i>
             </div>
             <div>
-              <h3 class="mb-0 fw-bold">{{ pendingCount }}</h3>
-              <small class="text-muted">In attesa</small>
+              <h3 class="mb-0 fw-bold">{{ unreadCount }}</h3>
+              <small class="text-muted">Da leggere</small>
             </div>
           </div>
         </div>
@@ -63,8 +69,8 @@
               <i class="bi bi-check-circle text-success fs-4"></i>
             </div>
             <div>
-              <h3 class="mb-0 fw-bold">{{ sentCount }}</h3>
-              <small class="text-muted">Inviate</small>
+              <h3 class="mb-0 fw-bold">{{ readCount }}</h3>
+              <small class="text-muted">Lette</small>
             </div>
           </div>
         </div>
@@ -74,8 +80,8 @@
       <div class="card card-glass h-100 border-0 shadow-sm">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-              <i class="bi bi-bell text-primary fs-4"></i>
+            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+              <i class="bi bi-bell text-info fs-4"></i>
             </div>
             <div>
               <h3 class="mb-0 fw-bold">{{ totalCount }}</h3>
@@ -95,10 +101,9 @@
           <label class="form-label fw-semibold small text-muted">Filtra per stato</label>
           <select class="form-select" [(ngModel)]="statusFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti gli stati</option>
-            <option value="PENDING">In attesa</option>
-            <option value="SENT">Inviate</option>
-            <option value="FAILED">Fallite</option>
-            <option value="BOUNCED">Respinte</option>
+            <option value="SENT">Da leggere</option>
+            <option value="READ">Lette</option>
+            <option value="ARCHIVED">Archiviate</option>
           </select>
         </div>
         <div class="col-md-4">
@@ -106,8 +111,7 @@
           <select class="form-select" [(ngModel)]="channelFilter" (ngModelChange)="currentPage = 1">
             <option value="ALL">Tutti i canali</option>
             <option value="EMAIL">Email</option>
-            <option value="SMS">SMS</option>
-            <option value="PUSH">Push</option>
+            <option value="IN_APP">In-App</option>
           </select>
         </div>
         <div class="col-md-4">
@@ -135,8 +139,10 @@
       <div class="list-group list-group-flush">
         <div *ngFor="let notification of paginatedNotifications"
              class="list-group-item list-group-item-action p-3"
-             [class.bg-light]="notification.status === 'PENDING'"
-             (click)="openDetailModal(notification)">
+             [class.bg-light]="notification.status === 'SENT'"
+             [class.fw-semibold]="notification.status === 'SENT'"
+             (click)="openDetailModal(notification)"
+             style="cursor: pointer;">
           <div class="d-flex">
             <div class="flex-shrink-0 me-3">
               <div class="rounded-circle p-2" [ngClass]="getChannelBadgeClass(notification.channel)">
@@ -146,9 +152,20 @@
             <div class="flex-grow-1">
               <div class="d-flex justify-content-between align-items-start mb-1">
                 <div>
-                  <h6 class="mb-0 fw-semibold">{{ notification.subject }}</h6>
+                  <h6 class="mb-0" [class.fw-bold]="notification.status === 'SENT'" [class.fw-normal]="notification.status !== 'SENT'">
+                    {{ notification.subject }}
+                    <span class="badge bg-primary rounded-pill ms-1" *ngIf="notification.status === 'SENT'" style="font-size: 0.6rem;">Nuova</span>
+                  </h6>
                 </div>
-                <small class="text-muted ms-2 text-nowrap">{{ formatDate(notification.createdAt) }}</small>
+                <div class="d-flex align-items-center gap-2">
+                  <small class="text-muted text-nowrap">{{ formatDate(notification.createdAt) }}</small>
+                  <button class="btn btn-sm btn-outline-secondary border-0 p-1"
+                          title="Archivia"
+                          (click)="archiveNotification(notification, $event)"
+                          *ngIf="notification.status !== 'ARCHIVED'">
+                    <i class="bi bi-archive"></i>
+                  </button>
+                </div>
               </div>
               <p class="text-muted mb-2 small text-truncate" style="max-width: 500px;">{{ notification.body }}</p>
               <div class="d-flex gap-2 align-items-center">
@@ -168,7 +185,7 @@
           </div>
         </div>
 
-        <div *ngIf="filteredNotifications.length === 0" class="text-center py-5">
+        <div *ngIf="filteredNotifications.length === 0 && !isLoading" class="text-center py-5">
           <div class="text-muted">
             <i class="bi bi-bell-slash fs-1 d-block mb-3"></i>
             <p class="mb-0">Nessuna notifica trovata con i filtri selezionati.</p>
@@ -208,14 +225,14 @@
 <ng-container *ngIf="showDetailModal && selectedNotification">
   <div
     class="modal-backdrop fade show"
-    style="position: fixed; inset: 0; z-index: 1050;"
-    (click)="closeDetailModal()"></div>
+    style="position: fixed; inset: 0; z-index: 1050;"></div>
   <div
     class="modal d-flex align-items-center justify-content-center"
     role="dialog"
     aria-modal="true"
     aria-labelledby="detailModalTitle"
-    style="position: fixed; inset: 0; z-index: 1055; overflow-y: auto;">
+    style="position: fixed; inset: 0; z-index: 1055; overflow-y: auto;"
+    (click)="onModalBackdropClick($event)">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
@@ -263,7 +280,7 @@
             <div class="col-12">
               <p class="mb-1 text-muted small"><strong>Contenuto</strong></p>
               <div class="bg-light rounded p-3">
-                <p class="mb-0 white-space-pre-wrap">{{ selectedNotification.body }}</p>
+                <p class="mb-0" style="white-space: pre-wrap;">{{ selectedNotification.body }}</p>
               </div>
             </div>
             <div class="col-12" *ngIf="selectedNotification.errorMessage">
@@ -275,6 +292,10 @@
           </div>
         </div>
         <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" (click)="archiveNotification(selectedNotification)" *ngIf="selectedNotification.status !== 'ARCHIVED'">
+            <i class="bi bi-archive me-1"></i>
+            Archivia
+          </button>
           <button type="button" class="btn btn-primary" (click)="closeDetailModal()">Chiudi</button>
         </div>
       </div>

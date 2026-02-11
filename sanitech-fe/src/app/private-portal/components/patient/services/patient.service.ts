@@ -244,9 +244,28 @@ export class PatientService {
     return this.http.get<PagedResponse<NotificationDto>>(
       `${this.gatewayUrl}/api/notifications`,
       { params: httpParams }
-    ).pipe(
-      catchError(() => of({ content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 }))
     );
+  }
+
+  /**
+   * Marca una notifica come letta
+   */
+  markNotificationAsRead(id: number): Observable<NotificationDto> {
+    return this.http.patch<NotificationDto>(`${this.gatewayUrl}/api/notifications/${id}/read`, {});
+  }
+
+  /**
+   * Archivia una notifica
+   */
+  archiveNotification(id: number): Observable<NotificationDto> {
+    return this.http.patch<NotificationDto>(`${this.gatewayUrl}/api/notifications/${id}/archive`, {});
+  }
+
+  /**
+   * Marca tutte le notifiche non lette come lette
+   */
+  markAllNotificationsAsRead(): Observable<{ updated: number }> {
+    return this.http.post<{ updated: number }>(`${this.gatewayUrl}/api/notifications/read-all`, {});
   }
 
   // ============ TELEVISITE ============

@@ -1,8 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { Subject, forkJoin, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import {
   PatientService,
   TelevisitDto,
@@ -42,10 +42,8 @@ export class PatientTelevisitsComponent implements OnInit, OnDestroy {
     connection: 'pending'
   };
   isTestingDevices = false;
-
-  // Upload foto
-  uploadedPhotos: string[] = [];
-  showUploadPhotoModal = false;
+  private mediaStream: MediaStream | null = null;
+  @ViewChild('videoPreview') videoPreviewRef!: ElementRef<HTMLVideoElement>;
 
   // Filtri
   statusFilter: 'ALL' | TelevisitStatus = 'ALL';
@@ -62,7 +60,6 @@ export class PatientTelevisitsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadTelevisits();
-    // Aggiorna il countdown ogni secondo
     this.intervalId = setInterval(() => {
       this.currentTime = new Date();
     }, 1000);
@@ -73,6 +70,16 @@ export class PatientTelevisitsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
     if (this.intervalId) {
       clearInterval(this.intervalId);
+    }
+    this.stopMediaStream();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.showDeviceTestModal) {
+      this.closeDeviceTestModal();
+    } else if (this.showDetailModal) {
+      this.closeDetailModal();
     }
   }
 
@@ -128,15 +135,45 @@ export class PatientTelevisitsComponent implements OnInit, OnDestroy {
     return Math.ceil(this.filteredTelevisits.length / this.pageSize) || 1;
   }
 
+  get paginationPages(): (number | '...')[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const pages: (number | '...')[] = [1];
+
+    if (current > 3) {
+      pages.push('...');
+    }
+
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    if (current < total - 2) {
+      pages.push('...');
+    }
+
+    pages.push(total);
+
+    return pages;
+  }
+
   get upcomingTelevisit(): TelevisitWithDetails | null {
     const upcoming = this.televisits
-      .filter(t => t.status === 'CREATED' && new Date(t.scheduledAt) > this.currentTime)
+      .filter(t => (t.status === 'CREATED' || t.status === 'SCHEDULED') && new Date(t.scheduledAt) > this.currentTime)
       .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
     return upcoming.length > 0 ? upcoming[0] : null;
   }
 
   get scheduledCount(): number {
-    return this.televisits.filter(t => t.status === 'CREATED').length;
+    return this.televisits.filter(t => t.status === 'CREATED' || t.status === 'SCHEDULED').length;
   }
 
   get completedCount(): number {
@@ -210,17 +247,25 @@ export class PatientTelevisitsComponent implements OnInit, OnDestroy {
   }
 
   canJoinVisit(televisit: TelevisitWithDetails): boolean {
-    if (televisit.status !== 'CREATED' && televisit.status !== 'ACTIVE') return false;
+    if (televisit.status !== 'CREATED' && televisit.status !== 'SCHEDULED' && televisit.status !== 'ACTIVE') return false;
     const scheduled = new Date(televisit.scheduledAt);
     const tenMinutesBefore = new Date(scheduled.getTime() - 10 * 60000);
     return this.currentTime >= tenMinutesBefore;
   }
 
   isUpcoming(televisit: TelevisitWithDetails): boolean {
-    if (televisit.status !== 'CREATED') return false;
+    if (televisit.status !== 'CREATED' && televisit.status !== 'SCHEDULED') return false;
     const scheduled = new Date(televisit.scheduledAt);
     const oneHourFromNow = new Date(this.currentTime.getTime() + 60 * 60000);
     return scheduled <= oneHourFromNow && scheduled > this.currentTime;
+  }
+
+  isFinished(televisit: TelevisitWithDetails): boolean {
+    return televisit.status === 'ENDED' || televisit.status === 'CANCELED';
+  }
+
+  isActive(televisit: TelevisitWithDetails): boolean {
+    return televisit.status === 'CREATED' || televisit.status === 'SCHEDULED' || televisit.status === 'ACTIVE';
   }
 
   openDetailModal(televisit: TelevisitWithDetails): void {
@@ -244,6 +289,7 @@ export class PatientTelevisitsComponent implements OnInit, OnDestroy {
 
   closeDeviceTestModal(): void {
     this.showDeviceTestModal = false;
+    this.stopMediaStream();
   }
 
   testDevices(): void {
@@ -253,22 +299,65 @@ export class PatientTelevisitsComponent implements OnInit, OnDestroy {
       microphone: 'pending',
       connection: 'pending'
     };
+    this.stopMediaStream();
 
-    // Simula test dispositivi
-    setTimeout(() => {
-      this.deviceCheck.connection = 'ok';
-    }, 1000);
+    // Test connessione Internet reale
+    const connectionPromise = fetch('/assets/favicon.ico', { cache: 'no-store' })
+      .then(() => { this.deviceCheck.connection = 'ok'; })
+      .catch(() => { this.deviceCheck.connection = 'error'; });
 
-    setTimeout(() => {
-      this.deviceCheck.camera = 'ok';
-    }, 2000);
+    // Test webcam e microfono reali con getUserMedia
+    const mediaPromise = navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then((stream) => {
+        this.mediaStream = stream;
+        this.deviceCheck.camera = 'ok';
+        this.deviceCheck.microphone = 'ok';
 
-    setTimeout(() => {
-      this.deviceCheck.microphone = 'ok';
+        // Mostra anteprima video
+        setTimeout(() => {
+          if (this.videoPreviewRef?.nativeElement && this.mediaStream) {
+            this.videoPreviewRef.nativeElement.srcObject = this.mediaStream;
+          }
+        });
+      })
+      .catch((err) => {
+        const errorName = err?.name || '';
+        if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError'
+            || errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError') {
+          this.deviceCheck.camera = 'error';
+          this.deviceCheck.microphone = 'error';
+          return;
+        }
+        // Prova solo audio
+        return navigator.mediaDevices.getUserMedia({ audio: true })
+          .then((audioStream) => {
+            this.mediaStream = audioStream;
+            this.deviceCheck.microphone = 'ok';
+            this.deviceCheck.camera = 'error';
+          })
+          .catch(() => {
+            this.deviceCheck.camera = 'error';
+            this.deviceCheck.microphone = 'error';
+          });
+      });
+
+    Promise.allSettled([connectionPromise, mediaPromise]).then(() => {
       this.isTestingDevices = false;
-      this.successMessage = 'Tutti i dispositivi funzionano correttamente!';
-      setTimeout(() => this.successMessage = '', 3000);
-    }, 3000);
+      const allOk = this.deviceCheck.connection === 'ok'
+        && this.deviceCheck.camera === 'ok'
+        && this.deviceCheck.microphone === 'ok';
+      if (allOk) {
+        this.successMessage = 'Tutti i dispositivi funzionano correttamente!';
+        setTimeout(() => this.successMessage = '', 3000);
+      }
+    });
+  }
+
+  private stopMediaStream(): void {
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream = null;
+    }
   }
 
   joinVisit(televisit: TelevisitWithDetails): void {
@@ -276,8 +365,7 @@ export class PatientTelevisitsComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (tokenData) => {
-          // Apri la stanza LiveKit
-          window.open(tokenData.url, '_blank');
+          window.open(tokenData.livekitUrl, '_blank');
           this.successMessage = `Connessione alla sala d'attesa virtuale per la visita con ${televisit.departmentName}...`;
           setTimeout(() => this.successMessage = '', 5000);
         },
@@ -286,20 +374,6 @@ export class PatientTelevisitsComponent implements OnInit, OnDestroy {
           this.errorMessage = 'Impossibile connettersi alla televisita. Riprova.';
         }
       });
-  }
-
-  openUploadPhotoModal(): void {
-    this.showUploadPhotoModal = true;
-  }
-
-  closeUploadPhotoModal(): void {
-    this.showUploadPhotoModal = false;
-  }
-
-  uploadPhoto(): void {
-    this.uploadedPhotos.push(`foto_${this.uploadedPhotos.length + 1}.jpg`);
-    this.successMessage = 'Foto caricata con successo! Sara\' disponibile durante la visita.';
-    setTimeout(() => this.successMessage = '', 3000);
   }
 
   getDeviceCheckIcon(status: 'pending' | 'ok' | 'error'): string {

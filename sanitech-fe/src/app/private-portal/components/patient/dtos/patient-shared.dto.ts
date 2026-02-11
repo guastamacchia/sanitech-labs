@@ -18,10 +18,10 @@ export type AdmissionStatus = 'ACTIVE' | 'DISCHARGED' | 'CANCELLED';
 export type PaymentMethod = 'CARD' | 'BANK_TRANSFER' | 'CASH';
 export type PaymentStatus = 'CREATED' | 'CAPTURED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 
-// Notifica
+// Notifica (allineato con backend: EMAIL, IN_APP / PENDING, SENT, FAILED, READ, ARCHIVED)
 export type RecipientType = 'PATIENT' | 'DOCTOR' | 'ADMIN';
-export type NotificationChannel = 'EMAIL' | 'SMS' | 'PUSH';
-export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED' | 'BOUNCED';
+export type NotificationChannel = 'EMAIL' | 'IN_APP';
+export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED' | 'READ' | 'ARCHIVED';
 
 // Televisita
 export type TelevisitStatus = 'CREATED' | 'SCHEDULED' | 'ACTIVE' | 'ENDED' | 'CANCELED';
@@ -228,13 +228,16 @@ export interface TelevisitDto {
   patientSubject: string;
   scheduledAt: string;
   status: TelevisitStatus;
+  notes?: string;
+  patientName?: string;
+  doctorName?: string;
 }
 
 export interface LiveKitTokenDto {
-  token: string;
-  url: string;
   roomName: string;
-  participantId: string;
+  livekitUrl: string;
+  token: string;
+  expiresInSeconds: number;
 }
 
 export interface DocumentDto {
